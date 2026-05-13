@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { tripApi, type ActivityResponse, type TripResponse } from "@/lib/api";
+import { getDestinationImage } from "@/lib/travel-data";
 import {
   AlertCircle,
   Camera,
@@ -21,16 +25,6 @@ import {
   Utensils,
   Wallet,
 } from "lucide-react";
-
-const destinationImages: Record<string, string> = {
-  "Đà Lạt": "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1800&q=85",
-  "Hạ Long": "https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=1800&q=85",
-  "Hội An": "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=1800&q=85",
-  "Phú Quốc": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1800&q=85",
-  "Sapa": "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1800&q=85",
-  "Nha Trang": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1800&q=85",
-  "Đà Nẵng": "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=1800&q=85",
-};
 
 const typeConfig: Record<string, { icon: typeof Coffee; color: string; bg: string; label: string }> = {
   FOOD: { icon: Utensils, color: "#0F9F9C", bg: "#E6FFFB", label: "Ăn uống" },
@@ -102,10 +96,7 @@ export default function ItineraryPage() {
     };
   }, [params.id, router]);
 
-  const image = useMemo(() => {
-    if (!trip) return destinationImages["Hạ Long"];
-    return destinationImages[trip.destination] ?? destinationImages["Hạ Long"];
-  }, [trip]);
+  const image = useMemo(() => getDestinationImage(trip?.destination), [trip]);
 
   const day = trip?.schedule?.[activeDay];
   const dayTotal = day?.activities?.reduce((sum, activity) => sum + activity.estimatedCost, 0) ?? 0;
@@ -144,12 +135,12 @@ export default function ItineraryPage() {
       <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
         <Navbar />
         <div className="container" style={{ paddingTop: 120 }}>
-          <div className="card" style={{ padding: 32, textAlign: "center" }}>
+          <Card style={{ padding: 32, textAlign: "center" }}>
             <AlertCircle size={34} style={{ color: "#DC2626", marginBottom: 12 }} />
             <h1 style={{ fontSize: 22, marginBottom: 8 }}>Không thể mở lịch trình</h1>
             <p style={{ color: "var(--text-3)", marginBottom: 18 }}>{error || "Lịch trình không có dữ liệu hoạt động."}</p>
-            <button className="btn btn-primary" onClick={() => router.push("/dashboard")}>Quay về dashboard</button>
-          </div>
+            <Button onClick={() => router.push("/dashboard")}>Quay về dashboard</Button>
+          </Card>
         </div>
       </div>
     );
@@ -171,9 +162,9 @@ export default function ItineraryPage() {
         <div className="container" style={{ paddingTop: 54, paddingBottom: 42 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 20, alignItems: "end", flexWrap: "wrap" }}>
             <div>
-              <div className="badge" style={{ background: "rgba(255,255,255,0.18)", color: "white", border: "1px solid rgba(255,255,255,0.3)", marginBottom: 14 }}>
+              <Badge tone="glass" style={{ marginBottom: 14 }}>
                 <MapPin size={13} /> {trip.destination}
-              </div>
+              </Badge>
               <h1 style={{ color: "white", fontSize: "clamp(30px, 5vw, 52px)", fontWeight: 900, marginBottom: 12 }}>
                 Lịch trình {trip.destination} {trip.days} ngày
               </h1>
@@ -185,13 +176,13 @@ export default function ItineraryPage() {
               </div>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button className="btn btn-secondary btn-sm" onClick={copyShareLink}>
+              <Button variant="secondary" size="sm" onClick={copyShareLink}>
                 {copied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
                 {copied ? "Đã copy" : "Copy link"}
-              </button>
-              <button className="btn btn-secondary btn-sm" onClick={() => tripApi.toggleVisibility(trip.id).then(setTrip)}>
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => tripApi.toggleVisibility(trip.id).then(setTrip)}>
                 <Share2 size={14} /> {trip.isPublic ? "Đang công khai" : "Công khai"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -215,17 +206,17 @@ export default function ItineraryPage() {
               ))}
             </div>
 
-            <div className="card" style={{ padding: 20, marginBottom: 18, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+            <Card style={{ padding: 20, marginBottom: 18, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
               <div>
                 <h2 style={{ fontSize: 20, marginBottom: 4 }}>{day.title}</h2>
                 <p style={{ color: "var(--text-3)", fontSize: 14 }}>
                   {day.activities.length} hoạt động · Chi phí trong ngày khoảng {fmtCost(dayTotal)}
                 </p>
               </div>
-              <button className="btn btn-secondary btn-sm" title="Tính năng tái tạo từng ngày sẽ được nối API ở bước tiếp theo">
+              <Button variant="secondary" size="sm" title="Tính năng tái tạo từng ngày sẽ được nối API ở bước tiếp theo">
                 <RefreshCw size={13} /> Tạo lại ngày
-              </button>
-            </div>
+              </Button>
+            </Card>
 
             <div style={{ position: "relative" }}>
               <div style={{ position: "absolute", left: 22, top: 18, bottom: 18, width: 2, background: "linear-gradient(to bottom, var(--primary), var(--border))", borderRadius: 99 }} />
@@ -243,7 +234,28 @@ export default function ItineraryPage() {
           </section>
 
           <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div className="card" style={{ padding: 22 }}>
+            <Card className="map-preview-card" style={{ overflow: "hidden" }}>
+              <div style={{ height: 150, backgroundImage: `linear-gradient(180deg, rgba(15,159,156,0.1), rgba(15,159,156,0.32)), url(${image})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+              <div style={{ padding: 18 }}>
+                <h3 style={{ fontSize: 16, marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                  <Navigation size={16} style={{ color: "var(--primary)" }} /> Tuyến trong ngày
+                </h3>
+                <p style={{ color: "var(--text-3)", fontSize: 13, lineHeight: 1.6, marginBottom: 14 }}>
+                  {day.activities.slice(0, 3).map((activity) => activity.name).join(" → ")}
+                </p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${trip.destination} ${day.activities[0]?.name ?? ""}`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Mở Google Maps <ExternalLink size={12} />
+                </Button>
+              </div>
+            </Card>
+
+            <Card style={{ padding: 22 }}>
               <h3 style={{ fontSize: 16, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
                 <Wallet size={17} style={{ color: "var(--primary)" }} /> Ngân sách
               </h3>
@@ -271,9 +283,9 @@ export default function ItineraryPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
 
-            <div className="card" style={{ padding: 22 }}>
+            <Card style={{ padding: 22 }}>
               <h3 style={{ fontSize: 16, marginBottom: 14 }}>Thông tin chuyến đi</h3>
               {[
                 ["Điểm đến", trip.destination],
@@ -287,7 +299,7 @@ export default function ItineraryPage() {
                   <strong style={{ textAlign: "right" }}>{value}</strong>
                 </div>
               ))}
-            </div>
+            </Card>
           </aside>
         </div>
       </main>
