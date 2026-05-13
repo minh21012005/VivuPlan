@@ -194,6 +194,7 @@ function TripCard({
         <h3>{trip.destination}</h3>
       </div>
       <div className="trip-card-body">
+        <p className="trip-route-text">{trip.departure || "Điểm xuất phát"} → {trip.destination}</p>
         <div className="trip-meta-grid">
           <span>
             <Clock size={13} /> {trip.days}N{trip.days - 1}Đ

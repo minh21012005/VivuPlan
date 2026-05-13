@@ -25,6 +25,9 @@ public class Trip {
     @Column(nullable = false)
     private String destination;
 
+    @Column
+    private String departure;
+
     @Column(nullable = false)
     private Integer days;
 

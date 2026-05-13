@@ -15,6 +15,7 @@ import {
   Car,
   Clock,
   Coffee,
+  Lightbulb,
   MapPin,
   Mountain,
   Route,
@@ -53,10 +54,20 @@ function fmtBudget(value: number) {
   return value >= 1_000_000 ? `${(value / 1_000_000).toFixed(1)}tr ₫` : `${Math.round(value / 1000)}k ₫`;
 }
 
+function suggestDestination(form: { departure: string; days: number; budget: number; style: string }) {
+  if (form.style === "foodie" || form.style === "cultural") return form.days <= 3 ? "Hội An" : "Đà Nẵng";
+  if (form.style === "adventure") return form.departure.toLowerCase().includes("hà nội") ? "Sapa" : "Đà Lạt";
+  if (form.budget >= 6_000_000) return "Phú Quốc";
+  if (form.days <= 3) return form.departure.toLowerCase().includes("hà nội") ? "Hạ Long" : "Quy Nhơn";
+  return "Đà Lạt";
+}
+
 function PlanContent() {
   const params = useSearchParams();
   const router = useRouter();
   const [form, setForm] = useState({
+    mode: params.get("mode") === "suggest" ? "suggest" : "known",
+    departure: params.get("departure") || "Hà Nội",
     destination: params.get("destination") || "Đà Lạt",
     days: 3,
     budget: 3_000_000,
@@ -76,14 +87,20 @@ function PlanContent() {
 
   const handleGenerate = async () => {
     setError("");
-    if (!form.destination.trim()) {
+    if (!form.departure.trim()) {
+      setError("Vui lòng nhập điểm xuất phát.");
+      return;
+    }
+    const finalDestination = form.mode === "suggest" ? suggestDestination(form) : form.destination.trim();
+    if (!finalDestination) {
       setError("Vui lòng nhập điểm đến.");
       return;
     }
     setGenerating(true);
     try {
       const trip = await tripApi.generate({
-        destination: form.destination.trim(),
+        destination: finalDestination,
+        departure: form.departure.trim(),
         days: form.days,
         budgetPerPerson: form.budget,
         style: form.style.toUpperCase(),
@@ -111,11 +128,11 @@ function PlanContent() {
         <section className="planner-visual">
           <div className="planner-photo" style={{ backgroundImage: `linear-gradient(180deg, rgba(4,47,46,0.08), rgba(4,47,46,0.58)), url(${image})` }}>
             <Badge tone="glass">
-              <MapPin size={13} /> {form.destination || "Chọn điểm đến"}
+              <MapPin size={13} /> {form.mode === "suggest" ? "AI sẽ gợi ý điểm đến" : form.destination || "Chọn điểm đến"}
             </Badge>
             <div>
-              <h1>Kế hoạch {form.destination || "chuyến đi"} {form.days} ngày</h1>
-              <p>{destination?.tag ?? "Tạo lịch trình thực tế với ngân sách và phong cách phù hợp."}</p>
+              <h1>{form.mode === "suggest" ? "Gợi ý chuyến đi" : `Kế hoạch ${form.destination || "chuyến đi"}`} {form.days} ngày</h1>
+              <p>{form.mode === "suggest" ? "Nhập điểm xuất phát và ràng buộc, VivuPlan sẽ chọn điểm đến phù hợp trước khi lập itinerary." : destination?.tag ?? "Tạo lịch trình thực tế với ngân sách và phong cách phù hợp."}</p>
             </div>
           </div>
 
@@ -123,7 +140,7 @@ function PlanContent() {
             <div className="planner-route-head">
               <div>
                 <span>Itinerary preview</span>
-                <h2>{form.days} ngày · {fmtBudget(form.budget)} / người</h2>
+                <h2>{form.departure} → {form.mode === "suggest" ? "AI chọn điểm đến" : form.destination}</h2>
               </div>
               <Route size={22} />
             </div>
@@ -147,10 +164,40 @@ function PlanContent() {
               <Sparkles size={13} /> AI planner
             </Badge>
             <h2>Lập lịch trình thực tế cho điểm đến bạn đã chọn</h2>
-            <p>Điền các ràng buộc chính. VivuPlan sẽ tạo timeline, chi phí ước tính và gợi ý hoạt động từng ngày.</p>
+            <p>Nhập điểm xuất phát và các ràng buộc chính. Bạn có thể chọn điểm đến trước hoặc để AI gợi ý điểm đến phù hợp.</p>
           </div>
 
           <Card className="planner-form">
+            <div className="planner-mode-switch">
+              {[
+                { id: "known", label: "Tôi đã biết điểm đến", icon: MapPin },
+                { id: "suggest", label: "Gợi ý điểm đến bằng AI", icon: Lightbulb },
+              ].map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={form.mode === id ? "active" : ""}
+                  onClick={() => setForm((prev) => ({ ...prev, mode: id }))}
+                >
+                  <Icon size={16} /> {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="field-group">
+              <label>Điểm xuất phát</label>
+              <div className="input-with-icon">
+                <MapPin size={16} />
+                <input
+                  className="input"
+                  value={form.departure}
+                  onChange={(event) => setForm((prev) => ({ ...prev, departure: event.target.value }))}
+                  placeholder="VD: Hà Nội, TP.HCM, Hải Phòng..."
+                />
+              </div>
+            </div>
+
+            {form.mode === "known" ? (
             <div className="field-group">
               <label>Điểm đến</label>
               <div className="input-with-icon">
@@ -176,6 +223,18 @@ function PlanContent() {
                 ))}
               </div>
             </div>
+            ) : (
+              <div className="suggestion-panel">
+                <Badge tone="blue">AI inspiration</Badge>
+                <h3>Chưa cần chọn điểm đến ngay</h3>
+                <p>VivuPlan sẽ dựa trên điểm xuất phát, số ngày, ngân sách và phong cách để chọn một điểm đến phù hợp trong dữ liệu MVP.</p>
+                <div>
+                  {destinations.slice(0, 4).map((item) => (
+                    <span key={item.name}>{item.name}</span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="planner-two-col">
               <div className="field-group">
@@ -273,6 +332,8 @@ function PlanContent() {
             </div>
 
             <div className="planner-summary">
+              <span>Đi từ {form.departure || "..."}</span>
+              <span>{form.mode === "suggest" ? "AI gợi ý điểm đến" : form.destination}</span>
               <span>{selectedStyle}</span>
               <span>{selectedGroup}</span>
               <span>{selectedTransport}</span>

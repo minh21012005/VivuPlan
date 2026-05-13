@@ -354,6 +354,10 @@ textarea.input {
   box-shadow: 0 20px 60px rgba(15, 23, 42, 0.24);
 }
 
+.hero-search.hero-planner {
+  grid-template-columns: minmax(160px, 0.75fr) minmax(180px, 1fr) auto;
+}
+
 .hero-search-field {
   position: relative;
 }
@@ -843,6 +847,36 @@ textarea.input {
   gap: 22px;
 }
 
+.planner-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 5px;
+  border-radius: var(--r-xl);
+  background: var(--surface-2);
+}
+
+.planner-mode-switch button {
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: var(--r-lg);
+  background: transparent;
+  color: var(--text-3);
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.planner-mode-switch button.active {
+  background: #fff;
+  color: var(--primary);
+  border-color: var(--primary-muted);
+  box-shadow: var(--shadow-xs);
+}
+
 .field-group {
   display: grid;
   gap: 10px;
@@ -984,6 +1018,41 @@ textarea.input {
   border: 1px solid #FECACA;
   color: #DC2626;
   font-size: 14px;
+}
+
+.suggestion-panel {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: linear-gradient(135deg, #E6FFFB, #E0F2FE);
+}
+
+.suggestion-panel h3 {
+  margin-top: 12px;
+  margin-bottom: 6px;
+  font-size: 18px;
+}
+
+.suggestion-panel p {
+  color: var(--text-3);
+  font-size: 14px;
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+
+.suggestion-panel div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.suggestion-panel span {
+  padding: 5px 10px;
+  border-radius: var(--r-full);
+  background: rgba(255,255,255,0.82);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 /* Trip library */
@@ -1166,6 +1235,13 @@ textarea.input {
 
 .trip-card-body {
   padding: 16px;
+}
+
+.trip-route-text {
+  margin-bottom: 12px;
+  color: var(--text-3);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .trip-meta-grid {

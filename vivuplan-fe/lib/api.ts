@@ -103,6 +103,7 @@ export interface User {
 
 export interface GenerateRequest {
   destination: string;
+  departure: string;
   days: number;
   budgetPerPerson: number;
   style: string;
@@ -114,6 +115,7 @@ export interface GenerateRequest {
 export interface TripResponse {
   id: number;
   destination: string;
+  departure?: string;
   days: number;
   budgetPerPerson: number;
   style: string;

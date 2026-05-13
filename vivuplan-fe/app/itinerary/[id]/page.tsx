@@ -169,6 +169,7 @@ export default function ItineraryPage() {
                 Lịch trình {trip.destination} {trip.days} ngày
               </h1>
               <div style={{ display: "flex", gap: 16, flexWrap: "wrap", color: "rgba(255,255,255,0.9)" }}>
+                <span>{trip.departure || "Điểm xuất phát"} → {trip.destination}</span>
                 <span>{trip.days} ngày {trip.days - 1} đêm</span>
                 <span>{fmtCost(trip.budgetPerPerson)} / người</span>
                 <span>{styleLabel[trip.style] ?? trip.style}</span>
@@ -289,6 +290,7 @@ export default function ItineraryPage() {
               <h3 style={{ fontSize: 16, marginBottom: 14 }}>Thông tin chuyến đi</h3>
               {[
                 ["Điểm đến", trip.destination],
+                ["Xuất phát", trip.departure || "Chưa có"],
                 ["Thời gian", `${trip.days} ngày`],
                 ["Phong cách", styleLabel[trip.style] ?? trip.style],
                 ["Nhóm", groupLabel[trip.groupType] ?? trip.groupType],

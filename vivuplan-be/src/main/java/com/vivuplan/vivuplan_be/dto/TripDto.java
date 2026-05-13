@@ -14,6 +14,9 @@ public class TripDto {
         @NotBlank(message = "Điểm đến không được để trống")
         private String destination;
 
+        @NotBlank(message = "Điểm xuất phát không được để trống")
+        private String departure;
+
         @Min(1) @Max(30)
         private int days;
 
@@ -30,6 +33,7 @@ public class TripDto {
     public static class TripResponse {
         private Long id;
         private String destination;
+        private String departure;
         private int days;
         private long budgetPerPerson;
         private String style;
@@ -47,6 +51,7 @@ public class TripDto {
             TripResponse r = new TripResponse();
             r.setId(trip.getId());
             r.setDestination(trip.getDestination());
+            r.setDeparture(trip.getDeparture());
             r.setDays(trip.getDays());
             r.setBudgetPerPerson(trip.getBudgetPerPerson());
             r.setStyle(trip.getStyle().name());
@@ -126,6 +131,8 @@ public class TripDto {
     public static class GenerateRequest {
         @NotBlank
         private String destination;
+        @NotBlank
+        private String departure;
         private int days;
         private long budgetPerPerson;
         private String style;

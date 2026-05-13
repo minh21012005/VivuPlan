@@ -51,12 +51,13 @@ const features = [
 ];
 
 const steps = [
-  "Chọn điểm đến bạn đã muốn đi",
-  "Nhập số ngày, ngân sách và kiểu nhóm",
+  "Nhập điểm xuất phát và ràng buộc chuyến đi",
+  "Chọn điểm đến hoặc để AI gợi ý",
   "Nhận itinerary từng ngày và tinh chỉnh theo ý bạn",
 ];
 
 export default function HomePage() {
+  const [departure, setDeparture] = useState("Hà Nội");
   const [destination, setDestination] = useState("Đà Lạt");
   const selected = useMemo(
     () => destinations.find((item) => item.name === destination) ?? destinations[0],
@@ -79,10 +80,19 @@ export default function HomePage() {
           </Badge>
           <h1>Lên lịch trình du lịch Việt Nam trong vài phút</h1>
           <p>
-            VivuPlan biến điểm đến đã chọn thành kế hoạch rõ ràng: đi đâu, lúc nào, tốn bao nhiêu và nên di chuyển ra sao.
+            VivuPlan giúp bạn chọn điểm đến khi cần cảm hứng, hoặc biến điểm đến đã chọn thành kế hoạch rõ ràng: đi đâu, lúc nào, tốn bao nhiêu và xuất phát từ đâu.
           </p>
 
-          <div className="hero-search">
+          <div className="hero-search hero-planner">
+            <div className="hero-search-field">
+              <MapPin size={18} />
+              <input
+                className="input"
+                value={departure}
+                onChange={(event) => setDeparture(event.target.value)}
+                placeholder="Đi từ đâu? Ví dụ: Hà Nội"
+              />
+            </div>
             <div className="hero-search-field">
               <Search size={18} />
               <input
@@ -92,8 +102,13 @@ export default function HomePage() {
                 placeholder="Bạn muốn đi đâu? Ví dụ: Quy Nhơn"
               />
             </div>
-            <Button href={`/plan?destination=${encodeURIComponent(destination)}`}>
+            <Button href={`/plan?departure=${encodeURIComponent(departure)}&destination=${encodeURIComponent(destination)}`}>
               Tạo lịch trình <ArrowRight size={16} />
+            </Button>
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+            <Button href={`/plan?departure=${encodeURIComponent(departure)}&mode=suggest`} variant="secondary" size="sm">
+              <Sparkles size={14} /> Để AI gợi ý điểm đến
             </Button>
           </div>
 
@@ -130,8 +145,8 @@ export default function HomePage() {
           <div>
             <SectionHeader
               eyebrow="Cách VivuPlan hoạt động"
-              title="Tập trung vào kế hoạch sau khi bạn đã biết muốn đi đâu"
-              description="Sản phẩm ưu tiên flow cốt lõi: nhập điểm đến, nhận lịch trình, lưu chuyến đi và chia sẻ."
+              title="Linh hoạt giữa chọn điểm đến và gợi ý bằng AI"
+              description="Bạn có thể nhập điểm đến cụ thể, hoặc chỉ cung cấp điểm xuất phát, thời gian, ngân sách để VivuPlan gợi ý điểm đến phù hợp."
             />
             <div className="check-list">
               {steps.map((step) => (

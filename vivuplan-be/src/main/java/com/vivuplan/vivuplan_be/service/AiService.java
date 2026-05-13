@@ -47,6 +47,7 @@ public class AiService {
             Bạn là chuyên gia du lịch Việt Nam. Hãy tạo lịch trình du lịch CHI TIẾT và THỰC TẾ.
 
             THÔNG TIN CHUYẾN ĐI:
+            - Điểm xuất phát: %s
             - Điểm đến: %s
             - Thời gian: %d ngày
             - Ngân sách: %dk VND/người/ngày (tổng %dk VND)
@@ -57,11 +58,12 @@ public class AiService {
 
             YÊU CẦU:
             1. Chỉ đề xuất địa điểm THỰC TẾ tồn tại tại %s
-            2. Sắp xếp hoạt động theo địa lý để giảm di chuyển
-            3. Ước tính chi phí THỰC TẾ theo thị trường Việt Nam hiện tại
-            4. Thời gian hoạt động phù hợp (không nhồi nhét)
-            5. Bao gồm giờ mở cửa thực tế của từng địa điểm
-            6. Mỗi ngày 4-7 hoạt động
+            2. Ngày đầu và ngày cuối phải tính đến di chuyển từ/đến %s
+            3. Sắp xếp hoạt động theo địa lý để giảm di chuyển
+            4. Ước tính chi phí THỰC TẾ theo thị trường Việt Nam hiện tại
+            5. Thời gian hoạt động phù hợp (không nhồi nhét)
+            6. Bao gồm giờ mở cửa thực tế của từng địa điểm
+            7. Mỗi ngày 4-7 hoạt động
 
             TRẢ LỜI DẠNG JSON THUẦN TÚY (không có markdown), schema:
             [
@@ -86,10 +88,10 @@ public class AiService {
               }
             ]
             """,
-            req.getDestination(), req.getDays(), budgetK / req.getDays(), budgetK,
+            req.getDeparture(), req.getDestination(), req.getDays(), budgetK / req.getDays(), budgetK,
             req.getStyle(), req.getGroupType(), req.getTransport(),
             req.getNotes() != null ? req.getNotes() : "Không có",
-            req.getDestination()
+            req.getDestination(), req.getDeparture()
         );
     }
 
@@ -172,13 +174,14 @@ public class AiService {
     private List<TripDto.DayResponse> buildFallbackItinerary(TripDto.GenerateRequest req) {
         int days = req != null ? req.getDays() : 3;
         String dest = req != null ? req.getDestination() : "Điểm đến";
+        String departure = req != null && req.getDeparture() != null ? req.getDeparture() : "điểm xuất phát";
         List<TripDto.DayResponse> result = new ArrayList<>();
 
         for (int d = 1; d <= days; d++) {
             TripDto.DayResponse day = new TripDto.DayResponse();
             day.setDay(d);
             day.setTitle("Ngày " + d + " – Khám phá " + dest);
-            day.setSummary("Khám phá những điểm nổi bật của " + dest);
+            day.setSummary("Xuất phát từ " + departure + " và khám phá những điểm nổi bật của " + dest);
 
             List<TripDto.ActivityResponse> acts = new ArrayList<>();
             String[][] templates = {

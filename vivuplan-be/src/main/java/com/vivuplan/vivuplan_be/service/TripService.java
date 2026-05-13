@@ -33,6 +33,7 @@ public class TripService {
         // 1. Call AI to generate itinerary
         TripDto.GenerateRequest aiReq = new TripDto.GenerateRequest();
         aiReq.setDestination(req.getDestination());
+        aiReq.setDeparture(req.getDeparture());
         aiReq.setDays(req.getDays());
         aiReq.setBudgetPerPerson(req.getBudgetPerPerson());
         aiReq.setStyle(req.getStyle());
@@ -46,6 +47,7 @@ public class TripService {
         Trip trip = Trip.builder()
                 .user(user)
                 .destination(req.getDestination())
+                .departure(req.getDeparture())
                 .days(req.getDays())
                 .budgetPerPerson(req.getBudgetPerPerson())
                 .style(parseEnum(Trip.TravelStyle.class, req.getStyle(), Trip.TravelStyle.RELAXING))
