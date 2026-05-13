@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import { Badge } from "@/components/ui/Badge";
@@ -47,18 +47,37 @@ const transportOptions = [
   { id: "mixed", label: "Kết hợp", icon: Route },
 ];
 
-const dayOptions = [2, 3, 4, 5, 7, 10];
 const popular = destinations.map((item) => item.name);
+const departureSuggestions = ["Hà Nội", "TP.HCM", "Đà Nẵng", "Hải Phòng", "Cần Thơ", "Nha Trang", "Huế", "Vinh"];
 
 function fmtBudget(value: number) {
   return value >= 1_000_000 ? `${(value / 1_000_000).toFixed(1)}tr ₫` : `${Math.round(value / 1000)}k ₫`;
 }
 
-function suggestDestination(form: { departure: string; days: number; budget: number; style: string }) {
-  if (form.style === "foodie" || form.style === "cultural") return form.days <= 3 ? "Hội An" : "Đà Nẵng";
+function normalizeSearch(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .trim();
+}
+
+function getTripDays(startDate: string, endDate: string) {
+  if (!startDate || !endDate) return 0;
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 0;
+  return Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
+}
+
+function suggestDestination(form: { departure: string; budget: number; style: string; startDate: string; endDate: string }) {
+  const days = getTripDays(form.startDate, form.endDate);
+  if (form.style === "foodie" || form.style === "cultural") return days <= 3 ? "Hội An" : "Đà Nẵng";
   if (form.style === "adventure") return form.departure.toLowerCase().includes("hà nội") ? "Sapa" : "Đà Lạt";
   if (form.budget >= 6_000_000) return "Phú Quốc";
-  if (form.days <= 3) return form.departure.toLowerCase().includes("hà nội") ? "Hạ Long" : "Quy Nhơn";
+  if (days <= 3) return form.departure.toLowerCase().includes("hà nội") ? "Hạ Long" : "Quy Nhơn";
   return "Đà Lạt";
 }
 
@@ -67,23 +86,54 @@ function PlanContent() {
   const router = useRouter();
   const [form, setForm] = useState({
     mode: params.get("mode") === "suggest" ? "suggest" : "known",
-    departure: params.get("departure") || "Hà Nội",
-    destination: params.get("destination") || "Đà Lạt",
-    days: 3,
-    budget: 3_000_000,
-    style: "relaxing",
-    group: "friends",
-    transport: "motorbike",
+    departure: params.get("departure") || "",
+    destination: params.get("destination") || "",
+    startDate: "",
+    endDate: "",
+    days: 0,
+    budget: 0,
+    style: "",
+    group: "",
+    transport: "",
     notes: "",
   });
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
+  const [focusedField, setFocusedField] = useState<"departure" | "destination" | null>(null);
+  const blurTimer = useRef<number | null>(null);
 
   const image = useMemo(() => getDestinationImage(form.destination), [form.destination]);
   const destination = destinations.find((item) => item.name === form.destination);
-  const selectedStyle = styleOptions.find((item) => item.id === form.style)?.label;
-  const selectedGroup = groupOptions.find((item) => item.id === form.group)?.label;
-  const selectedTransport = transportOptions.find((item) => item.id === form.transport)?.label;
+  const selectedStyle = styleOptions.find((item) => item.id === form.style)?.label || "Chưa chọn";
+  const selectedGroup = groupOptions.find((item) => item.id === form.group)?.label || "Chưa chọn";
+  const selectedTransport = transportOptions.find((item) => item.id === form.transport)?.label || "Chưa chọn";
+  const departureQuery = normalizeSearch(form.departure);
+  const destinationQuery = normalizeSearch(form.destination);
+  const departureMatches = departureQuery
+    ? departureSuggestions.filter((item) => normalizeSearch(item).includes(departureQuery)).slice(0, 6)
+    : departureSuggestions.slice(0, 6);
+  const destinationMatches = destinations
+    .map((item) => item.name)
+    .filter((item) => !destinationQuery || normalizeSearch(item).includes(destinationQuery))
+    .slice(0, 6);
+  const computedDays = getTripDays(form.startDate, form.endDate);
+  const computedNights = computedDays > 0 ? Math.max(0, computedDays - 1) : 0;
+
+  const focusField = (field: "departure" | "destination") => {
+    if (blurTimer.current) {
+      window.clearTimeout(blurTimer.current);
+      blurTimer.current = null;
+    }
+    setFocusedField(field);
+  };
+
+  const closeSuggestionsSoon = () => {
+    if (blurTimer.current) window.clearTimeout(blurTimer.current);
+    blurTimer.current = window.setTimeout(() => {
+      setFocusedField(null);
+      blurTimer.current = null;
+    }, 140);
+  };
 
   const handleGenerate = async () => {
     setError("");
@@ -96,12 +146,35 @@ function PlanContent() {
       setError("Vui lòng nhập điểm đến.");
       return;
     }
+    if (!form.startDate || !form.endDate || computedDays <= 0) {
+      setError("Vui lòng chọn ngày đi và ngày về hợp lệ.");
+      return;
+    }
+    if (form.budget < 500_000) {
+      setError("Vui lòng nhập ngân sách tối thiểu 500.000₫ / người.");
+      return;
+    }
+    if (!form.style) {
+      setError("Vui lòng chọn phong cách du lịch.");
+      return;
+    }
+    if (!form.group) {
+      setError("Vui lòng chọn nhóm đi.");
+      return;
+    }
+    if (!form.transport) {
+      setError("Vui lòng chọn phương tiện.");
+      return;
+    }
+
     setGenerating(true);
     try {
       const trip = await tripApi.generate({
         destination: finalDestination,
         departure: form.departure.trim(),
-        days: form.days,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        days: computedDays,
         budgetPerPerson: form.budget,
         style: form.style.toUpperCase(),
         groupType: form.group.toUpperCase(),
@@ -120,18 +193,18 @@ function PlanContent() {
     <div
       className="planner-page"
       style={{
-        backgroundImage: `linear-gradient(180deg, rgba(246,251,250,0.88), rgba(246,251,250,0.98)), url(${heroImages.vietnamCoast})`,
+        backgroundImage: `linear-gradient(180deg, rgba(248,250,252,0.85), rgba(248,250,252,0.98)), url(${heroImages.vietnamCoast})`,
       }}
     >
       <Navbar />
       <main className="container planner-shell">
         <section className="planner-visual">
-          <div className="planner-photo" style={{ backgroundImage: `linear-gradient(180deg, rgba(4,47,46,0.08), rgba(4,47,46,0.58)), url(${image})` }}>
+          <div className="planner-photo" style={{ backgroundImage: `linear-gradient(180deg, rgba(15,23,42,0.1), rgba(15,23,42,0.6)), url(${image})` }}>
             <Badge tone="glass">
               <MapPin size={13} /> {form.mode === "suggest" ? "AI sẽ gợi ý điểm đến" : form.destination || "Chọn điểm đến"}
             </Badge>
             <div>
-              <h1>{form.mode === "suggest" ? "Gợi ý chuyến đi" : `Kế hoạch ${form.destination || "chuyến đi"}`} {form.days} ngày</h1>
+              <h1>{form.mode === "suggest" ? "Gợi ý chuyến đi" : `Kế hoạch ${form.destination || "chuyến đi"}`} {computedDays || "..."} ngày</h1>
               <p>{form.mode === "suggest" ? "Nhập điểm xuất phát và ràng buộc, VivuPlan sẽ chọn điểm đến phù hợp trước khi lập itinerary." : destination?.tag ?? "Tạo lịch trình thực tế với ngân sách và phong cách phù hợp."}</p>
             </div>
           </div>
@@ -140,7 +213,7 @@ function PlanContent() {
             <div className="planner-route-head">
               <div>
                 <span>Itinerary preview</span>
-                <h2>{form.departure} → {form.mode === "suggest" ? "AI chọn điểm đến" : form.destination}</h2>
+                <h2>{form.departure || "Điểm đi"} → {form.mode === "suggest" ? "AI chọn điểm đến" : form.destination || "Điểm đến"}</h2>
               </div>
               <Route size={22} />
             </div>
@@ -192,8 +265,26 @@ function PlanContent() {
                   className="input"
                   value={form.departure}
                   onChange={(event) => setForm((prev) => ({ ...prev, departure: event.target.value }))}
+                  onFocus={() => focusField("departure")}
+                  onBlur={closeSuggestionsSoon}
                   placeholder="VD: Hà Nội, TP.HCM, Hải Phòng..."
                 />
+                {focusedField === "departure" && departureMatches.length > 0 && (
+                  <div className="field-suggestions">
+                    {departureMatches.map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        onMouseDown={() => {
+                          setForm((prev) => ({ ...prev, departure: item }));
+                          setFocusedField(null);
+                        }}
+                      >
+                        <MapPin size={13} /> {item}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -207,8 +298,26 @@ function PlanContent() {
                   className="input"
                   value={form.destination}
                   onChange={(event) => setForm((prev) => ({ ...prev, destination: event.target.value }))}
+                  onFocus={() => focusField("destination")}
+                  onBlur={closeSuggestionsSoon}
                   placeholder="VD: Đà Lạt, Quy Nhơn..."
                 />
+                {focusedField === "destination" && destinationMatches.length > 0 && (
+                  <div className="field-suggestions">
+                    {destinationMatches.map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        onMouseDown={() => {
+                          setForm((prev) => ({ ...prev, destination: item }));
+                          setFocusedField(null);
+                        }}
+                      >
+                        <MapPin size={13} /> {item}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="chip-row">
                 {popular.slice(0, 8).map((item) => (
@@ -238,58 +347,85 @@ function PlanContent() {
 
             <div className="planner-two-col">
               <div className="field-group">
-                <label>Thời gian</label>
-                <div className="segmented-grid">
-                  {dayOptions.map((days) => (
-                    <button
-                      key={days}
-                      type="button"
-                      className={form.days === days ? "active" : ""}
-                      onClick={() => setForm((prev) => ({ ...prev, days }))}
-                    >
-                      <Clock size={14} /> {days}N
+                <label>Ngày đi</label>
+                <div className="input-with-icon">
+                  <Clock size={16} />
+                  <input
+                    className="input"
+                    type="date"
+                    value={form.startDate}
+                    onChange={(event) => setForm((prev) => ({ ...prev, startDate: event.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="field-group">
+                <label>Ngày về</label>
+                <div className="input-with-icon">
+                  <Clock size={16} />
+                  <input
+                    className="input"
+                    type="date"
+                    value={form.endDate}
+                    min={form.startDate || undefined}
+                    onChange={(event) => setForm((prev) => ({ ...prev, endDate: event.target.value }))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ textAlign: "center", marginTop: "-8px" }}>
+              <div className="trip-duration-pill">
+                {computedDays > 0 ? `${computedDays} ngày ${computedNights} đêm` : "Chọn ngày đi và ngày về"}
+              </div>
+            </div>
+
+            <div className="planner-two-col">
+              <div className="field-group">
+                <label>Ngân sách / người</label>
+                <div className="input-with-icon">
+                  <Wallet size={16} />
+                  <input
+                    id="input-budget"
+                    className="input"
+                    type="number"
+                    min={500000}
+                    step={100000}
+                    value={form.budget || ""}
+                    onChange={(event) => setForm((prev) => ({ ...prev, budget: Number(event.target.value) }))}
+                    placeholder="VD: 3000000"
+                  />
+                </div>
+                <div className="budget-quick-row">
+                  {[1_500_000, 3_000_000, 5_000_000, 8_000_000].map((value) => (
+                    <button key={value} type="button" onClick={() => setForm((prev) => ({ ...prev, budget: value }))}>
+                      {fmtBudget(value)}
                     </button>
                   ))}
                 </div>
               </div>
 
               <div className="field-group">
-                <label>Ngân sách / người</label>
-                <div className="budget-display">
-                  <Wallet size={16} /> {fmtBudget(form.budget)}
+                <label>Phong cách du lịch</label>
+                <div className="option-grid">
+                  {styleOptions.map(({ id, label, icon: Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      className={form.style === id ? "active" : ""}
+                      onClick={() => setForm((prev) => ({ ...prev, style: id }))}
+                    >
+                      <Icon size={17} /> {label}
+                    </button>
+                  ))}
                 </div>
-                <input
-                  id="input-budget"
-                  type="range"
-                  min={500_000}
-                  max={20_000_000}
-                  step={500_000}
-                  value={form.budget}
-                  onChange={(event) => setForm((prev) => ({ ...prev, budget: Number(event.target.value) }))}
-                />
-              </div>
-            </div>
-
-            <div className="field-group">
-              <label>Phong cách du lịch</label>
-              <div className="option-grid">
-                {styleOptions.map(({ id, label, icon: Icon }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    className={form.style === id ? "active" : ""}
-                    onClick={() => setForm((prev) => ({ ...prev, style: id }))}
-                  >
-                    <Icon size={17} /> {label}
-                  </button>
-                ))}
               </div>
             </div>
 
             <div className="planner-two-col">
               <div className="field-group">
                 <label>Nhóm đi</label>
-                <div className="option-grid compact">
+                <div className="option-grid">
                   {groupOptions.map(({ id, label }) => (
                     <button
                       key={id}
@@ -305,7 +441,7 @@ function PlanContent() {
 
               <div className="field-group">
                 <label>Phương tiện</label>
-                <div className="option-grid compact">
+                <div className="option-grid">
                   {transportOptions.map(({ id, label, icon: Icon }) => (
                     <button
                       key={id}
@@ -333,11 +469,11 @@ function PlanContent() {
 
             <div className="planner-summary">
               <span>Đi từ {form.departure || "..."}</span>
-              <span>{form.mode === "suggest" ? "AI gợi ý điểm đến" : form.destination}</span>
-              <span>{selectedStyle}</span>
-              <span>{selectedGroup}</span>
-              <span>{selectedTransport}</span>
-              <span>{form.days} ngày</span>
+              <span>{form.mode === "suggest" ? "AI gợi ý điểm đến" : form.destination || "..."}</span>
+              <span>Phong cách: {selectedStyle}</span>
+              <span>Nhóm: {selectedGroup}</span>
+              <span>Di chuyển: {selectedTransport}</span>
+              <span>{computedDays > 0 ? `${computedDays} ngày ${computedNights} đêm` : "Chưa chọn ngày"}</span>
             </div>
 
             {error && <div className="form-error">{error}</div>}

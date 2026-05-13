@@ -5,6 +5,7 @@ import com.vivuplan.vivuplan_be.entity.Trip;
 import lombok.Data;
 import jakarta.validation.constraints.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class TripDto {
@@ -19,6 +20,9 @@ public class TripDto {
 
         @Min(1) @Max(30)
         private int days;
+
+        private LocalDate startDate;
+        private LocalDate endDate;
 
         @Min(500000)
         private long budgetPerPerson;
@@ -35,6 +39,8 @@ public class TripDto {
         private String destination;
         private String departure;
         private int days;
+        private String startDate;
+        private String endDate;
         private long budgetPerPerson;
         private String style;
         private String groupType;
@@ -53,6 +59,8 @@ public class TripDto {
             r.setDestination(trip.getDestination());
             r.setDeparture(trip.getDeparture());
             r.setDays(trip.getDays());
+            r.setStartDate(trip.getStartDate() != null ? trip.getStartDate().toString() : null);
+            r.setEndDate(trip.getEndDate() != null ? trip.getEndDate().toString() : null);
             r.setBudgetPerPerson(trip.getBudgetPerPerson());
             r.setStyle(trip.getStyle().name());
             r.setGroupType(trip.getGroupType().name());
@@ -133,6 +141,8 @@ public class TripDto {
         private String destination;
         @NotBlank
         private String departure;
+        private LocalDate startDate;
+        private LocalDate endDate;
         private int days;
         private long budgetPerPerson;
         private String style;

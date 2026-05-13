@@ -315,7 +315,7 @@ textarea.input {
   min-height: min(760px, 100vh);
   padding-top: 64px;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   color: #fff;
   background-size: cover;
   background-position: center;
@@ -352,6 +352,9 @@ textarea.input {
   border-radius: var(--r-xl);
   background: rgba(255, 255, 255, 0.94);
   box-shadow: 0 20px 60px rgba(15, 23, 42, 0.24);
+  position: relative;
+  z-index: 20;
+  overflow: visible;
 }
 
 .hero-search.hero-planner {
@@ -360,6 +363,11 @@ textarea.input {
 
 .hero-search-field {
   position: relative;
+  z-index: 1;
+}
+
+.hero-search-field:focus-within {
+  z-index: 50;
 }
 
 .hero-search-field svg {
@@ -376,6 +384,45 @@ textarea.input {
   border: 0;
   background: transparent;
   box-shadow: none;
+}
+
+.hero-suggestions {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.hero-suggestions button {
+  width: 100%;
+  padding: 11px 14px;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  text-align: left;
+}
+
+.hero-suggestions button:hover {
+  background: var(--surface-2);
+}
+
+.hero-suggestions svg {
+  color: var(--primary);
+  position: static;
+  transform: none;
 }
 
 .hero-chip-row {
@@ -791,13 +838,13 @@ textarea.input {
   gap: 10px;
 }
 
-.planner-route-list > div {
+.planner-route-list>div {
   display: flex;
   gap: 12px;
   align-items: flex-start;
 }
 
-.planner-route-list > div > span {
+.planner-route-list>div>span {
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -904,6 +951,45 @@ textarea.input {
   padding-left: 40px;
 }
 
+.field-suggestions {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 60;
+  overflow: hidden;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.field-suggestions button {
+  width: 100%;
+  padding: 11px 14px;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  text-align: left;
+}
+
+.field-suggestions button:hover {
+  background: var(--surface-2);
+}
+
+.field-suggestions svg {
+  color: var(--primary);
+  position: static;
+  transform: none;
+}
+
 .chip-row {
   display: flex;
   flex-wrap: wrap;
@@ -988,6 +1074,41 @@ textarea.input {
   cursor: pointer;
 }
 
+.budget-quick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.budget-quick-row button {
+  padding: 6px 10px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.budget-quick-row button:hover {
+  color: var(--primary);
+  background: var(--primary-light);
+  border-color: var(--primary-muted);
+}
+
+.trip-duration-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: var(--r-full);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .planner-summary {
   display: flex;
   flex-wrap: wrap;
@@ -1049,7 +1170,7 @@ textarea.input {
 .suggestion-panel span {
   padding: 5px 10px;
   border-radius: var(--r-full);
-  background: rgba(255,255,255,0.82);
+  background: rgba(255, 255, 255, 0.82);
   color: var(--primary);
   font-size: 12px;
   font-weight: 800;
@@ -1167,7 +1288,7 @@ textarea.input {
   grid-template-columns: 0.95fr 1.05fr;
 }
 
-.library-empty > div {
+.library-empty>div {
   min-height: 300px;
   background-size: cover;
   background-position: center;
@@ -1221,7 +1342,7 @@ textarea.input {
   background-position: center;
 }
 
-.trip-card-media > div {
+.trip-card-media>div {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -1415,6 +1536,7 @@ textarea.input {
 }
 
 @media (max-width: 1024px) {
+
   .home-destination-grid,
   .destination-grid,
   .destination-grid.compact,

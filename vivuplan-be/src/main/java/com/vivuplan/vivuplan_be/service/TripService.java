@@ -11,6 +11,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -29,12 +30,15 @@ public class TripService {
     public TripDto.TripResponse generateAndSave(Long userId, TripDto.GenerateRequest req) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+        int tripDays = resolveTripDays(req);
 
         // 1. Call AI to generate itinerary
         TripDto.GenerateRequest aiReq = new TripDto.GenerateRequest();
         aiReq.setDestination(req.getDestination());
         aiReq.setDeparture(req.getDeparture());
-        aiReq.setDays(req.getDays());
+        aiReq.setStartDate(req.getStartDate());
+        aiReq.setEndDate(req.getEndDate());
+        aiReq.setDays(tripDays);
         aiReq.setBudgetPerPerson(req.getBudgetPerPerson());
         aiReq.setStyle(req.getStyle());
         aiReq.setGroupType(req.getGroupType());
@@ -48,7 +52,9 @@ public class TripService {
                 .user(user)
                 .destination(req.getDestination())
                 .departure(req.getDeparture())
-                .days(req.getDays())
+                .days(tripDays)
+                .startDate(req.getStartDate())
+                .endDate(req.getEndDate())
                 .budgetPerPerson(req.getBudgetPerPerson())
                 .style(parseEnum(Trip.TravelStyle.class, req.getStyle(), Trip.TravelStyle.RELAXING))
                 .groupType(parseEnum(Trip.GroupType.class, req.getGroupType(), Trip.GroupType.FRIENDS))
@@ -175,6 +181,23 @@ public class TripService {
         if (!trip.getUser().getId().equals(userId))
             throw new RuntimeException("Không có quyền thực hiện thao tác này");
         return trip;
+    }
+
+    private int resolveTripDays(TripDto.GenerateRequest req) {
+        if (req.getStartDate() != null && req.getEndDate() != null) {
+            if (req.getEndDate().isBefore(req.getStartDate())) {
+                throw new IllegalArgumentException("Ngày về phải sau hoặc bằng ngày đi");
+            }
+            long days = ChronoUnit.DAYS.between(req.getStartDate(), req.getEndDate()) + 1;
+            if (days < 1 || days > 30) {
+                throw new IllegalArgumentException("Thời gian chuyến đi phải từ 1 đến 30 ngày");
+            }
+            return (int) days;
+        }
+        if (req.getDays() < 1 || req.getDays() > 30) {
+            throw new IllegalArgumentException("Thời gian chuyến đi phải từ 1 đến 30 ngày");
+        }
+        return req.getDays();
     }
 
     private <E extends Enum<E>> E parseEnum(Class<E> enumType, String value, E fallback) {

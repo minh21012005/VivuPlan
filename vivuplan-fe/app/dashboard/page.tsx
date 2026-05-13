@@ -20,6 +20,11 @@ function fmtBudget(value: number) {
   return value >= 1_000_000 ? `${(value / 1_000_000).toFixed(1)}tr ₫` : `${Math.round(value / 1000)}k ₫`;
 }
 
+function fmtDateRange(trip: TripResponse) {
+  if (!trip.startDate || !trip.endDate) return null;
+  return `${new Date(`${trip.startDate}T00:00:00`).toLocaleDateString("vi-VN")} - ${new Date(`${trip.endDate}T00:00:00`).toLocaleDateString("vi-VN")}`;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [trips, setTrips] = useState<TripResponse[]>([]);
@@ -196,6 +201,11 @@ function TripCard({
       <div className="trip-card-body">
         <p className="trip-route-text">{trip.departure || "Điểm xuất phát"} → {trip.destination}</p>
         <div className="trip-meta-grid">
+          {fmtDateRange(trip) && (
+            <span>
+              <Clock size={13} /> {fmtDateRange(trip)}
+            </span>
+          )}
           <span>
             <Clock size={13} /> {trip.days}N{trip.days - 1}Đ
           </span>

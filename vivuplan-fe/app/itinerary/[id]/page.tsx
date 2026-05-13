@@ -56,6 +56,11 @@ const groupLabel: Record<string, string> = {
   FAMILY: "Gia đình",
 };
 
+function fmtDate(value?: string) {
+  if (!value) return null;
+  return new Date(`${value}T00:00:00`).toLocaleDateString("vi-VN");
+}
+
 export default function ItineraryPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -170,6 +175,7 @@ export default function ItineraryPage() {
               </h1>
               <div style={{ display: "flex", gap: 16, flexWrap: "wrap", color: "rgba(255,255,255,0.9)" }}>
                 <span>{trip.departure || "Điểm xuất phát"} → {trip.destination}</span>
+                {trip.startDate && trip.endDate && <span>{fmtDate(trip.startDate)} - {fmtDate(trip.endDate)}</span>}
                 <span>{trip.days} ngày {trip.days - 1} đêm</span>
                 <span>{fmtCost(trip.budgetPerPerson)} / người</span>
                 <span>{styleLabel[trip.style] ?? trip.style}</span>
@@ -291,6 +297,8 @@ export default function ItineraryPage() {
               {[
                 ["Điểm đến", trip.destination],
                 ["Xuất phát", trip.departure || "Chưa có"],
+                ["Ngày đi", fmtDate(trip.startDate) || "Chưa có"],
+                ["Ngày về", fmtDate(trip.endDate) || "Chưa có"],
                 ["Thời gian", `${trip.days} ngày`],
                 ["Phong cách", styleLabel[trip.style] ?? trip.style],
                 ["Nhóm", groupLabel[trip.groupType] ?? trip.groupType],

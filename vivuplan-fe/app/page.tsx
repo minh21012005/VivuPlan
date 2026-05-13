@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Badge } from "@/components/ui/Badge";
@@ -11,10 +11,7 @@ import { DestinationCard } from "@/components/travel/DestinationCard";
 import { destinations, heroImages } from "@/lib/travel-data";
 import {
   ArrowRight,
-  CalendarDays,
   CheckCircle2,
-  Clock,
-  Compass,
   MapPin,
   Route,
   Search,
@@ -24,13 +21,17 @@ import {
 } from "lucide-react";
 
 const quickDestinations = ["Đà Lạt", "Hạ Long", "Quy Nhơn", "Đà Nẵng", "Phú Quốc"];
+const departureSuggestions = ["Hà Nội", "TP.HCM", "Đà Nẵng", "Hải Phòng", "Cần Thơ", "Nha Trang", "Huế", "Vinh"];
 
-const stats = [
-  { value: "30s", label: "Tạo itinerary", icon: Clock },
-  { value: "3-10N", label: "Lịch trình phổ biến", icon: CalendarDays },
-  { value: "4", label: "Nhóm ngân sách", icon: Wallet },
-  { value: "VN", label: "Tối ưu cho du lịch nội địa", icon: Compass },
-];
+function normalizeSearch(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .trim();
+}
 
 const features = [
   {
@@ -57,12 +58,39 @@ const steps = [
 ];
 
 export default function HomePage() {
-  const [departure, setDeparture] = useState("Hà Nội");
-  const [destination, setDestination] = useState("Đà Lạt");
+  const [departure, setDeparture] = useState("");
+  const [destination, setDestination] = useState("");
+  const [focusedField, setFocusedField] = useState<"departure" | "destination" | null>(null);
+  const blurTimer = useRef<number | null>(null);
   const selected = useMemo(
     () => destinations.find((item) => item.name === destination) ?? destinations[0],
     [destination]
   );
+  const departureQuery = normalizeSearch(departure);
+  const destinationQuery = normalizeSearch(destination);
+  const departureMatches = departureQuery
+    ? departureSuggestions.filter((item) => normalizeSearch(item).includes(departureQuery)).slice(0, 6)
+    : departureSuggestions.slice(0, 6);
+  const destinationMatches = destinations
+    .map((item) => item.name)
+    .filter((item) => !destinationQuery || normalizeSearch(item).includes(destinationQuery))
+    .slice(0, 6);
+
+  const focusField = (field: "departure" | "destination") => {
+    if (blurTimer.current) {
+      window.clearTimeout(blurTimer.current);
+      blurTimer.current = null;
+    }
+    setFocusedField(field);
+  };
+
+  const closeSuggestionsSoon = () => {
+    if (blurTimer.current) window.clearTimeout(blurTimer.current);
+    blurTimer.current = window.setTimeout(() => {
+      setFocusedField(null);
+      blurTimer.current = null;
+    }, 140);
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
@@ -71,14 +99,11 @@ export default function HomePage() {
       <section
         className="travel-hero"
         style={{
-          backgroundImage: `linear-gradient(90deg, rgba(4, 47, 46, 0.78), rgba(4, 47, 46, 0.32)), url(${heroImages.vietnamBay})`,
+          backgroundImage: `linear-gradient(90deg, rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.3)), url(${heroImages.vietnamBay})`,
         }}
       >
         <div className="container travel-hero-content">
-          <Badge tone="teal" style={{ background: "rgba(230,255,251,0.94)", marginBottom: 18 }}>
-            <Sparkles size={13} /> AI travel planner cho Việt Nam
-          </Badge>
-          <h1>Lên lịch trình du lịch Việt Nam trong vài phút</h1>
+          <h1>Lên lịch trình du lịch trong vài phút</h1>
           <p>
             VivuPlan giúp bạn chọn điểm đến khi cần cảm hứng, hoặc biến điểm đến đã chọn thành kế hoạch rõ ràng: đi đâu, lúc nào, tốn bao nhiêu và xuất phát từ đâu.
           </p>
@@ -90,8 +115,19 @@ export default function HomePage() {
                 className="input"
                 value={departure}
                 onChange={(event) => setDeparture(event.target.value)}
+                onFocus={() => focusField("departure")}
+                onBlur={closeSuggestionsSoon}
                 placeholder="Đi từ đâu? Ví dụ: Hà Nội"
               />
+              {focusedField === "departure" && departureMatches.length > 0 && (
+                <div className="hero-suggestions">
+                  {departureMatches.map((item) => (
+                    <button key={item} type="button" onMouseDown={() => { setDeparture(item); setFocusedField(null); }}>
+                      <MapPin size={13} /> {item}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="hero-search-field">
               <Search size={18} />
@@ -99,19 +135,24 @@ export default function HomePage() {
                 className="input"
                 value={destination}
                 onChange={(event) => setDestination(event.target.value)}
+                onFocus={() => focusField("destination")}
+                onBlur={closeSuggestionsSoon}
                 placeholder="Bạn muốn đi đâu? Ví dụ: Quy Nhơn"
               />
+              {focusedField === "destination" && destinationMatches.length > 0 && (
+                <div className="hero-suggestions">
+                  {destinationMatches.map((item) => (
+                    <button key={item} type="button" onMouseDown={() => { setDestination(item); setFocusedField(null); }}>
+                      <MapPin size={13} /> {item}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <Button href={`/plan?departure=${encodeURIComponent(departure)}&destination=${encodeURIComponent(destination)}`}>
               Tạo lịch trình <ArrowRight size={16} />
             </Button>
           </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
-            <Button href={`/plan?departure=${encodeURIComponent(departure)}&mode=suggest`} variant="secondary" size="sm">
-              <Sparkles size={14} /> Để AI gợi ý điểm đến
-            </Button>
-          </div>
-
           <div className="hero-chip-row">
             {quickDestinations.map((item) => (
               <button
@@ -123,20 +164,6 @@ export default function HomePage() {
               </button>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section className="floating-stats">
-        <div className="container">
-          <Card className="stats-grid">
-            {stats.map(({ value, label, icon: Icon }) => (
-              <div key={label} className="stat-cell">
-                <Icon size={18} />
-                <div className="stat-value">{value}</div>
-                <div className="stat-label">{label}</div>
-              </div>
-            ))}
-          </Card>
         </div>
       </section>
 
@@ -197,7 +224,7 @@ export default function HomePage() {
           <div
             className="travel-banner"
             style={{
-              backgroundImage: `linear-gradient(90deg, rgba(15,118,110,0.9), rgba(2,132,199,0.55)), url(${selected.image})`,
+              backgroundImage: `linear-gradient(90deg, rgba(8, 145, 178, 0.9), rgba(16, 185, 129, 0.6)), url(${selected.image})`,
             }}
           >
             <Badge tone="glass" style={{ marginBottom: 18 }}>

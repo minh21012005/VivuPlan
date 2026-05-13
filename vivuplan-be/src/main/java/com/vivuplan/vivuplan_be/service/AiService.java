@@ -49,6 +49,8 @@ public class AiService {
             THÔNG TIN CHUYẾN ĐI:
             - Điểm xuất phát: %s
             - Điểm đến: %s
+            - Ngày đi: %s
+            - Ngày về: %s
             - Thời gian: %d ngày
             - Ngân sách: %dk VND/người/ngày (tổng %dk VND)
             - Phong cách: %s
@@ -88,7 +90,10 @@ public class AiService {
               }
             ]
             """,
-            req.getDeparture(), req.getDestination(), req.getDays(), budgetK / req.getDays(), budgetK,
+            req.getDeparture(), req.getDestination(),
+            req.getStartDate() != null ? req.getStartDate().toString() : "Chưa cung cấp",
+            req.getEndDate() != null ? req.getEndDate().toString() : "Chưa cung cấp",
+            req.getDays(), budgetK / req.getDays(), budgetK,
             req.getStyle(), req.getGroupType(), req.getTransport(),
             req.getNotes() != null ? req.getNotes() : "Không có",
             req.getDestination(), req.getDeparture()
