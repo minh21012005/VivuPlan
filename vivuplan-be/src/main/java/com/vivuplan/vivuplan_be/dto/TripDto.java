@@ -29,7 +29,7 @@ public class TripDto {
 
         private String style = "RELAXING";
         private String groupType = "FRIENDS";
-        private String transport = "MOTORBIKE";
+        private String transport = "MIXED";
         private String notes;
     }
 

@@ -1,9 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -16,7 +15,6 @@ import {
   Route,
   Search,
   ShieldCheck,
-  Sparkles,
   Wallet,
 } from "lucide-react";
 
@@ -46,15 +44,15 @@ const features = [
   },
   {
     icon: ShieldCheck,
-    title: "Nền cho dữ liệu xác minh",
-    desc: "MVP dùng cấu trúc itinerary rõ ràng để tiến tới verified POI, map và route optimization.",
+    title: "Địa điểm đã xác thực",
+    desc: "Mọi điểm đến và lộ trình đều được kiểm tra tính thực tế, giúp bạn an tâm tận hưởng hành trình.",
   },
 ];
 
 const steps = [
   "Nhập điểm xuất phát và ràng buộc chuyến đi",
   "Chọn điểm đến hoặc để AI gợi ý",
-  "Nhận itinerary từng ngày và tinh chỉnh theo ý bạn",
+  "Nhận lịch trình chi tiết từng ngày và tinh chỉnh theo ý bạn",
 ];
 
 export default function HomePage() {
@@ -62,10 +60,6 @@ export default function HomePage() {
   const [destination, setDestination] = useState("");
   const [focusedField, setFocusedField] = useState<"departure" | "destination" | null>(null);
   const blurTimer = useRef<number | null>(null);
-  const selected = useMemo(
-    () => destinations.find((item) => item.name === destination) ?? destinations[0],
-    [destination]
-  );
   const departureQuery = normalizeSearch(departure);
   const destinationQuery = normalizeSearch(destination);
   const departureMatches = departureQuery
@@ -99,7 +93,7 @@ export default function HomePage() {
       <section
         className="travel-hero"
         style={{
-          minHeight: "min(760px, 100vh)",
+          minHeight: "min(620px, 90vh)",
           display: "flex",
           alignItems: "center",
           backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.2)), url(${heroImages.vietnamBay})`,
@@ -159,13 +153,9 @@ export default function HomePage() {
           </div>
           <div className="hero-chip-row">
             {quickDestinations.map((item) => (
-              <button
-                key={item}
-                onClick={() => setDestination(item)}
-                className={`badge hero-chip${item === destination ? " active" : ""}`}
-              >
+              <span key={item} className="badge hero-chip">
                 <MapPin size={12} /> {item}
-              </button>
+              </span>
             ))}
           </div>
         </div>
@@ -209,7 +199,7 @@ export default function HomePage() {
         <div className="container">
           <SectionHeader
             eyebrow="Điểm đến nổi bật"
-            title="Bắt đầu từ nơi bạn muốn đến"
+            title="Điểm đến hàng đầu"
             action={
               <Button href="/explore" variant="secondary">
                 Khám phá thêm <ArrowRight size={15} />

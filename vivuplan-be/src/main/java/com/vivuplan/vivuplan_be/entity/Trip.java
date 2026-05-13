@@ -88,6 +88,6 @@ public class Trip {
 
     public enum TravelStyle { ADVENTURE, RELAXING, CULTURAL, NIGHTLIFE, FOODIE }
     public enum GroupType   { SOLO, COUPLE, FRIENDS, FAMILY }
-    public enum TransportMode { MOTORBIKE, CAR, BUS, MIXED }
+    public enum TransportMode { MOTORBIKE, CAR, BUS, PLANE, TRAIN, WALKING, MIXED }
     public enum TripStatus  { DRAFT, PLANNED, COMPLETED }
 }

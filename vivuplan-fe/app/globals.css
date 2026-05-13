@@ -238,6 +238,10 @@ textarea.input {
   min-height: 96px;
 }
 
+textarea.input.textarea-compact {
+  min-height: 84px;
+}
+
 /* ─── Badges / Chips ──────────────────────────────────────────────────────── */
 .badge {
   display: inline-flex;
@@ -323,25 +327,28 @@ textarea.input {
 }
 
 .travel-hero-content {
-  padding-top: 96px;
-  padding-bottom: 56px;
+  padding-top: 80px;
+  padding-bottom: 40px;
   max-width: 780px;
 }
 
 .travel-hero h1 {
   color: #fff;
-  font-size: clamp(42px, 7vw, 76px);
-  font-weight: 900;
-  letter-spacing: 0;
+  font-size: 52px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
   margin-bottom: 20px;
+  line-height: 1.1;
+  text-shadow: 0 2px 15px rgba(0, 0, 0, 0.25);
 }
 
 .travel-hero p {
-  max-width: 640px;
-  color: rgba(255, 255, 255, 0.88);
-  font-size: 18px;
-  line-height: 1.75;
-  margin-bottom: 48px;
+  max-width: 620px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 17px;
+  line-height: 1.6;
+  margin-bottom: 36px;
+  letter-spacing: -0.01em;
 }
 
 .hero-search {
@@ -349,7 +356,7 @@ textarea.input {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   max-width: 750px;
-  padding: 10px;
+  padding: 8px;
   border-radius: var(--r-xl);
   background: rgba(255, 255, 255, 0.94);
   box-shadow: 0 20px 60px rgba(15, 23, 42, 0.24);
@@ -380,7 +387,7 @@ textarea.input {
 }
 
 .hero-search .input {
-  height: 52px;
+  height: 44px;
   padding-left: 40px;
   border: 0;
   background: transparent;
@@ -768,7 +775,7 @@ textarea.input {
   padding-top: 94px;
   padding-bottom: 80px;
   display: grid;
-  grid-template-columns: minmax(320px, 0.85fr) minmax(0, 1.15fr);
+  grid-template-columns: minmax(280px, 0.7fr) minmax(0, 1.3fr);
   gap: 28px;
   align-items: start;
 }
@@ -830,6 +837,13 @@ textarea.input {
   margin-top: 4px;
 }
 
+.planner-preview-meta {
+  margin-top: 6px;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 650;
+}
+
 .planner-route-head svg {
   color: var(--primary);
 }
@@ -876,9 +890,10 @@ textarea.input {
 }
 
 .planner-heading h2 {
-  margin-top: 14px;
-  font-size: clamp(28px, 4vw, 42px);
-  font-weight: 900;
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 4px;
 }
 
 .planner-heading p {
@@ -895,36 +910,6 @@ textarea.input {
   gap: 22px;
 }
 
-.planner-mode-switch {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  padding: 5px;
-  border-radius: var(--r-xl);
-  background: var(--surface-2);
-}
-
-.planner-mode-switch button {
-  min-height: 44px;
-  border: 1px solid transparent;
-  border-radius: var(--r-lg);
-  background: transparent;
-  color: var(--text-3);
-  font-weight: 800;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.planner-mode-switch button.active {
-  background: #fff;
-  color: var(--primary);
-  border-color: var(--primary-muted);
-  box-shadow: var(--shadow-xs);
-}
-
 .field-group {
   display: grid;
   gap: 10px;
@@ -934,6 +919,25 @@ textarea.input {
   color: var(--text-2);
   font-size: 13px;
   font-weight: 750;
+}
+
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.optional-label {
+  color: var(--text-4);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.field-hint {
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 .input-with-icon {
@@ -1020,11 +1024,62 @@ textarea.input {
   gap: 18px;
 }
 
+.planner-date-block {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: var(--surface-2);
+}
+
+.planner-date-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.duration-pill,
+.group-summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border-radius: var(--r-full);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.group-summary {
+  background: var(--secondary-light);
+  color: var(--secondary);
+}
+
+.planner-money-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 18px;
+  align-items: start;
+}
+
 .segmented-grid,
 .option-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
+}
+
+.option-grid-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.option-grid-four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.option-grid-transport {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .option-grid.compact {
@@ -1033,6 +1088,7 @@ textarea.input {
 
 .segmented-grid button,
 .option-grid button {
+  height: 42px;
   min-height: 42px;
   padding: 10px 12px;
   border-radius: var(--r-lg);
@@ -1046,6 +1102,20 @@ textarea.input {
   justify-content: center;
   gap: 8px;
   transition: all 0.15s ease;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.option-grid button svg,
+.segmented-grid button svg {
+  flex: 0 0 auto;
+}
+
+.option-grid-transport button {
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 .segmented-grid button.active,
@@ -1098,6 +1168,53 @@ textarea.input {
   border-color: var(--primary-muted);
 }
 
+.budget-mode-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.budget-mode-row button {
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.budget-mode-row button.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.group-type-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.group-type-row button {
+  min-height: 34px;
+  padding: 6px 11px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.group-type-row button.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
 .trip-duration-pill {
   display: inline-flex;
   align-items: center;
@@ -1140,41 +1257,6 @@ textarea.input {
   border: 1px solid #FECACA;
   color: #DC2626;
   font-size: 14px;
-}
-
-.suggestion-panel {
-  padding: 18px;
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  background: linear-gradient(135deg, #E6FFFB, #E0F2FE);
-}
-
-.suggestion-panel h3 {
-  margin-top: 12px;
-  margin-bottom: 6px;
-  font-size: 18px;
-}
-
-.suggestion-panel p {
-  color: var(--text-3);
-  font-size: 14px;
-  line-height: 1.7;
-  margin-bottom: 14px;
-}
-
-.suggestion-panel div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.suggestion-panel span {
-  padding: 5px 10px;
-  border-radius: var(--r-full);
-  background: rgba(255, 255, 255, 0.82);
-  color: var(--primary);
-  font-size: 12px;
-  font-weight: 800;
 }
 
 /* Trip library */
@@ -1597,8 +1679,21 @@ textarea.input {
     padding: 22px;
   }
 
-  .planner-two-col {
+  .planner-two-col,
+  .planner-money-row,
+  .planner-date-row {
     grid-template-columns: 1fr;
+  }
+
+  .option-grid-three,
+  .option-grid-four {
+    grid-template-columns: 1fr;
+  }
+
+  .field-label-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .dashboard-stat-grid,

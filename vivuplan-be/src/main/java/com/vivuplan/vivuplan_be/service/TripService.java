@@ -58,7 +58,7 @@ public class TripService {
                 .budgetPerPerson(req.getBudgetPerPerson())
                 .style(parseEnum(Trip.TravelStyle.class, req.getStyle(), Trip.TravelStyle.RELAXING))
                 .groupType(parseEnum(Trip.GroupType.class, req.getGroupType(), Trip.GroupType.FRIENDS))
-                .transport(parseEnum(Trip.TransportMode.class, req.getTransport(), Trip.TransportMode.MOTORBIKE))
+                .transport(parseEnum(Trip.TransportMode.class, req.getTransport(), Trip.TransportMode.MIXED))
                 .notes(req.getNotes())
                 .status(Trip.TripStatus.DRAFT)
                 .shareCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())

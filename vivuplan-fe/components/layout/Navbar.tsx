@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Compass, Menu, X, ChevronDown, LayoutDashboard, LogOut, LogIn, Sparkles } from "lucide-react";
+import { Compass, Menu, X, ChevronDown, LayoutDashboard, LogOut, LogIn } from "lucide-react";
 
 const links = [
   { label: "Lập kế hoạch", href: "/plan" },
@@ -127,7 +127,7 @@ export default function Navbar() {
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-2)"}
                     onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-                      <LayoutDashboard size={15} style={{ color: "var(--text-4)" }} /> Dashboard
+                      <LayoutDashboard size={15} style={{ color: "var(--text-4)" }} /> Bảng điều khiển
                     </Link>
                     <div style={{ height: 1, background: "var(--border)" }} />
                     <button onClick={logout} style={{

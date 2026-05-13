@@ -36,26 +36,33 @@ export default function ExplorePage() {
       <section
         className="travel-hero"
         style={{
-          minHeight: 430,
-          backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.2)), url(${heroImages.vietnamCoast})`,
+          minHeight: 460,
+          backgroundImage: `linear-gradient(to right, rgba(15, 23, 42, 0.8) 0%, rgba(15, 23, 42, 0.4) 50%, rgba(15, 23, 42, 0.1) 100%), url(${heroImages.vietnamCoast})`,
+          display: "flex",
+          alignItems: "center"
         }}
       >
-        <div className="container travel-hero-content" style={{ paddingTop: 80, paddingBottom: 80 }}>
+        <div className="container travel-hero-content">
           <h1 style={{
-            fontSize: "clamp(34px, 5vw, 62px)",
-            maxWidth: "720px",
-            lineHeight: 1.15,
-            marginBottom: "24px"
+            fontSize: "clamp(32px, 5vw, 56px)",
+            maxWidth: "900px",
+            lineHeight: 1.1,
+            marginBottom: "20px",
+            fontWeight: 800,
+            letterSpacing: "-0.03em",
+            textShadow: "0 2px 10px rgba(0,0,0,0.2)"
           }}>
-            Khám phá điểm đến <br /> Kiến tạo mọi hành trình
+            Khám phá điểm đến, kiến tạo mọi hành trình
           </h1>
           <p style={{
-            fontSize: "18px",
-            maxWidth: "600px",
-            opacity: 0.9,
-            lineHeight: 1.7
+            fontSize: "19px",
+            maxWidth: "700px",
+            opacity: 0.95,
+            lineHeight: 1.6,
+            fontWeight: 400,
+            letterSpacing: "-0.01em"
           }}>
-            Tìm cảm hứng cho chuyến đi tiếp theo của bạn <br /> và để VivuPlan lo liệu phần lịch trình chi tiết.
+            Tìm cảm hứng cho chuyến đi tiếp theo của bạn và để VivuPlan lo liệu phần lịch trình chi tiết.
           </p>
         </div>
       </section>
