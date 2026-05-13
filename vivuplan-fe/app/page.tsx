@@ -99,16 +99,20 @@ export default function HomePage() {
       <section
         className="travel-hero"
         style={{
-          backgroundImage: `linear-gradient(90deg, rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.3)), url(${heroImages.vietnamBay})`,
+          minHeight: "min(760px, 100vh)",
+          display: "flex",
+          alignItems: "center",
+          backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.2)), url(${heroImages.vietnamBay})`,
         }}
       >
-        <div className="container travel-hero-content">
-          <h1>Lên lịch trình du lịch trong vài phút</h1>
+        <div className="container" style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+          <div className="travel-hero-content" style={{ maxWidth: "1100px", width: "100%", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <h1>Lập kế hoạch du lịch <br /> Thông minh hơn cùng AI</h1>
           <p>
-            VivuPlan giúp bạn chọn điểm đến khi cần cảm hứng, hoặc biến điểm đến đã chọn thành kế hoạch rõ ràng: đi đâu, lúc nào, tốn bao nhiêu và xuất phát từ đâu.
+            VivuPlan giúp bạn biến mọi ý tưởng thành một hành trình chi tiết: <br /> đi đâu, lúc nào và tốn bao nhiêu – chỉ trong vài giây.
           </p>
 
-          <div className="hero-search hero-planner">
+          <div className="hero-search hero-planner" style={{ width: "100%" }}>
             <div className="hero-search-field">
               <MapPin size={18} />
               <input
@@ -117,7 +121,7 @@ export default function HomePage() {
                 onChange={(event) => setDeparture(event.target.value)}
                 onFocus={() => focusField("departure")}
                 onBlur={closeSuggestionsSoon}
-                placeholder="Đi từ đâu? Ví dụ: Hà Nội"
+                placeholder="Đi từ đâu? (VD: Hà Nội)"
               />
               {focusedField === "departure" && departureMatches.length > 0 && (
                 <div className="hero-suggestions">
@@ -137,7 +141,7 @@ export default function HomePage() {
                 onChange={(event) => setDestination(event.target.value)}
                 onFocus={() => focusField("destination")}
                 onBlur={closeSuggestionsSoon}
-                placeholder="Bạn muốn đi đâu? Ví dụ: Quy Nhơn"
+                placeholder="Bạn muốn đi đâu? (VD: Quy Nhơn)"
               />
               {focusedField === "destination" && destinationMatches.length > 0 && (
                 <div className="hero-suggestions">
@@ -165,7 +169,8 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
       <section className="section">
         <div className="container split-grid">
@@ -219,28 +224,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="section">
-        <div className="container">
-          <div
-            className="travel-banner"
-            style={{
-              backgroundImage: `linear-gradient(90deg, rgba(8, 145, 178, 0.9), rgba(16, 185, 129, 0.6)), url(${selected.image})`,
-            }}
-          >
-            <Badge tone="glass" style={{ marginBottom: 18 }}>
-              <Sparkles size={13} /> Gợi ý nhanh
-            </Badge>
-            <h2>Tạo chuyến đi {selected.name} cho cuối tuần này</h2>
-            <p>Nhập ngân sách và phong cách du lịch, VivuPlan sẽ tạo lịch trình từng ngày với chi phí ước tính.</p>
-            <Button
-              href={`/plan?destination=${encodeURIComponent(selected.name)}`}
-              style={{ background: "white", color: "var(--primary)", boxShadow: "none" }}
-            >
-              Bắt đầu với {selected.name} <ArrowRight size={16} />
-            </Button>
-          </div>
-        </div>
-      </section>
 
       <Footer />
     </div>

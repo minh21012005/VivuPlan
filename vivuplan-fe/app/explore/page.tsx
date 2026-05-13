@@ -3,11 +3,10 @@
 import { useMemo, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { DestinationCard } from "@/components/travel/DestinationCard";
 import { destinations, heroImages } from "@/lib/travel-data";
-import { Filter, MapPin, Search } from "lucide-react";
+import { Filter, Search } from "lucide-react";
 
 const regions = ["Tất cả", "Miền Bắc", "Miền Trung", "Miền Nam", "Tây Nguyên"];
 
@@ -38,15 +37,26 @@ export default function ExplorePage() {
         className="travel-hero"
         style={{
           minHeight: 430,
-          backgroundImage: `linear-gradient(90deg, rgba(4,47,46,0.78), rgba(2,132,199,0.34)), url(${heroImages.vietnamCoast})`,
+          backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.2)), url(${heroImages.vietnamCoast})`,
         }}
       >
-        <div className="container travel-hero-content" style={{ paddingTop: 72, paddingBottom: 72 }}>
-          <Badge tone="glass" style={{ marginBottom: 16 }}>
-            <MapPin size={13} /> Khám phá Việt Nam
-          </Badge>
-          <h1 style={{ fontSize: "clamp(34px, 5vw, 58px)" }}>Chọn cảm hứng, VivuPlan lo phần lịch trình</h1>
-          <p>Dành cho lúc bạn cần gợi ý điểm đến trước khi bắt đầu lập kế hoạch chi tiết.</p>
+        <div className="container travel-hero-content" style={{ paddingTop: 80, paddingBottom: 80 }}>
+          <h1 style={{
+            fontSize: "clamp(34px, 5vw, 62px)",
+            maxWidth: "720px",
+            lineHeight: 1.15,
+            marginBottom: "24px"
+          }}>
+            Khám phá điểm đến <br /> Kiến tạo mọi hành trình
+          </h1>
+          <p style={{
+            fontSize: "18px",
+            maxWidth: "600px",
+            opacity: 0.9,
+            lineHeight: 1.7
+          }}>
+            Tìm cảm hứng cho chuyến đi tiếp theo của bạn <br /> và để VivuPlan lo liệu phần lịch trình chi tiết.
+          </p>
         </div>
       </section>
 

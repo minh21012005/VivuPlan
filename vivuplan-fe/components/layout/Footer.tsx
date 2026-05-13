@@ -31,31 +31,38 @@ const socials = [
 
 export default function Footer() {
   return (
-    <footer style={{ background: "var(--surface)", borderTop: "1px solid var(--border)" }}>
-      <div className="container" style={{ paddingTop: "72px", paddingBottom: "40px" }}>
+    <footer style={{ background: "var(--text)", color: "white", position: "relative", overflow: "hidden" }}>
+      {/* Decorative gradient blur */}
+      <div style={{
+        position: "absolute", top: -100, right: -100, width: 300, height: 300,
+        background: "radial-gradient(circle, rgba(15,159,156,0.15) 0%, transparent 70%)",
+        pointerEvents: "none"
+      }} />
 
-        {/* ── Main grid: brand col + 3 link cols ───────────────────────── */}
+      <div className="container" style={{ paddingTop: "80px", paddingBottom: "40px", position: "relative", zIndex: 1 }}>
+
+        {/* ── Main grid ─────────────────────────────────────────────── */}
         <div style={{
           display: "grid",
           gridTemplateColumns: "2fr 1fr 1fr 1fr",
           gap: "48px",
-          marginBottom: "56px",
+          marginBottom: "64px",
         }}>
 
           {/* Brand block */}
           <div>
-            <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "10px", textDecoration: "none", marginBottom: "20px" }}>
+            <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "10px", textDecoration: "none", marginBottom: "24px" }}>
               <div style={{
-                width: 36, height: 36, borderRadius: 10,
+                width: 40, height: 40, borderRadius: 12,
                 background: "linear-gradient(135deg, var(--primary), var(--secondary))",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: "0 4px 12px rgba(15,159,156,0.22)",
+                boxShadow: "0 4px 20px rgba(15,159,156,0.3)",
                 flexShrink: 0,
               }}>
-                <Compass size={17} color="white" />
+                <Compass size={20} color="white" />
               </div>
               <span style={{
-                fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "20px",
+                fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "22px",
                 background: "linear-gradient(135deg, var(--primary), var(--secondary))",
                 WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
               }}>
@@ -63,35 +70,38 @@ export default function Footer() {
               </span>
             </Link>
 
-            <p style={{ fontSize: "14px", color: "var(--text-3)", lineHeight: 1.75, marginBottom: "24px", maxWidth: "280px" }}>
-              Nền tảng lập kế hoạch du lịch Việt Nam được AI hỗ trợ. Tạo lịch trình hoàn hảo chỉ trong 30 giây.
+            <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.6)", lineHeight: 1.8, marginBottom: "28px", maxWidth: "320px" }}>
+              Nền tảng lập kế hoạch du lịch Việt Nam được AI hỗ trợ. Tạo lịch trình hoàn hảo chỉ trong 30 giây và khám phá những hành trình tuyệt vời nhất.
             </p>
 
             {/* Social icons */}
-            <div style={{ display: "flex", gap: "10px" }}>
-              {socials.map(({ icon: Icon, href }, i) => (
+            <div style={{ display: "flex", gap: "12px" }}>
+              {socials.map(({ icon: Icon, href, label }, i) => (
                 <a
                   key={i}
                   href={href}
+                  aria-label={label}
                   style={{
-                    width: 36, height: 36, borderRadius: "var(--r-md)",
-                    background: "var(--surface-2)", border: "1px solid var(--border)",
+                    width: 38, height: 38, borderRadius: "var(--r-md)",
+                    background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "var(--text-3)", textDecoration: "none",
-                    transition: "all 0.2s",
+                    color: "rgba(255,255,255,0.6)", textDecoration: "none",
+                    transition: "all 0.25s",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "var(--primary-light)";
-                    e.currentTarget.style.borderColor = "var(--primary-muted)";
-                    e.currentTarget.style.color = "var(--primary)";
+                    e.currentTarget.style.background = "var(--primary)";
+                    e.currentTarget.style.borderColor = "var(--primary)";
+                    e.currentTarget.style.color = "white";
+                    e.currentTarget.style.transform = "translateY(-3px)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "var(--surface-2)";
-                    e.currentTarget.style.borderColor = "var(--border)";
-                    e.currentTarget.style.color = "var(--text-3)";
+                    e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                    e.currentTarget.style.color = "rgba(255,255,255,0.6)";
+                    e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
-                  <Icon size={16} />
+                  <Icon size={18} />
                 </a>
               ))}
             </div>
@@ -101,20 +111,20 @@ export default function Footer() {
           {Object.entries(footerLinks).map(([group, items]) => (
             <div key={group}>
               <h4 style={{
-                fontSize: "12px", fontWeight: 700, color: "var(--text-2)",
-                textTransform: "uppercase", letterSpacing: "0.08em",
-                marginBottom: "20px",
+                fontSize: "13px", fontWeight: 700, color: "white",
+                textTransform: "uppercase", letterSpacing: "0.1em",
+                marginBottom: "24px",
               }}>
                 {group}
               </h4>
-              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "14px" }}>
                 {items.map((item) => (
                   <li key={item.label}>
                     <Link
                       href={item.href}
-                      style={{ fontSize: "14px", color: "var(--text-3)", textDecoration: "none", transition: "color 0.15s" }}
-                      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--primary)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-3)"; }}
+                      style={{ fontSize: "14px", color: "rgba(255,255,255,0.55)", textDecoration: "none", transition: "all 0.2s" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--primary-muted)"; e.currentTarget.style.paddingLeft = "4px"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.55)"; e.currentTarget.style.paddingLeft = "0"; }}
                     >
                       {item.label}
                     </Link>
@@ -125,23 +135,23 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* ── Bottom bar ───────────────────────────────────────────────── */}
+        {/* ── Bottom bar ─────────────────────────────────────────────── */}
         <div style={{
-          borderTop: "1px solid var(--border)",
-          paddingTop: "28px",
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+          paddingTop: "32px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           flexWrap: "wrap",
-          gap: "12px",
+          gap: "16px",
         }}>
-          <p style={{ fontSize: "13px", color: "var(--text-4)" }}>
+          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.4)" }}>
             © 2026 VivuPlan. Mọi quyền được bảo lưu.
           </p>
 
-          <p style={{ fontSize: "13px", color: "var(--text-4)", display: "flex", alignItems: "center", gap: "5px" }}>
+          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "6px" }}>
             Tạo ra với{" "}
-            <Heart size={12} fill="var(--primary)" color="var(--primary)" />
+            <Heart size={14} fill="#F43F5E" color="#F43F5E" />
             {" "}tại Việt Nam 🇻🇳
           </p>
         </div>

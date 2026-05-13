@@ -143,14 +143,9 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <>
-                <Link href="/login" className="btn btn-ghost btn-sm" style={{ textDecoration: "none" }}>
-                  <LogIn size={14} /> Đăng nhập
-                </Link>
-                <Link href="/plan" className="btn btn-primary btn-sm" style={{ textDecoration: "none" }}>
-                  <Sparkles size={14} /> Bắt đầu miễn phí
-                </Link>
-              </>
+              <Link href="/login" className="btn btn-primary btn-sm" style={{ textDecoration: "none" }}>
+                <LogIn size={14} /> Đăng nhập
+              </Link>
             )}
           </div>
 
@@ -182,14 +177,9 @@ export default function Navbar() {
                   <LogOut size={15} /> Đăng xuất
                 </button>
               ) : (
-                <>
-                  <Link href="/login" className="btn btn-secondary" style={{ flex: 1, textDecoration: "none", justifyContent: "center" }} onClick={() => setMobileOpen(false)}>
-                    Đăng nhập
-                  </Link>
-                  <Link href="/plan" className="btn btn-primary" style={{ flex: 1, textDecoration: "none", justifyContent: "center" }} onClick={() => setMobileOpen(false)}>
-                    <Sparkles size={14} /> Bắt đầu
-                  </Link>
-                </>
+                <Link href="/login" className="btn btn-primary" style={{ flex: 1, textDecoration: "none", justifyContent: "center" }} onClick={() => setMobileOpen(false)}>
+                  <LogIn size={14} /> Đăng nhập
+                </Link>
               )}
             </div>
           </div>
