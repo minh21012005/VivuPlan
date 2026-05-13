@@ -1,0 +1,86 @@
+package com.vivuplan.vivuplan_be.controller;
+
+import com.vivuplan.vivuplan_be.dto.TripDto;
+import com.vivuplan.vivuplan_be.service.TripService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/trips")
+@RequiredArgsConstructor
+public class TripController {
+
+    private final TripService tripService;
+
+    /** Generate + Save a new AI itinerary */
+    @PostMapping("/generate")
+    public ResponseEntity<TripDto.TripResponse> generate(
+            @Valid @RequestBody TripDto.GenerateRequest req,
+            Authentication auth) {
+        Long userId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(tripService.generateAndSave(userId, req));
+    }
+
+    /** Get all trips for current user */
+    @GetMapping
+    public ResponseEntity<List<TripDto.TripResponse>> myTrips(Authentication auth) {
+        Long userId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(tripService.getUserTrips(userId));
+    }
+
+    /** Get single trip by ID */
+    @GetMapping("/{id}")
+    public ResponseEntity<TripDto.TripResponse> getTrip(
+            @PathVariable Long id,
+            Authentication auth) {
+        Long userId = auth != null ? (Long) auth.getPrincipal() : null;
+        return ResponseEntity.ok(tripService.getTrip(id, userId));
+    }
+
+    /** Delete a trip */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> deleteTrip(
+            @PathVariable Long id,
+            Authentication auth) {
+        tripService.deleteTrip(id, (Long) auth.getPrincipal());
+        return ResponseEntity.ok(Map.of("message", "Đã xóa lịch trình"));
+    }
+
+    /** Toggle public/private */
+    @PatchMapping("/{id}/visibility")
+    public ResponseEntity<TripDto.TripResponse> toggleVisibility(
+            @PathVariable Long id,
+            Authentication auth) {
+        return ResponseEntity.ok(tripService.togglePublic(id, (Long) auth.getPrincipal()));
+    }
+
+    /** Update status (PLANNED, COMPLETED) */
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<TripDto.TripResponse> updateStatus(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body,
+            Authentication auth) {
+        return ResponseEntity.ok(tripService.updateTripStatus(id, (Long) auth.getPrincipal(), body.get("status")));
+    }
+
+    /** Public trips feed */
+    @GetMapping("/public")
+    public ResponseEntity<Page<TripDto.TripResponse>> publicTrips(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        return ResponseEntity.ok(tripService.getPublicTrips(page, size));
+    }
+
+    /** Get trip by share code */
+    @GetMapping("/public/share/{code}")
+    public ResponseEntity<TripDto.TripResponse> getByShareCode(@PathVariable String code) {
+        return ResponseEntity.ok(tripService.getByShareCode(code));
+    }
+}

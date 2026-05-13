@@ -1,0 +1,136 @@
+package com.vivuplan.vivuplan_be.dto;
+
+import com.vivuplan.vivuplan_be.entity.Activity;
+import com.vivuplan.vivuplan_be.entity.Trip;
+import lombok.Data;
+import jakarta.validation.constraints.*;
+
+import java.util.List;
+
+public class TripDto {
+
+    @Data
+    public static class CreateRequest {
+        @NotBlank(message = "Điểm đến không được để trống")
+        private String destination;
+
+        @Min(1) @Max(30)
+        private int days;
+
+        @Min(500000)
+        private long budgetPerPerson;
+
+        private String style = "RELAXING";
+        private String groupType = "FRIENDS";
+        private String transport = "MOTORBIKE";
+        private String notes;
+    }
+
+    @Data
+    public static class TripResponse {
+        private Long id;
+        private String destination;
+        private int days;
+        private long budgetPerPerson;
+        private String style;
+        private String groupType;
+        private String transport;
+        private String status;
+        private boolean isPublic;
+        private String shareCode;
+        private int viewCount;
+        private List<DayResponse> schedule;
+        private BudgetBreakdown budget;
+        private String createdAt;
+
+        public static TripResponse from(Trip trip) {
+            TripResponse r = new TripResponse();
+            r.setId(trip.getId());
+            r.setDestination(trip.getDestination());
+            r.setDays(trip.getDays());
+            r.setBudgetPerPerson(trip.getBudgetPerPerson());
+            r.setStyle(trip.getStyle().name());
+            r.setGroupType(trip.getGroupType().name());
+            r.setTransport(trip.getTransport().name());
+            r.setStatus(trip.getStatus().name());
+            r.setPublic(trip.getIsPublic());
+            r.setShareCode(trip.getShareCode());
+            r.setViewCount(trip.getViewCount());
+            r.setCreatedAt(trip.getCreatedAt() != null ? trip.getCreatedAt().toString() : null);
+            return r;
+        }
+    }
+
+    @Data
+    public static class DayResponse {
+        private int day;
+        private String title;
+        private String summary;
+        private List<ActivityResponse> activities;
+    }
+
+    @Data
+    public static class ActivityResponse {
+        private Long id;
+        private String time;
+        private String name;
+        private String type;
+        private String location;
+        private String duration;
+        private long estimatedCost;
+        private String note;
+        private double rating;
+        private Double latitude;
+        private Double longitude;
+        private int sortOrder;
+
+        public static ActivityResponse from(Activity a) {
+            ActivityResponse r = new ActivityResponse();
+            r.setId(a.getId());
+            r.setTime(a.getTime());
+            r.setName(a.getName());
+            r.setType(a.getType().name());
+            r.setLocation(a.getLocation());
+            r.setDuration(a.getDuration());
+            r.setEstimatedCost(a.getEstimatedCost() != null ? a.getEstimatedCost() : 0);
+            r.setNote(a.getNote());
+            r.setRating(a.getRating() != null ? a.getRating() : 0);
+            r.setLatitude(a.getLatitude());
+            r.setLongitude(a.getLongitude());
+            r.setSortOrder(a.getSortOrder());
+            return r;
+        }
+    }
+
+    @Data
+    public static class BudgetBreakdown {
+        private long total;
+        private long transport;
+        private long accommodation;
+        private long food;
+        private long activities;
+    }
+
+    @Data
+    public static class UpdateActivityRequest {
+        private String time;
+        private String name;
+        private String location;
+        private String duration;
+        private Long estimatedCost;
+        private String note;
+        private int sortOrder;
+    }
+
+    @Data
+    public static class GenerateRequest {
+        @NotBlank
+        private String destination;
+        private int days;
+        private long budgetPerPerson;
+        private String style;
+        private String groupType;
+        private String transport;
+        private String notes;
+    }
+}
