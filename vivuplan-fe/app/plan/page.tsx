@@ -257,9 +257,17 @@ function PlanContent() {
         endDate: form.endDate,
         days: computedDays,
         budgetPerPerson,
+        budgetTotal: form.budgetMode === "total" ? form.budget : undefined,
+        budgetMode: form.budgetMode === "total" ? "TOTAL" : "PER_PERSON",
+        travelerCount: form.travelers,
         style: (form.style || "relaxing").toUpperCase(),
         groupType: toApiGroupType(form.group, form.travelers),
         transport: toApiTransport(form.outboundTransport, form.localTransport),
+        outboundTransport: toApiTransport(form.outboundTransport, ""),
+        localTransport: toApiTransport("", form.localTransport),
+        destinationSuggested: !form.destination.trim(),
+        mustVisit: form.mustVisit.trim() || undefined,
+        avoid: form.avoid.trim() || undefined,
         notes: planningNotes || undefined,
       });
       router.push(`/itinerary/${trip.id}`);

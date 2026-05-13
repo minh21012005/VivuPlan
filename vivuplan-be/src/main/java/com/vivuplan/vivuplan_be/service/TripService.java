@@ -40,9 +40,17 @@ public class TripService {
         aiReq.setEndDate(req.getEndDate());
         aiReq.setDays(tripDays);
         aiReq.setBudgetPerPerson(req.getBudgetPerPerson());
+        aiReq.setBudgetTotal(req.getBudgetTotal());
+        aiReq.setBudgetMode(req.getBudgetMode());
+        aiReq.setTravelerCount(resolveTravelerCount(req));
         aiReq.setStyle(req.getStyle());
         aiReq.setGroupType(req.getGroupType());
         aiReq.setTransport(req.getTransport());
+        aiReq.setOutboundTransport(req.getOutboundTransport());
+        aiReq.setLocalTransport(req.getLocalTransport());
+        aiReq.setDestinationSuggested(req.getDestinationSuggested());
+        aiReq.setMustVisit(req.getMustVisit());
+        aiReq.setAvoid(req.getAvoid());
         aiReq.setNotes(req.getNotes());
 
         List<TripDto.DayResponse> aiSchedule = aiService.generateItinerary(aiReq);
@@ -56,12 +64,20 @@ public class TripService {
                 .startDate(req.getStartDate())
                 .endDate(req.getEndDate())
                 .budgetPerPerson(req.getBudgetPerPerson())
+                .budgetTotal(req.getBudgetTotal())
+                .budgetMode(parseEnum(Trip.BudgetMode.class, req.getBudgetMode(), Trip.BudgetMode.PER_PERSON))
+                .travelerCount(resolveTravelerCount(req))
                 .style(parseEnum(Trip.TravelStyle.class, req.getStyle(), Trip.TravelStyle.RELAXING))
                 .groupType(parseEnum(Trip.GroupType.class, req.getGroupType(), Trip.GroupType.FRIENDS))
                 .transport(parseEnum(Trip.TransportMode.class, req.getTransport(), Trip.TransportMode.MIXED))
+                .outboundTransport(parseEnum(Trip.TransportMode.class, req.getOutboundTransport(), Trip.TransportMode.MIXED))
+                .localTransport(parseEnum(Trip.TransportMode.class, req.getLocalTransport(), Trip.TransportMode.MIXED))
+                .destinationSuggested(Boolean.TRUE.equals(req.getDestinationSuggested()))
+                .mustVisit(req.getMustVisit())
+                .avoid(req.getAvoid())
                 .notes(req.getNotes())
                 .status(Trip.TripStatus.DRAFT)
-                .shareCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .shareCode(generateUniqueShareCode())
                 .build();
 
         // 3. Attach AI-generated days
@@ -207,6 +223,25 @@ public class TripService {
         } catch (IllegalArgumentException e) {
             return fallback;
         }
+    }
+
+    private int resolveTravelerCount(TripDto.GenerateRequest req) {
+        Integer travelers = req.getTravelerCount();
+        if (travelers == null) return 1;
+        if (travelers < 1 || travelers > 30) {
+            throw new IllegalArgumentException("Số người phải từ 1 đến 30");
+        }
+        return travelers;
+    }
+
+    private String generateUniqueShareCode() {
+        for (int i = 0; i < 5; i++) {
+            String code = UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
+            if (!tripRepository.existsByShareCode(code)) {
+                return code;
+            }
+        }
+        throw new RuntimeException("Không thể tạo mã chia sẻ lịch trình");
     }
 
     private List<TripDto.DayResponse> mapDays(List<ItineraryDay> days) {

@@ -19,8 +19,14 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
 
     Optional<Trip> findByShareCode(String shareCode);
 
+    boolean existsByShareCode(String shareCode);
+
     @Query("SELECT t FROM Trip t WHERE t.user.id = :userId AND t.destination LIKE %:destination%")
     List<Trip> findByUserIdAndDestination(Long userId, String destination);
 
     long countByUserId(Long userId);
+
+    long countByIsPublicTrue();
+
+    long countByStatus(Trip.TripStatus status);
 }

@@ -3,6 +3,8 @@ package com.vivuplan.vivuplan_be.dto;
 import lombok.Data;
 import jakarta.validation.constraints.*;
 
+import java.util.List;
+
 public class AuthDto {
 
     @Data
@@ -50,6 +52,7 @@ public class AuthDto {
         private String email;
         private String avatarUrl;
         private String role;
+        private List<String> roles;
 
         public static UserDto from(com.vivuplan.vivuplan_be.entity.User u) {
             UserDto dto = new UserDto();
@@ -57,7 +60,8 @@ public class AuthDto {
             dto.setName(u.getName());
             dto.setEmail(u.getEmail());
             dto.setAvatarUrl(u.getAvatarUrl());
-            dto.setRole(u.getRole().name());
+            dto.setRole(u.getPrimaryRoleName());
+            dto.setRoles(u.getRoleNames().stream().sorted().toList());
             return dto;
         }
     }

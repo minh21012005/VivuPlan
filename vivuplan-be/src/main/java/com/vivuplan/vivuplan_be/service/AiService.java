@@ -52,10 +52,16 @@ public class AiService {
             - Ngày đi: %s
             - Ngày về: %s
             - Thời gian: %d ngày
-            - Ngân sách: %dk VND/người/ngày (tổng %dk VND)
+            - Số người: %d
+            - Ngân sách: %dk VND/người/ngày (người dùng nhập %dk VND, kiểu ngân sách %s)
             - Phong cách: %s
             - Nhóm: %s
-            - Phương tiện: %s
+            - Phương tiện chính: %s
+            - Di chuyển đến điểm đến: %s
+            - Di chuyển trong chuyến đi: %s
+            - Điểm đến do AI chọn: %s
+            - Địa điểm muốn ghé: %s
+            - Điều cần tránh: %s
             - Ghi chú: %s
 
             YÊU CẦU:
@@ -93,8 +99,13 @@ public class AiService {
             req.getDeparture(), req.getDestination(),
             req.getStartDate() != null ? req.getStartDate().toString() : "Chưa cung cấp",
             req.getEndDate() != null ? req.getEndDate().toString() : "Chưa cung cấp",
-            req.getDays(), budgetK / req.getDays(), budgetK,
+            req.getDays(), req.getTravelerCount() != null ? req.getTravelerCount() : 1,
+            budgetK / Math.max(1, req.getDays()), budgetK, req.getBudgetMode() != null ? req.getBudgetMode() : "PER_PERSON",
             req.getStyle(), req.getGroupType(), req.getTransport(),
+            req.getOutboundTransport(), req.getLocalTransport(),
+            Boolean.TRUE.equals(req.getDestinationSuggested()) ? "Có" : "Không",
+            req.getMustVisit() != null && !req.getMustVisit().isBlank() ? req.getMustVisit() : "Không có",
+            req.getAvoid() != null && !req.getAvoid().isBlank() ? req.getAvoid() : "Không có",
             req.getNotes() != null ? req.getNotes() : "Không có",
             req.getDestination(), req.getDeparture()
         );

@@ -99,6 +99,7 @@ export interface User {
   email: string;
   avatarUrl?: string;
   role: string;
+  roles?: string[];
 }
 
 export interface GenerateRequest {
@@ -108,9 +109,17 @@ export interface GenerateRequest {
   endDate?: string;
   days: number;
   budgetPerPerson: number;
+  budgetTotal?: number;
+  budgetMode?: string;
+  travelerCount?: number;
   style: string;
   groupType: string;
   transport: string;
+  outboundTransport?: string;
+  localTransport?: string;
+  destinationSuggested?: boolean;
+  mustVisit?: string;
+  avoid?: string;
   notes?: string;
 }
 
@@ -122,9 +131,17 @@ export interface TripResponse {
   endDate?: string;
   days: number;
   budgetPerPerson: number;
+  budgetTotal?: number;
+  budgetMode?: string;
+  travelerCount?: number;
   style: string;
   groupType: string;
   transport: string;
+  outboundTransport?: string;
+  localTransport?: string;
+  destinationSuggested?: boolean;
+  mustVisit?: string;
+  avoid?: string;
   status: string;
   isPublic: boolean;
   shareCode: string;

@@ -9,7 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 		"spring.datasource.username=sa",
 		"spring.datasource.password=",
 		"spring.jpa.hibernate.ddl-auto=create-drop",
-		"spring.jpa.database-platform=org.hibernate.dialect.H2Dialect"
+		"spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+		"app.data-initializer.enabled=false"
 })
 class VivuplanBeApplicationTests {
 

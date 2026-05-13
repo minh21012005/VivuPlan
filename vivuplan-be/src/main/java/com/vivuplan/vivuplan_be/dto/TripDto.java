@@ -26,10 +26,19 @@ public class TripDto {
 
         @Min(500000)
         private long budgetPerPerson;
+        private Long budgetTotal;
+        private String budgetMode = "PER_PERSON";
+        @Min(1) @Max(30)
+        private Integer travelerCount = 1;
 
         private String style = "RELAXING";
         private String groupType = "FRIENDS";
         private String transport = "MIXED";
+        private String outboundTransport = "MIXED";
+        private String localTransport = "MIXED";
+        private Boolean destinationSuggested = false;
+        private String mustVisit;
+        private String avoid;
         private String notes;
     }
 
@@ -42,9 +51,17 @@ public class TripDto {
         private String startDate;
         private String endDate;
         private long budgetPerPerson;
+        private Long budgetTotal;
+        private String budgetMode;
+        private Integer travelerCount;
         private String style;
         private String groupType;
         private String transport;
+        private String outboundTransport;
+        private String localTransport;
+        private Boolean destinationSuggested;
+        private String mustVisit;
+        private String avoid;
         private String status;
         private boolean isPublic;
         private String shareCode;
@@ -62,9 +79,17 @@ public class TripDto {
             r.setStartDate(trip.getStartDate() != null ? trip.getStartDate().toString() : null);
             r.setEndDate(trip.getEndDate() != null ? trip.getEndDate().toString() : null);
             r.setBudgetPerPerson(trip.getBudgetPerPerson());
+            r.setBudgetTotal(trip.getBudgetTotal());
+            r.setBudgetMode(trip.getBudgetMode().name());
+            r.setTravelerCount(trip.getTravelerCount());
             r.setStyle(trip.getStyle().name());
             r.setGroupType(trip.getGroupType().name());
             r.setTransport(trip.getTransport().name());
+            r.setOutboundTransport(trip.getOutboundTransport().name());
+            r.setLocalTransport(trip.getLocalTransport().name());
+            r.setDestinationSuggested(trip.getDestinationSuggested());
+            r.setMustVisit(trip.getMustVisit());
+            r.setAvoid(trip.getAvoid());
             r.setStatus(trip.getStatus().name());
             r.setPublic(trip.getIsPublic());
             r.setShareCode(trip.getShareCode());
@@ -95,6 +120,8 @@ public class TripDto {
         private double rating;
         private Double latitude;
         private Double longitude;
+        private Long placeId;
+        private String googlePlaceId;
         private int sortOrder;
 
         public static ActivityResponse from(Activity a) {
@@ -110,6 +137,8 @@ public class TripDto {
             r.setRating(a.getRating() != null ? a.getRating() : 0);
             r.setLatitude(a.getLatitude());
             r.setLongitude(a.getLongitude());
+            r.setPlaceId(a.getPlace() != null ? a.getPlace().getId() : null);
+            r.setGooglePlaceId(a.getGooglePlaceId());
             r.setSortOrder(a.getSortOrder());
             return r;
         }
@@ -145,9 +174,17 @@ public class TripDto {
         private LocalDate endDate;
         private int days;
         private long budgetPerPerson;
+        private Long budgetTotal;
+        private String budgetMode;
+        private Integer travelerCount;
         private String style;
         private String groupType;
         private String transport;
+        private String outboundTransport;
+        private String localTransport;
+        private Boolean destinationSuggested;
+        private String mustVisit;
+        private String avoid;
         private String notes;
     }
 }

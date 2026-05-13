@@ -40,6 +40,10 @@ app:
       api-key: ${OPENAI_API_KEY:}
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:3000,https://vivuplan.vn}
+  admin:
+    bootstrap-email: ${ADMIN_BOOTSTRAP_EMAIL:}
+  data-initializer:
+    enabled: ${DATA_INITIALIZER_ENABLED:true}
 
 logging:
   level:

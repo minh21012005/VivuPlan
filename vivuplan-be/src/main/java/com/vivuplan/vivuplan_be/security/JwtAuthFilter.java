@@ -33,10 +33,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             try {
                 Long userId = jwtUtil.getUserId(token);
                 String email = jwtUtil.getEmail(token);
+                List<SimpleGrantedAuthority> authorities = jwtUtil.getRoles(token).stream()
+                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                        .toList();
 
                 var auth = new UsernamePasswordAuthenticationToken(
                         userId, null,
-                        List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                        authorities
                 );
                 auth.setDetails(email);
                 SecurityContextHolder.getContext().setAuthentication(auth);

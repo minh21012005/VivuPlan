@@ -11,7 +11,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "trips")
+@Table(
+        name = "trips",
+        indexes = {
+                @Index(name = "idx_trips_user_created", columnList = "user_id, created_at"),
+                @Index(name = "idx_trips_public_views", columnList = "is_public, view_count"),
+                @Index(name = "idx_trips_share_code", columnList = "share_code"),
+                @Index(name = "idx_trips_destination", columnList = "destination"),
+                @Index(name = "idx_trips_start_date", columnList = "start_date")
+        }
+)
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Trip {
 
@@ -23,10 +32,10 @@ public class Trip {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 160)
     private String destination;
 
-    @Column
+    @Column(length = 160)
     private String departure;
 
     @Column(nullable = false)
@@ -41,6 +50,18 @@ public class Trip {
     @Column(nullable = false)
     private Long budgetPerPerson;  // VND
 
+    @Column
+    private Long budgetTotal;       // VND, when user inputs total group budget
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private BudgetMode budgetMode = BudgetMode.PER_PERSON;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer travelerCount = 1;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
@@ -54,7 +75,27 @@ public class Trip {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private TransportMode transport = TransportMode.MOTORBIKE;
+    private TransportMode transport = TransportMode.MIXED;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private TransportMode outboundTransport = TransportMode.MIXED;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private TransportMode localTransport = TransportMode.MIXED;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean destinationSuggested = false;
+
+    @Column(columnDefinition = "TEXT")
+    private String mustVisit;
+
+    @Column(columnDefinition = "TEXT")
+    private String avoid;
 
     @Column(columnDefinition = "TEXT")
     private String notes;
@@ -68,14 +109,15 @@ public class Trip {
     @Builder.Default
     private Boolean isPublic = false;
 
-    @Column
+    @Column(unique = true, length = 16)
     private String shareCode;
 
     @Column(nullable = false)
     @Builder.Default
     private Integer viewCount = 0;
 
-    @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @OrderBy("dayNumber ASC")
     @Builder.Default
     private List<ItineraryDay> itineraryDays = new ArrayList<>();
 
@@ -88,6 +130,7 @@ public class Trip {
 
     public enum TravelStyle { ADVENTURE, RELAXING, CULTURAL, NIGHTLIFE, FOODIE }
     public enum GroupType   { SOLO, COUPLE, FRIENDS, FAMILY }
+    public enum BudgetMode { PER_PERSON, TOTAL }
     public enum TransportMode { MOTORBIKE, CAR, BUS, PLANE, TRAIN, WALKING, MIXED }
     public enum TripStatus  { DRAFT, PLANNED, COMPLETED }
 }
