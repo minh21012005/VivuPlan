@@ -5,13 +5,13 @@ import Navbar from "@/components/layout/Navbar";
 import { tripApi } from "@/lib/api";
 import {
   MapPin, Clock, Wallet, Users, Car, Sparkles,
-  Mountain, Waves, Coffee, Moon, ArrowRight, ChevronDown, Zap
+  Mountain, Waves, Coffee, Moon, ArrowRight, Zap
 } from "lucide-react";
 
 const popular = ["Đà Lạt", "Hạ Long", "Quy Nhơn", "Đà Nẵng", "Phú Quốc", "Sapa", "Nha Trang", "Hội An"];
 
 const styles = [
-  { id: "adventure", label: "Phiêu lưu", icon: Mountain, color: "#F97316", bg: "#FFF7ED" },
+  { id: "adventure", label: "Phiêu lưu", icon: Mountain, color: "#22C55E", bg: "#F0FDF4" },
   { id: "relaxing", label: "Nghỉ dưỡng", icon: Waves, color: "#0EA5E9", bg: "#F0F9FF" },
   { id: "cultural", label: "Văn hóa", icon: Coffee, color: "#8B5CF6", bg: "#F5F3FF" },
   { id: "nightlife", label: "Khám phá đêm", icon: Moon, color: "#EC4899", bg: "#FDF2F8" },
@@ -69,15 +69,24 @@ function PlanContent() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        background:
+          "linear-gradient(180deg, rgba(246,251,250,0.88) 0%, rgba(246,251,250,0.98) 330px, var(--bg) 100%), url(https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1800&q=85)",
+        backgroundSize: "cover",
+        backgroundPosition: "center top",
+        backgroundAttachment: "fixed",
+      }}
+    >
       <Navbar />
       <div style={{ paddingTop: "88px", paddingBottom: "80px" }}>
         <div className="container" style={{ maxWidth: "680px" }}>
 
           {/* Header */}
           <div style={{ textAlign: "center", marginBottom: "40px" }}>
-            <div className="badge badge-orange" style={{ display: "inline-flex", marginBottom: "14px" }}>
-              <Sparkles size={13} /> AI Lập kế hoạch
+            <div className="badge badge-teal" style={{ display: "inline-flex", marginBottom: "14px" }}>
+              <Sparkles size={13} /> AI lập kế hoạch
             </div>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(28px,4vw,40px)", fontWeight: 800, color: "var(--text)", marginBottom: "10px" }}>
               Kế hoạch chuyến đi của bạn
@@ -99,7 +108,7 @@ function PlanContent() {
                       background: done ? "#10B981" : active ? "var(--primary)" : "var(--surface)",
                       color: done || active ? "white" : "var(--text-4)",
                       border: `2px solid ${done ? "#10B981" : active ? "var(--primary)" : "var(--border)"}`,
-                      boxShadow: active ? "0 0 0 4px rgba(249,115,22,0.15)" : "none",
+                      boxShadow: active ? "0 0 0 4px rgba(15,159,156,0.15)" : "none",
                     }}>{done ? "✓" : s}</div>
                     <span style={{ fontSize: "11px", fontWeight: 500, color: active ? "var(--primary)" : "var(--text-4)", whiteSpace: "nowrap" }}>{label}</span>
                   </div>

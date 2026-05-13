@@ -19,11 +19,13 @@ export function useAuth() {
 
   const setToken = useCallback((token: string, user: User) => {
     localStorage.setItem("vp_token", token);
+    localStorage.setItem("vp_user", JSON.stringify(user));
     setState({ user, token, loading: false, error: null });
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem("vp_token");
+    localStorage.removeItem("vp_user");
     setState({ user: null, token: null, loading: false, error: null });
     window.location.href = "/";
   }, []);
@@ -62,18 +64,22 @@ export function useAuth() {
 
   // On mount: restore session from localStorage
   useEffect(() => {
-    const token = localStorage.getItem("vp_token");
-    if (!token) {
-      setState((s) => ({ ...s, loading: false }));
-      return;
-    }
-    authApi
-      .me()
-      .then((user) => setState({ user, token, loading: false, error: null }))
-      .catch(() => {
-        localStorage.removeItem("vp_token");
-        setState({ user: null, token: null, loading: false, error: null });
-      });
+    const timer = window.setTimeout(() => {
+      const token = localStorage.getItem("vp_token");
+      if (!token) {
+        setState((s) => ({ ...s, loading: false }));
+        return;
+      }
+      authApi
+        .me()
+        .then((user) => setState({ user, token, loading: false, error: null }))
+        .catch(() => {
+          localStorage.removeItem("vp_token");
+          localStorage.removeItem("vp_user");
+          setState({ user: null, token: null, loading: false, error: null });
+        });
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   return {

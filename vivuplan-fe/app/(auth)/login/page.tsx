@@ -33,11 +33,11 @@ export default function LoginPage() {
     <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex" }}>
       {/* Left panel – decorative */}
       <div className="hidden lg:flex" style={{
-        width: "44%", background: "linear-gradient(145deg, #FFF7ED 0%, #FEF3C7 50%, #EFF6FF 100%)",
+        width: "44%", background: "linear-gradient(145deg, #E6FFFB 0%, #E0F2FE 50%, #F0FDF4 100%)",
         flexDirection: "column", justifyContent: "center", alignItems: "center",
         padding: "60px", borderRight: "1px solid var(--border)", position: "relative", overflow: "hidden",
       }}>
-        <div style={{ position: "absolute", top: -60, right: -60, width: 300, height: 300, borderRadius: "50%", background: "rgba(249,115,22,0.07)" }} />
+        <div style={{ position: "absolute", top: -60, right: -60, width: 300, height: 300, borderRadius: "50%", background: "rgba(15,159,156,0.08)" }} />
         <div style={{ position: "absolute", bottom: -40, left: -40, width: 200, height: 200, borderRadius: "50%", background: "rgba(14,165,233,0.07)" }} />
         <div style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: "360px" }}>
           <div style={{ fontSize: "80px", marginBottom: "24px" }}>🗺️</div>
@@ -49,7 +49,7 @@ export default function LoginPage() {
           </p>
           <div style={{ display: "flex", gap: "16px", marginTop: "32px", justifyContent: "center" }}>
             {["🌸 Đà Lạt", "⛵ Hạ Long", "🏖️ Quy Nhơn"].map((d) => (
-              <span key={d} className="badge badge-orange" style={{ fontSize: "12px" }}>{d}</span>
+              <span key={d} className="badge badge-teal" style={{ fontSize: "12px" }}>{d}</span>
             ))}
           </div>
         </div>
@@ -66,10 +66,10 @@ export default function LoginPage() {
               <ArrowLeft size={15} /> Trang chủ
             </Link>
             <Link href="/" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none" }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg,#F97316,#FB923C)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg,var(--primary),var(--secondary))", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <MapPin size={14} color="white" fill="white" />
               </div>
-              <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "16px", background: "linear-gradient(135deg,#F97316,#EA580C)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>VivuPlan</span>
+              <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "16px", background: "linear-gradient(135deg,var(--primary),var(--secondary))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>VivuPlan</span>
             </Link>
           </div>
 

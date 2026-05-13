@@ -1,19 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ["latin", "vietnamese"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-jakarta",
-  display: "swap",
-  weight: ["400", "500", "600", "700", "800"],
-});
 
 export const metadata: Metadata = {
   title: "VivuPlan – Lập kế hoạch du lịch thông minh bằng AI",
@@ -41,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={`${inter.variable} ${plusJakarta.variable} h-full`}>
+    <html lang="vi" className="h-full">
       <body className="min-h-full flex flex-col antialiased">{children}</body>
     </html>
   );

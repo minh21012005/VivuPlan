@@ -25,8 +25,8 @@ const plans = [
     price: "99.000",
     unit: "/ tháng",
     desc: "Dành cho người yêu du lịch thực sự",
-    color: "#F97316",
-    badgeClass: "badge-orange",
+    color: "#0F9F9C",
+    badgeClass: "badge-teal",
     features: [
       "Tạo không giới hạn lịch trình AI",
       "Tối ưu tuyến đường nâng cao",
@@ -66,9 +66,9 @@ export default function PricingPage() {
       <Navbar />
 
       {/* Hero */}
-      <section style={{ paddingTop: "96px", paddingBottom: "56px", background: "linear-gradient(135deg, #FFF7ED 0%, #F0F9FF 100%)", borderBottom: "1px solid var(--border)", textAlign: "center" }}>
+      <section style={{ paddingTop: "96px", paddingBottom: "56px", background: "linear-gradient(135deg, #E6FFFB 0%, #E0F2FE 100%)", borderBottom: "1px solid var(--border)", textAlign: "center" }}>
         <div className="container">
-          <div className="badge badge-orange" style={{ display: "inline-flex", marginBottom: "16px" }}>
+          <div className="badge badge-teal" style={{ display: "inline-flex", marginBottom: "16px" }}>
             <Star size={13} fill="currentColor" /> Bảng giá
           </div>
           <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(30px,4vw,48px)", fontWeight: 900, color: "var(--text)", marginBottom: "14px" }}>
@@ -89,13 +89,13 @@ export default function PricingPage() {
                 background: "var(--surface)", border: `2px solid ${plan.popular ? plan.color : "var(--border)"}`,
                 borderRadius: "var(--r-2xl)", padding: "32px 28px",
                 position: "relative",
-                boxShadow: plan.popular ? `0 12px 40px rgba(249,115,22,0.15)` : "var(--shadow-sm)",
+                boxShadow: plan.popular ? `0 12px 40px rgba(15,159,156,0.15)` : "var(--shadow-sm)",
                 transform: plan.popular ? "scale(1.03)" : "scale(1)",
               }}>
                 {plan.popular && (
                   <div style={{
                     position: "absolute", top: "-14px", left: "50%", transform: "translateX(-50%)",
-                    background: "linear-gradient(135deg, #F97316, #FB923C)", color: "white",
+                    background: "linear-gradient(135deg, var(--primary), var(--secondary))", color: "white",
                     fontSize: "12px", fontWeight: 700, padding: "4px 16px", borderRadius: "var(--r-full)",
                     whiteSpace: "nowrap",
                   }}>
@@ -140,7 +140,7 @@ export default function PricingPage() {
                       background: plan.popular ? plan.color : `${plan.color}12`,
                       color: plan.popular ? "white" : plan.color,
                       border: `2px solid ${plan.popular ? plan.color : `${plan.color}30`}`,
-                      boxShadow: plan.popular ? `0 4px 16px rgba(249,115,22,0.35)` : "none",
+                      boxShadow: plan.popular ? `0 4px 16px rgba(15,159,156,0.30)` : "none",
                       transition: "all 0.18s",
                     }}>
                     {plan.popular && <Zap size={15} />}

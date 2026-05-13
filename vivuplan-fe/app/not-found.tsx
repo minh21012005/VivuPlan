@@ -5,10 +5,10 @@ export default function NotFound() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", textAlign: "center" }}>
       <Link href="/" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", marginBottom: "48px" }}>
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#F97316,#FB923C)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(249,115,22,0.35)" }}>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,var(--primary),var(--secondary))", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(15,159,156,0.28)" }}>
           <MapPin size={17} color="white" fill="white" />
         </div>
-        <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "18px", background: "linear-gradient(135deg,#F97316,#EA580C)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>VivuPlan</span>
+        <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "18px", background: "linear-gradient(135deg,var(--primary),var(--secondary))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>VivuPlan</span>
       </Link>
 
       <div style={{ fontSize: "96px", fontFamily: "var(--font-heading)", fontWeight: 900, color: "var(--surface-3)", lineHeight: 1, marginBottom: "8px" }}>404</div>

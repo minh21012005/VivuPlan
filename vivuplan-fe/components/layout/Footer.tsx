@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin, Globe, Camera, MessageCircle, Play, Heart } from "lucide-react";
+import { Compass, Globe, Camera, MessageCircle, Play, Heart } from "lucide-react";
 
 const footerLinks = {
   "Sản phẩm": [
@@ -47,16 +47,16 @@ export default function Footer() {
             <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "10px", textDecoration: "none", marginBottom: "20px" }}>
               <div style={{
                 width: 36, height: 36, borderRadius: 10,
-                background: "linear-gradient(135deg, #F97316, #FB923C)",
+                background: "linear-gradient(135deg, var(--primary), var(--secondary))",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: "0 4px 12px rgba(249,115,22,0.25)",
+                boxShadow: "0 4px 12px rgba(15,159,156,0.22)",
                 flexShrink: 0,
               }}>
-                <MapPin size={17} color="white" fill="white" />
+                <Compass size={17} color="white" />
               </div>
               <span style={{
                 fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "20px",
-                background: "linear-gradient(135deg, #F97316, #EA580C)",
+                background: "linear-gradient(135deg, var(--primary), var(--secondary))",
                 WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
               }}>
                 VivuPlan
@@ -141,7 +141,7 @@ export default function Footer() {
 
           <p style={{ fontSize: "13px", color: "var(--text-4)", display: "flex", alignItems: "center", gap: "5px" }}>
             Tạo ra với{" "}
-            <Heart size={12} fill="#F97316" color="#F97316" />
+            <Heart size={12} fill="var(--primary)" color="var(--primary)" />
             {" "}tại Việt Nam 🇻🇳
           </p>
         </div>

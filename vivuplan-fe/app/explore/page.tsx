@@ -1,145 +1,201 @@
 "use client";
-import { useState } from "react";
+
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { Search, MapPin, Sparkles, Star, Clock, ArrowRight, Filter } from "lucide-react";
+import { ArrowRight, Clock, Filter, MapPin, Search, Sparkles, Star } from "lucide-react";
+
+const heroImage = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1800&q=85";
 
 const regions = ["Tất cả", "Miền Bắc", "Miền Trung", "Miền Nam", "Tây Nguyên"];
 
 const destinations = [
-  { name: "Đà Lạt", region: "Tây Nguyên", emoji: "🌸", tag: "Thành phố hoa", days: "3–5 ngày", rating: 4.9, trips: 8420, desc: "Thành phố mộng mơ với khí hậu mát mẻ quanh năm, thác nước và vườn hoa tuyệt đẹp." },
-  { name: "Hạ Long", region: "Miền Bắc", emoji: "⛵", tag: "Kỳ quan thế giới", days: "2–4 ngày", rating: 4.8, trips: 12300, desc: "Vịnh Hạ Long hùng vĩ với hàng nghìn đảo đá vôi, hang động và làng chài nổi." },
-  { name: "Hội An", region: "Miền Trung", emoji: "🏮", tag: "Phố cổ đèn lồng", days: "2–3 ngày", rating: 4.9, trips: 9870, desc: "Phố cổ Hội An với kiến trúc cổ kính, đèn lồng lung linh và ẩm thực phong phú." },
-  { name: "Phú Quốc", region: "Miền Nam", emoji: "🌴", tag: "Đảo ngọc", days: "3–5 ngày", rating: 4.7, trips: 11200, desc: "Đảo ngọc với bãi biển trắng mịn, nước biển trong xanh và hải sản tươi ngon." },
-  { name: "Sapa", region: "Miền Bắc", emoji: "⛰️", tag: "Mây núi hùng vĩ", days: "3–4 ngày", rating: 4.8, trips: 7650, desc: "Thị trấn giữa mây với ruộng bậc thang hùng vĩ, văn hóa dân tộc độc đáo." },
-  { name: "Nha Trang", region: "Miền Trung", emoji: "🐠", tag: "Thiên đường biển", days: "3–5 ngày", rating: 4.6, trips: 10500, desc: "Thành phố biển sôi động với bãi biển dài, lặn ngắm san hô và ẩm thực biển." },
-  { name: "Đà Nẵng", region: "Miền Trung", emoji: "🌉", tag: "Thành phố đáng sống", days: "3–4 ngày", rating: 4.8, trips: 13400, desc: "Thành phố hiện đại với cầu Rồng, Bà Nà Hills và bãi biển Mỹ Khê tuyệt vời." },
-  { name: "Huế", region: "Miền Trung", emoji: "👑", tag: "Cố đô lịch sử", days: "2–3 ngày", rating: 4.7, trips: 6800, desc: "Cố đô với Đại nội, lăng tẩm hoàng gia và ẩm thực cung đình độc đáo." },
-  { name: "Quy Nhơn", region: "Miền Trung", emoji: "🏖️", tag: "Viên ngọc ẩn", days: "3–4 ngày", rating: 4.9, trips: 5300, desc: "Thành phố biển yên bình với bãi biển hoang sơ, tháp Chàm cổ kính." },
-  { name: "Cần Thơ", region: "Miền Nam", emoji: "🚤", tag: "Miền Tây sông nước", days: "2–3 ngày", rating: 4.6, trips: 4200, desc: "Thủ phủ miền Tây với chợ nổi Cái Răng, vườn trái cây và sông nước hữu tình." },
+  {
+    name: "Đà Lạt",
+    region: "Tây Nguyên",
+    tag: "Thành phố hoa",
+    days: "3-5 ngày",
+    rating: 4.9,
+    trips: 8420,
+    image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80",
+    desc: "Khí hậu mát, rừng thông, cà phê view đồi và những cung đường nhẹ nhàng cho nhóm bạn.",
+  },
+  {
+    name: "Hạ Long",
+    region: "Miền Bắc",
+    tag: "Kỳ quan biển đảo",
+    days: "2-4 ngày",
+    rating: 4.8,
+    trips: 12300,
+    image: "https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=900&q=80",
+    desc: "Vịnh biển, du thuyền, hang động và lịch trình phù hợp cho gia đình hoặc cặp đôi.",
+  },
+  {
+    name: "Hội An",
+    region: "Miền Trung",
+    tag: "Phố cổ đèn lồng",
+    days: "2-3 ngày",
+    rating: 4.9,
+    trips: 9870,
+    image: "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=900&q=80",
+    desc: "Phố cổ, ẩm thực địa phương, biển An Bàng và nhịp đi bộ thư thái.",
+  },
+  {
+    name: "Phú Quốc",
+    region: "Miền Nam",
+    tag: "Đảo ngọc",
+    days: "3-5 ngày",
+    rating: 4.7,
+    trips: 11200,
+    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80",
+    desc: "Biển xanh, hoàng hôn, hải sản và các resort phù hợp nghỉ dưỡng.",
+  },
+  {
+    name: "Sapa",
+    region: "Miền Bắc",
+    tag: "Mây núi Tây Bắc",
+    days: "3-4 ngày",
+    rating: 4.8,
+    trips: 7650,
+    image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80",
+    desc: "Ruộng bậc thang, bản làng, trekking nhẹ và trải nghiệm khí hậu vùng cao.",
+  },
+  {
+    name: "Nha Trang",
+    region: "Miền Trung",
+    tag: "Thiên đường biển",
+    days: "3-5 ngày",
+    rating: 4.6,
+    trips: 10500,
+    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80",
+    desc: "Bãi biển dài, đảo gần bờ, hải sản và các hoạt động biển dễ sắp lịch.",
+  },
+  {
+    name: "Đà Nẵng",
+    region: "Miền Trung",
+    tag: "Thành phố biển",
+    days: "3-4 ngày",
+    rating: 4.8,
+    trips: 13400,
+    image: "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=900&q=80",
+    desc: "Biển Mỹ Khê, Sơn Trà, Bà Nà và lịch trình dễ kết hợp Hội An.",
+  },
+  {
+    name: "Quy Nhơn",
+    region: "Miền Trung",
+    tag: "Biển yên bình",
+    days: "3-4 ngày",
+    rating: 4.9,
+    trips: 5300,
+    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80",
+    desc: "Kỳ Co, Eo Gió, tháp Chăm và nhịp đi biển thoải mái hơn các điểm quá đông.",
+  },
 ];
-
-const sorts = ["Phổ biến nhất", "Đánh giá cao nhất", "Chuyến đi nhiều nhất"];
 
 export default function ExplorePage() {
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState("Tất cả");
-  const [sort, setSort] = useState("Phổ biến nhất");
+  const [sort, setSort] = useState("popular");
 
-  const filtered = destinations
-    .filter((d) => (region === "Tất cả" || d.region === region) && (search === "" || d.name.toLowerCase().includes(search.toLowerCase()) || d.desc.toLowerCase().includes(search.toLowerCase())))
-    .sort((a, b) => sort === "Đánh giá cao nhất" ? b.rating - a.rating : sort === "Chuyến đi nhiều nhất" ? b.trips - a.trips : b.trips - a.trips);
+  const filtered = useMemo(() => {
+    return destinations
+      .filter((d) => {
+        const matchRegion = region === "Tất cả" || d.region === region;
+        const keyword = search.trim().toLowerCase();
+        const matchSearch = !keyword || `${d.name} ${d.desc} ${d.tag}`.toLowerCase().includes(keyword);
+        return matchRegion && matchSearch;
+      })
+      .sort((a, b) => (sort === "rating" ? b.rating - a.rating : b.trips - a.trips));
+  }, [region, search, sort]);
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
       <Navbar />
 
-      {/* Hero */}
-      <section style={{ paddingTop: "96px", paddingBottom: "48px", background: "linear-gradient(135deg, #FFF7ED 0%, #F0F9FF 100%)", borderBottom: "1px solid var(--border)" }}>
-        <div className="container" style={{ textAlign: "center" }}>
-          <div className="badge badge-blue" style={{ display: "inline-flex", marginBottom: "16px" }}>
-            <MapPin size={13} /> Khám phá Việt Nam
-          </div>
-          <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(28px,4vw,44px)", fontWeight: 800, color: "var(--text)", marginBottom: "12px" }}>
-            Điểm đến <span className="gradient-text">tuyệt vời</span> đang chờ bạn
-          </h1>
-          <p style={{ fontSize: "16px", color: "var(--text-3)", marginBottom: "32px", maxWidth: "480px", margin: "0 auto 32px" }}>
-            Khám phá hơn 200 điểm đến trên khắp Việt Nam và tạo lịch trình AI ngay lập tức
-          </p>
-
-          {/* Search bar */}
-          <div style={{ maxWidth: "520px", margin: "0 auto", position: "relative" }}>
-            <Search size={17} style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--text-4)" }} />
-            <input id="input-search" type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm điểm đến..." className="input" style={{ paddingLeft: "44px", paddingRight: "16px", fontSize: "15px", boxShadow: "var(--shadow-md)" }} />
+      <section
+        style={{
+          paddingTop: 64,
+          backgroundImage: `linear-gradient(90deg, rgba(4,47,46,0.78), rgba(2,132,199,0.34)), url(${heroImage})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          color: "white",
+        }}
+      >
+        <div className="container" style={{ paddingTop: 72, paddingBottom: 72 }}>
+          <div style={{ maxWidth: 680 }}>
+            <div className="badge" style={{ background: "rgba(255,255,255,0.18)", color: "white", border: "1px solid rgba(255,255,255,0.28)", marginBottom: 16 }}>
+              <MapPin size={13} /> Khám phá Việt Nam
+            </div>
+            <h1 style={{ color: "white", fontSize: "clamp(34px, 5vw, 58px)", fontWeight: 900, marginBottom: 14 }}>
+              Chọn cảm hứng, VivuPlan lo phần lịch trình
+            </h1>
+            <p style={{ color: "rgba(255,255,255,0.86)", fontSize: 17, lineHeight: 1.75 }}>
+              Dành cho lúc bạn cần gợi ý điểm đến trước khi bắt đầu lập kế hoạch chi tiết.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* Filters */}
-      <section style={{ padding: "20px 0", background: "var(--surface)", borderBottom: "1px solid var(--border)", position: "sticky", top: "64px", zIndex: 40 }}>
-        <div className="container" style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-            {regions.map((r) => (
-              <button key={r} onClick={() => setRegion(r)}
-                style={{
-                  padding: "7px 16px", borderRadius: "var(--r-full)", fontSize: "13px", fontWeight: 500, cursor: "pointer",
-                  background: region === r ? "var(--primary)" : "var(--surface-2)",
-                  color: region === r ? "white" : "var(--text-3)",
-                  border: `1.5px solid ${region === r ? "var(--primary)" : "transparent"}`,
-                  boxShadow: region === r ? "var(--shadow-brand)" : "none",
-                  transition: "all 0.15s",
-                }}>
-                {r}
+      <section style={{ position: "sticky", top: 64, zIndex: 40, background: "rgba(255,255,255,0.94)", backdropFilter: "blur(14px)", borderBottom: "1px solid var(--border)" }}>
+        <div className="container" style={{ paddingTop: 16, paddingBottom: 16, display: "grid", gridTemplateColumns: "1fr auto", gap: 14, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ position: "relative", minWidth: 260, flex: "1 1 280px" }}>
+              <Search size={16} style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", color: "var(--primary)" }} />
+              <input className="input" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm Đà Lạt, biển, phố cổ..." style={{ paddingLeft: 38 }} />
+            </div>
+            {regions.map((item) => (
+              <button key={item} onClick={() => setRegion(item)} className={region === item ? "btn btn-primary btn-sm" : "btn btn-secondary btn-sm"}>
+                {item}
               </button>
             ))}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Filter size={14} style={{ color: "var(--text-4)" }} />
-            <select value={sort} onChange={(e) => setSort(e.target.value)} className="input" style={{ width: "auto", padding: "7px 12px", fontSize: "13px" }}>
-              {sorts.map((s) => <option key={s}>{s}</option>)}
+          <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Filter size={15} style={{ color: "var(--text-4)" }} />
+            <select className="input" value={sort} onChange={(e) => setSort(e.target.value)} style={{ width: 170, padding: "8px 12px" }}>
+              <option value="popular">Phổ biến nhất</option>
+              <option value="rating">Đánh giá cao</option>
             </select>
-          </div>
+          </label>
         </div>
       </section>
 
-      {/* Grid */}
-      <section style={{ padding: "40px 0 80px" }}>
+      <section style={{ padding: "40px 0 84px" }}>
         <div className="container">
-          <p style={{ fontSize: "13px", color: "var(--text-4)", marginBottom: "24px" }}>
-            Hiển thị <strong style={{ color: "var(--text-2)" }}>{filtered.length}</strong> điểm đến
+          <p style={{ color: "var(--text-3)", marginBottom: 22 }}>
+            Hiển thị <strong style={{ color: "var(--text)" }}>{filtered.length}</strong> điểm đến
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(1,1fr)", gap: "20px" }} className="sm:grid-cols-2 lg:grid-cols-3">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 22 }} className="destination-grid">
             {filtered.map((dest) => (
-              <div key={dest.name} className="card card-hover" style={{ overflow: "hidden" }}>
-                {/* Card header */}
-                <div style={{ padding: "28px 24px 20px", background: "linear-gradient(135deg, #FFF7ED, #F0F9FF)" }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-                      <div style={{ width: 56, height: 56, borderRadius: "var(--r-lg)", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "32px", boxShadow: "var(--shadow-sm)" }}>
-                        {dest.emoji}
-                      </div>
-                      <div>
-                        <h3 style={{ fontSize: "17px", fontFamily: "var(--font-heading)", color: "var(--text)", marginBottom: "3px" }}>{dest.name}</h3>
-                        <span className="badge badge-orange" style={{ fontSize: "11px" }}>{dest.tag}</span>
-                      </div>
+              <article key={dest.name} className="card card-hover" style={{ overflow: "hidden" }}>
+                <div style={{ height: 220, backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.05), rgba(0,0,0,0.35)), url(${dest.image})`, backgroundSize: "cover", backgroundPosition: "center", position: "relative" }}>
+                  <span className="badge" style={{ position: "absolute", left: 14, top: 14, background: "rgba(255,255,255,0.92)", color: "var(--primary)" }}>
+                    {dest.region}
+                  </span>
+                </div>
+                <div style={{ padding: 20 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
+                    <div>
+                      <h2 style={{ fontSize: 20, marginBottom: 4 }}>{dest.name}</h2>
+                      <span className="badge badge-teal">{dest.tag}</span>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
-                      <Star size={13} fill="#F97316" color="#F97316" />
-                      <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--text)" }}>{dest.rating}</span>
-                    </div>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontWeight: 800, color: "var(--text)" }}>
+                      <Star size={14} fill="#FBBF24" color="#FBBF24" /> {dest.rating}
+                    </span>
+                  </div>
+                  <p style={{ color: "var(--text-3)", fontSize: 14, lineHeight: 1.7, minHeight: 72 }}>{dest.desc}</p>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 18 }}>
+                    <span style={{ color: "var(--text-4)", fontSize: 13, display: "flex", alignItems: "center", gap: 5 }}>
+                      <Clock size={13} style={{ color: "var(--primary)" }} /> {dest.days}
+                    </span>
+                    <Link href={`/plan?destination=${encodeURIComponent(dest.name)}`} className="btn btn-primary btn-sm">
+                      <Sparkles size={13} /> Lên kế hoạch <ArrowRight size={13} />
+                    </Link>
                   </div>
                 </div>
-
-                {/* Card body */}
-                <div style={{ padding: "16px 24px 20px" }}>
-                  <p style={{ fontSize: "13px", color: "var(--text-3)", lineHeight: "1.65", marginBottom: "16px" }}>{dest.desc}</p>
-                  <div style={{ display: "flex", gap: "16px", marginBottom: "18px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "var(--text-4)" }}>
-                      <Clock size={12} style={{ color: "var(--primary)" }} /> {dest.days}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "var(--text-4)" }}>
-                      <Sparkles size={12} style={{ color: "var(--primary)" }} /> {dest.trips.toLocaleString()} lịch trình
-                    </div>
-                    <div style={{ fontSize: "12px", color: "var(--text-4)" }}>📍 {dest.region}</div>
-                  </div>
-                  <Link href={`/plan?destination=${encodeURIComponent(dest.name)}`}
-                    className="btn btn-primary btn-sm" style={{ width: "100%", justifyContent: "center", textDecoration: "none" }}>
-                    <Sparkles size={13} /> Lên kế hoạch ngay <ArrowRight size={13} />
-                  </Link>
-                </div>
-              </div>
+              </article>
             ))}
           </div>
-
-          {filtered.length === 0 && (
-            <div style={{ textAlign: "center", padding: "80px 0" }}>
-              <div style={{ fontSize: "60px", marginBottom: "16px" }}>🔍</div>
-              <h3 style={{ fontSize: "18px", color: "var(--text)", marginBottom: "8px" }}>Không tìm thấy điểm đến</h3>
-              <p style={{ fontSize: "14px", color: "var(--text-3)" }}>Thử tìm kiếm với từ khóa khác</p>
-            </div>
-          )}
         </div>
       </section>
 

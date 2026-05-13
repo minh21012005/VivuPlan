@@ -43,7 +43,7 @@ export default function RegisterPage() {
     <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex" }}>
       {/* Left panel */}
       <div className="hidden lg:flex" style={{
-        width: "44%", background: "linear-gradient(145deg, #F0FDF4 0%, #EFF6FF 50%, #FFF7ED 100%)",
+        width: "44%", background: "linear-gradient(145deg, #F0FDF4 0%, #E0F2FE 50%, #E6FFFB 100%)",
         flexDirection: "column", justifyContent: "center", padding: "60px",
         borderRight: "1px solid var(--border)", position: "relative", overflow: "hidden",
       }}>
@@ -77,10 +77,10 @@ export default function RegisterPage() {
               <ArrowLeft size={15} /> Trang chủ
             </Link>
             <Link href="/" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none" }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg,#F97316,#FB923C)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg,var(--primary),var(--secondary))", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <MapPin size={14} color="white" fill="white" />
               </div>
-              <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "16px", background: "linear-gradient(135deg,#F97316,#EA580C)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>VivuPlan</span>
+              <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "16px", background: "linear-gradient(135deg,var(--primary),var(--secondary))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>VivuPlan</span>
             </Link>
           </div>
 

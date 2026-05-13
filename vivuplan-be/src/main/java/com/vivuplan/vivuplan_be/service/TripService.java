@@ -48,9 +48,9 @@ public class TripService {
                 .destination(req.getDestination())
                 .days(req.getDays())
                 .budgetPerPerson(req.getBudgetPerPerson())
-                .style(Trip.TravelStyle.valueOf(req.getStyle() != null ? req.getStyle() : "RELAXING"))
-                .groupType(Trip.GroupType.valueOf(req.getGroupType() != null ? req.getGroupType() : "FRIENDS"))
-                .transport(Trip.TransportMode.valueOf(req.getTransport() != null ? req.getTransport() : "MOTORBIKE"))
+                .style(parseEnum(Trip.TravelStyle.class, req.getStyle(), Trip.TravelStyle.RELAXING))
+                .groupType(parseEnum(Trip.GroupType.class, req.getGroupType(), Trip.GroupType.FRIENDS))
+                .transport(parseEnum(Trip.TransportMode.class, req.getTransport(), Trip.TransportMode.MOTORBIKE))
                 .notes(req.getNotes())
                 .status(Trip.TripStatus.DRAFT)
                 .shareCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
@@ -73,7 +73,7 @@ public class TripService {
                     act.setItineraryDay(day);
                     act.setName(ar.getName());
                     act.setTime(ar.getTime());
-                    act.setType(Activity.ActivityType.valueOf(ar.getType()));
+                    act.setType(parseEnum(Activity.ActivityType.class, ar.getType(), Activity.ActivityType.ATTRACTION));
                     act.setLocation(ar.getLocation());
                     act.setDuration(ar.getDuration());
                     act.setEstimatedCost(ar.getEstimatedCost());
@@ -113,12 +113,12 @@ public class TripService {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("Lịch trình không tồn tại"));
 
-        if (!trip.getIsPublic() && !trip.getUser().getId().equals(userId)) {
+        if (!trip.getIsPublic() && (userId == null || !trip.getUser().getId().equals(userId))) {
             throw new RuntimeException("Bạn không có quyền xem lịch trình này");
         }
 
         // Increment view count for public trips
-        if (trip.getIsPublic() && !trip.getUser().getId().equals(userId)) {
+        if (trip.getIsPublic() && (userId == null || !trip.getUser().getId().equals(userId))) {
             trip.setViewCount(trip.getViewCount() + 1);
             tripRepository.save(trip);
         }
@@ -161,6 +161,7 @@ public class TripService {
         tripRepository.save(trip);
         TripDto.TripResponse r = TripDto.TripResponse.from(trip);
         r.setSchedule(mapDays(trip.getItineraryDays()));
+        r.setBudget(calculateBudget(trip, r.getSchedule()));
         return r;
     }
 
@@ -172,6 +173,15 @@ public class TripService {
         if (!trip.getUser().getId().equals(userId))
             throw new RuntimeException("Không có quyền thực hiện thao tác này");
         return trip;
+    }
+
+    private <E extends Enum<E>> E parseEnum(Class<E> enumType, String value, E fallback) {
+        if (value == null || value.isBlank()) return fallback;
+        try {
+            return Enum.valueOf(enumType, value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return fallback;
+        }
     }
 
     private List<TripDto.DayResponse> mapDays(List<ItineraryDay> days) {

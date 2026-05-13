@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { MapPin, Menu, X, ChevronDown, Compass, LayoutDashboard, LogOut, LogIn, Sparkles } from "lucide-react";
+import { Compass, Menu, X, ChevronDown, LayoutDashboard, LogOut, LogIn, Sparkles } from "lucide-react";
 
 const links = [
   { label: "Lập kế hoạch", href: "/plan" },
@@ -25,10 +25,13 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
     try {
       const s = localStorage.getItem("vp_user");
       if (s) setUser(JSON.parse(s));
     } catch { /* */ }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [pathname]);
 
   const logout = () => {
@@ -56,15 +59,15 @@ export default function Navbar() {
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: "9px", textDecoration: "none", flexShrink: 0 }}>
             <div style={{
               width: 34, height: 34, borderRadius: 10,
-              background: "linear-gradient(135deg, #F97316, #FB923C)",
+              background: "linear-gradient(135deg, var(--primary), var(--secondary))",
               display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 2px 8px rgba(249,115,22,0.35)",
+              boxShadow: "0 2px 8px rgba(15,159,156,0.28)",
             }}>
-              <MapPin size={16} color="white" fill="white" />
+              <Compass size={17} color="white" />
             </div>
             <span style={{
               fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "18px",
-              background: "linear-gradient(135deg, #F97316, #EA580C)",
+              background: "linear-gradient(135deg, var(--primary), var(--secondary))",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
             }}>VivuPlan</span>
           </Link>
@@ -101,7 +104,7 @@ export default function Navbar() {
                 >
                   <div style={{
                     width: 26, height: 26, borderRadius: "50%",
-                    background: "linear-gradient(135deg, #F97316, #FB923C)",
+                    background: "linear-gradient(135deg, var(--primary), var(--secondary))",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     color: "white", fontSize: "11px", fontWeight: 700,
                   }}>

@@ -1,292 +1,369 @@
 "use client";
-import { useState } from "react";
+
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
+import { tripApi, type ActivityResponse, type TripResponse } from "@/lib/api";
 import {
-  MapPin, Clock, Wallet, Share2, Download, ChevronDown, ChevronUp,
-  Star, Navigation, Coffee, Utensils, Camera, RefreshCw, Plus, ExternalLink
+  AlertCircle,
+  Camera,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Coffee,
+  Copy,
+  ExternalLink,
+  MapPin,
+  Navigation,
+  RefreshCw,
+  Share2,
+  Star,
+  Utensils,
+  Wallet,
 } from "lucide-react";
 
-const mockItinerary = {
-  id: "demo-1",
-  destination: "Đà Lạt",
-  days: 3,
-  budget: { total: 3_000_000, breakdown: { transport: 600_000, accommodation: 900_000, food: 750_000, activities: 750_000 } },
-  style: "Nghỉ dưỡng + Khám phá",
-  group: "Nhóm bạn",
-  schedule: [
-    {
-      day: 1, title: "Ngày 1 – Khám phá trung tâm",
-      activities: [
-        { time: "07:00", name: "Ăn sáng Bánh Mì Đà Lạt", type: "food", location: "35 Phan Đình Phùng", duration: "45 phút", cost: 30_000, rating: 4.5, note: "Bánh mì nổi tiếng, ngon và rẻ" },
-        { time: "08:30", name: "Hồ Xuân Hương", type: "attraction", location: "Trung tâm thành phố", duration: "1 giờ", cost: 0, rating: 4.3, note: "Đi bộ quanh hồ, chụp ảnh" },
-        { time: "10:00", name: "Chợ Đà Lạt", type: "attraction", location: "Nguyễn Thị Minh Khai", duration: "1.5 giờ", cost: 50_000, rating: 4.2, note: "Mua đặc sản, thử đồ ăn vặt" },
-        { time: "12:00", name: "Cơm trưa Nhà hàng Tùng", type: "food", location: "6 Khu Hòa Bình", duration: "1 giờ", cost: 80_000, rating: 4.6, note: "Cơm gà nổi tiếng Đà Lạt" },
-        { time: "14:00", name: "Vườn hoa thành phố", type: "attraction", location: "Phù Đổng Thiên Vương", duration: "1.5 giờ", cost: 30_000, rating: 4.4, note: "Check-in đẹp, nhiều hoa" },
-        { time: "16:30", name: "Café Tùng", type: "cafe", location: "6 Khu Hòa Bình", duration: "1 giờ", cost: 40_000, rating: 4.7, note: "Cà phê cổ điển nổi tiếng nhất Đà Lạt" },
-        { time: "19:00", name: "Bún bò Huế Bà Tư", type: "food", location: "Trần Phú", duration: "45 phút", cost: 60_000, rating: 4.3, note: "Đặc sản miền Trung tại Đà Lạt" },
-        { time: "20:30", name: "Chợ đêm Đà Lạt", type: "attraction", location: "Nguyễn Thị Minh Khai", duration: "1.5 giờ", cost: 100_000, rating: 4.5, note: "Mua sắm, thử đồ ăn đêm" },
-      ],
-    },
-    {
-      day: 2, title: "Ngày 2 – Thiên nhiên & cà phê",
-      activities: [
-        { time: "05:30", name: "Ngắm bình minh Langbiang", type: "attraction", location: "Lạc Dương, 12km", duration: "2.5 giờ", cost: 50_000, rating: 4.8, note: "Đi sớm để bắt kịp bình minh" },
-        { time: "09:00", name: "Ăn sáng tại chân núi", type: "food", location: "Khu vực Langbiang", duration: "45 phút", cost: 40_000, rating: 4.0, note: "Cháo gà nóng hổi" },
-        { time: "10:30", name: "Datanla thác nước", type: "attraction", location: "Đường 3 tháng 2", duration: "2 giờ", cost: 80_000, rating: 4.5, note: "Cáp treo và xe trượt" },
-        { time: "13:00", name: "Lẩu gà lá é", type: "food", location: "Phan Chu Trinh", duration: "1 giờ", cost: 120_000, rating: 4.7, note: "Đặc sản không thể bỏ qua" },
-        { time: "15:00", name: "Cà phê Mê Linh – view đồi chè", type: "cafe", location: "Cầu Đất, 35km", duration: "2 giờ", cost: 60_000, rating: 4.9, note: "View đẹp nhất Đà Lạt, book trước" },
-        { time: "19:00", name: "Bánh tráng nướng", type: "food", location: "Hẻm 2 Phan Bội Châu", duration: "1 giờ", cost: 50_000, rating: 4.6, note: "Pizza Đà Lạt huyền thoại" },
-      ],
-    },
-    {
-      day: 3, title: "Ngày 3 – Làng hoa & về xuôi",
-      activities: [
-        { time: "07:30", name: "Làng hoa Vạn Thành", type: "attraction", location: "Thái Phiên", duration: "1.5 giờ", cost: 20_000, rating: 4.4, note: "Đẹp nhất buổi sáng sớm" },
-        { time: "09:30", name: "Bánh căn Đà Lạt", type: "food", location: "Nguyễn Công Trứ", duration: "45 phút", cost: 35_000, rating: 4.6, note: "Đặc sản buổi sáng" },
-        { time: "11:00", name: "Tu viện Domaine de Marie", type: "attraction", location: "Ngô Quyền", duration: "1 giờ", cost: 0, rating: 4.5, note: "Kiến trúc cổ kính, yên bình" },
-        { time: "12:30", name: "Cơm trưa + mua đặc sản về", type: "food", location: "Chợ Đà Lạt", duration: "1.5 giờ", cost: 100_000, rating: 4.4, note: "Mua atisô, mứt, trà" },
-        { time: "14:30", name: "Về nhà", type: "transport", location: "Bến xe Đà Lạt", duration: "", cost: 200_000, rating: 0, note: "Xe giường nằm" },
-      ],
-    },
-  ],
+const destinationImages: Record<string, string> = {
+  "Đà Lạt": "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1800&q=85",
+  "Hạ Long": "https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=1800&q=85",
+  "Hội An": "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=1800&q=85",
+  "Phú Quốc": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1800&q=85",
+  "Sapa": "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1800&q=85",
+  "Nha Trang": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1800&q=85",
+  "Đà Nẵng": "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=1800&q=85",
 };
 
 const typeConfig: Record<string, { icon: typeof Coffee; color: string; bg: string; label: string }> = {
-  food:       { icon: Utensils,   color: "#F97316", bg: "#FFF7ED", label: "Ăn uống" },
-  cafe:       { icon: Coffee,     color: "#0EA5E9", bg: "#F0F9FF", label: "Café" },
-  attraction: { icon: Camera,     color: "#8B5CF6", bg: "#F5F3FF", label: "Địa điểm" },
-  transport:  { icon: Navigation, color: "#10B981", bg: "#F0FDF4", label: "Di chuyển" },
+  FOOD: { icon: Utensils, color: "#0F9F9C", bg: "#E6FFFB", label: "Ăn uống" },
+  CAFE: { icon: Coffee, color: "#0284C7", bg: "#E0F2FE", label: "Cà phê" },
+  ATTRACTION: { icon: Camera, color: "#22C55E", bg: "#F0FDF4", label: "Địa điểm" },
+  ACTIVITY: { icon: Camera, color: "#22C55E", bg: "#F0FDF4", label: "Hoạt động" },
+  TRANSPORT: { icon: Navigation, color: "#6366F1", bg: "#EEF2FF", label: "Di chuyển" },
+  ACCOMMODATION: { icon: MapPin, color: "#A855F7", bg: "#FAF5FF", label: "Lưu trú" },
 };
 
-const fmtCost = (v: number) => v === 0 ? "Miễn phí" : v >= 1_000_000 ? `${(v/1_000_000).toFixed(1)}tr ₫` : `${(v/1_000).toFixed(0)}k ₫`;
+const fmtCost = (value: number) => {
+  if (!value) return "Miễn phí";
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}tr ₫`;
+  return `${Math.round(value / 1000)}k ₫`;
+};
+
+const styleLabel: Record<string, string> = {
+  ADVENTURE: "Phiêu lưu",
+  RELAXING: "Nghỉ dưỡng",
+  CULTURAL: "Văn hóa",
+  NIGHTLIFE: "Khám phá đêm",
+  FOODIE: "Ẩm thực",
+};
+
+const groupLabel: Record<string, string> = {
+  SOLO: "Một mình",
+  COUPLE: "Cặp đôi",
+  FRIENDS: "Nhóm bạn",
+  FAMILY: "Gia đình",
+};
 
 export default function ItineraryPage() {
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const [trip, setTrip] = useState<TripResponse | null>(null);
   const [activeDay, setActiveDay] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [showBudget, setShowBudget] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
 
-  const it = mockItinerary;
-  const day = it.schedule[activeDay];
-  const dayTotal = day.activities.reduce((s, a) => s + a.cost, 0);
-  const budgetPct = (v: number) => Math.min(100, Math.round((v / it.budget.total) * 100));
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadTrip() {
+      const id = params.id;
+      setLoading(true);
+      setError("");
+      try {
+        const data = await (/^\d+$/.test(id) ? tripApi.getTrip(id) : tripApi.getByShareCode(id));
+        if (cancelled) return;
+        setTrip(data);
+        setActiveDay(0);
+      } catch (e) {
+        if (cancelled) return;
+        if (!localStorage.getItem("vp_token")) {
+          router.push("/login");
+          return;
+        }
+        setError(e instanceof Error ? e.message : "Không thể tải lịch trình");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void loadTrip();
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id, router]);
+
+  const image = useMemo(() => {
+    if (!trip) return destinationImages["Hạ Long"];
+    return destinationImages[trip.destination] ?? destinationImages["Hạ Long"];
+  }, [trip]);
+
+  const day = trip?.schedule?.[activeDay];
+  const dayTotal = day?.activities?.reduce((sum, activity) => sum + activity.estimatedCost, 0) ?? 0;
+  const budget = trip?.budget;
+  const budgetRows = budget
+    ? [
+        ["Di chuyển", budget.transport],
+        ["Lưu trú", budget.accommodation],
+        ["Ăn uống", budget.food],
+        ["Tham quan", budget.activities],
+      ]
+    : [];
+
+  const copyShareLink = async () => {
+    if (!trip?.shareCode) return;
+    await navigator.clipboard.writeText(`${window.location.origin}/itinerary/${trip.shareCode}`);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1400);
+  };
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+        <Navbar />
+        <div style={{ minHeight: "70vh", display: "grid", placeItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--text-3)" }}>
+            <div className="spinner" /> Đang tải lịch trình...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !trip || !day) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+        <Navbar />
+        <div className="container" style={{ paddingTop: 120 }}>
+          <div className="card" style={{ padding: 32, textAlign: "center" }}>
+            <AlertCircle size={34} style={{ color: "#DC2626", marginBottom: 12 }} />
+            <h1 style={{ fontSize: 22, marginBottom: 8 }}>Không thể mở lịch trình</h1>
+            <p style={{ color: "var(--text-3)", marginBottom: 18 }}>{error || "Lịch trình không có dữ liệu hoạt động."}</p>
+            <button className="btn btn-primary" onClick={() => router.push("/dashboard")}>Quay về dashboard</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
       <Navbar />
 
-      {/* Hero banner */}
-      <div style={{ paddingTop: "64px", background: "linear-gradient(135deg, #FFF7ED 0%, #F0F9FF 100%)", borderBottom: "1px solid var(--border)" }}>
-        <div className="container" style={{ paddingTop: "36px", paddingBottom: "36px" }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "20px" }}>
+      <section
+        style={{
+          paddingTop: 64,
+          backgroundImage: `linear-gradient(90deg, rgba(4,47,46,0.84), rgba(4,47,46,0.28)), url(${image})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          color: "white",
+        }}
+      >
+        <div className="container" style={{ paddingTop: 54, paddingBottom: 42 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 20, alignItems: "end", flexWrap: "wrap" }}>
             <div>
-              <div className="badge badge-orange" style={{ display: "inline-flex", marginBottom: "12px" }}>🌸 {it.destination}</div>
-              <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(24px,4vw,36px)", fontWeight: 800, color: "var(--text)", marginBottom: "10px" }}>
-                Lịch trình {it.destination} {it.days} ngày
+              <div className="badge" style={{ background: "rgba(255,255,255,0.18)", color: "white", border: "1px solid rgba(255,255,255,0.3)", marginBottom: 14 }}>
+                <MapPin size={13} /> {trip.destination}
+              </div>
+              <h1 style={{ color: "white", fontSize: "clamp(30px, 5vw, 52px)", fontWeight: 900, marginBottom: 12 }}>
+                Lịch trình {trip.destination} {trip.days} ngày
               </h1>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-                {[
-                  { icon: Clock,    text: `${it.days}N${it.days-1}Đ` },
-                  { icon: Wallet,   text: fmtCost(it.budget.total) + "/người" },
-                  { icon: MapPin,   text: it.style },
-                ].map(({ icon: Icon, text }) => (
-                  <span key={text} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "14px", color: "var(--text-3)" }}>
-                    <Icon size={14} style={{ color: "var(--primary)" }} /> {text}
-                  </span>
-                ))}
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", color: "rgba(255,255,255,0.9)" }}>
+                <span>{trip.days} ngày {trip.days - 1} đêm</span>
+                <span>{fmtCost(trip.budgetPerPerson)} / người</span>
+                <span>{styleLabel[trip.style] ?? trip.style}</span>
+                <span>{groupLabel[trip.groupType] ?? trip.groupType}</span>
               </div>
             </div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button className="btn btn-secondary btn-sm"><Share2 size={14} /> Chia sẻ</button>
-              <button className="btn btn-secondary btn-sm"><Download size={14} /> Tải PDF</button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn btn-secondary btn-sm" onClick={copyShareLink}>
+                {copied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
+                {copied ? "Đã copy" : "Copy link"}
+              </button>
+              <button className="btn btn-secondary btn-sm" onClick={() => tripApi.toggleVisibility(trip.id).then(setTrip)}>
+                <Share2 size={14} /> {trip.isPublic ? "Đang công khai" : "Công khai"}
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Content */}
-      <div className="container" style={{ paddingTop: "32px", paddingBottom: "80px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px" }} className="lg:grid-cols-3">
-
-          {/* Main: timeline */}
-          <div style={{ gridColumn: "1 / -1" }} className="lg:col-span-2">
-
-            {/* Day tabs */}
-            <div style={{ display: "flex", gap: "8px", marginBottom: "20px", overflowX: "auto" }} className="no-scrollbar">
-              {it.schedule.map((s, i) => (
-                <button key={i} id={`btn-day-${i+1}`} onClick={() => setActiveDay(i)}
-                  style={{
-                    padding: "9px 20px", borderRadius: "var(--r-full)", fontSize: "13px", fontWeight: 600,
-                    whiteSpace: "nowrap", cursor: "pointer", flexShrink: 0,
-                    background: activeDay === i ? "var(--primary)" : "var(--surface)",
-                    color: activeDay === i ? "white" : "var(--text-3)",
-                    border: `1.5px solid ${activeDay === i ? "var(--primary)" : "var(--border)"}`,
-                    boxShadow: activeDay === i ? "var(--shadow-brand)" : "var(--shadow-xs)",
-                    transition: "all 0.15s",
-                  }}>
-                  Ngày {i + 1}
+      <main className="container" style={{ paddingTop: 30, paddingBottom: 80 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 320px", gap: 24 }} className="itinerary-grid">
+          <section>
+            <div style={{ display: "flex", gap: 8, marginBottom: 18, overflowX: "auto" }} className="no-scrollbar">
+              {trip.schedule?.map((item, index) => (
+                <button
+                  key={item.day}
+                  onClick={() => {
+                    setActiveDay(index);
+                    setExpanded(null);
+                  }}
+                  className={activeDay === index ? "btn btn-primary btn-sm" : "btn btn-secondary btn-sm"}
+                >
+                  Ngày {item.day}
                 </button>
               ))}
             </div>
 
-            {/* Day header */}
-            <div className="card" style={{ padding: "18px 20px", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div className="card" style={{ padding: 20, marginBottom: 18, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
               <div>
-                <h2 style={{ fontSize: "16px", fontWeight: 700, color: "var(--text)", marginBottom: "2px" }}>{day.title}</h2>
-                <p style={{ fontSize: "13px", color: "var(--text-3)" }}>{day.activities.length} hoạt động · Chi phí ~{fmtCost(dayTotal)}</p>
+                <h2 style={{ fontSize: 20, marginBottom: 4 }}>{day.title}</h2>
+                <p style={{ color: "var(--text-3)", fontSize: 14 }}>
+                  {day.activities.length} hoạt động · Chi phí trong ngày khoảng {fmtCost(dayTotal)}
+                </p>
               </div>
-              <button id="btn-regen-day" className="btn btn-secondary btn-sm">
-                <RefreshCw size={13} /> Tạo lại ngày này
+              <button className="btn btn-secondary btn-sm" title="Tính năng tái tạo từng ngày sẽ được nối API ở bước tiếp theo">
+                <RefreshCw size={13} /> Tạo lại ngày
               </button>
             </div>
 
-            {/* Activities timeline */}
-            <div style={{ position: "relative", paddingLeft: "0" }}>
-              {/* Vertical line */}
-              <div style={{ position: "absolute", left: "22px", top: "20px", bottom: "20px", width: "2px", background: "linear-gradient(to bottom, var(--primary), var(--border))", borderRadius: "99px" }} />
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {day.activities.map((act, idx) => {
-                  const cfg = typeConfig[act.type] ?? typeConfig["attraction"];
-                  const Icon = cfg.icon;
-                  const isExp = expanded === `${activeDay}-${idx}`;
-                  return (
-                    <div key={idx} style={{ display: "flex", gap: "16px", alignItems: "flex-start", paddingLeft: "8px" }}>
-                      {/* Timeline dot */}
-                      <div style={{
-                        width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
-                        background: cfg.bg, border: `2px solid ${cfg.color}`,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        zIndex: 1, marginTop: "10px",
-                      }}>
-                        <Icon size={13} style={{ color: cfg.color }} />
-                      </div>
-
-                      {/* Card */}
-                      <div className="card" style={{ flex: 1, overflow: "hidden", transition: "box-shadow 0.15s" }}
-                        onMouseEnter={(e) => e.currentTarget.style.boxShadow = "var(--shadow-md)"}
-                        onMouseLeave={(e) => e.currentTarget.style.boxShadow = "var(--shadow-sm)"}>
-                        <button onClick={() => setExpanded(isExp ? null : `${activeDay}-${idx}`)}
-                          style={{ width: "100%", padding: "14px 16px", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "12px", textAlign: "left" }}>
-                          {/* Time badge */}
-                          <span style={{ fontSize: "11px", fontWeight: 700, color: cfg.color, background: cfg.bg, padding: "3px 8px", borderRadius: "var(--r-full)", whiteSpace: "nowrap", flexShrink: 0 }}>
-                            {act.time}
-                          </span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <h3 style={{ fontSize: "14px", fontWeight: 700, color: "var(--text)", marginBottom: "3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{act.name}</h3>
-                            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                              <span style={{ fontSize: "12px", color: "var(--text-4)" }}>{act.duration}</span>
-                              <span style={{ fontSize: "12px", fontWeight: 600, color: act.cost === 0 ? "#10B981" : "var(--text-3)" }}>{fmtCost(act.cost)}</span>
-                              {act.rating > 0 && (
-                                <span style={{ display: "flex", alignItems: "center", gap: "3px", fontSize: "12px", color: "var(--text-4)" }}>
-                                  <Star size={10} fill="#F97316" color="#F97316" /> {act.rating}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          {isExp ? <ChevronUp size={15} style={{ color: "var(--text-4)", flexShrink: 0 }} /> : <ChevronDown size={15} style={{ color: "var(--text-4)", flexShrink: 0 }} />}
-                        </button>
-
-                        {isExp && (
-                          <div style={{ padding: "0 16px 16px", borderTop: "1px solid var(--divider)" }}>
-                            <div style={{ display: "flex", alignItems: "flex-start", gap: "6px", marginTop: "12px", marginBottom: "10px" }}>
-                              <MapPin size={13} style={{ color: "var(--primary)", marginTop: "2px", flexShrink: 0 }} />
-                              <span style={{ fontSize: "13px", color: "var(--text-3)" }}>{act.location}</span>
-                            </div>
-                            {act.note && (
-                              <div style={{ background: "var(--surface-2)", borderRadius: "var(--r-md)", padding: "10px 12px", fontSize: "13px", color: "var(--text-3)", lineHeight: 1.6, marginBottom: "12px" }}>
-                                💡 {act.note}
-                              </div>
-                            )}
-                            <div style={{ display: "flex", gap: "8px" }}>
-                              <button className="btn btn-secondary btn-sm"><ExternalLink size={12} /> Bản đồ</button>
-                              <span className={`badge ${typeConfig[act.type]?.label ? "badge-orange" : "badge-gray"}`} style={{ fontSize: "11px" }}>{cfg.label}</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Add activity button */}
-                <div style={{ paddingLeft: "8px", display: "flex", gap: "16px" }}>
-                  <div style={{ width: 30, height: 30, flexShrink: 0 }} />
-                  <button className="btn btn-secondary btn-sm" style={{ justifyContent: "center", borderStyle: "dashed" }}>
-                    <Plus size={13} /> Thêm hoạt động
-                  </button>
-                </div>
+            <div style={{ position: "relative" }}>
+              <div style={{ position: "absolute", left: 22, top: 18, bottom: 18, width: 2, background: "linear-gradient(to bottom, var(--primary), var(--border))", borderRadius: 99 }} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {day.activities.map((activity, index) => (
+                  <ActivityItem
+                    key={activity.id ?? `${activity.time}-${activity.name}`}
+                    activity={activity}
+                    expanded={expanded === `${activeDay}-${index}`}
+                    onToggle={() => setExpanded(expanded === `${activeDay}-${index}` ? null : `${activeDay}-${index}`)}
+                  />
+                ))}
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Sidebar */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-
-            {/* Budget card */}
-            <div className="card" style={{ padding: "20px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-                <h3 style={{ fontSize: "15px", fontWeight: 700, color: "var(--text)" }}>💰 Ngân sách</h3>
-                <button onClick={() => setShowBudget(!showBudget)} style={{ fontSize: "12px", color: "var(--primary)", background: "none", border: "none", cursor: "pointer" }}>
-                  {showBudget ? "Ẩn bớt" : "Xem chi tiết"}
-                </button>
+          <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div className="card" style={{ padding: 22 }}>
+              <h3 style={{ fontSize: 16, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                <Wallet size={17} style={{ color: "var(--primary)" }} /> Ngân sách
+              </h3>
+              <div style={{ fontSize: 30, fontFamily: "var(--font-heading)", fontWeight: 900, color: "var(--primary)", marginBottom: 4 }}>
+                {fmtCost(budget?.total ?? trip.budgetPerPerson)}
               </div>
-              <div style={{ fontFamily: "var(--font-heading)", fontSize: "28px", fontWeight: 800, color: "var(--text)", marginBottom: "4px" }}>
-                {fmtCost(it.budget.total)}
-              </div>
-              <p style={{ fontSize: "12px", color: "var(--text-4)", marginBottom: "16px" }}>VND / người · Ước tính toàn chuyến</p>
-
-              {showBudget && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {Object.entries({
-                    "🚌 Di chuyển": it.budget.breakdown.transport,
-                    "🏨 Lưu trú":   it.budget.breakdown.accommodation,
-                    "🍜 Ăn uống":   it.budget.breakdown.food,
-                    "🎡 Tham quan": it.budget.breakdown.activities,
-                  }).map(([label, val]) => (
-                    <div key={label}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "5px" }}>
-                        <span style={{ color: "var(--text-3)" }}>{label}</span>
-                        <span style={{ fontWeight: 600, color: "var(--text)" }}>{fmtCost(val)}</span>
-                      </div>
-                      <div style={{ height: 6, borderRadius: "99px", background: "var(--surface-2)" }}>
-                        <div style={{ height: "100%", width: `${budgetPct(val)}%`, borderRadius: "99px", background: "linear-gradient(90deg, var(--primary), #FB923C)", transition: "width 0.5s ease" }} />
-                      </div>
+              <p style={{ color: "var(--text-4)", fontSize: 12, marginBottom: 18 }}>VND / người · toàn chuyến</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {budgetRows.map(([label, value]) => (
+                  <div key={label}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 5 }}>
+                      <span style={{ color: "var(--text-3)" }}>{label}</span>
+                      <strong>{fmtCost(Number(value))}</strong>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Trip info */}
-            <div className="card" style={{ padding: "20px" }}>
-              <h3 style={{ fontSize: "15px", fontWeight: 700, color: "var(--text)", marginBottom: "14px" }}>📋 Thông tin chuyến đi</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {[
-                  { label: "Điểm đến", value: it.destination },
-                  { label: "Thời gian", value: `${it.days}N${it.days-1}Đ` },
-                  { label: "Phong cách", value: it.style },
-                  { label: "Nhóm", value: it.group },
-                ].map(({ label, value }) => (
-                  <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", paddingBottom: "10px", borderBottom: "1px solid var(--divider)" }}>
-                    <span style={{ color: "var(--text-3)" }}>{label}</span>
-                    <span style={{ fontWeight: 600, color: "var(--text)", textAlign: "right" }}>{value}</span>
+                    <div style={{ height: 7, background: "var(--surface-2)", borderRadius: 99 }}>
+                      <div
+                        style={{
+                          height: "100%",
+                          width: `${Math.min(100, Math.round((Number(value) / Math.max(1, budget?.total ?? trip.budgetPerPerson)) * 100))}%`,
+                          background: "linear-gradient(90deg, var(--primary), var(--secondary))",
+                          borderRadius: 99,
+                        }}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Share */}
-            <div className="card" style={{ padding: "20px", background: "linear-gradient(135deg, #FFF7ED, #F0F9FF)", border: "1px solid #FED7AA" }}>
-              <h3 style={{ fontSize: "15px", fontWeight: 700, color: "var(--text)", marginBottom: "8px" }}>🔗 Chia sẻ lịch trình</h3>
-              <p style={{ fontSize: "13px", color: "var(--text-3)", marginBottom: "14px" }}>Gửi link cho bạn bè cùng xem lịch trình này</p>
-              <button className="btn btn-primary btn-sm" style={{ width: "100%", justifyContent: "center" }}>
-                <Share2 size={13} /> Sao chép liên kết
-              </button>
+            <div className="card" style={{ padding: 22 }}>
+              <h3 style={{ fontSize: 16, marginBottom: 14 }}>Thông tin chuyến đi</h3>
+              {[
+                ["Điểm đến", trip.destination],
+                ["Thời gian", `${trip.days} ngày`],
+                ["Phong cách", styleLabel[trip.style] ?? trip.style],
+                ["Nhóm", groupLabel[trip.groupType] ?? trip.groupType],
+                ["Trạng thái", trip.status],
+              ].map(([label, value]) => (
+                <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "10px 0", borderBottom: "1px solid var(--divider)", fontSize: 13 }}>
+                  <span style={{ color: "var(--text-3)" }}>{label}</span>
+                  <strong style={{ textAlign: "right" }}>{value}</strong>
+                </div>
+              ))}
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function ActivityItem({ activity, expanded, onToggle }: { activity: ActivityResponse; expanded: boolean; onToggle: () => void }) {
+  const cfg = typeConfig[activity.type] ?? typeConfig.ATTRACTION;
+  const Icon = cfg.icon;
+  const mapUrl =
+    activity.latitude && activity.longitude
+      ? `https://www.google.com/maps/search/?api=1&query=${activity.latitude},${activity.longitude}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${activity.name} ${activity.location}`)}`;
+
+  return (
+    <div style={{ display: "flex", gap: 16, alignItems: "flex-start", paddingLeft: 8 }}>
+      <div
+        style={{
+          width: 30,
+          height: 30,
+          borderRadius: "50%",
+          flexShrink: 0,
+          marginTop: 12,
+          zIndex: 1,
+          background: cfg.bg,
+          border: `2px solid ${cfg.color}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Icon size={13} style={{ color: cfg.color }} />
+      </div>
+      <article className="card" style={{ flex: 1, overflow: "hidden" }}>
+        <button
+          onClick={onToggle}
+          style={{ width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: 16, display: "flex", gap: 12, alignItems: "center", textAlign: "left" }}
+        >
+          <span style={{ fontSize: 12, fontWeight: 800, color: cfg.color, background: cfg.bg, padding: "4px 9px", borderRadius: 999, whiteSpace: "nowrap" }}>
+            {activity.time}
+          </span>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <h3 style={{ fontSize: 15, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{activity.name}</h3>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, color: "var(--text-4)", fontSize: 12 }}>
+              <span>{activity.duration}</span>
+              <span style={{ fontWeight: 700, color: activity.estimatedCost ? "var(--text-2)" : "var(--accent)" }}>{fmtCost(activity.estimatedCost)}</span>
+              {activity.rating > 0 && (
+                <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                  <Star size={11} fill="#FBBF24" color="#FBBF24" /> {activity.rating.toFixed(1)}
+                </span>
+              )}
             </div>
           </div>
-
-        </div>
-      </div>
+          {expanded ? <ChevronUp size={16} style={{ color: "var(--text-4)" }} /> : <ChevronDown size={16} style={{ color: "var(--text-4)" }} />}
+        </button>
+        {expanded && (
+          <div style={{ padding: "0 16px 16px", borderTop: "1px solid var(--divider)" }}>
+            <div style={{ display: "flex", gap: 7, marginTop: 12, marginBottom: 10, color: "var(--text-3)", fontSize: 13 }}>
+              <MapPin size={14} style={{ color: "var(--primary)", flexShrink: 0, marginTop: 2 }} />
+              <span>{activity.location}</span>
+            </div>
+            {activity.note && (
+              <p style={{ background: "var(--surface-2)", padding: 12, borderRadius: "var(--r-md)", color: "var(--text-3)", fontSize: 13, lineHeight: 1.65, marginBottom: 12 }}>
+                {activity.note}
+              </p>
+            )}
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <a href={mapUrl} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">
+                <ExternalLink size={12} /> Mở bản đồ
+              </a>
+              <span className="badge badge-teal">{cfg.label}</span>
+            </div>
+          </div>
+        )}
+      </article>
     </div>
   );
 }

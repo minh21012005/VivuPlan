@@ -69,7 +69,7 @@ export default function DashboardPage() {
           {/* Stats cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "16px", marginBottom: "32px" }} className="md:grid-cols-4">
             {[
-              { label: "Tổng chuyến đi", value: loading ? "–" : trips.length, icon: MapPin, color: "#F97316", bg: "#FFF7ED" },
+              { label: "Tổng chuyến đi", value: loading ? "–" : trips.length, icon: MapPin, color: "#0F9F9C", bg: "#E6FFFB" },
               { label: "Ngày du lịch",   value: loading ? "–" : totalDays,   icon: Clock, color: "#0EA5E9", bg: "#F0F9FF" },
               { label: "Điểm đến",       value: loading ? "–" : uniqueDests, icon: TrendingUp, color: "#8B5CF6", bg: "#F5F3FF" },
               { label: "Lịch trình hoàn thành", value: loading ? "–" : trips.filter(t=>t.status==="COMPLETED").length, icon: BarChart2, color: "#10B981", bg: "#F0FDF4" },
@@ -176,9 +176,9 @@ export default function DashboardPage() {
           </div>
 
           {/* AI suggestion banner */}
-          <div style={{ marginTop: "24px", padding: "28px 32px", borderRadius: "var(--r-xl)", background: "linear-gradient(135deg, #FFF7ED, #F0F9FF)", border: "1px solid #FED7AA", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px", flexWrap: "wrap" }}>
+          <div style={{ marginTop: "24px", padding: "28px 32px", borderRadius: "var(--r-xl)", background: "linear-gradient(135deg, #E6FFFB, #E0F2FE)", border: "1px solid #99F6E4", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px", flexWrap: "wrap" }}>
             <div>
-              <div className="badge badge-orange" style={{ display: "inline-flex", marginBottom: "10px" }}>
+              <div className="badge badge-teal" style={{ display: "inline-flex", marginBottom: "10px" }}>
                 <Sparkles size={12} /> AI gợi ý
               </div>
               <h3 style={{ fontSize: "17px", fontFamily: "var(--font-heading)", color: "var(--text)", marginBottom: "6px" }}>
