@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { MapPin, Menu, X, Zap, LogIn, User, LogOut, LayoutDashboard } from "lucide-react";
+import { MapPin, Menu, X, ChevronDown, Compass, LayoutDashboard, LogOut, LogIn, Sparkles } from "lucide-react";
 
 const links = [
   { label: "Lập kế hoạch", href: "/plan" },
@@ -14,22 +14,22 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [user, setUser] = useState<{ name: string; avatarUrl?: string } | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [user, setUser] = useState<{ name: string } | null>(null);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
+    const onScroll = () => setScrolled(window.scrollY > 12);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("vp_user");
-      if (stored) setUser(JSON.parse(stored));
-    } catch { /* ignore */ }
-  }, [pathname]); // refresh on route change
+      const s = localStorage.getItem("vp_user");
+      if (s) setUser(JSON.parse(s));
+    } catch { /* */ }
+  }, [pathname]);
 
   const logout = () => {
     localStorage.removeItem("vp_token");
@@ -39,128 +39,159 @@ export default function Navbar() {
     router.push("/");
   };
 
-  const navStyle: React.CSSProperties = {
-    position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
-    transition: "all 0.3s ease",
-    background: scrolled ? "rgba(13,27,42,0.92)" : "transparent",
-    backdropFilter: scrolled ? "blur(12px)" : "none",
-    borderBottom: scrolled ? "1px solid rgba(255,255,255,0.06)" : "none",
-  };
-
   return (
-    <nav style={navStyle}>
-      <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#FF6B35,#FF8C42)" }}>
-            <MapPin size={15} color="white" fill="white" />
-          </div>
-          <span className="text-lg font-bold" style={{
-            fontFamily: "var(--font-heading)",
-            background: "linear-gradient(135deg,#FF6B35,#4ECDC4)",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-          }}>VivuPlan</span>
-        </Link>
-
-        {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-1">
-          {links.map(({ label, href }) => (
-            <Link key={href} href={href}
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              style={{ color: pathname === href ? "var(--brand-primary)" : "var(--brand-text-muted)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--brand-text)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = pathname === href ? "var(--brand-primary)" : "var(--brand-text-muted)")}
-            >{label}</Link>
-          ))}
-        </div>
-
-        {/* Auth */}
-        <div className="hidden md:flex items-center gap-2">
-          {user ? (
-            <div className="relative">
-              <button
-                id="btn-user-menu"
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors hover:bg-white/5"
-                style={{ color: "var(--brand-text-muted)", border: "1px solid var(--brand-border)" }}
-              >
-                <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
-                  style={{ background: "var(--gradient-brand)", color: "white" }}>
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-                {user.name.split(" ").slice(-1)[0]}
-              </button>
-              {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 rounded-xl overflow-hidden shadow-xl z-50"
-                  style={{ background: "var(--brand-surface-2)", border: "1px solid var(--brand-border)" }}>
-                  <Link href="/dashboard" onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-2 px-4 py-3 text-sm transition-colors hover:bg-white/5"
-                    style={{ color: "var(--brand-text-muted)" }}>
-                    <LayoutDashboard size={14} /> Dashboard
-                  </Link>
-                  <button onClick={logout}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors hover:bg-red-900/20 text-left"
-                    style={{ color: "#ff6b6b" }}>
-                    <LogOut size={14} /> Đăng xuất
-                  </button>
-                </div>
-              )}
+    <>
+      <header
+        style={{
+          position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+          background: scrolled ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.75)",
+          backdropFilter: "blur(16px)",
+          borderBottom: `1px solid ${scrolled ? "var(--border)" : "transparent"}`,
+          boxShadow: scrolled ? "var(--shadow-sm)" : "none",
+          transition: "all 0.25s ease",
+        }}
+      >
+        <div className="container" style={{ display: "flex", alignItems: "center", height: "64px", gap: "32px" }}>
+          {/* Logo */}
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "9px", textDecoration: "none", flexShrink: 0 }}>
+            <div style={{
+              width: 34, height: 34, borderRadius: 10,
+              background: "linear-gradient(135deg, #F97316, #FB923C)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 2px 8px rgba(249,115,22,0.35)",
+            }}>
+              <MapPin size={16} color="white" fill="white" />
             </div>
-          ) : (
-            <>
-              <Link href="/login">
-                <button id="btn-login" className="btn-ghost flex items-center gap-1.5 text-sm px-4 py-2">
-                  <LogIn size={14} /> Đăng nhập
-                </button>
-              </Link>
-              <Link href="/plan">
-                <button id="btn-start" className="btn-primary flex items-center gap-1.5 text-sm px-4 py-2">
-                  <Zap size={13} /> Bắt đầu
-                </button>
-              </Link>
-            </>
-          )}
-        </div>
+            <span style={{
+              fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "18px",
+              background: "linear-gradient(135deg, #F97316, #EA580C)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            }}>VivuPlan</span>
+          </Link>
 
-        {/* Mobile menu toggle */}
-        <button id="btn-mobile-menu" className="md:hidden p-2" style={{ color: "var(--brand-text-muted)" }}
-          onClick={() => setOpen(!open)}>
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
-      </div>
+          {/* Desktop links */}
+          <nav style={{ display: "flex", alignItems: "center", gap: "4px", flex: 1 }} className="hidden md:flex">
+            {links.map(({ label, href }) => (
+              <Link key={href} href={href} style={{
+                padding: "7px 14px", borderRadius: "var(--r-md)", fontSize: "14px", fontWeight: 500,
+                color: pathname === href ? "var(--primary)" : "var(--text-3)",
+                textDecoration: "none",
+                background: pathname === href ? "var(--primary-light)" : "transparent",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => { if (pathname !== href) e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.background = "var(--surface-2)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = pathname === href ? "var(--primary)" : "var(--text-3)"; e.currentTarget.style.background = pathname === href ? "var(--primary-light)" : "transparent"; }}
+              >{label}</Link>
+            ))}
+          </nav>
 
-      {/* Mobile menu */}
-      {open && (
-        <div className="md:hidden px-4 pb-4" style={{ background: "rgba(13,27,42,0.96)", borderBottom: "1px solid var(--brand-border)" }}>
-          {links.map(({ label, href }) => (
-            <Link key={href} href={href} onClick={() => setOpen(false)}
-              className="block py-3 text-sm font-medium border-b"
-              style={{ color: "var(--brand-text-muted)", borderColor: "var(--brand-border)" }}>
-              {label}
-            </Link>
-          ))}
-          <div className="flex gap-2 mt-4">
+          {/* Auth */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }} className="hidden md:flex">
             {user ? (
-              <button onClick={logout} className="btn-secondary flex-1 py-2.5 text-sm flex items-center justify-center gap-2">
-                <LogOut size={14} /> Đăng xuất
-              </button>
+              <div style={{ position: "relative" }}>
+                <button
+                  id="btn-user-menu"
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "8px",
+                    padding: "7px 12px", borderRadius: "var(--r-lg)",
+                    background: "var(--surface-2)", border: "1.5px solid var(--border)",
+                    cursor: "pointer", fontSize: "14px", fontWeight: 600, color: "var(--text-2)",
+                  }}
+                >
+                  <div style={{
+                    width: 26, height: 26, borderRadius: "50%",
+                    background: "linear-gradient(135deg, #F97316, #FB923C)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "white", fontSize: "11px", fontWeight: 700,
+                  }}>
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  {user.name.split(" ").slice(-1)[0]}
+                  <ChevronDown size={13} style={{ color: "var(--text-4)" }} />
+                </button>
+                {userMenuOpen && (
+                  <div style={{
+                    position: "absolute", right: 0, top: "calc(100% + 6px)",
+                    background: "var(--surface)", border: "1px solid var(--border)",
+                    borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-lg)",
+                    minWidth: "180px", overflow: "hidden", zIndex: 200,
+                  }}>
+                    <Link href="/dashboard" onClick={() => setUserMenuOpen(false)} style={{
+                      display: "flex", alignItems: "center", gap: "10px",
+                      padding: "11px 16px", fontSize: "14px", fontWeight: 500,
+                      color: "var(--text-2)", textDecoration: "none",
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-2)"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                      <LayoutDashboard size={15} style={{ color: "var(--text-4)" }} /> Dashboard
+                    </Link>
+                    <div style={{ height: 1, background: "var(--border)" }} />
+                    <button onClick={logout} style={{
+                      display: "flex", alignItems: "center", gap: "10px", width: "100%",
+                      padding: "11px 16px", fontSize: "14px", fontWeight: 500,
+                      color: "#DC2626", background: "transparent", border: "none", cursor: "pointer",
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "#FEF2F2"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                      <LogOut size={15} /> Đăng xuất
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <>
-                <Link href="/login" className="flex-1" onClick={() => setOpen(false)}>
-                  <button className="btn-secondary w-full py-2.5 text-sm flex items-center justify-center gap-2">
-                    <User size={14} /> Đăng nhập
-                  </button>
+                <Link href="/login" className="btn btn-ghost btn-sm" style={{ textDecoration: "none" }}>
+                  <LogIn size={14} /> Đăng nhập
                 </Link>
-                <Link href="/plan" className="flex-1" onClick={() => setOpen(false)}>
-                  <button className="btn-primary w-full py-2.5 text-sm flex items-center justify-center gap-2">
-                    <Zap size={13} /> Bắt đầu
-                  </button>
+                <Link href="/plan" className="btn btn-primary btn-sm" style={{ textDecoration: "none" }}>
+                  <Sparkles size={14} /> Bắt đầu miễn phí
                 </Link>
               </>
             )}
           </div>
+
+          {/* Mobile toggle */}
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden btn btn-ghost btn-icon" style={{ marginLeft: "auto" }}>
+            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
         </div>
-      )}
-    </nav>
+
+        {/* Mobile menu */}
+        {mobileOpen && (
+          <div className="md:hidden" style={{
+            borderTop: "1px solid var(--border)", background: "var(--surface)",
+            padding: "12px 24px 20px",
+          }}>
+            {links.map(({ label, href }) => (
+              <Link key={href} href={href} onClick={() => setMobileOpen(false)} style={{
+                display: "flex", alignItems: "center", gap: "8px",
+                padding: "12px 0", borderBottom: "1px solid var(--divider)",
+                fontSize: "15px", fontWeight: 500,
+                color: pathname === href ? "var(--primary)" : "var(--text-2)", textDecoration: "none",
+              }}>
+                <Compass size={16} style={{ color: "var(--text-4)" }} /> {label}
+              </Link>
+            ))}
+            <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
+              {user ? (
+                <button onClick={logout} className="btn btn-secondary" style={{ flex: 1 }}>
+                  <LogOut size={15} /> Đăng xuất
+                </button>
+              ) : (
+                <>
+                  <Link href="/login" className="btn btn-secondary" style={{ flex: 1, textDecoration: "none", justifyContent: "center" }} onClick={() => setMobileOpen(false)}>
+                    Đăng nhập
+                  </Link>
+                  <Link href="/plan" className="btn btn-primary" style={{ flex: 1, textDecoration: "none", justifyContent: "center" }} onClick={() => setMobileOpen(false)}>
+                    <Sparkles size={14} /> Bắt đầu
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </header>
+    </>
   );
 }

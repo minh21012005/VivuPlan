@@ -4,212 +4,193 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import { tripApi, type TripResponse } from "@/lib/api";
-import { Plus, MapPin, Clock, Wallet, Share2, Trash2, TrendingUp, Star, Zap, Eye } from "lucide-react";
+import { Plus, MapPin, Clock, Wallet, Share2, Trash2, TrendingUp, Sparkles, Eye, BarChart2 } from "lucide-react";
 
-const stats = [
-  { label: "Chuyến đã lên kế hoạch", key: "total", icon: MapPin, color: "#FF6B35" },
-  { label: "Ngày du lịch tổng", key: "days", icon: Clock, color: "#4ECDC4" },
-  { label: "Ngân sách ước tính", key: "budget", icon: Wallet, color: "#FFE66D" },
-  { label: "Điểm đến khám phá", key: "dests", icon: TrendingUp, color: "#FF6B9D" },
-];
-
-const statusMap: Record<string, { label: string; color: string; bg: string }> = {
-  COMPLETED: { label: "Hoàn thành", color: "#4ECDC4", bg: "rgba(78,205,196,0.12)" },
-  PLANNED:   { label: "Đã lên kế hoạch", color: "#FFE66D", bg: "rgba(255,230,109,0.12)" },
-  DRAFT:     { label: "Nháp", color: "#9CA3AF", bg: "rgba(156,163,175,0.12)" },
+const statusInfo: Record<string, { label: string; badge: string }> = {
+  COMPLETED: { label: "Hoàn thành", badge: "badge-green" },
+  PLANNED:   { label: "Kế hoạch",   badge: "badge-blue" },
+  DRAFT:     { label: "Nháp",       badge: "badge-gray" },
 };
 
 const emojiMap: Record<string, string> = {
-  "Đà Lạt": "🌸", "Hạ Long": "⛵", "Quy Nhơn": "🏖️", "Đà Nẵng": "🌉",
-  "Phú Quốc": "🌴", "Sapa": "⛰️", "Nha Trang": "🐠", "Hội An": "🏮", "Huế": "👑",
+  "Đà Lạt":"🌸","Hạ Long":"⛵","Quy Nhơn":"🏖️","Đà Nẵng":"🌉",
+  "Phú Quốc":"🌴","Sapa":"⛰️","Nha Trang":"🐠","Hội An":"🏮","Huế":"👑","Cần Thơ":"🚤",
 };
-const getEmoji = (dest: string) => emojiMap[dest] || "🗺️";
+const getEmoji = (d: string) => emojiMap[d] ?? "🗺️";
+const fmtBudget = (v: number) => v >= 1_000_000 ? `${(v/1_000_000).toFixed(1)}tr ₫` : `${(v/1_000).toFixed(0)}k ₫`;
 
 export default function DashboardPage() {
   const router = useRouter();
   const [trips, setTrips] = useState<TripResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState<"ALL" | "PLANNED" | "COMPLETED">("ALL");
-  const [deleting, setDeleting] = useState<number | null>(null);
+  const [tab, setTab] = useState<"ALL"|"PLANNED"|"COMPLETED">("ALL");
+  const [deleting, setDeleting] = useState<number|null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("vp_token");
-    if (!token) { router.push("/login"); return; }
-
-    tripApi.myTrips()
-      .then(setTrips)
-      .catch(() => setError("Không thể tải dữ liệu. Vui lòng thử lại."))
-      .finally(() => setLoading(false));
+    if (!localStorage.getItem("vp_token")) { router.push("/login"); return; }
+    tripApi.myTrips().then(setTrips).catch(() => setError("Không thể tải dữ liệu")).finally(() => setLoading(false));
   }, [router]);
 
   const filtered = tab === "ALL" ? trips : trips.filter((t) => t.status === tab);
-
-  const computedStats = {
-    total: trips.length.toString(),
-    days: trips.reduce((s, t) => s + t.days, 0).toString(),
-    budget: trips.length > 0 ? `${(trips.reduce((s, t) => s + t.budgetPerPerson, 0) / 1_000_000).toFixed(1)}tr` : "0",
-    dests: new Set(trips.map((t) => t.destination)).size.toString(),
-  };
+  const uniqueDests = new Set(trips.map((t) => t.destination)).size;
+  const totalDays   = trips.reduce((s, t) => s + t.days, 0);
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Bạn có chắc muốn xóa lịch trình này?")) return;
+    if (!confirm("Xóa lịch trình này?")) return;
     setDeleting(id);
-    try {
-      await tripApi.deleteTrip(id);
-      setTrips((prev) => prev.filter((t) => t.id !== id));
-    } catch {
-      alert("Xóa thất bại. Vui lòng thử lại.");
-    } finally {
-      setDeleting(null);
-    }
+    try { await tripApi.deleteTrip(id); setTrips((p) => p.filter((t) => t.id !== id)); }
+    catch { alert("Xóa thất bại"); }
+    finally { setDeleting(null); }
   };
 
-  const handleTogglePublic = async (id: number) => {
-    try {
-      const updated = await tripApi.toggleVisibility(id);
-      setTrips((prev) => prev.map((t) => (t.id === id ? { ...t, isPublic: updated.isPublic } : t)));
-    } catch { /* silent */ }
+  const handleToggle = async (id: number) => {
+    try { const u = await tripApi.toggleVisibility(id); setTrips((p) => p.map((t) => t.id === id ? { ...t, isPublic: u.isPublic } : t)); }
+    catch { /* silent */ }
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--brand-dark)" }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
       <Navbar />
-      <div className="pt-24 pb-16 px-4">
-        <div className="max-w-5xl mx-auto">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div style={{ paddingTop: "88px", paddingBottom: "80px" }}>
+        <div className="container">
+
+          {/* Page header */}
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "16px", marginBottom: "32px" }}>
             <div>
-              <h1 className="text-3xl font-bold mb-1" style={{ fontFamily: "var(--font-heading)", color: "var(--brand-text)" }}>
-                Dashboard 👋
-              </h1>
-              <p className="text-sm" style={{ color: "var(--brand-text-muted)" }}>Quản lý các chuyến đi của bạn</p>
+              <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "28px", fontWeight: 800, color: "var(--text)", marginBottom: "4px" }}>Dashboard</h1>
+              <p style={{ fontSize: "14px", color: "var(--text-3)" }}>Quản lý và theo dõi tất cả chuyến đi của bạn</p>
             </div>
-            <Link href="/plan">
-              <button id="btn-new-trip" className="btn-primary flex items-center gap-2 px-5 py-2.5">
-                <Plus size={16} /> Lập kế hoạch mới
-              </button>
+            <Link href="/plan" className="btn btn-primary" style={{ textDecoration: "none" }}>
+              <Plus size={16} /> Lịch trình mới
             </Link>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {stats.map(({ label, key, icon: Icon, color }) => (
-              <div key={key} className="rounded-2xl p-5" style={{ background: "var(--brand-surface)", border: "1px solid var(--brand-border)" }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: `${color}18` }}>
-                  <Icon size={18} style={{ color }} />
+          {/* Stats cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "16px", marginBottom: "32px" }} className="md:grid-cols-4">
+            {[
+              { label: "Tổng chuyến đi", value: loading ? "–" : trips.length, icon: MapPin, color: "#F97316", bg: "#FFF7ED" },
+              { label: "Ngày du lịch",   value: loading ? "–" : totalDays,   icon: Clock, color: "#0EA5E9", bg: "#F0F9FF" },
+              { label: "Điểm đến",       value: loading ? "–" : uniqueDests, icon: TrendingUp, color: "#8B5CF6", bg: "#F5F3FF" },
+              { label: "Lịch trình hoàn thành", value: loading ? "–" : trips.filter(t=>t.status==="COMPLETED").length, icon: BarChart2, color: "#10B981", bg: "#F0FDF4" },
+            ].map(({ label, value, icon: Icon, color, bg }) => (
+              <div key={label} className="card" style={{ padding: "20px 22px", display: "flex", alignItems: "center", gap: "16px" }}>
+                <div style={{ width: 44, height: 44, borderRadius: "var(--r-lg)", background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icon size={20} style={{ color }} />
                 </div>
-                <div className="text-2xl font-bold mb-0.5" style={{ color: "var(--brand-text)", fontFamily: "var(--font-heading)" }}>
-                  {loading ? "–" : computedStats[key as keyof typeof computedStats]}
+                <div>
+                  <div style={{ fontFamily: "var(--font-heading)", fontSize: "22px", fontWeight: 800, color: "var(--text)", lineHeight: 1 }}>{value}</div>
+                  <div style={{ fontSize: "12px", color: "var(--text-3)", marginTop: "3px" }}>{label}</div>
                 </div>
-                <div className="text-xs" style={{ color: "var(--brand-text-muted)" }}>{label}</div>
               </div>
             ))}
           </div>
 
-          {/* Trips */}
-          <div className="rounded-2xl overflow-hidden" style={{ background: "var(--brand-surface)", border: "1px solid var(--brand-border)" }}>
+          {/* Trips panel */}
+          <div className="card" style={{ overflow: "hidden" }}>
             {/* Tabs */}
-            <div className="flex gap-1 p-4" style={{ borderBottom: "1px solid var(--brand-border)" }}>
-              {(["ALL", "PLANNED", "COMPLETED"] as const).map((t) => (
-                <button key={t} id={`tab-${t.toLowerCase()}`} onClick={() => setTab(t)}
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
-                  style={{
-                    background: tab === t ? "rgba(255,107,53,0.15)" : "transparent",
-                    color: tab === t ? "var(--brand-primary)" : "var(--brand-text-muted)",
-                    border: tab === t ? "1px solid rgba(255,107,53,0.3)" : "1px solid transparent",
-                  }}>
-                  {t === "ALL" ? "Tất cả" : t === "PLANNED" ? "Đã lên kế hoạch" : "Hoàn thành"}
-                </button>
-              ))}
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+              <h2 style={{ fontSize: "16px", fontWeight: 700, color: "var(--text)" }}>Chuyến đi của bạn</h2>
+              <div className="tab-bar" style={{ minWidth: "300px" }}>
+                {(["ALL","PLANNED","COMPLETED"] as const).map((t) => (
+                  <button key={t} id={`tab-${t.toLowerCase()}`} onClick={() => setTab(t)} className={`tab-item${tab===t?" active":""}`}>
+                    {t==="ALL"?"Tất cả":t==="PLANNED"?"Kế hoạch":"Hoàn thành"}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="p-4 space-y-3">
+            <div style={{ padding: "16px 20px", minHeight: "200px" }}>
               {loading && (
-                <div className="py-12 text-center">
-                  <div className="w-8 h-8 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin mx-auto mb-3" />
-                  <p className="text-sm" style={{ color: "var(--brand-text-muted)" }}>Đang tải...</p>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 0", gap: "12px" }}>
+                  <div className="spinner" />
+                  <p style={{ fontSize: "14px", color: "var(--text-3)" }}>Đang tải...</p>
                 </div>
               )}
               {error && !loading && (
-                <div className="py-8 text-center">
-                  <p className="text-sm mb-3" style={{ color: "#ff6b6b" }}>{error}</p>
-                  <button className="btn-secondary text-sm px-4 py-2" onClick={() => window.location.reload()}>Thử lại</button>
+                <div style={{ textAlign: "center", padding: "60px 0" }}>
+                  <p style={{ color: "#DC2626", fontSize: "14px", marginBottom: "12px" }}>{error}</p>
+                  <button className="btn btn-secondary btn-sm" onClick={() => window.location.reload()}>Thử lại</button>
                 </div>
               )}
               {!loading && !error && filtered.length === 0 && (
-                <div className="py-12 text-center">
-                  <div className="text-5xl mb-4">🗺️</div>
-                  <p className="font-semibold mb-2" style={{ color: "var(--brand-text)" }}>Chưa có chuyến đi nào</p>
-                  <p className="text-sm mb-4" style={{ color: "var(--brand-text-muted)" }}>Hãy lập kế hoạch chuyến đi đầu tiên của bạn</p>
-                  <Link href="/plan">
-                    <button className="btn-primary px-6 py-2.5 flex items-center gap-2 mx-auto">
-                      <Zap size={15} /> Lập kế hoạch ngay
-                    </button>
+                <div style={{ textAlign: "center", padding: "60px 0" }}>
+                  <div style={{ fontSize: "52px", marginBottom: "16px" }}>🗺️</div>
+                  <h3 style={{ fontSize: "16px", color: "var(--text)", marginBottom: "8px" }}>Chưa có chuyến đi nào</h3>
+                  <p style={{ fontSize: "14px", color: "var(--text-3)", marginBottom: "20px" }}>Hãy tạo lịch trình AI đầu tiên của bạn!</p>
+                  <Link href="/plan" className="btn btn-primary btn-sm" style={{ textDecoration: "none", display: "inline-flex" }}>
+                    <Sparkles size={14} /> Lập kế hoạch ngay
                   </Link>
                 </div>
               )}
-              {!loading && filtered.map((trip) => {
-                const st = statusMap[trip.status] || statusMap["DRAFT"];
-                return (
-                  <div key={trip.id}
-                    className="rounded-xl p-4 flex flex-col md:flex-row md:items-center gap-4 transition-all duration-200"
-                    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--brand-border)" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(255,107,53,0.25)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--brand-border)")}>
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0"
-                      style={{ background: "rgba(255,255,255,0.05)" }}>
-                      {getEmoji(trip.destination)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-bold" style={{ color: "var(--brand-text)" }}>{trip.destination}</h3>
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: st.bg, color: st.color }}>{st.label}</span>
-                        {trip.isPublic && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(78,205,196,0.1)", color: "#4ECDC4" }}>Công khai</span>}
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {!loading && filtered.map((trip) => {
+                  const st = statusInfo[trip.status] ?? statusInfo["DRAFT"];
+                  return (
+                    <div key={trip.id} style={{
+                      display: "flex", alignItems: "center", gap: "16px", padding: "16px",
+                      borderRadius: "var(--r-lg)", border: "1.5px solid var(--border)",
+                      background: "var(--surface)", transition: "all 0.15s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--primary-muted)"; e.currentTarget.style.boxShadow = "var(--shadow-sm)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}>
+                      <div style={{ width: 52, height: 52, borderRadius: "var(--r-lg)", background: "var(--primary-light)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", flexShrink: 0 }}>
+                        {getEmoji(trip.destination)}
                       </div>
-                      <div className="flex flex-wrap gap-3 text-xs" style={{ color: "var(--brand-text-muted)" }}>
-                        <span className="flex items-center gap-1"><Clock size={10} />{trip.days}N{trip.days-1}Đ</span>
-                        <span className="flex items-center gap-1"><Wallet size={10} />{(trip.budgetPerPerson/1000000).toFixed(1)}tr VND</span>
-                        <span className="flex items-center gap-1"><Eye size={10} />{trip.viewCount} lượt xem</span>
-                        <span className="flex items-center gap-1"><Star size={10} />Code: {trip.shareCode}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "5px", flexWrap: "wrap" }}>
+                          <span style={{ fontWeight: 700, fontSize: "15px", color: "var(--text)" }}>{trip.destination}</span>
+                          <span className={`badge ${st.badge}`} style={{ fontSize: "11px" }}>{st.label}</span>
+                          {trip.isPublic && <span className="badge badge-teal" style={{ fontSize: "11px" }}>Công khai</span>}
+                        </div>
+                        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--text-4)" }}>
+                            <Clock size={11} style={{ color: "var(--primary)" }} /> {trip.days}N{trip.days-1}Đ
+                          </span>
+                          <span style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--text-4)" }}>
+                            <Wallet size={11} style={{ color: "var(--primary)" }} /> {fmtBudget(trip.budgetPerPerson)}/người
+                          </span>
+                          <span style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--text-4)" }}>
+                            <Eye size={11} /> {trip.viewCount} lượt xem
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Link href={`/itinerary/${trip.id}`}>
-                        <button id={`btn-view-${trip.id}`} className="btn-secondary text-xs px-3 py-2 flex items-center gap-1.5">
-                          <Eye size={12} /> Xem
+                      <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+                        <Link href={`/itinerary/${trip.id}`} className="btn btn-secondary btn-sm" style={{ textDecoration: "none" }}>
+                          <Eye size={13} /> Xem
+                        </Link>
+                        <button onClick={() => handleToggle(trip.id)} className="btn btn-ghost btn-icon"
+                          title={trip.isPublic ? "Ẩn" : "Công khai"} style={{ color: trip.isPublic ? "#0D9488" : "var(--text-4)" }}>
+                          <Share2 size={15} />
                         </button>
-                      </Link>
-                      <button onClick={() => handleTogglePublic(trip.id)}
-                        className="p-2 rounded-lg transition-colors hover:bg-white/5" style={{ color: trip.isPublic ? "#4ECDC4" : "var(--brand-text-dim)" }} title={trip.isPublic ? "Ẩn" : "Công khai"}>
-                        <Share2 size={14} />
-                      </button>
-                      <button onClick={() => handleDelete(trip.id)} disabled={deleting === trip.id}
-                        className="p-2 rounded-lg transition-colors hover:bg-red-900/20" style={{ color: "#ff6b6b" }}>
-                        <Trash2 size={14} />
-                      </button>
+                        <button onClick={() => handleDelete(trip.id)} disabled={deleting === trip.id}
+                          className="btn btn-ghost btn-icon" style={{ color: "#DC2626" }}>
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          {/* AI suggestion */}
-          <div className="mt-6 rounded-2xl p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(255,107,53,0.12), rgba(78,205,196,0.08))", border: "1px solid rgba(255,107,53,0.2)" }}>
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold mb-1" style={{ color: "var(--brand-primary)" }}>✨ AI gợi ý cho bạn</p>
-                <h3 className="text-lg font-bold mb-1" style={{ color: "var(--brand-text)" }}>Đi Nha Trang mùa hè này?</h3>
-                <p className="text-sm" style={{ color: "var(--brand-text-muted)" }}>Dựa trên sở thích của bạn – biển, ngân sách vừa, phù hợp nhóm bạn</p>
+          {/* AI suggestion banner */}
+          <div style={{ marginTop: "24px", padding: "28px 32px", borderRadius: "var(--r-xl)", background: "linear-gradient(135deg, #FFF7ED, #F0F9FF)", border: "1px solid #FED7AA", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px", flexWrap: "wrap" }}>
+            <div>
+              <div className="badge badge-orange" style={{ display: "inline-flex", marginBottom: "10px" }}>
+                <Sparkles size={12} /> AI gợi ý
               </div>
-              <Link href="/plan?destination=Nha+Trang">
-                <button className="btn-primary shrink-0 flex items-center gap-2 px-5 py-2.5">
-                  <Zap size={15} /> Lên kế hoạch ngay
-                </button>
-              </Link>
+              <h3 style={{ fontSize: "17px", fontFamily: "var(--font-heading)", color: "var(--text)", marginBottom: "6px" }}>
+                Thử khám phá Nha Trang mùa hè này?
+              </h3>
+              <p style={{ fontSize: "13px", color: "var(--text-3)" }}>Phù hợp với sở thích du lịch biển · 4 ngày · Từ 3tr/người</p>
             </div>
+            <Link href="/plan?destination=Nha+Trang" className="btn btn-primary" style={{ textDecoration: "none", flexShrink: 0 }}>
+              <Sparkles size={15} /> Lên kế hoạch ngay
+            </Link>
           </div>
+
         </div>
       </div>
     </div>

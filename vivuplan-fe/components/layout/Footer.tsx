@@ -1,11 +1,10 @@
-"use client";
 import Link from "next/link";
-import { MapPin, Users2, Camera, MessageSquare, Code2, Heart } from "lucide-react";
+import { MapPin, Globe, Camera, MessageCircle, Play, Heart } from "lucide-react";
 
 const footerLinks = {
   "Sản phẩm": [
-    { label: "Lập kế hoạch", href: "/plan" },
-    { label: "Khám phá", href: "/explore" },
+    { label: "Lập kế hoạch AI", href: "/plan" },
+    { label: "Khám phá điểm đến", href: "/explore" },
     { label: "Cộng đồng", href: "/community" },
     { label: "Bảng giá", href: "/pricing" },
   ],
@@ -24,52 +23,126 @@ const footerLinks = {
 };
 
 const socials = [
-  { icon: Users2, href: "#", label: "Facebook" },
+  { icon: Globe, href: "#", label: "Facebook" },
   { icon: Camera, href: "#", label: "Instagram" },
-  { icon: MessageSquare, href: "#", label: "Twitter" },
-  { icon: Code2, href: "#", label: "Github" },
+  { icon: MessageCircle, href: "#", label: "Twitter" },
+  { icon: Play, href: "#", label: "Youtube" },
 ];
 
 export default function Footer() {
   return (
-    <footer style={{ background: "var(--brand-surface)", borderTop: "1px solid var(--brand-border)" }}>
-      <div className="max-w-7xl mx-auto px-6 pt-14 pb-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
-          <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "var(--gradient-brand)" }}>
-                <MapPin size={16} color="white" fill="white" />
+    <footer style={{ background: "var(--surface)", borderTop: "1px solid var(--border)" }}>
+      <div className="container" style={{ paddingTop: "72px", paddingBottom: "40px" }}>
+
+        {/* ── Main grid: brand col + 3 link cols ───────────────────────── */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "2fr 1fr 1fr 1fr",
+          gap: "48px",
+          marginBottom: "56px",
+        }}>
+
+          {/* Brand block */}
+          <div>
+            <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "10px", textDecoration: "none", marginBottom: "20px" }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: "linear-gradient(135deg, #F97316, #FB923C)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                boxShadow: "0 4px 12px rgba(249,115,22,0.25)",
+                flexShrink: 0,
+              }}>
+                <MapPin size={17} color="white" fill="white" />
               </div>
-              <span className="text-lg font-bold gradient-text" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>VivuPlan</span>
+              <span style={{
+                fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "20px",
+                background: "linear-gradient(135deg, #F97316, #EA580C)",
+                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              }}>
+                VivuPlan
+              </span>
             </Link>
-            <p className="text-sm mb-4 leading-relaxed" style={{ color: "var(--brand-text-muted)" }}>
-              Lập kế hoạch du lịch Việt Nam thông minh với AI.
+
+            <p style={{ fontSize: "14px", color: "var(--text-3)", lineHeight: 1.75, marginBottom: "24px", maxWidth: "280px" }}>
+              Nền tảng lập kế hoạch du lịch Việt Nam được AI hỗ trợ. Tạo lịch trình hoàn hảo chỉ trong 30 giây.
             </p>
-            <div className="flex gap-2">
+
+            {/* Social icons */}
+            <div style={{ display: "flex", gap: "10px" }}>
               {socials.map(({ icon: Icon, href }, i) => (
-                <a key={i} href={href} className="w-8 h-8 rounded-lg flex items-center justify-center glass transition-all hover:border-orange-500/40" style={{ color: "var(--brand-text-muted)" }}>
-                  <Icon size={14} />
+                <a
+                  key={i}
+                  href={href}
+                  style={{
+                    width: 36, height: 36, borderRadius: "var(--r-md)",
+                    background: "var(--surface-2)", border: "1px solid var(--border)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "var(--text-3)", textDecoration: "none",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "var(--primary-light)";
+                    e.currentTarget.style.borderColor = "var(--primary-muted)";
+                    e.currentTarget.style.color = "var(--primary)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "var(--surface-2)";
+                    e.currentTarget.style.borderColor = "var(--border)";
+                    e.currentTarget.style.color = "var(--text-3)";
+                  }}
+                >
+                  <Icon size={16} />
                 </a>
               ))}
             </div>
           </div>
-          {Object.entries(footerLinks).map(([group, links]) => (
+
+          {/* Link columns */}
+          {Object.entries(footerLinks).map(([group, items]) => (
             <div key={group}>
-              <h4 className="text-sm font-semibold mb-3" style={{ color: "var(--brand-text)" }}>{group}</h4>
-              <ul className="space-y-2">
-                {links.map((l) => (
-                  <li key={l.label}>
-                    <Link href={l.href} className="text-sm transition-colors hover:text-orange-400" style={{ color: "var(--brand-text-muted)" }}>{l.label}</Link>
+              <h4 style={{
+                fontSize: "12px", fontWeight: 700, color: "var(--text-2)",
+                textTransform: "uppercase", letterSpacing: "0.08em",
+                marginBottom: "20px",
+              }}>
+                {group}
+              </h4>
+              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "12px" }}>
+                {items.map((item) => (
+                  <li key={item.label}>
+                    <Link
+                      href={item.href}
+                      style={{ fontSize: "14px", color: "var(--text-3)", textDecoration: "none", transition: "color 0.15s" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--primary)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-3)"; }}
+                    >
+                      {item.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
             </div>
           ))}
         </div>
-        <div className="flex flex-col md:flex-row items-center justify-between pt-6 gap-3" style={{ borderTop: "1px solid var(--brand-border)" }}>
-          <p className="text-xs" style={{ color: "var(--brand-text-dim)" }}>© 2026 VivuPlan. Mọi quyền được bảo lưu.</p>
-          <p className="text-xs flex items-center gap-1" style={{ color: "var(--brand-text-dim)" }}>
-            Tạo ra với <Heart size={10} fill="#FF6B35" color="#FF6B35" /> tại Việt Nam
+
+        {/* ── Bottom bar ───────────────────────────────────────────────── */}
+        <div style={{
+          borderTop: "1px solid var(--border)",
+          paddingTop: "28px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "12px",
+        }}>
+          <p style={{ fontSize: "13px", color: "var(--text-4)" }}>
+            © 2026 VivuPlan. Mọi quyền được bảo lưu.
+          </p>
+
+          <p style={{ fontSize: "13px", color: "var(--text-4)", display: "flex", alignItems: "center", gap: "5px" }}>
+            Tạo ra với{" "}
+            <Heart size={12} fill="#F97316" color="#F97316" />
+            {" "}tại Việt Nam 🇻🇳
           </p>
         </div>
       </div>
