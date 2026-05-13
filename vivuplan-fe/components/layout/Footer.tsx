@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { MapPin, Facebook, Instagram, Twitter, Github, Heart } from "lucide-react";
+import { MapPin, Users2, Camera, MessageSquare, Code2, Heart } from "lucide-react";
 
 const footerLinks = {
   "Sản phẩm": [
@@ -24,10 +24,10 @@ const footerLinks = {
 };
 
 const socials = [
-  { icon: Facebook, href: "#" },
-  { icon: Instagram, href: "#" },
-  { icon: Twitter, href: "#" },
-  { icon: Github, href: "#" },
+  { icon: Users2, href: "#", label: "Facebook" },
+  { icon: Camera, href: "#", label: "Instagram" },
+  { icon: MessageSquare, href: "#", label: "Twitter" },
+  { icon: Code2, href: "#", label: "Github" },
 ];
 
 export default function Footer() {

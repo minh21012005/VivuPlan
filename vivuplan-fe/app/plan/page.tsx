@@ -1,7 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
+import { tripApi } from "@/lib/api";
 import {
   MapPin, Clock, Wallet, Users, Car, Sliders, Zap,
   ChevronDown, ArrowRight, Sparkles, Mountain, Waves, Coffee, Moon
@@ -30,8 +31,9 @@ const transports = [
   { id: "mixed", label: "Kết hợp", emoji: "🔀" },
 ];
 
-export default function PlanPage() {
+function PlanContent() {
   const params = useSearchParams();
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     destination: params.get("destination") || "",
@@ -43,6 +45,7 @@ export default function PlanPage() {
     notes: "",
   });
   const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState("");
   const [destSearch, setDestSearch] = useState(form.destination);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -52,9 +55,25 @@ export default function PlanPage() {
     v >= 1000000 ? `${(v / 1000000).toFixed(1)}tr VND` : `${(v / 1000).toFixed(0)}k VND`;
 
   const handleGenerate = async () => {
+    setGenError("");
     setGenerating(true);
-    await new Promise((r) => setTimeout(r, 2500));
-    window.location.href = "/itinerary/demo-1";
+    try {
+      const res = await tripApi.generate({
+        destination: form.destination,
+        days: form.days,
+        budgetPerPerson: form.budget,
+        style: form.style.toUpperCase(),
+        groupType: form.group.toUpperCase(),
+        transport: form.transport.toUpperCase(),
+        notes: form.notes || undefined,
+      });
+      router.push(`/itinerary/${res.id}`);
+    } catch {
+      // Fallback to demo if not authenticated or server down
+      router.push("/itinerary/demo-1");
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const isStep1Valid = form.destination.trim().length > 0;
@@ -353,6 +372,12 @@ export default function PlanPage() {
                   ))}
                 </div>
 
+                {genError && (
+                  <div className="p-3 rounded-xl text-sm" style={{ background: "rgba(255,107,107,0.1)", border: "1px solid rgba(255,107,107,0.2)", color: "#ff6b6b" }}>
+                    {genError}
+                  </div>
+                )}
+
                 <div className="flex gap-3">
                   <button onClick={() => setStep(2)} className="btn-secondary py-3 px-6">← Quay lại</button>
                   <button
@@ -381,5 +406,17 @@ export default function PlanPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PlanPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--brand-dark)" }}>
+        <div className="w-8 h-8 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+      </div>
+    }>
+      <PlanContent />
+    </Suspense>
   );
 }

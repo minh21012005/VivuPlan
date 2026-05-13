@@ -15,6 +15,10 @@
   --brand-text-muted: #9CA3AF;
   --brand-text-dim: #6B7280;
 
+  /* Fonts from next/font */
+  --font-body: var(--font-inter, "Inter", system-ui, sans-serif);
+  --font-heading: var(--font-jakarta, "Plus Jakarta Sans", "Inter", system-ui, sans-serif);
+
   /* Gradients */
   --gradient-hero: linear-gradient(135deg, #0D1B2A 0%, #1a2a3a 50%, #0D1B2A 100%);
   --gradient-brand: linear-gradient(135deg, #FF6B35, #FF8C42);

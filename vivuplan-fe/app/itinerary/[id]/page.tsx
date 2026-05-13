@@ -4,7 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import {
   MapPin, Clock, Wallet, Share2, Download, Edit3, Plus, Trash2,
   ChevronDown, ChevronUp, Star, Navigation, Coffee, Utensils,
-  Camera, Moon, Sun, Sunrise, RefreshCw, CheckCircle, ExternalLink
+  Camera, RefreshCw, CheckCircle, ExternalLink
 } from "lucide-react";
 
 // Mock data - will be replaced by API
