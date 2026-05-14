@@ -2,15 +2,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MapPin, Eye, EyeOff, UserPlus, ArrowLeft, CheckCircle } from "lucide-react";
+import { MapPin, Eye, EyeOff, UserPlus, ArrowLeft } from "lucide-react";
+import { AuthVisualPanel } from "@/components/auth/AuthVisualPanel";
 import { authApi } from "@/lib/api";
-
-const perks = [
-  "Tạo không giới hạn lịch trình AI",
-  "Lưu và chia sẻ chuyến đi dễ dàng",
-  "Theo dõi ngân sách chi tiết",
-  "Hoàn toàn miễn phí để bắt đầu",
-];
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -41,33 +35,7 @@ export default function RegisterPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex" }}>
-      {/* Left panel */}
-      <div className="hidden lg:flex" style={{
-        width: "44%", background: "linear-gradient(145deg, #F0FDF4 0%, #E0F2FE 50%, #E6FFFB 100%)",
-        flexDirection: "column", justifyContent: "center", padding: "60px",
-        borderRight: "1px solid var(--border)", position: "relative", overflow: "hidden",
-      }}>
-        <div style={{ position: "absolute", top: -80, left: -80, width: 320, height: 320, borderRadius: "50%", background: "rgba(16,185,129,0.06)" }} />
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <div style={{ fontSize: "56px", marginBottom: "24px" }}>✈️</div>
-          <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "28px", fontWeight: 800, color: "var(--text)", marginBottom: "12px", lineHeight: 1.3 }}>
-            Bắt đầu hành trình khám phá Việt Nam
-          </h2>
-          <p style={{ fontSize: "15px", color: "var(--text-3)", marginBottom: "32px", lineHeight: 1.7 }}>
-            Đăng ký miễn phí và sử dụng AI để tạo lịch trình du lịch hoàn hảo.
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            {perks.map((p) => (
-              <div key={p} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#D1FAE5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <CheckCircle size={13} color="#10B981" />
-                </div>
-                <span style={{ fontSize: "14px", color: "var(--text-2)" }}>{p}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <AuthVisualPanel variant="register" />
 
       {/* Right panel */}
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px", overflowY: "auto" }}>

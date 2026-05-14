@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MapPin, Eye, EyeOff, LogIn, ArrowLeft } from "lucide-react";
+import { AuthVisualPanel } from "@/components/auth/AuthVisualPanel";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { authApi } from "@/lib/api";
 
@@ -38,29 +39,7 @@ export default function LoginPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex" }}>
-      {/* Left panel – decorative */}
-      <div className="hidden lg:flex" style={{
-        width: "44%", background: "linear-gradient(145deg, #E6FFFB 0%, #E0F2FE 50%, #F0FDF4 100%)",
-        flexDirection: "column", justifyContent: "center", alignItems: "center",
-        padding: "60px", borderRight: "1px solid var(--border)", position: "relative", overflow: "hidden",
-      }}>
-        <div style={{ position: "absolute", top: -60, right: -60, width: 300, height: 300, borderRadius: "50%", background: "rgba(15,159,156,0.08)" }} />
-        <div style={{ position: "absolute", bottom: -40, left: -40, width: 200, height: 200, borderRadius: "50%", background: "rgba(14,165,233,0.07)" }} />
-        <div style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: "360px" }}>
-          <div style={{ fontSize: "80px", marginBottom: "24px" }}>🗺️</div>
-          <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "28px", fontWeight: 800, color: "var(--text)", marginBottom: "16px", lineHeight: 1.3 }}>
-            Hành trình đẹp bắt đầu từ một kế hoạch tốt
-          </h2>
-          <p style={{ fontSize: "15px", color: "var(--text-3)", lineHeight: 1.7 }}>
-            Đăng nhập để lưu lịch trình, chia sẻ với bạn bè và quản lý mọi chuyến đi của bạn.
-          </p>
-          <div style={{ display: "flex", gap: "16px", marginTop: "32px", justifyContent: "center" }}>
-            {["🌸 Đà Lạt", "⛵ Hạ Long", "🏖️ Quy Nhơn"].map((d) => (
-              <span key={d} className="badge badge-teal" style={{ fontSize: "12px" }}>{d}</span>
-            ))}
-          </div>
-        </div>
-      </div>
+      <AuthVisualPanel variant="login" />
 
       {/* Right panel – form */}
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
@@ -80,8 +59,12 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "26px", fontWeight: 800, color: "var(--text)", marginBottom: "6px" }}>Đăng nhập</h1>
-          <p style={{ fontSize: "14px", color: "var(--text-3)", marginBottom: "28px" }}>Chào mừng trở lại! Hãy tiếp tục hành trình của bạn.</p>
+          <div style={{ marginBottom: "26px" }}>
+            <div style={{ width: 46, height: 4, borderRadius: 99, background: "linear-gradient(135deg,var(--primary),var(--secondary))", marginBottom: "14px" }} />
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "30px", fontWeight: 850, color: "var(--text)", lineHeight: 1.16, marginBottom: "8px" }}>
+              Đăng nhập
+            </h1>
+          </div>
 
           <GoogleAuthButton onSuccess={handleAuthSuccess} onError={setError} />
           <div className="divider" style={{ marginBottom: "20px" }}>hoặc dùng email</div>
