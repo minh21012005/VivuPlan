@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Compass, Menu, X, ChevronDown, LayoutDashboard, LogOut, LogIn } from "lucide-react";
+import { BrandLogo } from "@/components/layout/BrandLogo";
 
 const links = [
   { label: "Lập kế hoạch", href: "/plan" },
@@ -26,10 +27,10 @@ export default function Navbar() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-    try {
-      const s = localStorage.getItem("vp_user");
-      if (s) setUser(JSON.parse(s));
-    } catch { /* */ }
+      try {
+        const s = localStorage.getItem("vp_user");
+        if (s) setUser(JSON.parse(s));
+      } catch { /* */ }
     }, 0);
     return () => window.clearTimeout(timer);
   }, [pathname]);
@@ -47,30 +48,15 @@ export default function Navbar() {
       <header
         style={{
           position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-          background: scrolled ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.75)",
+          background: "#FFFFFF",
           backdropFilter: "blur(16px)",
           borderBottom: `1px solid ${scrolled ? "var(--border)" : "transparent"}`,
           boxShadow: scrolled ? "var(--shadow-sm)" : "none",
           transition: "all 0.25s ease",
         }}
       >
-        <div className="container" style={{ display: "flex", alignItems: "center", height: "64px", gap: "32px" }}>
-          {/* Logo */}
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "9px", textDecoration: "none", flexShrink: 0 }}>
-            <div style={{
-              width: 34, height: 34, borderRadius: 10,
-              background: "linear-gradient(135deg, var(--primary), var(--secondary))",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 2px 8px rgba(15,159,156,0.28)",
-            }}>
-              <Compass size={17} color="white" />
-            </div>
-            <span style={{
-              fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "18px",
-              background: "linear-gradient(135deg, var(--primary), var(--secondary))",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            }}>VivuPlan</span>
-          </Link>
+        <div className="container" style={{ display: "flex", alignItems: "center", height: "70px", gap: "32px" }}>
+          <BrandLogo />
 
           {/* Desktop links */}
           <nav style={{ display: "flex", alignItems: "center", gap: "4px", flex: 1 }} className="hidden md:flex">
@@ -82,8 +68,8 @@ export default function Navbar() {
                 background: pathname === href ? "var(--primary-light)" : "transparent",
                 transition: "all 0.15s",
               }}
-              onMouseEnter={(e) => { if (pathname !== href) e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.background = "var(--surface-2)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = pathname === href ? "var(--primary)" : "var(--text-3)"; e.currentTarget.style.background = pathname === href ? "var(--primary-light)" : "transparent"; }}
+                onMouseEnter={(e) => { if (pathname !== href) e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.background = "var(--surface-2)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = pathname === href ? "var(--primary)" : "var(--text-3)"; e.currentTarget.style.background = pathname === href ? "var(--primary-light)" : "transparent"; }}
               >{label}</Link>
             ))}
           </nav>
@@ -125,8 +111,8 @@ export default function Navbar() {
                       padding: "11px 16px", fontSize: "14px", fontWeight: 500,
                       color: "var(--text-2)", textDecoration: "none",
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-2)"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                      onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-2)"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
                       <LayoutDashboard size={15} style={{ color: "var(--text-4)" }} /> Bảng điều khiển
                     </Link>
                     <div style={{ height: 1, background: "var(--border)" }} />
@@ -135,8 +121,8 @@ export default function Navbar() {
                       padding: "11px 16px", fontSize: "14px", fontWeight: 500,
                       color: "#DC2626", background: "transparent", border: "none", cursor: "pointer",
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = "#FEF2F2"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#FEF2F2"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
                       <LogOut size={15} /> Đăng xuất
                     </button>
                   </div>
