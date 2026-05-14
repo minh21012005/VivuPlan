@@ -80,6 +80,8 @@ public class TripService {
                 .shareCode(generateUniqueShareCode())
                 .build();
 
+        normalizeActivityCosts(aiSchedule, trip);
+
         // 3. Attach AI-generated days
         List<ItineraryDay> days = new ArrayList<>();
         for (TripDto.DayResponse dr : aiSchedule) {
@@ -260,31 +262,125 @@ public class TripService {
 
     private TripDto.BudgetBreakdown calculateBudget(Trip trip, List<TripDto.DayResponse> schedule) {
         TripDto.BudgetBreakdown b = new TripDto.BudgetBreakdown();
-        b.setTotal(trip.getBudgetPerPerson());
-
         long food = 0, transport = 0, accommodation = 0, activities = 0;
         if (schedule != null) {
             for (TripDto.DayResponse day : schedule) {
                 if (day.getActivities() == null) continue;
                 for (TripDto.ActivityResponse act : day.getActivities()) {
+                    long cost = Math.max(0, act.getEstimatedCost());
                     switch (act.getType()) {
-                        case "FOOD", "CAFE" -> food += act.getEstimatedCost();
-                        case "TRANSPORT" -> transport += act.getEstimatedCost();
-                        case "ACCOMMODATION" -> accommodation += act.getEstimatedCost();
-                        default -> activities += act.getEstimatedCost();
+                        case "FOOD", "CAFE" -> food += cost;
+                        case "TRANSPORT" -> transport += cost;
+                        case "ACCOMMODATION" -> accommodation += cost;
+                        default -> activities += cost;
                     }
                 }
             }
         }
 
-        // Fill remaining with estimates if not set
-        if (accommodation == 0) accommodation = (long)(trip.getBudgetPerPerson() * 0.30);
-        if (transport == 0)     transport     = (long)(trip.getBudgetPerPerson() * 0.20);
+        long total = food + transport + accommodation + activities;
+        long target = resolveGroupBudget(trip);
+        if (target > 0 && total > 0) {
+            double variance = Math.abs(total - target) / (double) target;
+            if (variance > 0.15) {
+                log.warn("Estimated trip cost differs from user budget by {}%: estimated={}, target={}",
+                        Math.round(variance * 100), total, target);
+            }
+        }
 
-        b.setFood(food);
+        b.setTotal(total);
         b.setTransport(transport);
         b.setAccommodation(accommodation);
+        b.setFood(food);
         b.setActivities(activities);
         return b;
     }
+
+    private void normalizeActivityCosts(List<TripDto.DayResponse> schedule, Trip trip) {
+        if (schedule == null || schedule.isEmpty()) return;
+        for (TripDto.DayResponse day : schedule) {
+            if (day.getActivities() == null) continue;
+            for (TripDto.ActivityResponse activity : day.getActivities()) {
+                activity.setEstimatedCost(normalizeActivityCost(activity, trip));
+            }
+        }
+    }
+
+    private long normalizeActivityCost(TripDto.ActivityResponse activity, Trip trip) {
+        long current = Math.max(0, activity.getEstimatedCost());
+        Long perPersonCost = extractPerPersonCost(activity.getNote());
+        if (perPersonCost == null) {
+            return current;
+        }
+
+        long expected = roundToNearest(perPersonCost * Math.max(1, trip.getTravelerCount()), 10_000);
+        if (current == 0) {
+            return expected;
+        }
+
+        double variance = Math.abs(current - expected) / (double) Math.max(1, expected);
+        return variance > 0.10 ? expected : current;
+    }
+
+    private Long extractPerPersonCost(String note) {
+        String normalized = normalizeText(note)
+                .replace("vnđ", " vnd")
+                .replace("₫", " vnd");
+        if (!normalized.contains("/nguoi") && !normalized.contains("/khach")) {
+            return null;
+        }
+
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+                "(\\d[\\d\\.,]*)\\s*(trieu|tr|k|nghin|ngan|vnd|d)?\\s*/\\s*(nguoi|khach)"
+        );
+        java.util.regex.Matcher matcher = pattern.matcher(normalized);
+        Long result = null;
+        while (matcher.find()) {
+            Long parsed = parseMoney(matcher.group(1), matcher.group(2));
+            if (parsed != null && parsed > 0) {
+                result = parsed;
+            }
+        }
+        return result;
+    }
+
+    private Long parseMoney(String rawValue, String rawUnit) {
+        if (rawValue == null || rawValue.isBlank()) return null;
+        String unit = rawUnit == null ? "" : rawUnit;
+        String value = rawValue.trim();
+        try {
+            if (unit.equals("tr") || unit.equals("trieu")) {
+                return Math.round(Double.parseDouble(value.replace(",", ".")) * 1_000_000);
+            }
+            if (unit.equals("k") || unit.equals("nghin") || unit.equals("ngan")) {
+                return Math.round(Double.parseDouble(value.replace(",", ".")) * 1_000);
+            }
+            String digits = value.replaceAll("[^0-9]", "");
+            return digits.isBlank() ? null : Long.parseLong(digits);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private long resolveGroupBudget(Trip trip) {
+        if (trip.getBudgetMode() == Trip.BudgetMode.TOTAL && trip.getBudgetTotal() != null && trip.getBudgetTotal() > 0) {
+            return trip.getBudgetTotal();
+        }
+        return Math.max(0, trip.getBudgetPerPerson()) * Math.max(1, trip.getTravelerCount());
+    }
+
+    private long roundToNearest(long value, long unit) {
+        if (unit <= 0) return value;
+        return Math.round((double) value / unit) * unit;
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) return "";
+        return java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replace("đ", "d")
+                .replace("Đ", "D")
+                .toLowerCase(java.util.Locale.ROOT);
+    }
+
 }

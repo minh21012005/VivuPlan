@@ -43,6 +43,10 @@ public class AiService {
     }
 
     private String buildPrompt(TripDto.GenerateRequest req) {
+        return buildCostAwarePrompt(req);
+    }
+
+    private String buildLegacyPrompt(TripDto.GenerateRequest req) {
         long budgetK = req.getBudgetPerPerson() / 1000;
         return String.format("""
             Bạn là chuyên gia du lịch Việt Nam. Hãy tạo lịch trình du lịch CHI TIẾT và THỰC TẾ.
@@ -116,6 +120,106 @@ public class AiService {
             req.getNotes() != null ? req.getNotes() : "Không có",
             req.getDestination(), req.getDeparture(), req.getDays()
         );
+    }
+
+    private String buildCostAwarePrompt(TripDto.GenerateRequest req) {
+        int days = Math.max(1, req.getDays());
+        int travelers = req.getTravelerCount() != null ? Math.max(1, req.getTravelerCount()) : 1;
+        long totalBudget = resolvePromptTotalBudget(req, travelers);
+        long perPersonBudget = totalBudget / travelers;
+        long perPersonPerDay = perPersonBudget / days;
+
+        return String.format("""
+            You are a senior Vietnam travel planner. Create a practical itinerary for Vietnamese travelers.
+            Return JSON only. All text values shown to users must be written in Vietnamese with correct accents.
+
+            Trip:
+            - Departure: %s
+            - Destination: %s
+            - Start date: %s
+            - End date: %s
+            - Duration: %d days
+            - Travelers: %d
+            - Budget mode: %s
+            - Total group budget: %,d VND
+            - Budget per person: %,d VND
+            - Budget per person per day: %,d VND
+            - Style: %s
+            - Group: %s
+            - Outbound transport: %s
+            - Local transport: %s
+            - Must visit: %s
+            - Avoid: %s
+            - Notes: %s
+
+            Cost rules:
+            1. estimatedCost MUST be the estimated total VND for the whole group of %d travelers.
+            2. The full trip cost should target 90%%-105%% of the total group budget.
+            3. Include realistic major costs: round-trip outbound transport, local transport, accommodation, food, entrance tickets, paid tours, shows, and shopping only if useful.
+            4. For fixed-price items such as cable car, theme park, show, museum, paid tour, boat tour, or entrance ticket, use a realistic recent public-market estimate and mention the unit basis in note, for example "khoảng 850k/người".
+            5. For accommodation, include a clear ACCOMMODATION activity with total lodging cost for all nights and all travelers. Do not use the accommodation type for a taxi/check-in only.
+            6. If the budget cannot support all expensive attractions, choose fewer paid activities instead of exceeding budget.
+            7. Prefer specific real places, restaurants, dishes, addresses/areas, and realistic travel pacing.
+            8. Keep notes concise. Do not invent exact official prices when unsure; use "ước tính" or "khoảng".
+
+            Itinerary quality rules:
+            1. Return exactly %d days.
+            2. Each day must have 4-6 activities.
+            3. FOOD/CAFE activities must name a specific dish or restaurant/cafe.
+            4. ATTRACTION/ACTIVITY activities must name a specific real place in or near %s.
+            5. Do not use generic names like "ăn sáng đặc sản địa phương", "tham quan điểm nổi bật", "khám phá khu vực lân cận", "nhà hàng địa phương", or "cà phê view đẹp".
+            6. Days must be clearly different and should not repeat the same activity sequence.
+
+            JSON schema:
+            [
+              {
+                "day": 1,
+                "title": "Ngày 1 - Chủ đề ngắn",
+                "summary": "Tóm tắt ngắn",
+                "activities": [
+                  {
+                    "time": "08:00",
+                    "name": "Tên địa điểm hoặc món/quán cụ thể",
+                    "type": "FOOD|CAFE|ATTRACTION|TRANSPORT|ACCOMMODATION|ACTIVITY",
+                    "location": "Địa chỉ hoặc khu vực cụ thể",
+                    "duration": "1 giờ",
+                    "estimatedCost": 50000,
+                    "note": "Gợi ý ngắn, có đơn giá nếu là chi phí cố định",
+                    "rating": 4.5,
+                    "latitude": 11.9403,
+                    "longitude": 108.4583
+                  }
+                ]
+              }
+            ]
+            """,
+            req.getDeparture(), req.getDestination(),
+            req.getStartDate() != null ? req.getStartDate().toString() : "not provided",
+            req.getEndDate() != null ? req.getEndDate().toString() : "not provided",
+            days,
+            travelers,
+            req.getBudgetMode() != null ? req.getBudgetMode() : "PER_PERSON",
+            totalBudget,
+            perPersonBudget,
+            perPersonPerDay,
+            req.getStyle(),
+            req.getGroupType(),
+            req.getOutboundTransport(),
+            req.getLocalTransport(),
+            req.getMustVisit() != null && !req.getMustVisit().isBlank() ? req.getMustVisit() : "none",
+            req.getAvoid() != null && !req.getAvoid().isBlank() ? req.getAvoid() : "none",
+            req.getNotes() != null && !req.getNotes().isBlank() ? req.getNotes() : "none",
+            travelers,
+            days,
+            req.getDestination()
+        );
+    }
+
+    private long resolvePromptTotalBudget(TripDto.GenerateRequest req, int travelers) {
+        if ("TOTAL".equalsIgnoreCase(req.getBudgetMode()) && req.getBudgetTotal() != null && req.getBudgetTotal() > 0) {
+            return req.getBudgetTotal();
+        }
+        return Math.max(0, req.getBudgetPerPerson()) * travelers;
     }
 
     private String callGemini(String prompt) {
