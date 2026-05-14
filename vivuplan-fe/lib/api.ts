@@ -82,6 +82,26 @@ export const tripApi = {
       body: JSON.stringify({ status }),
     }).then(handleResponse<TripResponse>),
 
+  addActivity: (tripId: number, dayNumber: number, data: ActivityMutationRequest) =>
+    fetch(`${API_BASE}/api/trips/${tripId}/days/${dayNumber}/activities`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    }).then(handleResponse<TripResponse>),
+
+  updateActivity: (tripId: number, activityId: number, data: ActivityMutationRequest) =>
+    fetch(`${API_BASE}/api/trips/${tripId}/activities/${activityId}`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    }).then(handleResponse<TripResponse>),
+
+  deleteActivity: (tripId: number, activityId: number) =>
+    fetch(`${API_BASE}/api/trips/${tripId}/activities/${activityId}`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    }).then(handleResponse<TripResponse>),
+
   publicTrips: (page = 0, size = 12) =>
     fetch(`${API_BASE}/api/trips/public?page=${page}&size=${size}`)
       .then(handleResponse<{ content: TripResponse[]; totalElements: number }>),
@@ -170,7 +190,22 @@ export interface ActivityResponse {
   rating: number;
   latitude?: number;
   longitude?: number;
+  googlePlaceId?: string;
   sortOrder: number;
+}
+
+export interface ActivityMutationRequest {
+  time: string;
+  name: string;
+  type?: string;
+  location?: string;
+  duration?: string;
+  estimatedCost?: number;
+  note?: string;
+  latitude?: number;
+  longitude?: number;
+  googlePlaceId?: string;
+  sortOrder?: number;
 }
 
 export interface BudgetBreakdown {

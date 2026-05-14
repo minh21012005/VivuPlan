@@ -1611,6 +1611,49 @@ textarea.input.textarea-compact {
   font-weight: 600;
 }
 
+/* Itinerary editor */
+.itinerary-day-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.itinerary-day-toolbar > .btn {
+  flex-shrink: 0;
+}
+
+.activity-editor-meta-grid {
+  display: grid;
+  grid-template-columns: minmax(112px, 0.75fr) minmax(150px, 1fr) minmax(150px, 1fr) minmax(150px, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.activity-editor-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(6px);
+}
+
+.activity-editor-modal-panel {
+  width: min(860px, 100%);
+  max-height: min(86vh, 760px);
+  overflow: auto;
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-xl);
+}
+
+.activity-editor-card {
+  box-shadow: none;
+}
+
 /* ─── Navbar ──────────────────────────────────────────────────────────────── */
 .navbar-scrolled {
   background: rgba(255, 255, 255, 0.92) !important;
@@ -1633,6 +1676,10 @@ textarea.input.textarea-compact {
   .split-grid,
   .planner-shell {
     grid-template-columns: 1fr !important;
+  }
+
+  .activity-editor-meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .planner-visual {
@@ -1681,8 +1728,18 @@ textarea.input.textarea-compact {
 
   .planner-two-col,
   .planner-money-row,
-  .planner-date-row {
+  .planner-date-row,
+  .activity-editor-meta-grid {
     grid-template-columns: 1fr;
+  }
+
+  .activity-editor-modal-backdrop {
+    padding: 12px;
+    align-items: end;
+  }
+
+  .activity-editor-modal-panel {
+    max-height: 88vh;
   }
 
   .option-grid-three,

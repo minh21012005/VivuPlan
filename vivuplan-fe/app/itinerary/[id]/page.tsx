@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { tripApi, type ActivityResponse, type TripResponse } from "@/lib/api";
+import { tripApi, type ActivityMutationRequest, type ActivityResponse, type TripResponse } from "@/lib/api";
 import { getDestinationImage } from "@/lib/travel-data";
 import {
   AlertCircle,
@@ -16,14 +16,19 @@ import {
   ChevronUp,
   Coffee,
   Copy,
+  Edit3,
   ExternalLink,
   MapPin,
   Navigation,
+  Plus,
   RefreshCw,
+  Save,
   Share2,
   Star,
+  Trash2,
   Utensils,
   Wallet,
+  X,
 } from "lucide-react";
 
 const typeConfig: Record<string, { icon: typeof Coffee; color: string; bg: string; label: string }> = {
@@ -70,6 +75,9 @@ export default function ItineraryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [editor, setEditor] = useState<{ mode: "add" | "edit"; dayNumber: number; activity?: ActivityResponse } | null>(null);
+  const [savingActivity, setSavingActivity] = useState(false);
+  const [activityError, setActivityError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -106,6 +114,15 @@ export default function ItineraryPage() {
   const day = trip?.schedule?.[activeDay];
   const dayTotal = day?.activities?.reduce((sum, activity) => sum + activity.estimatedCost, 0) ?? 0;
   const budget = trip?.budget;
+  const targetBudget =
+    trip
+      ? trip.budgetMode === "TOTAL" && trip.budgetTotal
+        ? trip.budgetTotal
+        : trip.budgetPerPerson * Math.max(1, trip.travelerCount ?? 1)
+      : 0;
+  const budgetDiff = budget && targetBudget ? budget.total - targetBudget : 0;
+  const budgetOverPercent = targetBudget > 0 ? Math.round((budgetDiff / targetBudget) * 100) : 0;
+  const isBudgetWarning = budgetDiff > targetBudget * 0.1;
   const budgetRows = budget
     ? [
         ["Di chuyển", budget.transport],
@@ -120,6 +137,38 @@ export default function ItineraryPage() {
     await navigator.clipboard.writeText(`${window.location.origin}/itinerary/${trip.shareCode}`);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1400);
+  };
+
+  const saveActivity = async (payload: ActivityMutationRequest) => {
+    if (!trip || !editor) return;
+    setSavingActivity(true);
+    setActivityError("");
+    try {
+      const updated =
+        editor.mode === "add"
+          ? await tripApi.addActivity(trip.id, editor.dayNumber, payload)
+          : await tripApi.updateActivity(trip.id, editor.activity!.id, payload);
+      setTrip(updated);
+      setEditor(null);
+      setExpanded(null);
+    } catch (e) {
+      setActivityError(e instanceof Error ? e.message : "Không thể lưu hoạt động");
+    } finally {
+      setSavingActivity(false);
+    }
+  };
+
+  const deleteActivity = async (activity: ActivityResponse) => {
+    if (!trip) return;
+    if (!window.confirm(`Xóa hoạt động "${activity.name}"?`)) return;
+    setActivityError("");
+    try {
+      const updated = await tripApi.deleteActivity(trip.id, activity.id);
+      setTrip(updated);
+      setExpanded(null);
+    } catch (e) {
+      setActivityError(e instanceof Error ? e.message : "Không thể xóa hoạt động");
+    }
   };
 
   if (loading) {
@@ -198,7 +247,8 @@ export default function ItineraryPage() {
       <main className="container" style={{ paddingTop: 30, paddingBottom: 80 }}>
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 320px", gap: 24 }} className="itinerary-grid">
           <section>
-            <div style={{ display: "flex", gap: 8, marginBottom: 18, overflowX: "auto" }} className="no-scrollbar">
+            <div className="itinerary-day-toolbar">
+              <div style={{ display: "flex", gap: 8, overflowX: "auto", minWidth: 0 }} className="no-scrollbar">
               {trip.schedule?.map((item, index) => (
                 <button
                   key={item.day}
@@ -210,7 +260,11 @@ export default function ItineraryPage() {
                 >
                   Ngày {item.day}
                 </button>
-              ))}
+                ))}
+              </div>
+              <Button variant="primary" size="sm" onClick={() => setEditor({ mode: "add", dayNumber: day.day })}>
+                <Plus size={13} /> Thêm hoạt động
+              </Button>
             </div>
 
             <Card style={{ padding: 20, marginBottom: 18, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
@@ -225,6 +279,12 @@ export default function ItineraryPage() {
               </Button>
             </Card>
 
+            {activityError && !editor && (
+              <div style={{ marginBottom: 12, padding: "10px 12px", borderRadius: "var(--r-md)", background: "#FEF2F2", color: "#B91C1C", fontSize: 13 }}>
+                {activityError}
+              </div>
+            )}
+
             <div style={{ position: "relative" }}>
               <div style={{ position: "absolute", left: 22, top: 18, bottom: 18, width: 2, background: "linear-gradient(to bottom, var(--primary), var(--border))", borderRadius: 99 }} />
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -234,6 +294,11 @@ export default function ItineraryPage() {
                     activity={activity}
                     expanded={expanded === `${activeDay}-${index}`}
                     onToggle={() => setExpanded(expanded === `${activeDay}-${index}` ? null : `${activeDay}-${index}`)}
+                    onEdit={() => {
+                      setActivityError("");
+                      setEditor({ mode: "edit", dayNumber: day.day, activity });
+                    }}
+                    onDelete={() => void deleteActivity(activity)}
                   />
                 ))}
               </div>
@@ -269,7 +334,24 @@ export default function ItineraryPage() {
               <div style={{ fontSize: 30, fontFamily: "var(--font-heading)", fontWeight: 900, color: "var(--primary)", marginBottom: 4 }}>
                 {fmtCost(budget?.total ?? trip.budgetPerPerson)}
               </div>
-              <p style={{ color: "var(--text-4)", fontSize: 12, marginBottom: 18 }}>VND / người · toàn chuyến</p>
+              <p style={{ color: "var(--text-4)", fontSize: 12, marginBottom: 18 }}>Tổng ước tính toàn chuyến</p>
+              {targetBudget > 0 && budget && (
+                <div
+                  style={{
+                    marginBottom: 16,
+                    padding: "10px 12px",
+                    borderRadius: "var(--r-md)",
+                    background: isBudgetWarning ? "#FEF2F2" : "var(--primary-light)",
+                    color: isBudgetWarning ? "#B91C1C" : "var(--primary-hover)",
+                    fontSize: 12,
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {isBudgetWarning
+                    ? `Cảnh báo: ước tính vượt ngân sách ${budgetOverPercent}%. Bạn có thể giảm hoạt động hoặc chấp nhận vượt ngân sách.`
+                    : `Ước tính hiện tại ${fmtCost(budget.total)} trên ngân sách ${fmtCost(targetBudget)}.`}
+                </div>
+              )}
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {budgetRows.map(([label, value]) => (
                   <div key={label}>
@@ -313,11 +395,229 @@ export default function ItineraryPage() {
           </aside>
         </div>
       </main>
+
+      {editor && (
+        <ActivityEditorModal
+          key={`${editor.mode}-${editor.activity?.id ?? editor.dayNumber}`}
+          activity={editor.activity}
+          saving={savingActivity}
+          error={activityError}
+          onSave={saveActivity}
+          onCancel={() => {
+            setEditor(null);
+            setActivityError("");
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function ActivityItem({ activity, expanded, onToggle }: { activity: ActivityResponse; expanded: boolean; onToggle: () => void }) {
+const activityTypeOptions = [
+  { value: "FOOD", label: "Ăn uống" },
+  { value: "CAFE", label: "Cà phê" },
+  { value: "ATTRACTION", label: "Địa điểm" },
+  { value: "ACTIVITY", label: "Hoạt động" },
+  { value: "TRANSPORT", label: "Di chuyển" },
+  { value: "ACCOMMODATION", label: "Lưu trú" },
+];
+
+function ActivityEditorModal({
+  activity,
+  saving,
+  error,
+  onSave,
+  onCancel,
+}: {
+  activity?: ActivityResponse;
+  saving: boolean;
+  error?: string;
+  onSave: (payload: ActivityMutationRequest) => Promise<void>;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      className="activity-editor-modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onCancel();
+      }}
+    >
+      <div className="activity-editor-modal-panel">
+        <ActivityEditor activity={activity} saving={saving} error={error} onSave={onSave} onCancel={onCancel} />
+      </div>
+    </div>
+  );
+}
+
+function ActivityEditor({
+  activity,
+  saving,
+  error,
+  onSave,
+  onCancel,
+}: {
+  activity?: ActivityResponse;
+  saving: boolean;
+  error?: string;
+  onSave: (payload: ActivityMutationRequest) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [form, setForm] = useState<ActivityMutationRequest>({
+    time: activity?.time ?? "09:00",
+    name: activity?.name ?? "",
+    type: activity?.type ?? "ATTRACTION",
+    location: activity?.location ?? "",
+    duration: activity?.duration ?? "1 giờ",
+    estimatedCost: activity?.estimatedCost ?? 0,
+    note: activity?.note ?? "",
+    latitude: activity?.latitude,
+    longitude: activity?.longitude,
+    googlePlaceId: activity?.googlePlaceId,
+    sortOrder: activity?.sortOrder ?? 0,
+  });
+  const [localError, setLocalError] = useState("");
+
+  const setField = (field: keyof ActivityMutationRequest, value: string | number | undefined) => {
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const normalizeTimeInput = (value: string) => {
+    const cleaned = value.replace(/[^\d:]/g, "");
+    if (cleaned.includes(":")) return cleaned.slice(0, 5);
+    const digits = cleaned.slice(0, 4);
+    return digits.length > 2 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits;
+  };
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!form.name?.trim()) {
+      setLocalError("Tên hoạt động không được để trống.");
+      return;
+    }
+    if (!form.time?.trim()) {
+      setLocalError("Thời gian không được để trống.");
+      return;
+    }
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(form.time.trim())) {
+      setLocalError("Giờ bắt đầu phải theo định dạng 24h HH:mm, ví dụ 08:30 hoặc 19:45.");
+      return;
+    }
+    setLocalError("");
+    void onSave({
+      ...form,
+      time: form.time.trim(),
+      name: form.name.trim(),
+      type: form.type || "ATTRACTION",
+      location: form.location?.trim(),
+      duration: form.duration?.trim() || "1 giờ",
+      estimatedCost: Math.max(0, Number(form.estimatedCost) || 0),
+      note: form.note?.trim(),
+      sortOrder: activity?.sortOrder ?? form.sortOrder ?? 0,
+    });
+  };
+
+  return (
+    <Card className="activity-editor-card" style={{ padding: 20, borderColor: "var(--primary-muted)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginBottom: 16 }}>
+        <h3 style={{ fontSize: 17 }}>{activity ? "Sửa hoạt động" : "Thêm hoạt động"}</h3>
+        <button type="button" className="btn btn-ghost btn-icon" onClick={onCancel} aria-label="Đóng form">
+          <X size={16} />
+        </button>
+      </div>
+
+      {(localError || error) && (
+        <div style={{ marginBottom: 12, padding: "9px 11px", borderRadius: "var(--r-md)", background: "#FEF2F2", color: "#B91C1C", fontSize: 13 }}>
+          {localError || error}
+        </div>
+      )}
+
+      <form onSubmit={submit} style={{ display: "grid", gap: 14 }}>
+        <div className="activity-editor-meta-grid">
+          <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 700, color: "var(--text-2)" }}>
+            Giờ bắt đầu
+            <input
+              className="input"
+              type="text"
+              inputMode="numeric"
+              pattern="([01]\d|2[0-3]):[0-5]\d"
+              maxLength={5}
+              placeholder="08:30"
+              value={form.time}
+              onChange={(event) => setField("time", normalizeTimeInput(event.target.value))}
+              required
+            />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 700, color: "var(--text-2)" }}>
+            Loại
+            <select className="input" value={form.type} onChange={(event) => setField("type", event.target.value)}>
+              {activityTypeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 700, color: "var(--text-2)" }}>
+            Chi phí
+            <input
+              className="input"
+              type="number"
+              min={0}
+              step={10000}
+              value={form.estimatedCost ?? 0}
+              onChange={(event) => setField("estimatedCost", event.target.value === "" ? 0 : Number(event.target.value))}
+            />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 700, color: "var(--text-2)" }}>
+            Thời lượng
+            <input className="input" value={form.duration ?? ""} onChange={(event) => setField("duration", event.target.value)} placeholder="1 giờ 30 phút" />
+          </label>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 700, color: "var(--text-2)" }}>
+            Tên hoạt động
+            <input className="input" value={form.name} onChange={(event) => setField("name", event.target.value)} placeholder="VD: Ăn trưa tại..." required />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 700, color: "var(--text-2)" }}>
+            Vị trí
+            <input className="input" value={form.location ?? ""} onChange={(event) => setField("location", event.target.value)} placeholder="Tên quán / địa chỉ" />
+          </label>
+        </div>
+
+        <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 700, color: "var(--text-2)" }}>
+          Mô tả / ghi chú
+          <textarea className="input textarea-compact" value={form.note ?? ""} onChange={(event) => setField("note", event.target.value)} />
+        </label>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+          <Button type="button" variant="secondary" size="sm" onClick={onCancel} disabled={saving}>
+            Hủy
+          </Button>
+          <Button type="submit" size="sm" disabled={saving}>
+            <Save size={13} /> {saving ? "Đang lưu..." : "Lưu hoạt động"}
+          </Button>
+        </div>
+      </form>
+    </Card>
+  );
+}
+
+function ActivityItem({
+  activity,
+  expanded,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
+  activity: ActivityResponse;
+  expanded: boolean;
+  onToggle: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
   const cfg = typeConfig[activity.type] ?? typeConfig.ATTRACTION;
   const Icon = cfg.icon;
   const mapUrl =
@@ -381,6 +681,12 @@ function ActivityItem({ activity, expanded, onToggle }: { activity: ActivityResp
               <a href={mapUrl} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">
                 <ExternalLink size={12} /> Mở bản đồ
               </a>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={onEdit}>
+                <Edit3 size={12} /> Sửa
+              </button>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={onDelete} style={{ color: "#B91C1C" }}>
+                <Trash2 size={12} /> Xóa
+              </button>
               <span className="badge badge-teal">{cfg.label}</span>
             </div>
           </div>

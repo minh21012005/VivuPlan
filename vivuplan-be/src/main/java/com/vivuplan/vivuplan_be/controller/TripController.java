@@ -70,6 +70,35 @@ public class TripController {
         return ResponseEntity.ok(tripService.updateTripStatus(id, (Long) auth.getPrincipal(), body.get("status")));
     }
 
+    /** Add a custom activity to a day */
+    @PostMapping("/{id}/days/{dayNumber}/activities")
+    public ResponseEntity<TripDto.TripResponse> addActivity(
+            @PathVariable Long id,
+            @PathVariable Integer dayNumber,
+            @RequestBody TripDto.UpdateActivityRequest req,
+            Authentication auth) {
+        return ResponseEntity.ok(tripService.addActivity(id, (Long) auth.getPrincipal(), dayNumber, req));
+    }
+
+    /** Update one activity */
+    @PatchMapping("/{id}/activities/{activityId}")
+    public ResponseEntity<TripDto.TripResponse> updateActivity(
+            @PathVariable Long id,
+            @PathVariable Long activityId,
+            @RequestBody TripDto.UpdateActivityRequest req,
+            Authentication auth) {
+        return ResponseEntity.ok(tripService.updateActivity(id, (Long) auth.getPrincipal(), activityId, req));
+    }
+
+    /** Delete one activity */
+    @DeleteMapping("/{id}/activities/{activityId}")
+    public ResponseEntity<TripDto.TripResponse> deleteActivity(
+            @PathVariable Long id,
+            @PathVariable Long activityId,
+            Authentication auth) {
+        return ResponseEntity.ok(tripService.deleteActivity(id, (Long) auth.getPrincipal(), activityId));
+    }
+
     /** Public trips feed */
     @GetMapping("/public")
     public ResponseEntity<Page<TripDto.TripResponse>> publicTrips(

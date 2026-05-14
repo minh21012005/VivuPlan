@@ -11,6 +11,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -176,6 +177,47 @@ public class TripService {
         tripRepository.delete(trip);
     }
 
+    @Transactional
+    public TripDto.TripResponse addActivity(Long tripId, Long userId, Integer dayNumber, TripDto.UpdateActivityRequest req) {
+        Trip trip = getOwnedTrip(tripId, userId);
+        ItineraryDay day = findDay(trip, dayNumber);
+        if (day.getActivities() == null) {
+            day.setActivities(new ArrayList<>());
+        }
+        Activity activity = new Activity();
+        activity.setItineraryDay(day);
+        applyActivityRequest(activity, req, day.getActivities().size());
+        validateNoTimeOverlap(day, activity, null);
+        day.getActivities().add(activity);
+        resequenceActivities(day);
+        trip = tripRepository.saveAndFlush(trip);
+        return toTripResponse(trip);
+    }
+
+    @Transactional
+    public TripDto.TripResponse updateActivity(Long tripId, Long userId, Long activityId, TripDto.UpdateActivityRequest req) {
+        Trip trip = getOwnedTrip(tripId, userId);
+        Activity activity = findActivity(trip, activityId);
+        applyActivityRequest(activity, req, activity.getSortOrder() != null ? activity.getSortOrder() : 0);
+        validateNoTimeOverlap(activity.getItineraryDay(), activity, activityId);
+        resequenceActivities(activity.getItineraryDay());
+        trip = tripRepository.saveAndFlush(trip);
+        return toTripResponse(trip);
+    }
+
+    @Transactional
+    public TripDto.TripResponse deleteActivity(Long tripId, Long userId, Long activityId) {
+        Trip trip = getOwnedTrip(tripId, userId);
+        ItineraryDay day = findActivityDay(trip, activityId);
+        boolean removed = day.getActivities().removeIf(activity -> activityId.equals(activity.getId()));
+        if (!removed) {
+            throw new RuntimeException("Hoạt động không tồn tại");
+        }
+        resequenceActivities(day);
+        trip = tripRepository.saveAndFlush(trip);
+        return toTripResponse(trip);
+    }
+
     public Page<TripDto.TripResponse> getPublicTrips(int page, int size) {
         return tripRepository.findByIsPublicTrueOrderByViewCountDesc(PageRequest.of(page, size))
                 .map(TripDto.TripResponse::from);
@@ -200,6 +242,122 @@ public class TripService {
         if (!trip.getUser().getId().equals(userId))
             throw new RuntimeException("Không có quyền thực hiện thao tác này");
         return trip;
+    }
+
+    private TripDto.TripResponse toTripResponse(Trip trip) {
+        TripDto.TripResponse response = TripDto.TripResponse.from(trip);
+        response.setSchedule(mapDays(trip.getItineraryDays()));
+        response.setBudget(calculateBudget(trip, response.getSchedule()));
+        return response;
+    }
+
+    private ItineraryDay findDay(Trip trip, Integer dayNumber) {
+        if (dayNumber == null) {
+            throw new IllegalArgumentException("Ngày không hợp lệ");
+        }
+        return trip.getItineraryDays().stream()
+                .filter(day -> day.getDayNumber().equals(dayNumber))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy ngày trong lịch trình"));
+    }
+
+    private Activity findActivity(Trip trip, Long activityId) {
+        return trip.getItineraryDays().stream()
+                .flatMap(day -> day.getActivities() == null ? java.util.stream.Stream.empty() : day.getActivities().stream())
+                .filter(activity -> activityId.equals(activity.getId()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Hoạt động không tồn tại"));
+    }
+
+    private ItineraryDay findActivityDay(Trip trip, Long activityId) {
+        return trip.getItineraryDays().stream()
+                .filter(day -> day.getActivities() != null && day.getActivities().stream().anyMatch(activity -> activityId.equals(activity.getId())))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Hoạt động không tồn tại"));
+    }
+
+    private void applyActivityRequest(Activity activity, TripDto.UpdateActivityRequest req, int defaultSortOrder) {
+        if (req.getName() == null || req.getName().isBlank()) {
+            throw new IllegalArgumentException("Tên hoạt động không được để trống");
+        }
+        if (req.getTime() == null || req.getTime().isBlank()) {
+            throw new IllegalArgumentException("Thời gian hoạt động không được để trống");
+        }
+        parseTime(req.getTime());
+        if (req.getEstimatedCost() != null && req.getEstimatedCost() < 0) {
+            throw new IllegalArgumentException("Chi phí không được âm");
+        }
+
+        activity.setName(req.getName().trim());
+        activity.setTime(req.getTime().trim());
+        activity.setType(parseEnum(Activity.ActivityType.class, req.getType(), activity.getType() != null ? activity.getType() : Activity.ActivityType.ATTRACTION));
+        activity.setLocation(req.getLocation());
+        activity.setDuration(req.getDuration() != null && !req.getDuration().isBlank() ? req.getDuration().trim() : "1 giờ");
+        activity.setEstimatedCost(req.getEstimatedCost() != null ? req.getEstimatedCost() : 0);
+        activity.setNote(req.getNote());
+        activity.setLatitude(req.getLatitude());
+        activity.setLongitude(req.getLongitude());
+        activity.setGooglePlaceId(req.getGooglePlaceId());
+        activity.setSortOrder(req.getSortOrder() > 0 ? req.getSortOrder() : defaultSortOrder);
+    }
+
+    private void validateNoTimeOverlap(ItineraryDay day, Activity candidate, Long ignoreActivityId) {
+        LocalTime candidateStart = parseTime(candidate.getTime());
+        LocalTime candidateEnd = candidateStart.plusMinutes(parseDurationMinutes(candidate.getDuration()));
+        if (day.getActivities() == null) return;
+        for (Activity other : day.getActivities()) {
+            if (ignoreActivityId != null && ignoreActivityId.equals(other.getId())) continue;
+            LocalTime otherStart = parseTime(other.getTime());
+            LocalTime otherEnd = otherStart.plusMinutes(parseDurationMinutes(other.getDuration()));
+            if (candidateStart.isBefore(otherEnd) && otherStart.isBefore(candidateEnd)) {
+                throw new IllegalArgumentException("Thời gian hoạt động bị trùng với: " + other.getName());
+            }
+        }
+    }
+
+    private LocalTime parseTime(String time) {
+        try {
+            if (time == null || !time.matches("([01]\\d|2[0-3]):[0-5]\\d")) {
+                throw new IllegalArgumentException();
+            }
+            return LocalTime.parse(time);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Thời gian phải có định dạng 24h HH:mm, từ 00:00 đến 23:59");
+        }
+    }
+
+    private int parseDurationMinutes(String duration) {
+        if (duration == null || duration.isBlank()) return 60;
+        String normalized = normalizeText(duration);
+        int minutes = 0;
+
+        java.util.regex.Matcher hourMatcher = java.util.regex.Pattern
+                .compile("(\\d+(?:[\\.,]\\d+)?)\\s*(gio|h)")
+                .matcher(normalized);
+        if (hourMatcher.find()) {
+            minutes += Math.round(Float.parseFloat(hourMatcher.group(1).replace(",", ".")) * 60);
+        }
+
+        java.util.regex.Matcher minuteMatcher = java.util.regex.Pattern
+                .compile("(\\d+)\\s*(phut|p|min)")
+                .matcher(normalized);
+        if (minuteMatcher.find()) {
+            minutes += Integer.parseInt(minuteMatcher.group(1));
+        }
+
+        return minutes > 0 ? minutes : 60;
+    }
+
+    private void resequenceActivities(ItineraryDay day) {
+        List<Activity> activities = day.getActivities();
+        activities.sort((a, b) -> {
+            int byTime = a.getTime().compareTo(b.getTime());
+            if (byTime != 0) return byTime;
+            return Integer.compare(a.getSortOrder() != null ? a.getSortOrder() : 0, b.getSortOrder() != null ? b.getSortOrder() : 0);
+        });
+        for (int i = 0; i < activities.size(); i++) {
+            activities.get(i).setSortOrder(i);
+        }
     }
 
     private int resolveTripDays(TripDto.GenerateRequest req) {

@@ -157,10 +157,14 @@ public class TripDto {
     public static class UpdateActivityRequest {
         private String time;
         private String name;
+        private String type;
         private String location;
         private String duration;
         private Long estimatedCost;
         private String note;
+        private Double latitude;
+        private Double longitude;
+        private String googlePlaceId;
         private int sortOrder;
     }
 
