@@ -105,6 +105,7 @@ public class TripService {
                     act.setRating(ar.getRating() > 0 ? ar.getRating() : null);
                     act.setLatitude(ar.getLatitude());
                     act.setLongitude(ar.getLongitude());
+                    act.setGooglePlaceId(ar.getGooglePlaceId());
                     act.setSortOrder(ar.getSortOrder());
                     activities.add(act);
                 }
@@ -114,10 +115,10 @@ public class TripService {
         }
         trip.setItineraryDays(days);
 
-        trip = tripRepository.save(trip);
+        trip = tripRepository.saveAndFlush(trip);
 
         TripDto.TripResponse response = TripDto.TripResponse.from(trip);
-        response.setSchedule(aiSchedule);
+        response.setSchedule(mapDays(trip.getItineraryDays()));
         response.setBudget(calculateBudget(trip, aiSchedule));
         return response;
     }
