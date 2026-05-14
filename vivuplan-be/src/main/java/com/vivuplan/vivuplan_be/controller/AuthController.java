@@ -29,9 +29,7 @@ public class AuthController {
 
     @PostMapping("/google")
     public ResponseEntity<AuthDto.AuthResponse> googleLogin(@Valid @RequestBody AuthDto.GoogleLoginRequest req) {
-        // In production: verify idToken with Google, extract claims
-        // For now returns placeholder - integrate google-auth-library
-        return ResponseEntity.status(501).body(null);
+        return ResponseEntity.ok(authService.loginWithGoogleToken(req.getIdToken()));
     }
 
     @GetMapping("/me")

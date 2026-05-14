@@ -2,7 +2,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MapPin, Eye, EyeOff, LogIn, Globe, ArrowLeft } from "lucide-react";
+import { MapPin, Eye, EyeOff, LogIn, ArrowLeft } from "lucide-react";
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { authApi } from "@/lib/api";
 
 export default function LoginPage() {
@@ -27,6 +28,12 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAuthSuccess = (res: { token: string; user: unknown }) => {
+    localStorage.setItem("vp_token", res.token);
+    localStorage.setItem("vp_user", JSON.stringify(res.user));
+    router.push("/dashboard");
   };
 
   return (
@@ -76,13 +83,7 @@ export default function LoginPage() {
           <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "26px", fontWeight: 800, color: "var(--text)", marginBottom: "6px" }}>Đăng nhập</h1>
           <p style={{ fontSize: "14px", color: "var(--text-3)", marginBottom: "28px" }}>Chào mừng trở lại! Hãy tiếp tục hành trình của bạn.</p>
 
-          {/* Google button */}
-          <button id="btn-google-login"
-            className="btn btn-secondary"
-            style={{ width: "100%", marginBottom: "20px", justifyContent: "center", padding: "12px" }}>
-            <Globe size={17} /> Tiếp tục với Google
-          </button>
-
+          <GoogleAuthButton onSuccess={handleAuthSuccess} onError={setError} />
           <div className="divider" style={{ marginBottom: "20px" }}>hoặc dùng email</div>
 
           {error && (

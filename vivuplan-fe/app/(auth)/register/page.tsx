@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MapPin, Eye, EyeOff, UserPlus, Globe, ArrowLeft, CheckCircle } from "lucide-react";
+import { MapPin, Eye, EyeOff, UserPlus, ArrowLeft, CheckCircle } from "lucide-react";
 import { authApi } from "@/lib/api";
 
 const perks = [
@@ -84,13 +84,12 @@ export default function RegisterPage() {
             </Link>
           </div>
 
-          <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "26px", fontWeight: 800, color: "var(--text)", marginBottom: "6px" }}>Tạo tài khoản</h1>
-          <p style={{ fontSize: "14px", color: "var(--text-3)", marginBottom: "28px" }}>Miễn phí mãi mãi. Không cần thẻ tín dụng.</p>
-
-          <button id="btn-google-register" className="btn btn-secondary" style={{ width: "100%", justifyContent: "center", padding: "12px", marginBottom: "20px" }}>
-            <Globe size={17} /> Đăng ký với Google
-          </button>
-          <div className="divider" style={{ marginBottom: "20px" }}>hoặc dùng email</div>
+          <div style={{ marginBottom: "26px" }}>
+            <div style={{ width: 46, height: 4, borderRadius: 99, background: "linear-gradient(135deg,var(--primary),var(--secondary))", marginBottom: "14px" }} />
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "30px", fontWeight: 850, color: "var(--text)", lineHeight: 1.16, marginBottom: "8px" }}>
+              Tạo tài khoản
+            </h1>
+          </div>
 
           {error && (
             <div style={{ marginBottom: "16px", padding: "12px 14px", borderRadius: "var(--r-lg)", background: "#FEF2F2", border: "1px solid #FECACA", color: "#DC2626", fontSize: "14px" }}>
@@ -139,11 +138,6 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          <p style={{ fontSize: "12px", color: "var(--text-4)", textAlign: "center", marginTop: "16px" }}>
-            Bằng cách đăng ký, bạn đồng ý với{" "}
-            <Link href="/terms" style={{ color: "var(--primary)", textDecoration: "none" }}>Điều khoản</Link>{" "}và{" "}
-            <Link href="/privacy" style={{ color: "var(--primary)", textDecoration: "none" }}>Bảo mật</Link>
-          </p>
           <p style={{ textAlign: "center", fontSize: "14px", color: "var(--text-3)", marginTop: "20px" }}>
             Đã có tài khoản?{" "}
             <Link href="/login" style={{ color: "var(--primary)", fontWeight: 600, textDecoration: "none" }}>Đăng nhập</Link>

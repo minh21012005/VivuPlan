@@ -1,5 +1,9 @@
 package com.vivuplan.vivuplan_be.service;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import com.vivuplan.vivuplan_be.dto.AuthDto;
 import com.vivuplan.vivuplan_be.entity.Role;
 import com.vivuplan.vivuplan_be.entity.User;
@@ -13,6 +17,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.util.Collections;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -25,6 +33,9 @@ public class AuthService {
 
     @Value("${app.admin.bootstrap-email:}")
     private String bootstrapAdminEmail;
+
+    @Value("${spring.security.oauth2.client.registration.google.client-id:}")
+    private String googleClientId;
 
     @Transactional
     public AuthDto.AuthResponse register(AuthDto.RegisterRequest req) {
@@ -59,6 +70,29 @@ public class AuthService {
     }
 
     @Transactional
+    public AuthDto.AuthResponse loginWithGoogleToken(String idTokenValue) {
+        GoogleIdToken.Payload payload = verifyGoogleToken(idTokenValue);
+        if (!Boolean.TRUE.equals(payload.getEmailVerified())) {
+            throw new IllegalArgumentException("Email Google chua duoc xac minh");
+        }
+
+        String googleId = payload.getSubject();
+        String email = payload.getEmail();
+        String name = readStringClaim(payload, "name");
+        String avatarUrl = readStringClaim(payload, "picture");
+
+        if (googleId == null || googleId.isBlank() || email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Token Google khong hop le");
+        }
+        if (name == null || name.isBlank()) {
+            int atIndex = email.indexOf("@");
+            name = atIndex > 0 ? email.substring(0, atIndex) : email;
+        }
+
+        return loginWithGoogle(googleId, email, name, avatarUrl);
+    }
+
+    @Transactional
     public AuthDto.AuthResponse loginWithGoogle(String googleId, String email, String name, String avatarUrl) {
         User user = userRepository.findByGoogleId(googleId).orElseGet(() ->
                 userRepository.findByEmail(email).map(u -> {
@@ -82,6 +116,35 @@ public class AuthService {
 
         String token = generateToken(user);
         return new AuthDto.AuthResponse(token, AuthDto.UserDto.from(user));
+    }
+
+    private GoogleIdToken.Payload verifyGoogleToken(String idTokenValue) {
+        if (googleClientId == null || googleClientId.isBlank()) {
+            throw new IllegalStateException("Chua cau hinh GOOGLE_CLIENT_ID");
+        }
+
+        try {
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                    new NetHttpTransport(),
+                    GsonFactory.getDefaultInstance()
+            )
+                    .setAudience(Collections.singletonList(googleClientId))
+                    .build();
+
+            GoogleIdToken idToken = verifier.verify(idTokenValue);
+            if (idToken == null) {
+                throw new IllegalArgumentException("Token Google khong hop le");
+            }
+            return idToken.getPayload();
+        } catch (GeneralSecurityException | IOException e) {
+            log.warn("Google token verification failed: {}", e.getMessage());
+            throw new IllegalArgumentException("Khong the xac thuc token Google");
+        }
+    }
+
+    private String readStringClaim(GoogleIdToken.Payload payload, String claimName) {
+        Object value = payload.get(claimName);
+        return value instanceof String str ? str : null;
     }
 
     public AuthDto.UserDto getProfile(Long userId) {

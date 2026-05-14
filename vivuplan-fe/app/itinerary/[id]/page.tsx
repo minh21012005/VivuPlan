@@ -21,7 +21,6 @@ import {
   MapPin,
   Navigation,
   Plus,
-  RefreshCw,
   Save,
   Share2,
   Star,
@@ -267,16 +266,13 @@ export default function ItineraryPage() {
               </Button>
             </div>
 
-            <Card style={{ padding: 20, marginBottom: 18, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+            <Card style={{ padding: 20, marginBottom: 18 }}>
               <div>
                 <h2 style={{ fontSize: 20, marginBottom: 4 }}>{day.title}</h2>
                 <p style={{ color: "var(--text-3)", fontSize: 14 }}>
                   {day.activities.length} hoạt động · Chi phí trong ngày khoảng {fmtCost(dayTotal)}
                 </p>
               </div>
-              <Button variant="secondary" size="sm" title="Tính năng tái tạo từng ngày sẽ được nối API ở bước tiếp theo">
-                <RefreshCw size={13} /> Tạo lại ngày
-              </Button>
             </Card>
 
             {activityError && !editor && (

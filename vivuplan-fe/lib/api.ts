@@ -31,14 +31,21 @@ export const authApi = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
-    }).then(handleResponse<{ token: string; user: User }>),
+    }).then(handleResponse<AuthResponse>),
 
   login: (data: { email: string; password: string }) =>
     fetch(`${API_BASE}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
-    }).then(handleResponse<{ token: string; user: User }>),
+    }).then(handleResponse<AuthResponse>),
+
+  google: (data: { idToken: string }) =>
+    fetch(`${API_BASE}/api/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }).then(handleResponse<AuthResponse>),
 
   me: () =>
     fetch(`${API_BASE}/api/auth/me`, { headers: authHeaders() })
@@ -120,6 +127,11 @@ export interface User {
   avatarUrl?: string;
   role: string;
   roles?: string[];
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
 }
 
 export interface GenerateRequest {
