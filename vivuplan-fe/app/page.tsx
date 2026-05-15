@@ -101,19 +101,20 @@ export default function HomePage() {
       <Navbar />
 
       <section
-        className="travel-hero"
+        className="travel-hero home-hero"
         style={{
           minHeight: "min(620px, 90vh)",
           display: "flex",
           alignItems: "center",
-          backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.2)), url(${heroImages.vietnamBay})`,
+          backgroundImage: `linear-gradient(180deg, rgba(15, 23, 42, 0.66), rgba(15, 23, 42, 0.34)), url(${heroImages.vietnamBay})`,
         }}
       >
-        <div className="container" style={{ display: "flex", justifyContent: "center", width: "100%" }}>
-          <div className="travel-hero-content" style={{ maxWidth: "1100px", width: "100%", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <h1>Lập kế hoạch du lịch <br /> Thông minh hơn cùng AI</h1>
+        <div className="container home-hero-shell">
+          <div className="travel-hero-content home-hero-content">
+          <span className="home-hero-eyebrow">VivuPlan AI Travel Planner</span>
+          <h1>Lập kế hoạch du lịch thông minh hơn cùng AI</h1>
           <p>
-            VivuPlan giúp bạn biến mọi ý tưởng thành một hành trình chi tiết: <br /> đi đâu, lúc nào và tốn bao nhiêu – chỉ trong vài giây.
+            Biến ý tưởng du lịch thành lịch trình rõ ràng chỉ trong vài giây.
           </p>
 
           <div className="hero-search hero-planner" style={{ width: "100%" }}>

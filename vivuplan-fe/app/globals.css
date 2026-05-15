@@ -352,6 +352,70 @@ textarea.input.textarea-compact {
   letter-spacing: -0.01em;
 }
 
+.home-hero {
+  background-position: center 42%;
+}
+
+.home-hero-shell {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.home-hero-content {
+  width: 100%;
+  max-width: 980px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.home-hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  backdrop-filter: blur(10px);
+}
+
+.home-hero .travel-hero-content {
+  padding-top: 74px;
+  padding-bottom: 38px;
+}
+
+.home-hero h1 {
+  max-width: 860px;
+  margin-bottom: 18px;
+  color: #fff;
+  font-size: 58px;
+  font-weight: 900;
+  line-height: 1.06;
+  letter-spacing: 0;
+  text-wrap: balance;
+  text-shadow: 0 12px 34px rgba(15, 23, 42, 0.42);
+}
+
+.home-hero p {
+  max-width: 720px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.75;
+  letter-spacing: 0;
+  text-wrap: pretty;
+  text-shadow: 0 8px 24px rgba(15, 23, 42, 0.38);
+}
+
 .hero-search {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -944,7 +1008,8 @@ textarea.input.textarea-compact {
 }
 
 .planner-form-generating .field-group,
-.planner-form-generating .planner-two-col {
+.planner-form-generating .planner-two-col,
+.planner-form-generating .planner-money-row {
   opacity: 0.58;
   pointer-events: none;
 }
@@ -2968,6 +3033,30 @@ textarea.input.textarea-compact {
     margin-bottom: 24px;
   }
 
+  .home-hero .travel-hero-content {
+    padding-top: 82px;
+    padding-bottom: 34px;
+  }
+
+  .home-hero-eyebrow {
+    margin-bottom: 13px;
+    font-size: 11px;
+  }
+
+  .home-hero h1 {
+    max-width: 620px;
+    font-size: 39px;
+    line-height: 1.12;
+    margin-bottom: 14px;
+  }
+
+  .home-hero p {
+    max-width: 560px;
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 26px;
+  }
+
   .hero-search,
   .hero-search.hero-planner {
     grid-template-columns: 1fr;
@@ -3125,6 +3214,16 @@ textarea.input.textarea-compact {
   .hero-search .input {
     padding-left: 36px;
     font-size: 13px;
+  }
+
+  .home-hero-eyebrow {
+    max-width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .home-hero h1 {
+    font-size: 34px;
   }
 
   .planner-form {

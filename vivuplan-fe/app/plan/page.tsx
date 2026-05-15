@@ -371,17 +371,6 @@ function PlanContent() {
           </div>
 
           <Card className={`planner-form${generating ? " planner-form-generating" : ""}`}>
-            {generating && (
-              <div className="planner-generation-status" role="status" aria-live="polite">
-                <div className="spinner" />
-                <div>
-                  <strong>AI đang tạo lịch trình cho bạn</strong>
-                  <p>{generationStep}</p>
-                  <span>Thường mất khoảng 30 giây đến 1 phút. Đã chờ {elapsedSeconds}s.</span>
-                </div>
-              </div>
-            )}
-
             <div className="field-group">
               <label>Điểm xuất phát</label>
               <div className="input-with-icon">
@@ -659,6 +648,17 @@ function PlanContent() {
 
 
             {error && <div className="form-error">{error}</div>}
+
+            {generating && (
+              <div className="planner-generation-status" role="status" aria-live="polite">
+                <div className="spinner" />
+                <div>
+                  <strong>AI đang lập lịch trình cho bạn...</strong>
+                  <p>{generationStep}</p>
+                  <span>Quá trình này thường mất khoảng 30 giây đến 1 phút, bạn vui lòng chờ một chút nhé.</span>
+                </div>
+              </div>
+            )}
 
             <Button id="btn-generate" onClick={handleGenerate} disabled={generating} className="planner-submit">
               {generating ? (
