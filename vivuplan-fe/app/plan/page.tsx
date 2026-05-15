@@ -329,6 +329,14 @@ function PlanContent() {
       setError(budgetValidationError);
       return;
     }
+    if (!form.outboundTransport) {
+      setError("Vui lòng chọn phương tiện di chuyển đến điểm đến hoặc chọn Để AI chọn.");
+      return;
+    }
+    if (!form.localTransport) {
+      setError("Vui lòng chọn phương tiện di chuyển trong chuyến đi hoặc chọn Để AI chọn.");
+      return;
+    }
 
     setGenerating(true);
     setElapsedSeconds(0);
@@ -343,8 +351,8 @@ function PlanContent() {
         form.travelers === 1 ? "Thành phần nhóm: Một mình" : form.group ? `Thành phần nhóm: ${optionLabel(groupOptions, form.group)}` : "",
         form.outboundTransport ? `Di chuyển đến điểm đến: ${optionLabel(outboundTransportOptions, form.outboundTransport)}` : "Di chuyển đến điểm đến: để AI đề xuất",
         form.localTransport ? `Di chuyển trong chuyến đi: ${optionLabel(localTransportOptions, form.localTransport)}` : "Di chuyển trong chuyến đi: để AI đề xuất",
-        form.mustVisit.trim() ? `Địa điểm muốn ghé: ${form.mustVisit.trim()}` : "",
-        form.avoid.trim() ? `Điều cần tránh: ${form.avoid.trim()}` : "",
+        form.mustVisit.trim() ? `Nơi muốn ghé: ${form.mustVisit.trim()}` : "",
+        form.avoid.trim() ? `Điều muốn tránh: ${form.avoid.trim()}` : "",
         form.notes.trim(),
       ].filter(Boolean).join("\n");
 
@@ -388,7 +396,7 @@ function PlanContent() {
         <section className="planner-visual">
           <div className="planner-photo" style={{ backgroundImage: `url(${image})` }}>
             <Badge tone="glass">
-              <MapPin size={13} /> {form.destination || "AI sẽ chọn điểm đến"}
+              <MapPin size={13} /> {form.destination || "VivuPlan sẽ gợi ý điểm đến"}
             </Badge>
             <p style={{
               marginTop: "auto",
@@ -398,7 +406,7 @@ function PlanContent() {
               fontWeight: "500",
               maxWidth: "80%"
             }}>
-              {form.destination ? destination?.tag ?? "Tạo lịch trình thực tế với ngân sách và phong cách phù hợp." : "Bạn có thể bỏ trống điểm đến, VivuPlan sẽ chọn nơi phù hợp với thời gian và ngân sách."}
+              {form.destination ? destination?.tag ?? "Tạo lịch trình thực tế với ngân sách và phong cách phù hợp." : "Để trống nếu bạn muốn VivuPlan gợi ý nơi phù hợp với thời gian và ngân sách."}
             </p>
           </div>
 
@@ -470,8 +478,8 @@ function PlanContent() {
 
             <div className="field-group">
               <div className="field-label-row">
-                <label>Điểm đến <span className="optional-label">tùy chọn</span></label>
-                <span className="group-summary">{form.destination.trim() ? "Theo điểm bạn chọn" : "Để AI chọn"}</span>
+                <label>Điểm đến muốn đi <span className="optional-label">tùy chọn</span></label>
+                <span className="group-summary">{form.destination.trim() ? "Theo điểm bạn chọn" : "VivuPlan gợi ý"}</span>
               </div>
               <div className="input-with-icon">
                 <MapPin size={16} />
@@ -482,7 +490,7 @@ function PlanContent() {
                   onChange={(event) => setForm((prev) => ({ ...prev, destination: event.target.value }))}
                   onFocus={() => focusField("destination")}
                   onBlur={closeSuggestionsSoon}
-                  placeholder="VD: Đà Lạt, Quy Nhơn... hoặc bỏ trống để AI gợi ý"
+                  placeholder="VD: Đà Lạt, Quy Nhơn... hoặc để trống để VivuPlan gợi ý"
                 />
                 {focusedField === "destination" && destinationMatches.length > 0 && (
                   <div className="field-suggestions">
@@ -501,7 +509,7 @@ function PlanContent() {
                   </div>
                 )}
               </div>
-              <p className="field-hint">Nếu chưa biết đi đâu, cứ để trống. AI sẽ chọn điểm đến dựa trên điểm xuất phát, thời gian, ngân sách và sở thích.</p>
+              <p className="field-hint">Nếu chưa biết đi đâu, hãy để trống. VivuPlan sẽ gợi ý điểm đến dựa trên điểm xuất phát, thời gian, ngân sách và sở thích.</p>
             </div>
 
             <div className="field-group planner-date-block">
@@ -632,6 +640,40 @@ function PlanContent() {
               </div>
             </div>
 
+            <div className="planner-two-col">
+              <div className="field-group">
+                <label>Di chuyển đến điểm đến</label>
+                <div className="option-grid option-grid-transport">
+                  {outboundTransportOptions.map(({ id, label, icon: Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      className={form.outboundTransport === id ? "active" : ""}
+                      onClick={() => setForm((prev) => ({ ...prev, outboundTransport: id }))}
+                    >
+                      <Icon size={16} /> {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="field-group">
+                <label>Di chuyển trong chuyến đi</label>
+                <div className="option-grid option-grid-transport">
+                  {localTransportOptions.map(({ id, label, icon: Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      className={form.localTransport === id ? "active" : ""}
+                      onClick={() => setForm((prev) => ({ ...prev, localTransport: id }))}
+                    >
+                      <Icon size={16} /> {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div className="field-group">
               <label>Phong cách du lịch <span className="optional-label">tùy chọn</span></label>
               <div className="option-grid option-grid-four">
@@ -650,68 +692,34 @@ function PlanContent() {
 
             <div className="planner-two-col">
               <div className="field-group">
-                <label>Di chuyển đến điểm đến <span className="optional-label">tùy chọn</span></label>
-                <div className="option-grid option-grid-transport">
-                  {outboundTransportOptions.map(({ id, label, icon: Icon }) => (
-                    <button
-                      key={id}
-                      type="button"
-                      className={form.outboundTransport === id ? "active" : ""}
-                      onClick={() => setForm((prev) => ({ ...prev, outboundTransport: prev.outboundTransport === id ? "" : id }))}
-                    >
-                      <Icon size={16} /> {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="field-group">
-                <label>Di chuyển trong chuyến đi <span className="optional-label">tùy chọn</span></label>
-                <div className="option-grid option-grid-transport">
-                  {localTransportOptions.map(({ id, label, icon: Icon }) => (
-                    <button
-                      key={id}
-                      type="button"
-                      className={form.localTransport === id ? "active" : ""}
-                      onClick={() => setForm((prev) => ({ ...prev, localTransport: prev.localTransport === id ? "" : id }))}
-                    >
-                      <Icon size={16} /> {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="planner-two-col">
-              <div className="field-group">
-                <label>Địa điểm muốn ghé <span className="optional-label">tùy chọn</span></label>
+                <label>Nơi muốn ghé <span className="optional-label">tùy chọn</span></label>
                 <textarea
                   className="input textarea-compact"
                   value={form.mustVisit}
                   onChange={(event) => setForm((prev) => ({ ...prev, mustVisit: event.target.value }))}
-                  placeholder="VD: Langbiang, chợ đêm, quán cà phê view đẹp..."
+                  placeholder="VD: Đồi chè trái tim, thác Dải Yếm, rừng thông Bản Áng..."
                 />
               </div>
 
               <div className="field-group">
-                <label>Điều cần tránh <span className="optional-label">tùy chọn</span></label>
+                <label>Điều muốn tránh <span className="optional-label">tùy chọn</span></label>
                 <textarea
                   className="input textarea-compact"
                   value={form.avoid}
                   onChange={(event) => setForm((prev) => ({ ...prev, avoid: event.target.value }))}
-                  placeholder="VD: không trekking, không dậy quá sớm, không lịch quá dày..."
+                  placeholder="VD: tránh đi bộ nhiều, không ăn cay, không đi xe máy..."
                 />
               </div>
             </div>
 
             <div className="field-group">
-              <label>Ghi chú thêm</label>
+              <label>Ghi chú khác <span className="optional-label">tùy chọn</span></label>
               <textarea
                 id="input-notes"
                 className="input"
                 value={form.notes}
                 onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
-                placeholder="VD: thích ăn chay, có trẻ em, cần lịch nhẹ, muốn nhiều quán cà phê..."
+                placeholder="VD: đi cùng người lớn tuổi, muốn lịch nhẹ nhàng, cần về trước 18h..."
               />
             </div>
 

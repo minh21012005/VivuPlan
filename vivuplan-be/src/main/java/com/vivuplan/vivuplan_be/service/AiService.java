@@ -39,7 +39,7 @@ public class AiService {
         try {
             String rawJson = callGemini(prompt);
             List<TripDto.DayResponse> itinerary = parseItinerary(rawJson);
-            QualityCheck quality = assessItineraryQuality(itinerary, req.getDays());
+            QualityCheck quality = assessItineraryQuality(itinerary, req);
             if (quality.passed()) {
                 return itinerary;
             }
@@ -49,7 +49,7 @@ public class AiService {
 
             String retryJson = callGemini(buildQualityRetryPrompt(req, quality.reason()));
             List<TripDto.DayResponse> retryItinerary = parseItinerary(retryJson);
-            QualityCheck retryQuality = assessItineraryQuality(retryItinerary, req.getDays());
+            QualityCheck retryQuality = assessItineraryQuality(retryItinerary, req);
             if (retryQuality.passed()) {
                 return retryItinerary;
             }
@@ -77,8 +77,9 @@ public class AiService {
             Regenerate the itinerary from scratch.
             Use named, real places and restaurants in or near %s.
             Avoid placeholder wording such as "địa điểm nổi bật", "đặc sản địa phương", "khu trung tâm", "vùng ven", "nhà hàng địa phương", or "cà phê view đẹp" unless paired with a specific real name and location.
+            Add a clear local transportation plan with TRANSPORT activities for getting around %s. Do not hide rental, taxi, Grab, walking, bicycle, or local transfer costs inside FOOD/CAFE/ATTRACTION notes.
             Do not repeat the same day structure across days.
-            """, reason, req.getDestination());
+            """, reason, req.getDestination(), req.getDestination());
     }
 
     private String buildLegacyPrompt(TripDto.GenerateRequest req) {
@@ -199,13 +200,23 @@ public class AiService {
             9. Prefer specific real places, restaurants, dishes, addresses/areas, and realistic travel pacing.
             10. Keep notes concise. Do not invent exact official prices when unsure; use "ước tính" or "khoảng".
 
+            Local transportation rules:
+            1. Always make the local transportation plan explicit. Users must know how to move between places inside %s.
+            2. If Local transport is MIXED or unclear, choose the most practical option for Vietnamese travelers and say it clearly: thuê xe máy, taxi/Grab, thuê ô tô, xe đạp, đi bộ, shuttle, or a combination.
+            3. If Local transport is MOTORBIKE, CAR, BUS, TRAIN, WALKING, or PLANE, follow that selected mode for local movement unless it is impractical; if you must deviate, explain why in the TRANSPORT note.
+            4. Add TRANSPORT activities for local movement, not only for the outbound/return trip. Examples: "Thuê xe máy tại thị trấn Mộc Châu", "Di chuyển khách sạn -> Thác Dải Yếm bằng xe máy", "Taxi/Grab từ nhà hàng về homestay".
+            5. Each local TRANSPORT activity must include mode, route or area, estimated duration, and group cost. Rental or taxi costs must be estimatedCost on TRANSPORT, never hidden inside FOOD/CAFE/ATTRACTION notes.
+            6. If places are close enough to walk, add a TRANSPORT activity or clear route note that says "Đi bộ khoảng X phút" with cost 0.
+            7. Do not put all local transport detail into one unrelated dinner or attraction note.
+
             Itinerary quality rules:
             1. Return exactly %d days.
             2. Each day must have 4-6 activities.
             3. FOOD/CAFE activities must name a specific dish or restaurant/cafe.
             4. ATTRACTION/ACTIVITY activities must name a specific real place in or near %s.
-            5. Do not use generic names like "ăn sáng đặc sản địa phương", "tham quan điểm nổi bật", "khám phá khu vực lân cận", "nhà hàng địa phương", or "cà phê view đẹp".
-            6. Days must be clearly different and should not repeat the same activity sequence.
+            5. TRANSPORT activities must include both outbound/return travel and local travel between clusters of places.
+            6. Do not use generic names like "ăn sáng đặc sản địa phương", "tham quan điểm nổi bật", "khám phá khu vực lân cận", "nhà hàng địa phương", or "cà phê view đẹp".
+            7. Days must be clearly different and should not repeat the same activity sequence.
 
             JSON schema:
             [
@@ -247,6 +258,7 @@ public class AiService {
             req.getAvoid() != null && !req.getAvoid().isBlank() ? req.getAvoid() : "none",
             req.getNotes() != null && !req.getNotes().isBlank() ? req.getNotes() : "none",
             travelers,
+            req.getDestination(),
             days,
             req.getDestination()
         );
@@ -356,7 +368,8 @@ public class AiService {
         }
     }
 
-    private QualityCheck assessItineraryQuality(List<TripDto.DayResponse> days, int expectedDays) {
+    private QualityCheck assessItineraryQuality(List<TripDto.DayResponse> days, TripDto.GenerateRequest req) {
+        int expectedDays = req.getDays();
         if (days == null) {
             return QualityCheck.fail("response has no days");
         }
@@ -367,6 +380,9 @@ public class AiService {
         Set<String> dayFingerprints = new HashSet<>();
         int genericActivities = 0;
         int totalActivities = 0;
+        int localTransportActivities = 0;
+        int localTransportActivitiesMatchingSelection = 0;
+        int nonLogisticsActivities = 0;
         for (TripDto.DayResponse day : days) {
             if (day.getActivities() == null || day.getActivities().size() < 4) {
                 return QualityCheck.fail("day " + day.getDay() + " has fewer than 4 activities");
@@ -376,9 +392,23 @@ public class AiService {
                 totalActivities++;
                 String name = normalize(act.getName());
                 String location = normalize(act.getLocation());
+                String type = normalize(act.getType());
+                String note = normalize(act.getNote());
                 fingerprint.append(name).append("|");
-                if (isGenericActivity(name, location, normalize(act.getType()))) {
+                if (isGenericActivity(name, location, type)) {
                     genericActivities++;
+                }
+                if (isLocalTransportCostHiddenInNonTransport(type, name, note)) {
+                    return QualityCheck.fail("local transport cost is hidden in non-transport activity: " + act.getName());
+                }
+                if (isLocalTransportActivity(type, name, location, note, req)) {
+                    localTransportActivities++;
+                    if (matchesSelectedLocalTransport(name + " " + location + " " + note, req)) {
+                        localTransportActivitiesMatchingSelection++;
+                    }
+                }
+                if (!type.equals("transport") && !type.equals("accommodation")) {
+                    nonLogisticsActivities++;
                 }
             }
             dayFingerprints.add(fingerprint.toString());
@@ -393,7 +423,110 @@ public class AiService {
             return QualityCheck.fail("too many generic activities: " + genericActivities + "/" + totalActivities);
         }
 
+        if (requiresLocalTransportPlan(expectedDays, nonLogisticsActivities) && localTransportActivities == 0) {
+            return QualityCheck.fail("missing explicit local transport plan inside " + req.getDestination());
+        }
+
+        if (requiresSelectedLocalTransport(req)
+                && localTransportActivities > 0
+                && localTransportActivitiesMatchingSelection == 0) {
+            return QualityCheck.fail("local transport plan does not follow selected mode " + req.getLocalTransport());
+        }
+
         return QualityCheck.pass();
+    }
+
+    private boolean requiresLocalTransportPlan(int expectedDays, int nonLogisticsActivities) {
+        return expectedDays >= 2 && nonLogisticsActivities >= 4;
+    }
+
+    private boolean requiresSelectedLocalTransport(TripDto.GenerateRequest req) {
+        String selected = normalize(req.getLocalTransport());
+        return !selected.isBlank() && !selected.equals("mixed");
+    }
+
+    private boolean matchesSelectedLocalTransport(String normalizedText, TripDto.GenerateRequest req) {
+        String selected = normalize(req.getLocalTransport());
+        if (selected.isBlank() || selected.equals("mixed")) {
+            return true;
+        }
+
+        List<String> terms = switch (selected) {
+            case "motorbike" -> List.of("xe may", "thue xe may");
+            case "car" -> List.of("o to", "oto", "taxi", "grab", "xe rieng", "xe dua don", "thue o to", "thue oto");
+            case "bus" -> List.of("xe bus", "xe buyt", "xe khach", "bus");
+            case "train" -> List.of("tau hoa", "tau");
+            case "walking" -> List.of("di bo", "walking");
+            case "plane" -> List.of("may bay", "bay", "san bay");
+            default -> List.of(selected);
+        };
+
+        return terms.stream().anyMatch(normalizedText::contains);
+    }
+
+    private boolean isLocalTransportActivity(
+            String normalizedType,
+            String normalizedName,
+            String normalizedLocation,
+            String normalizedNote,
+            TripDto.GenerateRequest req
+    ) {
+        if (!normalizedType.equals("transport")) {
+            return false;
+        }
+
+        String combined = String.join(" ", normalizedName, normalizedLocation, normalizedNote);
+        if (isOutboundOrReturnTransport(combined, req)) {
+            return false;
+        }
+
+        return containsLocalTransportMode(combined)
+                || combined.contains("noi vung")
+                || combined.contains("trong moc chau")
+                || combined.contains("trong " + normalize(req.getDestination()))
+                || combined.contains("giua cac diem")
+                || combined.contains("ve homestay")
+                || combined.contains("ve khach san");
+    }
+
+    private boolean isOutboundOrReturnTransport(String normalizedText, TripDto.GenerateRequest req) {
+        String departure = normalize(req.getDeparture());
+        String destination = normalize(req.getDestination());
+        if (departure.isBlank() || destination.isBlank()) {
+            return false;
+        }
+
+        return normalizedText.contains(departure) && normalizedText.contains(destination);
+    }
+
+    private boolean isLocalTransportCostHiddenInNonTransport(String normalizedType, String normalizedName, String normalizedNote) {
+        if (normalizedType.equals("transport")) {
+            return false;
+        }
+
+        String combined = normalizedName + " " + normalizedNote;
+        return containsLocalTransportMode(combined)
+                && (combined.contains("chi phi") || combined.contains("gia") || combined.contains("vnd")
+                || combined.contains("dong") || combined.contains("k/") || combined.contains("ngay"));
+    }
+
+    private boolean containsLocalTransportMode(String normalizedText) {
+        List<String> localTransportTerms = List.of(
+                "thue xe may",
+                "xe may",
+                "taxi",
+                "grab",
+                "thue o to",
+                "thue oto",
+                "o to rieng",
+                "oto rieng",
+                "xe dua don",
+                "xe dien",
+                "xe dap",
+                "di bo",
+                "shuttle"
+        );
+        return localTransportTerms.stream().anyMatch(normalizedText::contains);
     }
 
     private boolean isGenericActivity(String normalizedName, String normalizedLocation, String normalizedType) {

@@ -410,7 +410,7 @@ export default function ItineraryPage() {
             <Card style={{ padding: 22 }}>
               <h3 style={{ fontSize: 16, marginBottom: 14 }}>Thông tin chuyến đi</h3>
               {[
-                ["Điểm đến", trip.destination],
+                [trip.destinationSuggested ? "Điểm đến được gợi ý" : "Điểm đến", trip.destination],
                 ["Xuất phát", trip.departure || "Chưa có"],
                 ["Ngày đi", fmtDate(trip.startDate) || "Chưa có"],
                 ["Ngày về", fmtDate(trip.endDate) || "Chưa có"],
