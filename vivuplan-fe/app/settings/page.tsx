@@ -182,7 +182,7 @@ function PasswordModal({
 export default function SettingsPage() {
   const router = useRouter();
   const auth = useAuth();
-  const { user, loading: authLoading } = useRequireAuth(
+  const { user, loading: authLoading, authorized } = useRequireAuth(
     (u) => u.provider === "GOOGLE"
   );
   const { updateUser } = auth;
@@ -225,8 +225,8 @@ export default function SettingsPage() {
     }
   };
 
-  // Don't render anything until auth is resolved — prevents flash before redirect
-  if (authLoading || !user) return null;
+  // Don't render anything until auth is resolved and authorized — prevents flash before redirect
+  if (authLoading || !authorized || !user) return null;
 
   const isGoogle = user.provider === "GOOGLE";
   const avatarLetter = user.name?.charAt(0).toUpperCase() ?? "?";
@@ -270,10 +270,10 @@ export default function SettingsPage() {
               </button>
             )}
           </div>
-          
+
           <div className="settings-content">
             <form onSubmit={handleProfileSave} className="settings-form-grid" noValidate>
-              
+
               <div className="settings-field-group">
                 <label htmlFor="field-name" className="settings-field-label">Tên hiển thị</label>
                 <input

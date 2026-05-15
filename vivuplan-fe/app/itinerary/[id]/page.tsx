@@ -130,11 +130,11 @@ export default function ItineraryPage() {
   const isBudgetWarning = budgetDiff > targetBudget * 0.1;
   const budgetRows = budget
     ? [
-        ["Di chuyển", budget.transport],
-        ["Lưu trú", budget.accommodation],
-        ["Ăn uống", budget.food],
-        ["Tham quan", budget.activities],
-      ]
+      ["Di chuyển", budget.transport],
+      ["Lưu trú", budget.accommodation],
+      ["Ăn uống", budget.food],
+      ["Tham quan", budget.activities],
+    ]
     : [];
 
   const shareTrip = async () => {
@@ -273,17 +273,17 @@ export default function ItineraryPage() {
           <section>
             <div className="itinerary-day-toolbar">
               <div style={{ display: "flex", gap: 8, overflowX: "auto", minWidth: 0 }} className="no-scrollbar">
-              {trip.schedule?.map((item, index) => (
-                <button
-                  key={item.day}
-                  onClick={() => {
-                    setActiveDay(index);
-                    setExpanded(null);
-                  }}
-                  className={activeDay === index ? "btn btn-primary btn-sm" : "btn btn-secondary btn-sm"}
-                >
-                  Ngày {item.day}
-                </button>
+                {trip.schedule?.map((item, index) => (
+                  <button
+                    key={item.day}
+                    onClick={() => {
+                      setActiveDay(index);
+                      setExpanded(null);
+                    }}
+                    className={activeDay === index ? "btn btn-primary btn-sm" : "btn btn-secondary btn-sm"}
+                  >
+                    Ngày {item.day}
+                  </button>
                 ))}
               </div>
               <Button variant="primary" size="sm" onClick={() => setEditor({ mode: "add", dayNumber: day.day })}>

@@ -15,6 +15,9 @@ export function useRequireAuth(forbiddenCondition?: (user: NonNullable<ReturnTyp
   const router = useRouter();
   const { user, loading, syncFromStorage } = useAuth();
 
+  const isForbidden = user && forbiddenCondition ? forbiddenCondition(user) : false;
+  const isAuthorized = !!user && !isForbidden;
+
   useEffect(() => {
     if (loading) return;
 
@@ -35,10 +38,10 @@ export function useRequireAuth(forbiddenCondition?: (user: NonNullable<ReturnTyp
       return;
     }
 
-    if (forbiddenCondition && forbiddenCondition(user)) {
+    if (isForbidden) {
       router.push("/forbidden");
     }
-  }, [loading, user, router, syncFromStorage, forbiddenCondition]);
+  }, [loading, user, router, syncFromStorage, isForbidden]);
 
-  return { user, loading };
+  return { user, loading, authorized: isAuthorized };
 }
