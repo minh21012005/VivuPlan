@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { DestinationCard } from "@/components/travel/DestinationCard";
-import { heroImages, normalizeVietnameseSearch } from "@/lib/travel-data";
+import { heroImages, normalizeVietnameseSearch, vietnamProvinces } from "@/lib/travel-data";
 import { useDestinations } from "@/lib/use-destinations";
 import {
   ArrowRight,
@@ -19,7 +19,7 @@ import {
   Wallet,
 } from "lucide-react";
 
-const departureSuggestions = ["Hà Nội", "TP.HCM", "Đà Nẵng", "Hải Phòng", "Cần Thơ", "Nha Trang", "Huế", "Vinh"];
+const departureSuggestions = vietnamProvinces;
 
 const features = [
   {
@@ -56,11 +56,10 @@ export default function HomePage() {
   const departureQuery = normalizeVietnameseSearch(departure);
   const destinationQuery = normalizeVietnameseSearch(destination);
   const departureMatches = departureQuery
-    ? departureSuggestions.filter((item) => normalizeVietnameseSearch(item).includes(departureQuery)).slice(0, 6)
-    : departureSuggestions.slice(0, 6);
+    ? departureSuggestions.filter((item) => normalizeVietnameseSearch(item).includes(departureQuery))
+    : departureSuggestions;
   const destinationMatches = destinationNames
-    .filter((item) => !destinationQuery || normalizeVietnameseSearch(item).includes(destinationQuery))
-    .slice(0, 6);
+    .filter((item) => !destinationQuery || normalizeVietnameseSearch(item).includes(destinationQuery));
   const featuredDestinations = destinations.filter((item) => item.featured);
   const planHref = `/plan?departure=${encodeURIComponent(departure)}&destination=${encodeURIComponent(destination)}`;
 

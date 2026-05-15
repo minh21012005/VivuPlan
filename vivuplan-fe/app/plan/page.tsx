@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { tripApi } from "@/lib/api";
-import { findDestinationByName, getDestinationImage, heroImages, normalizeVietnameseSearch, type Destination } from "@/lib/travel-data";
+import { findDestinationByName, getDestinationImage, heroImages, normalizeVietnameseSearch, vietnamProvinces, type Destination } from "@/lib/travel-data";
 import { useDestinations } from "@/lib/use-destinations";
 import {
   ArrowRight,
@@ -61,7 +61,7 @@ const localTransportOptions = [
   { id: "ai", label: "Để AI chọn", icon: Sparkles },
 ];
 
-const departureSuggestions = ["Hà Nội", "TP.HCM", "Đà Nẵng", "Hải Phòng", "Cần Thơ", "Nha Trang", "Huế", "Vinh"];
+const departureSuggestions = vietnamProvinces;
 function fmtBudget(value: number) {
   return value >= 1_000_000 ? `${(value / 1_000_000).toFixed(1)}tr ₫` : `${Math.round(value / 1000)}k ₫`;
 }
@@ -177,11 +177,10 @@ function PlanContent() {
   const departureQuery = normalizeVietnameseSearch(form.departure);
   const destinationQuery = normalizeVietnameseSearch(form.destination);
   const departureMatches = departureQuery
-    ? departureSuggestions.filter((item) => normalizeVietnameseSearch(item).includes(departureQuery)).slice(0, 6)
-    : departureSuggestions.slice(0, 6);
+    ? departureSuggestions.filter((item) => normalizeVietnameseSearch(item).includes(departureQuery))
+    : departureSuggestions;
   const destinationMatches = destinationNames
-    .filter((item) => !destinationQuery || normalizeVietnameseSearch(item).includes(destinationQuery))
-    .slice(0, 6);
+    .filter((item) => !destinationQuery || normalizeVietnameseSearch(item).includes(destinationQuery));
   const computedDays = getTripDays(form.startDate, form.endDate);
   const computedNights = computedDays > 0 ? Math.max(0, computedDays - 1) : 0;
   const budgetPerPerson =

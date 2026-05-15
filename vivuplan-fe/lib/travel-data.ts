@@ -2,6 +2,15 @@ import type { DestinationResponse } from "@/lib/api";
 
 export type Destination = DestinationResponse;
 
+export const vietnamProvinces = [
+  "An Giang", "Bắc Ninh", "Cà Mau", "Cao Bằng", "Cần Thơ",
+  "Đà Nẵng", "Đắk Lắk", "Điện Biên", "Đồng Nai", "Đồng Tháp",
+  "Gia Lai", "Hà Nội", "Hà Tĩnh", "Hải Phòng", "Huế",
+  "Hưng Yên", "Khánh Hòa", "Lai Châu", "Lạng Sơn", "Lào Cai",
+  "Lâm Đồng", "Nghệ An", "Ninh Bình", "Phú Thọ", "Quảng Ngãi",
+  "Quảng Ninh", "Quảng Trị", "Sơn La", "Tây Ninh", "Thái Nguyên",
+  "Thanh Hóa", "TP.HCM", "Tuyên Quang", "Vĩnh Long"
+];
 export const heroImages = {
   vietnamCoast:
     "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1800&q=85",
