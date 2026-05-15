@@ -437,12 +437,12 @@ public class TripService {
         }
 
         long total = food + transport + accommodation + activities;
-        long target = resolveGroupBudget(trip);
-        if (target > 0 && total > 0) {
-            double variance = Math.abs(total - target) / (double) target;
-            if (variance > 0.15) {
-                log.warn("Estimated trip cost differs from user budget by {}%: estimated={}, target={}",
-                        Math.round(variance * 100), total, target);
+        long budgetCeiling = resolveGroupBudget(trip);
+        if (budgetCeiling > 0 && total > budgetCeiling) {
+            double overrun = (total - budgetCeiling) / (double) budgetCeiling;
+            if (overrun > 0.10) {
+                log.warn("Estimated trip cost exceeds user budget by {}%: estimated={}, budgetCeiling={}",
+                        Math.round(overrun * 100), total, budgetCeiling);
             }
         }
 

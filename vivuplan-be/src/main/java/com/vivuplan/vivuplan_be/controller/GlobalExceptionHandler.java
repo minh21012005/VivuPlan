@@ -1,5 +1,6 @@
 package com.vivuplan.vivuplan_be.controller;
 
+import com.vivuplan.vivuplan_be.exception.AiGenerationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleBadRequest(IllegalArgumentException e) {
         return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    }
+
+    @ExceptionHandler(AiGenerationException.class)
+    public ResponseEntity<Map<String, String>> handleAiGeneration(AiGenerationException e) {
+        log.warn("AI generation error: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of("error", e.getMessage()));
     }
 
     @ExceptionHandler(RuntimeException.class)

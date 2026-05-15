@@ -3,6 +3,7 @@ package com.vivuplan.vivuplan_be.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vivuplan.vivuplan_be.dto.TripDto;
+import com.vivuplan.vivuplan_be.exception.AiGenerationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +29,8 @@ public class AiService {
 
     private static final String GEMINI_URL =
         "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
+    private static final String AI_GENERATION_USER_MESSAGE =
+            "AI chưa tạo được lịch trình đủ cụ thể cho chuyến đi này. Vui lòng thử lại hoặc bổ sung thêm điểm muốn ghé, điều cần tránh hay ghi chú để VivuPlan lập lại lịch trình.";
 
     public List<TripDto.DayResponse> generateItinerary(TripDto.GenerateRequest req) {
         String prompt = buildPrompt(req);
@@ -35,15 +38,47 @@ public class AiService {
 
         try {
             String rawJson = callGemini(prompt);
-            return parseItinerary(rawJson, req);
+            List<TripDto.DayResponse> itinerary = parseItinerary(rawJson);
+            QualityCheck quality = assessItineraryQuality(itinerary, req.getDays());
+            if (quality.passed()) {
+                return itinerary;
+            }
+
+            log.warn("AI itinerary for {} failed quality check: {}. Retrying once with stricter prompt.",
+                    req.getDestination(), quality.reason());
+
+            String retryJson = callGemini(buildQualityRetryPrompt(req, quality.reason()));
+            List<TripDto.DayResponse> retryItinerary = parseItinerary(retryJson);
+            QualityCheck retryQuality = assessItineraryQuality(retryItinerary, req.getDays());
+            if (retryQuality.passed()) {
+                return retryItinerary;
+            }
+
+            log.warn("AI retry itinerary for {} still failed quality check: {}. Returning error to user.",
+                    req.getDestination(), retryQuality.reason());
+            throw new AiGenerationException(AI_GENERATION_USER_MESSAGE);
+        } catch (AiGenerationException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("AI generation failed with Gemini model {}, using fallback: {}", geminiModel, e.getMessage());
-            return buildFallbackItinerary(req);
+            log.error("AI generation failed with Gemini model {}: {}", geminiModel, e.getMessage(), e);
+            throw new AiGenerationException(AI_GENERATION_USER_MESSAGE, e);
         }
     }
 
     private String buildPrompt(TripDto.GenerateRequest req) {
         return buildCostAwarePrompt(req);
+    }
+
+    private String buildQualityRetryPrompt(TripDto.GenerateRequest req, String reason) {
+        return buildCostAwarePrompt(req) + String.format("""
+
+            IMPORTANT RETRY INSTRUCTION:
+            The previous itinerary was rejected because: %s
+            Regenerate the itinerary from scratch.
+            Use named, real places and restaurants in or near %s.
+            Avoid placeholder wording such as "địa điểm nổi bật", "đặc sản địa phương", "khu trung tâm", "vùng ven", "nhà hàng địa phương", or "cà phê view đẹp" unless paired with a specific real name and location.
+            Do not repeat the same day structure across days.
+            """, reason, req.getDestination());
     }
 
     private String buildLegacyPrompt(TripDto.GenerateRequest req) {
@@ -154,13 +189,15 @@ public class AiService {
 
             Cost rules:
             1. estimatedCost MUST be the estimated total VND for the whole group of %d travelers.
-            2. The full trip cost should target 90%%-105%% of the total group budget.
-            3. Include realistic major costs: round-trip outbound transport, local transport, accommodation, food, entrance tickets, paid tours, shows, and shopping only if useful.
-            4. For fixed-price items such as cable car, theme park, show, museum, paid tour, boat tour, or entrance ticket, use a realistic recent public-market estimate and mention the unit basis in note, for example "khoảng 850k/người".
-            5. For accommodation, include a clear ACCOMMODATION activity with total lodging cost for all nights and all travelers. Do not use the accommodation type for a taxi/check-in only.
-            6. If the budget cannot support all expensive attractions, choose fewer paid activities instead of exceeding budget.
-            7. Prefer specific real places, restaurants, dishes, addresses/areas, and realistic travel pacing.
-            8. Keep notes concise. Do not invent exact official prices when unsure; use "ước tính" or "khoảng".
+            2. Treat the total group budget as an upper spending limit, not a target that must be fully spent.
+            3. The full trip cost should stay at or below the total group budget. It is acceptable and often desirable to be under budget when realistic costs are lower.
+            4. If the budget is generous, prefer more comfortable or higher-quality choices such as better transport times, cleaner accommodation areas, memorable paid experiences, or reputable restaurants, but do not invent unnecessary costs just to use the budget.
+            5. Include realistic major costs: round-trip outbound transport, local transport, accommodation, food, entrance tickets, paid tours, shows, and shopping only if useful.
+            6. For fixed-price items such as cable car, theme park, show, museum, paid tour, boat tour, or entrance ticket, use a realistic recent public-market estimate and mention the unit basis in note, for example "khoảng 850k/người".
+            7. For accommodation, include a clear ACCOMMODATION activity with total lodging cost for all nights and all travelers. Do not use the accommodation type for a taxi/check-in only.
+            8. If the budget cannot support all expensive attractions, choose fewer paid activities instead of exceeding budget.
+            9. Prefer specific real places, restaurants, dishes, addresses/areas, and realistic travel pacing.
+            10. Keep notes concise. Do not invent exact official prices when unsure; use "ước tính" or "khoảng".
 
             Itinerary quality rules:
             1. Return exactly %d days.
@@ -272,7 +309,7 @@ public class AiService {
         }
     }
 
-    private List<TripDto.DayResponse> parseItinerary(String json, TripDto.GenerateRequest req) {
+    private List<TripDto.DayResponse> parseItinerary(String json) {
         try {
             // Strip markdown code fences if present
             String cleaned = json.replaceAll("```json\\s*", "").replaceAll("```\\s*", "").trim();
@@ -312,195 +349,80 @@ public class AiService {
                 day.setActivities(activities);
                 result.add(day);
             }
-            if (isLowQualityItinerary(result, req.getDays())) {
-                log.warn("AI itinerary for {} was too generic or repetitive, using curated fallback", req.getDestination());
-                return buildFallbackItinerary(req);
-            }
             return result;
         } catch (Exception e) {
-            log.error("Failed to parse AI itinerary JSON: {}. Raw length={}", e.getMessage(), json != null ? json.length() : 0);
-            return buildFallbackItinerary(req);
+            throw new RuntimeException("Failed to parse AI itinerary JSON: " + e.getMessage()
+                    + ". Raw length=" + (json != null ? json.length() : 0), e);
         }
     }
 
-    /** Fallback khi API key chưa cấu hình hoặc lỗi */
-    private List<TripDto.DayResponse> buildFallbackItinerary(TripDto.GenerateRequest req) {
-        int days = req != null ? req.getDays() : 3;
-        String dest = req != null ? req.getDestination() : "Điểm đến";
-        String departure = req != null && req.getDeparture() != null ? req.getDeparture() : "điểm xuất phát";
-        if (normalize(dest).contains("hoi an")) {
-            return buildHoiAnFallback(days, departure);
+    private QualityCheck assessItineraryQuality(List<TripDto.DayResponse> days, int expectedDays) {
+        if (days == null) {
+            return QualityCheck.fail("response has no days");
         }
-        return buildGeneralVietnamFallback(days, dest, departure);
-    }
-
-    private List<TripDto.DayResponse> buildHoiAnFallback(int days, String departure) {
-        List<TripDto.DayResponse> result = new ArrayList<>();
-        List<DayTemplate> templates = List.of(
-                new DayTemplate(
-                        "Phố cổ Hội An và ẩm thực đặc trưng",
-                        "Di chuyển từ " + departure + " đến Hội An, nhận phòng rồi đi bộ cụm phố cổ, chùa Cầu, nhà cổ và chợ đêm.",
-                        List.of(
-                                new ActivityTemplate("07:00", "Di chuyển " + departure + " → Đà Nẵng", "TRANSPORT", "Điểm xuất phát " + departure + " đến Đà Nẵng", "1-2 giờ nếu bay, lâu hơn nếu đi tàu/xe", 1200000, "Nên chọn chuyến sáng để còn nửa ngày khám phá Hội An; chi phí thay đổi theo phương tiện và thời điểm đặt vé.", 4.3, null, null),
-                                new ActivityTemplate("09:15", "Xe đưa đón Đà Nẵng → Hội An", "TRANSPORT", "Sân bay Đà Nẵng đến khu phố cổ Hội An", "45-60 phút", 120000, "Đi shuttle hoặc xe ghép; nếu đi 2 người có thể cân nhắc taxi/Grab khoảng 350k-450k/xe.", 4.2, 16.0544, 108.2022),
-                                new ActivityTemplate("11:00", "Gửi hành lý và ăn bánh mì Phượng", "FOOD", "Bánh mì Phượng, 2B Phan Chu Trinh, Hội An", "45 phút", 35000, "Gọi bánh mì thập cẩm hoặc bánh mì gà; nên đi trước giờ trưa để đỡ xếp hàng.", 4.5, 15.8797, 108.3298),
-                                new ActivityTemplate("14:00", "Chùa Cầu Nhật Bản", "ATTRACTION", "Nguyễn Thị Minh Khai, phường Minh An, Hội An", "45 phút", 0, "Đi bộ từ trung tâm phố cổ, chụp ảnh và nghe câu chuyện thương cảng Hội An.", 4.4, 15.8777, 108.3268),
-                                new ActivityTemplate("15:00", "Nhà cổ Tấn Ký và Hội quán Phúc Kiến", "ATTRACTION", "101 Nguyễn Thái Học và 46 Trần Phú, Hội An", "1 giờ 30 phút", 120000, "Mua vé tham quan phố cổ, chọn vài điểm tiêu biểu thay vì đi dàn trải.", 4.4, 15.8765, 108.3277),
-                                new ActivityTemplate("16:45", "Faifo Coffee ngắm mái ngói phố cổ", "CAFE", "Faifo Coffee, 130 Trần Phú, Hội An", "1 giờ", 65000, "Gọi cà phê dừa hoặc cold brew, lên rooftop lúc chiều muộn để chụp phố cổ từ trên cao.", 4.3, 15.8775, 108.3287),
-                                new ActivityTemplate("18:30", "Ăn cao lầu Thanh", "FOOD", "Cao lầu Thanh, 26 Thái Phiên, Hội An", "1 giờ", 60000, "Nên gọi cao lầu và thêm nước mót; đây là món phải thử ở Hội An.", 4.3, 15.8795, 108.3305),
-                                new ActivityTemplate("20:00", "Chợ đêm Nguyễn Hoàng và thả hoa đăng", "ATTRACTION", "Đường Nguyễn Hoàng, ven sông Hoài, Hội An", "1 giờ 30 phút", 50000, "Đi dọc chợ đêm, xem đèn lồng và có thể thả hoa đăng trên sông Hoài.", 4.4, 15.8763, 108.3252)
-                        )
-                ),
-                new DayTemplate(
-                        "Làng rau Trà Quế, rừng dừa Cẩm Thanh và biển An Bàng",
-                        "Một ngày nhẹ hơn ở vùng ven Hội An: đạp/đi xe máy qua làng rau, trải nghiệm thuyền thúng và kết thúc ở biển.",
-                        List.of(
-                                new ActivityTemplate("07:30", "Ăn sáng mì Quảng Ông Hai", "FOOD", "Mì Quảng Ông Hai, 6A Trương Minh Lượng, Hội An", "45 phút", 45000, "Gọi mì Quảng gà hoặc tôm thịt, ăn sáng no trước khi đi vùng ven.", 4.2, 15.8808, 108.3338),
-                                new ActivityTemplate("08:45", "Làng rau Trà Quế", "ATTRACTION", "Thôn Trà Quế, Cẩm Hà, Hội An", "1 giờ 30 phút", 35000, "Thuê xe máy/xe đạp đi từ phố cổ; trải nghiệm vườn rau, chụp ảnh đường làng.", 4.3, 15.9001, 108.3346),
-                                new ActivityTemplate("11:30", "Ăn cơm gà Bà Buội", "FOOD", "Cơm gà Bà Buội, 22 Phan Chu Trinh, Hội An", "1 giờ", 70000, "Gọi cơm gà xé hoặc cơm gà đùi; quán đông nên tránh đúng 12:00 nếu có thể.", 4.2, 15.8795, 108.3296),
-                                new ActivityTemplate("14:00", "Rừng dừa Bảy Mẫu Cẩm Thanh", "ACTIVITY", "Cẩm Thanh, Hội An", "1 giờ 30 phút", 150000, "Đi thuyền thúng, xem biểu diễn quay thúng; nên hỏi giá trọn gói trước khi lên thuyền.", 4.3, 15.8617, 108.3761),
-                                new ActivityTemplate("16:15", "Biển An Bàng", "ATTRACTION", "Đường Hai Bà Trưng, Cẩm An, Hội An", "1 giờ 30 phút", 30000, "Đi chiều mát, thuê ghế/nghỉ biển; phù hợp cặp đôi hơn Cửa Đại nếu muốn không khí nhẹ.", 4.4, 15.9137, 108.3398),
-                                new ActivityTemplate("18:30", "Ăn tối tại Soul Kitchen An Bàng", "FOOD", "Soul Kitchen, biển An Bàng, Hội An", "1 giờ 30 phút", 220000, "Gọi hải sản, pizza hoặc món Việt nhẹ; chọn bàn gần biển nếu còn chỗ.", 4.4, 15.9144, 108.3394),
-                                new ActivityTemplate("20:30", "Uống nước mót và dạo phố cổ", "CAFE", "Mót Hội An, 150 Trần Phú, Hội An", "45 phút", 25000, "Gọi nước thảo mộc mót rồi đi bộ đoạn Trần Phú - Bạch Đằng buổi tối.", 4.5, 15.8776, 108.3291)
-                        )
-                ),
-                new DayTemplate(
-                        "Thánh địa Mỹ Sơn và mua đặc sản trước khi về",
-                        "Đi Mỹ Sơn buổi sáng để hiểu văn hóa Chăm Pa, quay lại Hội An ăn trưa, mua quà rồi di chuyển ra Đà Nẵng.",
-                        List.of(
-                                new ActivityTemplate("07:00", "Ăn sáng bánh bao bánh vạc Hoa Hồng Trắng", "FOOD", "White Rose Restaurant, 533 Hai Bà Trưng, Hội An", "45 phút", 70000, "Gọi bánh bao bánh vạc và hoành thánh chiên, hợp để thử món đặc trưng Hội An.", 4.1, 15.8844, 108.3296),
-                                new ActivityTemplate("08:00", "Thánh địa Mỹ Sơn", "ATTRACTION", "Duy Phú, Duy Xuyên, Quảng Nam", "3 giờ", 180000, "Đi sớm để tránh nắng; xem cụm đền Chăm và show múa Chăm nếu khớp giờ.", 4.4, 15.7652, 108.1220),
-                                new ActivityTemplate("12:45", "Ăn trưa bánh xèo Giếng Bá Lễ", "FOOD", "Bánh xèo Giếng Bá Lễ, 45/51 Trần Hưng Đạo, Hội An", "1 giờ", 90000, "Gọi bánh xèo, nem lụi và cuốn rau sống; phù hợp nếu muốn bữa trưa đậm vị miền Trung.", 4.2, 15.8813, 108.3292),
-                                new ActivityTemplate("14:15", "Chợ Hội An mua đặc sản", "ATTRACTION", "Chợ Hội An, Trần Phú - Bạch Đằng", "1 giờ", 100000, "Mua bánh đậu xanh, tương ớt Hội An hoặc cà phê làm quà; nhớ hỏi giá trước.", 4.1, 15.8763, 108.3300),
-                                new ActivityTemplate("15:30", "Cà phê The Espresso Station", "CAFE", "The Espresso Station, 28/2 Trần Hưng Đạo, Hội An", "45 phút", 60000, "Gọi cà phê muối hoặc ice cube coffee trước khi rời phố cổ.", 4.5, 15.8809, 108.3289),
-                                new ActivityTemplate("16:30", "Di chuyển Hội An → Đà Nẵng", "TRANSPORT", "Hội An đến sân bay/ga trung tâm Đà Nẵng", "45-60 phút", 120000, "Canh giờ ra sân bay/ga trước giờ khởi hành ít nhất 2 tiếng nếu quay về " + departure + ".", 4.2, 16.0544, 108.2022),
-                                new ActivityTemplate("19:00", "Di chuyển Đà Nẵng → " + departure, "TRANSPORT", "Đà Nẵng về " + departure, "1-2 giờ nếu bay, lâu hơn nếu đi tàu/xe", 1200000, "Nếu ngân sách 2 triệu/người, nên đặt vé sớm hoặc coi ngân sách này là chưa gồm vé di chuyển đường dài.", 4.3, 16.0544, 108.2022)
-                        )
-                ),
-                new DayTemplate(
-                        "Làng gốm Thanh Hà và lớp nấu ăn Hội An",
-                        "Dành thêm một ngày cho trải nghiệm thủ công, chợ địa phương và học nấu món Quảng.",
-                        List.of(
-                                new ActivityTemplate("07:30", "Ăn sáng phở Tùng Hội An", "FOOD", "Phở Tùng, 51/7 Phan Châu Trinh, Hội An", "45 phút", 50000, "Gọi phở bò hoặc mì bò, phù hợp bữa sáng nhanh trước khi đi làng nghề.", 4.1, 15.8798, 108.3297),
-                                new ActivityTemplate("09:00", "Làng gốm Thanh Hà", "ACTIVITY", "Phạm Phán, Thanh Hà, Hội An", "2 giờ", 50000, "Thử nặn gốm, xem lò gốm và ghé công viên đất nung nếu thích chụp ảnh.", 4.2, 15.8819, 108.3077),
-                                new ActivityTemplate("12:00", "Ăn trưa quán Bale Well", "FOOD", "Bale Well, 45/51 Trần Hưng Đạo, Hội An", "1 giờ", 100000, "Gọi set cuốn bánh xèo, thịt nướng, nem lụi; no và hợp nhóm/cặp đôi.", 4.3, 15.8811, 108.3291),
-                                new ActivityTemplate("14:30", "Lớp nấu ăn món Quảng", "ACTIVITY", "Khu Cẩm Thanh hoặc Trà Quế, Hội An", "2 giờ 30 phút", 450000, "Chọn lớp có đi chợ và nấu cao lầu/mì Quảng; nên đặt trước một ngày.", 4.6, 15.8620, 108.3760),
-                                new ActivityTemplate("18:30", "Ăn tối Morning Glory Original", "FOOD", "Morning Glory Original, 106 Nguyễn Thái Học, Hội An", "1 giờ 30 phút", 220000, "Gọi cao lầu, hoành thánh chiên và thịt kho kiểu Hội An nếu muốn bữa tối chỉn chu.", 4.3, 15.8769, 108.3278),
-                                new ActivityTemplate("20:15", "Dạo bờ sông Bạch Đằng", "ATTRACTION", "Đường Bạch Đằng, ven sông Hoài, Hội An", "1 giờ", 0, "Đi bộ nhẹ sau bữa tối, ngắm thuyền và đèn lồng ven sông.", 4.4, 15.8759, 108.3264)
-                        )
-                )
-        );
-
-        for (int i = 0; i < days; i++) {
-            result.add(toDayResponse(i + 1, templates.get(Math.min(i, templates.size() - 1))));
+        if (days.size() != expectedDays) {
+            return QualityCheck.fail("expected " + expectedDays + " days but got " + days.size());
         }
-        return result;
-    }
 
-    private List<TripDto.DayResponse> buildGeneralVietnamFallback(int days, String dest, String departure) {
-        List<TripDto.DayResponse> result = new ArrayList<>();
-
-        for (int d = 1; d <= days; d++) {
-            TripDto.DayResponse day = new TripDto.DayResponse();
-            day.setDay(d);
-            String theme = switch ((d - 1) % 3) {
-                case 0 -> "trung tâm và món đặc trưng";
-                case 1 -> "vùng ven và trải nghiệm địa phương";
-                default -> "điểm biểu tượng và mua quà";
-            };
-            day.setTitle("Ngày " + d + " – " + dest + ": " + theme);
-            day.setSummary((d == 1 ? "Xuất phát từ " + departure + ", " : "") + "Ưu tiên hoạt động cụ thể, món ăn địa phương và nhịp di chuyển vừa phải tại " + dest + ".");
-            day.setActivities(List.of(
-                    activity(d, 0, "07:30", "Ăn sáng món đặc trưng tại khu trung tâm " + dest, "FOOD", "Khu trung tâm " + dest, "45 phút", 50000, "Chọn quán đông khách địa phương, ưu tiên món nổi tiếng của " + dest + " thay vì buffet khách sạn.", 4.2, null, null),
-                    activity(d, 1, "09:00", "Tham quan cụm điểm biểu tượng của " + dest, "ATTRACTION", "Khu tham quan chính tại " + dest, "2 giờ", 80000, "Chọn 1-2 điểm gần nhau, hỏi giờ mở cửa trước khi đi.", 4.3, null, null),
-                    activity(d, 2, "12:00", "Ăn trưa tại quán địa phương được đánh giá tốt", "FOOD", "Khu trung tâm " + dest, "1 giờ", 90000, "Gọi món đặc sản vùng, tránh quán chỉ phục vụ tour nếu muốn trải nghiệm thật hơn.", 4.2, null, null),
-                    activity(d, 3, "14:30", "Trải nghiệm văn hóa hoặc thiên nhiên vùng ven " + dest, "ACTIVITY", "Khu vực vùng ven " + dest, "2 giờ", 120000, "Dành buổi chiều cho hoạt động ít trùng lặp với buổi sáng.", 4.3, null, null),
-                    activity(d, 4, "17:00", "Cà phê/ngắm hoàng hôn tại điểm view đẹp", "CAFE", "Khu view đẹp tại " + dest, "1 giờ", 70000, "Chọn quán có không gian nghỉ chân, tránh lịch quá dày.", 4.2, null, null),
-                    activity(d, 5, "19:00", "Ăn tối và dạo khu đêm địa phương", "FOOD", "Khu ăn tối/chợ đêm tại " + dest, "1 giờ 30 phút", 130000, "Kết thúc ngày bằng món địa phương và đi bộ nhẹ.", 4.3, null, null)
-            ));
-            result.add(day);
-        }
-        return result;
-    }
-
-    private TripDto.DayResponse toDayResponse(int dayNumber, DayTemplate template) {
-        TripDto.DayResponse day = new TripDto.DayResponse();
-        day.setDay(dayNumber);
-        day.setTitle("Ngày " + dayNumber + " – " + template.title());
-        day.setSummary(template.summary());
-        List<TripDto.ActivityResponse> activities = new ArrayList<>();
-        for (int i = 0; i < template.activities().size(); i++) {
-            activities.add(activity(dayNumber, i, template.activities().get(i)));
-        }
-        day.setActivities(activities);
-        return day;
-    }
-
-    private TripDto.ActivityResponse activity(int dayNumber, int order, ActivityTemplate template) {
-        return activity(dayNumber, order, template.time(), template.name(), template.type(), template.location(),
-                template.duration(), template.estimatedCost(), template.note(), template.rating(),
-                template.latitude(), template.longitude());
-    }
-
-    private TripDto.ActivityResponse activity(int dayNumber, int order, String time, String name, String type,
-                                              String location, String duration, long estimatedCost, String note,
-                                              double rating, Double latitude, Double longitude) {
-        TripDto.ActivityResponse a = new TripDto.ActivityResponse();
-        a.setId((long) (dayNumber * 100 + order));
-        a.setTime(time);
-        a.setName(name);
-        a.setType(type);
-        a.setLocation(location);
-        a.setDuration(duration);
-        a.setEstimatedCost(estimatedCost);
-        a.setNote(note);
-        a.setRating(rating);
-        a.setLatitude(latitude);
-        a.setLongitude(longitude);
-        a.setSortOrder(order);
-        return a;
-    }
-
-    private boolean isLowQualityItinerary(List<TripDto.DayResponse> days, int expectedDays) {
-        if (days == null || days.size() != expectedDays) return true;
         Set<String> dayFingerprints = new HashSet<>();
         int genericActivities = 0;
         int totalActivities = 0;
         for (TripDto.DayResponse day : days) {
-            if (day.getActivities() == null || day.getActivities().size() < 4) return true;
+            if (day.getActivities() == null || day.getActivities().size() < 4) {
+                return QualityCheck.fail("day " + day.getDay() + " has fewer than 4 activities");
+            }
             StringBuilder fingerprint = new StringBuilder();
             for (TripDto.ActivityResponse act : day.getActivities()) {
                 totalActivities++;
                 String name = normalize(act.getName());
                 String location = normalize(act.getLocation());
                 fingerprint.append(name).append("|");
-                if (isGenericActivity(name, location)) {
+                if (isGenericActivity(name, location, normalize(act.getType()))) {
                     genericActivities++;
                 }
             }
             dayFingerprints.add(fingerprint.toString());
         }
-        if (days.size() > 1 && dayFingerprints.size() == 1) return true;
-        return totalActivities > 0 && genericActivities >= Math.max(2, totalActivities / 3);
+
+        if (days.size() > 1 && dayFingerprints.size() == 1) {
+            return QualityCheck.fail("all days have identical activity sequences");
+        }
+
+        int maxGenericAllowed = Math.max(3, totalActivities / 2);
+        if (genericActivities > maxGenericAllowed) {
+            return QualityCheck.fail("too many generic activities: " + genericActivities + "/" + totalActivities);
+        }
+
+        return QualityCheck.pass();
     }
 
-    private boolean isGenericActivity(String normalizedName, String normalizedLocation) {
+    private boolean isGenericActivity(String normalizedName, String normalizedLocation, String normalizedType) {
         List<String> genericTerms = List.of(
+                "an sang dac san dia phuong",
+                "an trua dac san dia phuong",
+                "an toi dac san dia phuong",
                 "dac san dia phuong",
                 "diem noi bat",
                 "khu vuc lan can",
                 "nha hang dia phuong",
+                "quan dia phuong",
                 "ca phe view dep",
-                "cho dem",
-                "tham quan",
-                "kham pha"
+                "cum diem bieu tuong",
+                "khu tham quan chinh",
+                "trai nghiem van hoa hoac thien nhien"
         );
         boolean genericName = genericTerms.stream().anyMatch(normalizedName::contains);
         boolean weakLocation = normalizedLocation.isBlank()
                 || normalizedLocation.equals("khu trung tam")
                 || normalizedLocation.equals("khu dem")
+                || normalizedLocation.contains("khu trung tam")
+                || normalizedLocation.contains("khu tham quan chinh")
+                || normalizedLocation.contains("khu vuc vung ven")
+                || normalizedLocation.contains("khu view dep")
+                || normalizedLocation.contains("khu an toi")
                 || normalizedLocation.length() < 6;
-        return genericName || weakLocation;
+        boolean transportOrAccommodation = normalizedType.equals("transport") || normalizedType.equals("accommodation");
+        return !transportOrAccommodation && genericName && weakLocation;
     }
 
     private String normalize(String value) {
@@ -513,8 +435,13 @@ public class AiService {
                 .trim();
     }
 
-    private record DayTemplate(String title, String summary, List<ActivityTemplate> activities) {}
+    private record QualityCheck(boolean passed, String reason) {
+        static QualityCheck pass() {
+            return new QualityCheck(true, "ok");
+        }
 
-    private record ActivityTemplate(String time, String name, String type, String location, String duration,
-                                    long estimatedCost, String note, double rating, Double latitude, Double longitude) {}
+        static QualityCheck fail(String reason) {
+            return new QualityCheck(false, reason);
+        }
+    }
 }

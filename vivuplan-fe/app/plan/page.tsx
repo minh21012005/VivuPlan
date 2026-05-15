@@ -66,6 +66,15 @@ function fmtBudget(value: number) {
   return value >= 1_000_000 ? `${(value / 1_000_000).toFixed(1)}tr ₫` : `${Math.round(value / 1000)}k ₫`;
 }
 
+function formatVndInput(value: number) {
+  return value > 0 ? value.toLocaleString("vi-VN") : "";
+}
+
+function parseVndInput(value: string) {
+  const digits = value.replace(/\D/g, "");
+  return digits ? Number(digits) : 0;
+}
+
 function optionLabel(options: Array<{ id: string; label: string }>, id: string) {
   return options.find((item) => item.id === id)?.label ?? id;
 }
@@ -97,6 +106,54 @@ function isBeforeToday(value: string) {
   const selected = new Date(`${value}T00:00:00`);
   const today = new Date(`${getTodayDateInput()}T00:00:00`);
   return selected < today;
+}
+
+function getRecommendedDayCount(value?: string) {
+  if (!value) return 3;
+  const days = value.match(/\d+/g)?.map(Number).filter((item) => Number.isFinite(item) && item > 0) ?? [];
+  if (days.length === 0) return 3;
+  return days.reduce((total, item) => total + item, 0) / days.length;
+}
+
+function getMinimumDailyBudget(destination?: Destination) {
+  const tags = destination?.tags.join(" ") ?? "";
+  const category = destination?.category ?? "";
+  let minimum = 550_000;
+
+  if (/(island|cruise|resort|bay)/.test(tags) || ["ISLAND", "HERITAGE"].includes(category)) minimum = 800_000;
+  if (/(mountain|trekking|cave|national-park|adventure)/.test(tags)) minimum = Math.max(minimum, 650_000);
+  if (/(beach|coast)/.test(tags)) minimum = Math.max(minimum, 650_000);
+  if (destination?.estimatedBudgetMin) {
+    const estimateDaily = Math.round(destination.estimatedBudgetMin / getRecommendedDayCount(destination.recommendedDays));
+    minimum = Math.max(minimum, Math.round(estimateDaily * 0.8));
+  }
+
+  return minimum;
+}
+
+function getBudgetValidationError({
+  budgetPerPerson,
+  days,
+  destination,
+}: {
+  budgetPerPerson: number;
+  days: number;
+  destination?: Destination;
+}) {
+  const longTripDiscount = days > 14 ? 0.75 : days > 7 ? 0.85 : 1;
+  const minimumTotal = Math.round(getMinimumDailyBudget(destination) * days * longTripDiscount);
+  const absurdMaximum = Math.max(200_000_000, days * 50_000_000);
+  const destinationLabel = destination ? ` cho ${destination.name}` : "";
+
+  if (budgetPerPerson < minimumTotal) {
+    return `Ngân sách ${fmtBudget(budgetPerPerson)} / người hơi thấp${destinationLabel} trong ${days} ngày. Bạn nên nhập khoảng từ ${fmtBudget(minimumTotal)} / người để AI lập lịch trình thực tế hơn.`;
+  }
+
+  if (budgetPerPerson > absurdMaximum) {
+    return `Ngân sách ${fmtBudget(budgetPerPerson)} / người đang quá cao so với chuyến đi ${days} ngày. Vui lòng kiểm tra lại, có thể bạn đã nhập nhầm đơn vị.`;
+  }
+
+  return "";
 }
 
 function suggestDestination(form: { departure: string; budget: number; style: string; startDate: string; endDate: string }, destinations: Destination[]) {
@@ -263,6 +320,15 @@ function PlanContent() {
       setError("Ngân sách sau khi chia theo số người cần tối thiểu 500.000₫ / người.");
       return;
     }
+    const budgetValidationError = getBudgetValidationError({
+      budgetPerPerson,
+      days: computedDays,
+      destination,
+    });
+    if (budgetValidationError) {
+      setError(budgetValidationError);
+      return;
+    }
 
     setGenerating(true);
     setElapsedSeconds(0);
@@ -273,7 +339,7 @@ function PlanContent() {
       }
       const planningNotes = [
         `Số người: ${form.travelers}`,
-        `Ngân sách người dùng nhập: ${fmtBudget(form.budget)} ${form.budgetMode === "total" ? "tổng nhóm" : "mỗi người"}`,
+        `Ngân sách tối đa người dùng nhập: ${fmtBudget(form.budget)} ${form.budgetMode === "total" ? "tổng nhóm" : "mỗi người"}`,
         form.travelers === 1 ? "Thành phần nhóm: Một mình" : form.group ? `Thành phần nhóm: ${optionLabel(groupOptions, form.group)}` : "",
         form.outboundTransport ? `Di chuyển đến điểm đến: ${optionLabel(outboundTransportOptions, form.outboundTransport)}` : "Di chuyển đến điểm đến: để AI đề xuất",
         form.localTransport ? `Di chuyển trong chuyến đi: ${optionLabel(localTransportOptions, form.localTransport)}` : "Di chuyển trong chuyến đi: để AI đề xuất",
@@ -479,19 +545,22 @@ function PlanContent() {
 
             <div className="planner-money-row">
               <div className="field-group">
-                <label>Ngân sách</label>
-                <div className="input-with-icon">
+                <div className="field-label-row">
+                  <label>Ngân sách</label>
+                  <span className="group-summary budget-label-spacer" aria-hidden="true">Ngân sách</span>
+                </div>
+                <div className="budget-input-shell">
                   <Wallet size={16} />
                   <input
                     id="input-budget"
-                    className="input"
-                    type="number"
-                    min={500000}
-                    step={100000}
-                    value={form.budget || ""}
-                    onChange={(event) => setForm((prev) => ({ ...prev, budget: Number(event.target.value) }))}
-                    placeholder="VD: 3000000"
+                    className="budget-input"
+                    type="text"
+                    inputMode="numeric"
+                    value={formatVndInput(form.budget)}
+                    onChange={(event) => setForm((prev) => ({ ...prev, budget: parseVndInput(event.target.value) }))}
+                    placeholder="VD: 3.000.000"
                   />
+                  <span className="budget-currency">₫</span>
                 </div>
                 <div className="budget-mode-row">
                   {[
@@ -557,7 +626,7 @@ function PlanContent() {
                 )}
                 <p className="field-hint">
                   {form.budget > 0 && form.travelers > 0
-                    ? `AI sẽ tính khoảng ${fmtBudget(budgetPerPerson)} / người.`
+                    ? `AI sẽ lập lịch trình trong khoảng ${fmtBudget(budgetPerPerson)} / người.`
                     : "Số người giúp AI ước tính phòng, ăn uống và phương án di chuyển."}
                 </p>
               </div>
