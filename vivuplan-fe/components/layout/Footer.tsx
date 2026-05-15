@@ -9,11 +9,10 @@ const footerLinks = {
     { label: "Bảng giá", href: "/pricing" },
   ],
   "Điểm đến": [
-    { label: "Đà Lạt", href: "/plan?destination=Da+Lat" },
-    { label: "Hạ Long", href: "/plan?destination=Ha+Long" },
-    { label: "Quy Nhơn", href: "/plan?destination=Quy+Nhon" },
-    { label: "Đà Nẵng", href: "/plan?destination=Da+Nang" },
-    { label: "Phú Quốc", href: "/plan?destination=Phu+Quoc" },
+    { label: "Khám phá tất cả", href: "/explore" },
+    { label: "Miền Bắc", href: "/explore?region=Mi%E1%BB%81n+B%E1%BA%AFc" },
+    { label: "Miền Trung", href: "/explore?region=Mi%E1%BB%81n+Trung" },
+    { label: "Miền Nam", href: "/explore?region=Mi%E1%BB%81n+Nam" },
   ],
   "Hỗ trợ": [
     { label: "Điều khoản", href: "/terms" },

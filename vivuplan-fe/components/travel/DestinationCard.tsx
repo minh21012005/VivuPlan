@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Clock, Star } from "lucide-react";
-import type { Destination } from "@/lib/travel-data";
+import { heroImages, type Destination } from "@/lib/travel-data";
 import { Badge } from "@/components/ui/Badge";
 
 export function DestinationCard({
@@ -33,7 +33,7 @@ export function DestinationCard({
       }}
     >
       <article className="destination-card">
-        <div className="destination-card-media" style={{ backgroundImage: `url(${destination.image})` }}>
+        <div className="destination-card-media" style={{ backgroundImage: `url(${destination.imageUrl || heroImages.vietnamBay})` }}>
           <div style={{ position: "absolute", top: "12px", left: "12px", display: "flex", gap: "8px" }}>
             <Badge tone="glass">{destination.region}</Badge>
           </div>
@@ -64,11 +64,11 @@ export function DestinationCard({
               {destination.tag}
             </Badge>
           </div>
-          <p style={{ marginBottom: "20px" }}>{destination.desc}</p>
+          <p style={{ marginBottom: "20px" }}>{destination.summary}</p>
           <div className="destination-card-footer">
             <span>
               <Clock size={13} />
-              {destination.days}
+              {destination.recommendedDays}
             </span>
             <strong>
               {loading ? <span className="spinner spinner-inline" /> : null}

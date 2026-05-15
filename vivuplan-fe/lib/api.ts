@@ -111,6 +111,27 @@ export const tripApi = {
       .then(handleResponse<TripResponse>),
 };
 
+// ─── Destination API ─────────────────────────────────────────────────────────
+
+export const destinationApi = {
+  list: (params: { q?: string; region?: string; featured?: boolean } = {}) => {
+    const query = new URLSearchParams();
+    if (params.q) query.set("q", params.q);
+    if (params.region) query.set("region", params.region);
+    if (params.featured !== undefined) query.set("featured", String(params.featured));
+    const suffix = query.toString() ? `?${query}` : "";
+    return fetch(`${API_BASE}/api/destinations${suffix}`).then(handleResponse<DestinationResponse[]>);
+  },
+
+  featured: () =>
+    fetch(`${API_BASE}/api/destinations/featured`)
+      .then(handleResponse<DestinationResponse[]>),
+
+  getBySlug: (slug: string) =>
+    fetch(`${API_BASE}/api/destinations/${slug}`)
+      .then(handleResponse<DestinationResponse>),
+};
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface User {
@@ -219,4 +240,30 @@ export interface BudgetBreakdown {
   accommodation: number;
   food: number;
   activities: number;
+}
+
+export interface DestinationResponse {
+  id: number;
+  name: string;
+  slug: string;
+  region: "Miền Bắc" | "Miền Trung" | "Miền Nam";
+  tourismRegion?: string;
+  province?: string;
+  category: string;
+  tag: string;
+  recommendedDays: string;
+  rating: number;
+  tripCount: number;
+  imageUrl: string;
+  summary: string;
+  description?: string;
+  bestTimeToVisit?: string;
+  estimatedBudgetMin?: number;
+  estimatedBudgetMax?: number;
+  latitude?: number;
+  longitude?: number;
+  tags: string[];
+  featured: boolean;
+  sourceName?: string;
+  sourceUrl?: string;
 }

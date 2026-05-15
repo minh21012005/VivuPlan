@@ -4,43 +4,42 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { DestinationCard } from "@/components/travel/DestinationCard";
-import { destinations, heroImages } from "@/lib/travel-data";
+import { heroImages, normalizeVietnameseSearch } from "@/lib/travel-data";
+import { useDestinations } from "@/lib/use-destinations";
 import { Search } from "lucide-react";
 
 const regions = ["Tất cả", "Miền Bắc", "Miền Trung", "Miền Nam"];
 
-function normalizeSearch(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
-    .toLowerCase()
-    .trim();
+function getInitialRegion() {
+  if (typeof window === "undefined") return "Tất cả";
+  const initialRegion = new URLSearchParams(window.location.search).get("region");
+  return initialRegion && regions.includes(initialRegion) ? initialRegion : "Tất cả";
 }
 
 export default function ExplorePage() {
+  const { destinations, loading, error } = useDestinations();
   const [search, setSearch] = useState("");
-  const [region, setRegion] = useState("Tất cả");
+  const [region, setRegion] = useState(getInitialRegion);
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const navigationResetTimer = useRef<number | null>(null);
 
   const filtered = useMemo(() => {
-    const keyword = normalizeSearch(search);
+    const keyword = normalizeVietnameseSearch(search);
 
     return destinations
       .filter((destination) => {
         const matchRegion = region === "Tất cả" || destination.region === region;
-        const searchableText = normalizeSearch(
-          `${destination.name} ${destination.desc} ${destination.tag} ${destination.region}`
+        const searchableText = normalizeVietnameseSearch(
+          `${destination.name} ${destination.summary} ${destination.description ?? ""} ${destination.tag} ${destination.region} ${destination.tags.join(" ")}`
         );
         const matchSearch =
           !keyword ||
           searchableText.includes(keyword);
         return matchRegion && matchSearch;
       });
-  }, [region, search]);
+  }, [destinations, region, search]);
 
   useEffect(() => {
     return () => {
@@ -124,23 +123,43 @@ export default function ExplorePage() {
 
       <section style={{ padding: "40px 0 84px" }}>
         <div className="container">
-          <p style={{ color: "var(--text-3)", marginBottom: 22 }}>
-            Hiển thị <strong style={{ color: "var(--text)" }}>{filtered.length}</strong> điểm đến
-          </p>
-          <div className="destination-grid">
-            {filtered.map((destination) => {
-              const href = `/plan?destination=${encodeURIComponent(destination.name)}`;
-              return (
-                <DestinationCard
-                  key={destination.name}
-                  destination={destination}
-                  loading={pendingHref === href}
-                  disabled={pendingHref !== null}
-                  onNavigate={() => beginNavigation(href)}
-                />
-              );
-            })}
-          </div>
+          {loading && (
+            <Card className="library-state">
+              <div className="spinner" />
+              <p>Đang tải điểm đến...</p>
+            </Card>
+          )}
+
+          {error && !loading && (
+            <Card className="library-state">
+              <p style={{ color: "#DC2626" }}>{error}</p>
+              <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>
+                Thử lại
+              </Button>
+            </Card>
+          )}
+
+          {!loading && !error && (
+            <>
+              <p style={{ color: "var(--text-3)", marginBottom: 22 }}>
+                Hiển thị <strong style={{ color: "var(--text)" }}>{filtered.length}</strong> điểm đến
+              </p>
+              <div className="destination-grid">
+                {filtered.map((destination) => {
+                  const href = `/plan?destination=${encodeURIComponent(destination.name)}`;
+                  return (
+                    <DestinationCard
+                      key={destination.slug}
+                      destination={destination}
+                      loading={pendingHref === href}
+                      disabled={pendingHref !== null}
+                      onNavigate={() => beginNavigation(href)}
+                    />
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       </section>
 

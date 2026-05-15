@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { tripApi, type TripResponse } from "@/lib/api";
 import { copyTextToClipboard, getTripShareUrl } from "@/lib/share";
-import { getDestinationImage, heroImages } from "@/lib/travel-data";
+import { getDestinationImage, heroImages, type Destination } from "@/lib/travel-data";
+import { useDestinations } from "@/lib/use-destinations";
 import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Clock, Eye, Plus, Share2, Sparkles, Trash2, Wallet, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -40,6 +41,7 @@ function getTripTimingBadge(trip: TripResponse): TripTimingBadge {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { destinations } = useDestinations();
   const [trips, setTrips] = useState<TripResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -222,6 +224,7 @@ export default function DashboardPage() {
                 <TripCard
                   key={trip.id}
                   trip={trip}
+                  destinations={destinations}
                   deleting={deleting === trip.id}
                   sharing={sharingTripId === trip.id}
                   copied={copiedTripId === trip.id}
@@ -277,6 +280,7 @@ export default function DashboardPage() {
 
 function TripCard({
   trip,
+  destinations,
   deleting,
   sharing,
   copied,
@@ -287,6 +291,7 @@ function TripCard({
   onView,
 }: {
   trip: TripResponse;
+  destinations: Destination[];
   deleting: boolean;
   sharing: boolean;
   copied: boolean;
@@ -300,7 +305,7 @@ function TripCard({
 
   return (
     <article className="trip-card">
-      <div className="trip-card-media" style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.46)), url(${getDestinationImage(trip.destination)})` }}>
+      <div className="trip-card-media" style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.46)), url(${getDestinationImage(trip.destination, destinations)})` }}>
         <div>
           <Badge tone={timingBadge.tone}>{timingBadge.label}</Badge>
           {trip.isPublic && <Badge tone="teal">Đang chia sẻ</Badge>}

@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { DestinationCard } from "@/components/travel/DestinationCard";
-import { destinations, heroImages } from "@/lib/travel-data";
+import { heroImages, normalizeVietnameseSearch } from "@/lib/travel-data";
+import { useDestinations } from "@/lib/use-destinations";
 import {
   ArrowRight,
   CheckCircle2,
@@ -18,18 +19,7 @@ import {
   Wallet,
 } from "lucide-react";
 
-const quickDestinations = ["Đà Lạt", "Hạ Long", "Quy Nhơn", "Đà Nẵng", "Phú Quốc"];
 const departureSuggestions = ["Hà Nội", "TP.HCM", "Đà Nẵng", "Hải Phòng", "Cần Thơ", "Nha Trang", "Huế", "Vinh"];
-
-function normalizeSearch(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
-    .toLowerCase()
-    .trim();
-}
 
 const features = [
   {
@@ -56,21 +46,22 @@ const steps = [
 ];
 
 export default function HomePage() {
+  const { destinations, destinationNames, loading: destinationsLoading } = useDestinations();
   const [departure, setDeparture] = useState("");
   const [destination, setDestination] = useState("");
   const [focusedField, setFocusedField] = useState<"departure" | "destination" | null>(null);
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const blurTimer = useRef<number | null>(null);
   const navigationResetTimer = useRef<number | null>(null);
-  const departureQuery = normalizeSearch(departure);
-  const destinationQuery = normalizeSearch(destination);
+  const departureQuery = normalizeVietnameseSearch(departure);
+  const destinationQuery = normalizeVietnameseSearch(destination);
   const departureMatches = departureQuery
-    ? departureSuggestions.filter((item) => normalizeSearch(item).includes(departureQuery)).slice(0, 6)
+    ? departureSuggestions.filter((item) => normalizeVietnameseSearch(item).includes(departureQuery)).slice(0, 6)
     : departureSuggestions.slice(0, 6);
-  const destinationMatches = destinations
-    .map((item) => item.name)
-    .filter((item) => !destinationQuery || normalizeSearch(item).includes(destinationQuery))
+  const destinationMatches = destinationNames
+    .filter((item) => !destinationQuery || normalizeVietnameseSearch(item).includes(destinationQuery))
     .slice(0, 6);
+  const featuredDestinations = destinations.filter((item) => item.featured);
   const planHref = `/plan?departure=${encodeURIComponent(departure)}&destination=${encodeURIComponent(destination)}`;
 
   useEffect(() => {
@@ -186,9 +177,9 @@ export default function HomePage() {
             </Button>
           </div>
           <div className="hero-chip-row">
-            {quickDestinations.map((item) => (
-              <span key={item} className="badge hero-chip">
-                <MapPin size={12} /> {item}
+            {featuredDestinations.slice(0, 5).map((item) => (
+              <span key={item.slug} className="badge hero-chip">
+                <MapPin size={12} /> {item.name}
               </span>
             ))}
           </div>
@@ -256,11 +247,17 @@ export default function HomePage() {
             }
           />
           <div className="destination-grid compact">
-            {destinations.slice(0, 4).map((item) => {
+            {destinationsLoading && (
+              <Card className="library-state">
+                <div className="spinner" />
+                <p>Đang tải điểm đến...</p>
+              </Card>
+            )}
+            {!destinationsLoading && featuredDestinations.slice(0, 4).map((item) => {
               const href = `/plan?destination=${encodeURIComponent(item.name)}`;
               return (
                 <DestinationCard
-                  key={item.name}
+                  key={item.slug}
                   destination={item}
                   loading={pendingHref === href}
                   disabled={pendingHref !== null}

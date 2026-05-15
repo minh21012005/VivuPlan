@@ -10,6 +10,7 @@ import { ItineraryLoadingState } from "@/components/travel/ItineraryLoadingState
 import { tripApi, type ActivityMutationRequest, type ActivityResponse, type TripResponse } from "@/lib/api";
 import { copyTextToClipboard, getTripShareUrl } from "@/lib/share";
 import { getDestinationImage } from "@/lib/travel-data";
+import { useDestinations } from "@/lib/use-destinations";
 import {
   AlertCircle,
   Camera,
@@ -69,6 +70,7 @@ function fmtDate(value?: string) {
 export default function ItineraryPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const { destinations } = useDestinations();
   const [trip, setTrip] = useState<TripResponse | null>(null);
   const [activeDay, setActiveDay] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -113,7 +115,7 @@ export default function ItineraryPage() {
     };
   }, [params.id, router]);
 
-  const image = useMemo(() => getDestinationImage(trip?.destination), [trip]);
+  const image = useMemo(() => getDestinationImage(trip?.destination, destinations), [destinations, trip?.destination]);
 
   const day = trip?.schedule?.[activeDay];
   const dayTotal = day?.activities?.reduce((sum, activity) => sum + activity.estimatedCost, 0) ?? 0;

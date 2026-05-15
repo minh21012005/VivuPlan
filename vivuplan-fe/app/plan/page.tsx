@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { tripApi } from "@/lib/api";
-import { destinations, getDestinationImage, heroImages } from "@/lib/travel-data";
+import { findDestinationByName, getDestinationImage, heroImages, normalizeVietnameseSearch, type Destination } from "@/lib/travel-data";
+import { useDestinations } from "@/lib/use-destinations";
 import {
   ArrowRight,
   Bike,
@@ -75,16 +76,6 @@ function getGroupOptions(travelers: number) {
   return groupOptions.filter((item) => item.id !== "couple");
 }
 
-function normalizeSearch(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
-    .toLowerCase()
-    .trim();
-}
-
 function getTripDays(startDate: string, endDate: string) {
   if (!startDate || !endDate) return 0;
   const start = new Date(`${startDate}T00:00:00`);
@@ -108,13 +99,33 @@ function isBeforeToday(value: string) {
   return selected < today;
 }
 
-function suggestDestination(form: { departure: string; budget: number; style: string; startDate: string; endDate: string }) {
+function suggestDestination(form: { departure: string; budget: number; style: string; startDate: string; endDate: string }, destinations: Destination[]) {
+  if (destinations.length === 0) return "";
+
   const days = getTripDays(form.startDate, form.endDate);
-  if (form.style === "foodie" || form.style === "cultural") return days <= 3 ? "Hội An" : "Đà Nẵng";
-  if (form.style === "adventure") return form.departure.toLowerCase().includes("hà nội") ? "Sapa" : "Đà Lạt";
-  if (form.budget >= 6_000_000) return "Phú Quốc";
-  if (days <= 3) return form.departure.toLowerCase().includes("hà nội") ? "Hạ Long" : "Quy Nhơn";
-  return "Đà Lạt";
+  const departure = normalizeVietnameseSearch(form.departure);
+  const style = form.style || "relaxing";
+
+  const scored = destinations.map((destination) => {
+    const tags = destination.tags.join(" ");
+    let score = destination.rating * 10 + (destination.featured ? 12 : 0);
+
+    if ((style === "foodie" || style === "cultural") && /(food|culture|heritage|old-town|unesco)/.test(tags)) score += 28;
+    if (style === "adventure" && /(mountain|adventure|cave|roadtrip|trekking|national-park)/.test(tags)) score += 30;
+    if (style === "relaxing" && /(beach|island|resort|quiet|cool-weather)/.test(tags)) score += 24;
+
+    if (form.budget >= 6_000_000 && /(island|resort|beach)/.test(tags)) score += 16;
+    if (form.budget < 2_000_000 && (destination.estimatedBudgetMin ?? 0) <= 1_500_000) score += 10;
+    if (days > 0 && days <= 3 && destination.recommendedDays.includes("1-2")) score += 8;
+    if (days > 0 && days <= 4 && destination.recommendedDays.includes("2-3")) score += 6;
+    if (departure.includes("ha noi") && destination.region === "Miền Bắc") score += 10;
+    if ((departure.includes("tp.hcm") || departure.includes("ho chi minh") || departure.includes("sai gon")) && destination.region === "Miền Nam") score += 10;
+    if (departure.includes("da nang") && destination.region === "Miền Trung") score += 10;
+
+    return { destination, score };
+  });
+
+  return scored.sort((a, b) => b.score - a.score)[0]?.destination.name ?? "";
 }
 
 function toApiGroupType(group: string, travelers: number) {
@@ -136,6 +147,7 @@ function toApiTransport(outboundTransport: string, localTransport: string) {
 }
 
 function PlanContent() {
+  const { destinations, destinationNames } = useDestinations();
   const params = useSearchParams();
   const router = useRouter();
   const [form, setForm] = useState({
@@ -160,16 +172,15 @@ function PlanContent() {
   const [focusedField, setFocusedField] = useState<"departure" | "destination" | null>(null);
   const blurTimer = useRef<number | null>(null);
 
-  const image = useMemo(() => getDestinationImage(form.destination), [form.destination]);
-  const destination = destinations.find((item) => item.name === form.destination);
-  const departureQuery = normalizeSearch(form.departure);
-  const destinationQuery = normalizeSearch(form.destination);
+  const image = useMemo(() => getDestinationImage(form.destination, destinations), [destinations, form.destination]);
+  const destination = findDestinationByName(form.destination, destinations);
+  const departureQuery = normalizeVietnameseSearch(form.departure);
+  const destinationQuery = normalizeVietnameseSearch(form.destination);
   const departureMatches = departureQuery
-    ? departureSuggestions.filter((item) => normalizeSearch(item).includes(departureQuery)).slice(0, 6)
+    ? departureSuggestions.filter((item) => normalizeVietnameseSearch(item).includes(departureQuery)).slice(0, 6)
     : departureSuggestions.slice(0, 6);
-  const destinationMatches = destinations
-    .map((item) => item.name)
-    .filter((item) => !destinationQuery || normalizeSearch(item).includes(destinationQuery))
+  const destinationMatches = destinationNames
+    .filter((item) => !destinationQuery || normalizeVietnameseSearch(item).includes(destinationQuery))
     .slice(0, 6);
   const computedDays = getTripDays(form.startDate, form.endDate);
   const computedNights = computedDays > 0 ? Math.max(0, computedDays - 1) : 0;
@@ -257,7 +268,10 @@ function PlanContent() {
     setGenerating(true);
     setElapsedSeconds(0);
     try {
-      const finalDestination = form.destination.trim() || suggestDestination({ ...form, budget: budgetPerPerson });
+      const finalDestination = form.destination.trim() || suggestDestination({ ...form, budget: budgetPerPerson }, destinations);
+      if (!finalDestination) {
+        throw new Error("Không thể gợi ý điểm đến vì dữ liệu điểm đến chưa sẵn sàng. Vui lòng nhập điểm đến cụ thể hoặc thử lại.");
+      }
       const planningNotes = [
         `Số người: ${form.travelers}`,
         `Ngân sách người dùng nhập: ${fmtBudget(form.budget)} ${form.budgetMode === "total" ? "tổng nhóm" : "mỗi người"}`,
