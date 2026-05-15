@@ -52,15 +52,6 @@ export default function Footer() {
           {/* Brand block */}
           <div>
             <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "10px", textDecoration: "none", marginBottom: "24px" }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: 12,
-                background: "linear-gradient(135deg, var(--primary), var(--secondary))",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: "0 4px 20px rgba(15,159,156,0.3)",
-                flexShrink: 0,
-              }}>
-                <Compass size={20} color="white" />
-              </div>
               <span style={{
                 fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "22px",
                 background: "linear-gradient(135deg, var(--primary), var(--secondary))",

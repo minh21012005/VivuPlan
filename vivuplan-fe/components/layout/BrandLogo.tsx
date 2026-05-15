@@ -10,7 +10,7 @@ export function BrandLogo({ href = "/", className = "" }: BrandLogoProps) {
     <Link href={href} className={`flex items-center group ${className}`.trim()} aria-label="VivuPlan">
       <div className="flex items-center justify-center w-14 h-14 overflow-hidden shrink-0">
         <img
-          src="/b.jpg"
+          src="/logo.png"
           alt="VivuPlan Logo"
           className="w-full h-full object-contain mix-blend-multiply contrast-125 brightness-110 scale-[2.2] origin-center"
         />

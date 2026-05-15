@@ -7,6 +7,8 @@ import { AuthVisualPanel } from "@/components/auth/AuthVisualPanel";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { authApi } from "@/lib/api";
 
+import { BrandLogo } from "@/components/layout/BrandLogo";
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -51,12 +53,9 @@ export default function LoginPage() {
               onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-3)"}>
               <ArrowLeft size={15} /> Trang chủ
             </Link>
-            <Link href="/" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none" }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg,var(--primary),var(--secondary))", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <MapPin size={14} color="white" fill="white" />
-              </div>
-              <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "16px", background: "linear-gradient(135deg,var(--primary),var(--secondary))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>VivuPlan</span>
-            </Link>
+            <div className="scale-[0.65] origin-right">
+              <BrandLogo />
+            </div>
           </div>
 
           <div style={{ marginBottom: "26px" }}>
