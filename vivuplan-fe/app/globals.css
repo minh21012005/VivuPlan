@@ -2493,14 +2493,16 @@ textarea.input.textarea-compact {
 }
 
 .site-nav-logo {
-  flex-shrink: 0;
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
 }
 
 .site-nav-links {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  flex: 1;
   min-width: 0;
 }
 
@@ -2526,10 +2528,11 @@ textarea.input.textarea-compact {
 }
 
 .site-nav-auth {
+  flex: 1;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
-  flex-shrink: 0;
 }
 
 .site-login-link {

@@ -1,5 +1,15 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 // ─── Auth helpers ────────────────────────────────────────────────────────────
 
 function getToken(): string | null {
@@ -18,7 +28,7 @@ function authHeaders(): HeadersInit {
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || "Có lỗi xảy ra");
+    throw new ApiError(body.error || "Có lỗi xảy ra", res.status);
   }
   return res.json();
 }

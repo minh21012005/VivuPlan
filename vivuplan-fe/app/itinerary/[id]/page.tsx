@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ItineraryLoadingState } from "@/components/travel/ItineraryLoadingState";
-import { tripApi, type ActivityMutationRequest, type ActivityResponse, type TripResponse } from "@/lib/api";
+import { ApiError, tripApi, type ActivityMutationRequest, type ActivityResponse, type TripResponse } from "@/lib/api";
 import { copyTextToClipboard, getTripShareUrl } from "@/lib/share";
 import { getDestinationImage } from "@/lib/travel-data";
 import { useDestinations } from "@/lib/use-destinations";
@@ -77,6 +77,7 @@ export default function ItineraryPage() {
   const [activeDay, setActiveDay] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [redirectingForbidden, setRedirectingForbidden] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -102,6 +103,17 @@ export default function ItineraryPage() {
         setShareError("");
       } catch (e) {
         if (cancelled) return;
+        const isForbidden =
+          e instanceof ApiError
+            ? e.status === 403
+            : e instanceof Error && (e.message.includes("không có quyền") || e.message.includes("quyền"));
+
+        if (isForbidden) {
+          setRedirectingForbidden(true);
+          router.replace("/forbidden");
+          return;
+        }
+
         setError(e instanceof Error ? e.message : "Không thể tải lịch trình");
       } finally {
         if (!cancelled) setLoading(false);
@@ -195,8 +207,8 @@ export default function ItineraryPage() {
     }
   };
 
-  // Don't render anything until auth is resolved — prevents flash before redirect
-  if (authLoading || !authUser) return null;
+  // Don't render anything until auth is resolved or while redirecting to 403.
+  if (authLoading || !authUser || redirectingForbidden) return null;
 
   if (loading) {
     return <ItineraryLoadingState message="Đang tải lịch trình..." />;
