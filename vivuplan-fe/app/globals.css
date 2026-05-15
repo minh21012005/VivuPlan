@@ -3219,14 +3219,20 @@ textarea.input.textarea-compact {
   box-shadow: var(--shadow-sm);
 }
 
-.settings-avatar-wrap { flex-shrink: 0; }
-.settings-avatar-img, .settings-avatar-fallback {
-  width: 72px; height: 72px;
+.settings-avatar-wrap {
+  flex-shrink: 0;
+}
+
+.settings-avatar-img,
+.settings-avatar-fallback {
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid var(--primary-light);
   box-shadow: 0 0 0 2px var(--primary-muted);
 }
+
 .settings-avatar-fallback {
   background: linear-gradient(135deg, var(--primary), var(--secondary));
   color: #fff;
@@ -3236,8 +3242,17 @@ textarea.input.textarea-compact {
   font-weight: 700;
 }
 
-.settings-user-info h2 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
-.settings-user-info p { color: var(--text-3); font-size: 14px; }
+.settings-user-info h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.settings-user-info p {
+  color: var(--text-3);
+  font-size: 14px;
+}
 
 /* Main Section Card */
 .settings-card {
@@ -3256,10 +3271,20 @@ textarea.input.textarea-compact {
   align-items: center;
   gap: 12px;
 }
-.settings-card-header svg { color: var(--primary); }
-.settings-card-header h2 { font-size: 16px; font-weight: 700; color: var(--text); }
 
-.settings-content { padding: 32px; }
+.settings-card-header svg {
+  color: var(--primary);
+}
+
+.settings-card-header h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.settings-content {
+  padding: 32px;
+}
 
 /* 2-Column Form Layout */
 .settings-form-grid {
@@ -3289,12 +3314,14 @@ textarea.input.textarea-compact {
   font-size: 15px;
   transition: all 0.2s;
 }
+
 .settings-input-premium:focus {
   background: #fff;
   border-color: var(--primary);
   outline: none;
   box-shadow: 0 0 0 3px var(--primary-light);
 }
+
 .settings-input-premium:disabled {
   background: var(--surface-3);
   color: var(--text-4);
@@ -3340,8 +3367,18 @@ textarea.input.textarea-compact {
   justify-content: space-between;
   grid-column: 1 / -1;
 }
-.settings-security-info h4 { font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 2px; }
-.settings-security-info p { font-size: 13px; color: var(--text-3); }
+
+.settings-security-info h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 2px;
+}
+
+.settings-security-info p {
+  font-size: 13px;
+  color: var(--text-3);
+}
 
 /* Form Footer */
 .settings-footer {
@@ -3378,12 +3415,28 @@ textarea.input.textarea-compact {
 }
 
 @keyframes toastIn {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
-.settings-toast-success { background: rgba(240, 253, 244, 0.95); color: #15803d; border: 1px solid #bbf7d0; }
-.settings-toast-error { background: rgba(254, 242, 242, 0.95); color: #b91c1c; border: 1px solid #fecaca; }
+.settings-toast-success {
+  background: rgba(240, 253, 244, 0.95);
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.settings-toast-error {
+  background: rgba(254, 242, 242, 0.95);
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
 
 /* ─── Settings Modal ──────────────────────────────────────────────────────── */
 .settings-modal-backdrop {
@@ -3415,9 +3468,21 @@ textarea.input.textarea-compact {
   border-bottom: 1px solid var(--divider);
 }
 
-.settings-modal-title { display: flex; align-items: center; gap: 10px; }
-.settings-modal-title h3 { font-size: 16px; font-weight: 700; margin: 0; }
-.settings-modal-title svg { color: var(--primary); }
+.settings-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-modal-title h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.settings-modal-title svg {
+  color: var(--primary);
+}
 
 .settings-modal-close {
   background: transparent;
@@ -3449,7 +3514,16 @@ textarea.input.textarea-compact {
 
 /* Settings responsive */
 @media (max-width: 768px) {
-  .settings-form-grid { grid-template-columns: 1fr; }
-  .settings-profile-header { flex-direction: column; text-align: center; }
-  .settings-hero { padding: 80px 0 36px; }
-}
+  .settings-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-profile-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .settings-hero {
+    padding: 80px 0 36px;
+  }
+}

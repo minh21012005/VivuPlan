@@ -7,6 +7,7 @@ import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { authApi, type User } from "@/lib/api";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useAuth } from "@/hooks/useAuth";
 import {
   ArrowLeft,
@@ -180,7 +181,11 @@ function PasswordModal({
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { user, loading: authLoading, updateUser } = useAuth();
+  const auth = useAuth();
+  const { user, loading: authLoading } = useRequireAuth(
+    (u) => u.provider === "GOOGLE"
+  );
+  const { updateUser } = auth;
 
   // Profile form
   const [name, setName] = useState("");
@@ -188,16 +193,7 @@ export default function SettingsPage() {
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; tone: "success" | "error" } | null>(null);
 
-  // Redirect if not logged in or if it's a Google user
-  useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        router.push("/login");
-      } else if (user.provider === "GOOGLE") {
-        router.push("/dashboard");
-      }
-    }
-  }, [authLoading, user, router]);
+
 
   // Populate form
   useEffect(() => {
@@ -229,16 +225,8 @@ export default function SettingsPage() {
     }
   };
 
-  if (authLoading) {
-    return (
-      <div className="settings-page">
-        <Navbar />
-        <div className="settings-loading"><div className="spinner" /></div>
-      </div>
-    );
-  }
-
-  if (!user) return null;
+  // Don't render anything until auth is resolved — prevents flash before redirect
+  if (authLoading || !user) return null;
 
   const isGoogle = user.provider === "GOOGLE";
   const avatarLetter = user.name?.charAt(0).toUpperCase() ?? "?";

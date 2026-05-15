@@ -11,6 +11,7 @@ import { getDestinationImage, heroImages, type Destination } from "@/lib/travel-
 import { useDestinations } from "@/lib/use-destinations";
 import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Clock, Eye, Plus, Share2, Sparkles, Trash2, Wallet, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useRequireAuth } from "@/hooks/useRequireAuth"
 
 type TripTimingBadge = { label: string; tone: "green" | "blue" | "gray" };
 type ToastState = { message: string; tone: "success" | "error" };
@@ -41,6 +42,7 @@ function getTripTimingBadge(trip: TripResponse): TripTimingBadge {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { user: authUser, loading: authLoading } = useRequireAuth();
   const { destinations } = useDestinations();
   const [trips, setTrips] = useState<TripResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,22 +57,16 @@ export default function DashboardPage() {
   const openingResetTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (!localStorage.getItem("vp_token")) {
-        router.push("/login");
-        return;
-      }
-      tripApi
-        .myTrips()
-        .then((data) => {
-          setTrips(data);
-          setPage(1);
-        })
-        .catch(() => setError("Không thể tải dữ liệu"))
-        .finally(() => setLoading(false));
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [router]);
+    if (authLoading || !authUser) return;
+    tripApi
+      .myTrips()
+      .then((data) => {
+        setTrips(data);
+        setPage(1);
+      })
+      .catch(() => setError("Không thể tải dữ liệu"))
+      .finally(() => setLoading(false));
+  }, [authLoading, authUser]);
 
   useEffect(() => {
     return () => {
@@ -157,6 +153,9 @@ export default function DashboardPage() {
       setOpeningTripId((current) => (current === id ? null : current));
     }, 12000);
   };
+
+  // Don't render anything until auth is resolved — prevents flash before redirect
+  if (authLoading || !authUser) return null;
 
   return (
     <div className="trip-library-page">

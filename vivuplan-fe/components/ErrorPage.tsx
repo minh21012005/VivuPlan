@@ -1,8 +1,21 @@
 import Link from "next/link";
-import { Home, Compass } from "lucide-react";
+import { Home, LogIn, Compass } from "lucide-react";
 
+interface ErrorPageProps {
+  code: 401 | 403;
+  title: string;
+  description: string;
+  primaryAction: { label: string; href: string; icon: "login" | "home" };
+}
 
-export default function NotFound() {
+export function ErrorPage({ code, title, description, primaryAction }: ErrorPageProps) {
+  const codeColors: Record<number, string> = {
+    401: "linear-gradient(135deg, #f59e0b, #ef4444)",
+    403: "linear-gradient(135deg, #ef4444, #dc2626)",
+  };
+
+  const gradient = codeColors[code];
+
   return (
     <div style={{
       minHeight: "100vh",
@@ -10,9 +23,6 @@ export default function NotFound() {
       display: "flex",
       flexDirection: "column",
     }}>
-
-
-      {/* Main content */}
       <main style={{
         flex: 1,
         display: "flex",
@@ -21,21 +31,20 @@ export default function NotFound() {
         justifyContent: "center",
         padding: "60px 24px",
         textAlign: "center",
-        gap: "0",
       }}>
-        {/* Giant 404 */}
+        {/* Giant status code */}
         <div style={{
           fontSize: "clamp(100px, 20vw, 200px)",
           fontWeight: 900,
           fontFamily: "var(--font-heading)",
           lineHeight: 1,
-          background: "linear-gradient(135deg, var(--primary, #0f9f9c), var(--secondary, #6c63ff))",
+          background: gradient,
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
           backgroundClip: "text",
           marginBottom: "8px",
         }}>
-          404
+          {code}
         </div>
 
         <h1 style={{
@@ -45,7 +54,7 @@ export default function NotFound() {
           color: "var(--text)",
           marginBottom: "16px",
         }}>
-          Ôi! Trang này không tồn tại
+          {title}
         </h1>
 
         <p style={{
@@ -55,15 +64,16 @@ export default function NotFound() {
           lineHeight: 1.7,
           marginBottom: "40px",
         }}>
-          Có vẻ bạn đã đi lạc đường. Đừng lo — hãy quay về và tiếp tục hành trình của bạn!
+          {description}
         </p>
 
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
-          <Link href="/" className="btn btn-primary" style={{ textDecoration: "none" }}>
-            <Home size={16} /> Về trang chủ
+          <Link href={primaryAction.href} className="btn btn-primary" style={{ textDecoration: "none" }}>
+            {primaryAction.icon === "login" ? <LogIn size={16} /> : <Home size={16} />}
+            {primaryAction.label}
           </Link>
-          <Link href="/explore" className="btn btn-secondary" style={{ textDecoration: "none" }}>
-            <Compass size={16} /> Khám phá điểm đến
+          <Link href="/" className="btn btn-secondary" style={{ textDecoration: "none" }}>
+            <Compass size={16} /> Trang chủ
           </Link>
         </div>
       </main>

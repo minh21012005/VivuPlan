@@ -2,6 +2,7 @@
 
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import Navbar from "@/components/layout/Navbar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -70,6 +71,7 @@ function fmtDate(value?: string) {
 export default function ItineraryPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const { user: authUser, loading: authLoading } = useRequireAuth();
   const { destinations } = useDestinations();
   const [trip, setTrip] = useState<TripResponse | null>(null);
   const [activeDay, setActiveDay] = useState(0);
@@ -84,6 +86,7 @@ export default function ItineraryPage() {
   const [activityError, setActivityError] = useState("");
 
   useEffect(() => {
+    if (authLoading || !authUser) return;
     let cancelled = false;
 
     async function loadTrip() {
@@ -99,10 +102,6 @@ export default function ItineraryPage() {
         setShareError("");
       } catch (e) {
         if (cancelled) return;
-        if (!localStorage.getItem("vp_token")) {
-          router.push("/login");
-          return;
-        }
         setError(e instanceof Error ? e.message : "Không thể tải lịch trình");
       } finally {
         if (!cancelled) setLoading(false);
@@ -113,7 +112,7 @@ export default function ItineraryPage() {
     return () => {
       cancelled = true;
     };
-  }, [params.id, router]);
+  }, [params.id, authLoading, authUser, router]);
 
   const image = useMemo(() => getDestinationImage(trip?.destination, destinations), [destinations, trip?.destination]);
 
@@ -195,6 +194,9 @@ export default function ItineraryPage() {
       setActivityError(e instanceof Error ? e.message : "Không thể xóa hoạt động");
     }
   };
+
+  // Don't render anything until auth is resolved — prevents flash before redirect
+  if (authLoading || !authUser) return null;
 
   if (loading) {
     return <ItineraryLoadingState message="Đang tải lịch trình..." />;
