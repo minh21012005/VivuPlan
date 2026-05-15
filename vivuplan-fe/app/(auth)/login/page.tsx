@@ -25,7 +25,7 @@ export default function LoginPage() {
       const res = await authApi.login({ email, password });
       localStorage.setItem("vp_token", res.token);
       localStorage.setItem("vp_user", JSON.stringify(res.user));
-      router.push("/dashboard");
+      router.push("/");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Email hoặc mật khẩu không đúng");
     } finally {
@@ -36,7 +36,7 @@ export default function LoginPage() {
   const handleAuthSuccess = (res: { token: string; user: unknown }) => {
     localStorage.setItem("vp_token", res.token);
     localStorage.setItem("vp_user", JSON.stringify(res.user));
-    router.push("/dashboard");
+    router.push("/");
   };
 
   return (

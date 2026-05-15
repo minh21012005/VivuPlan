@@ -29,7 +29,7 @@ export default function RegisterPage() {
       const res = await authApi.register({ name: form.name, email: form.email, password: form.password });
       localStorage.setItem("vp_token", res.token);
       localStorage.setItem("vp_user", JSON.stringify(res.user));
-      router.push("/dashboard");
+      router.push("/");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Đăng ký thất bại");
     } finally { setLoading(false); }

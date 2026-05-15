@@ -16,6 +16,7 @@ interface AuthContextType extends AuthState {
   register: (name: string, email: string, password: string) => Promise<any>;
   logout: () => void;
   updateUser: (user: User) => void;
+  syncFromStorage: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -72,6 +73,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [setToken]);
 
+  // Called by useRequireAuth when context is out of sync with localStorage
+  // (e.g. after login page writes directly to localStorage)
+  const syncFromStorage = useCallback(() => {
+    const token = localStorage.getItem("vp_token");
+    const savedUser = localStorage.getItem("vp_user");
+    if (token && savedUser) {
+      try {
+        const user = JSON.parse(savedUser) as User;
+        setState({ user, token, loading: false, error: null });
+      } catch {
+        /* ignore parse errors */
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const token = localStorage.getItem("vp_token");
     if (!token) {
@@ -94,7 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       register,
       logout,
-      updateUser
+      updateUser,
+      syncFromStorage,
     }}>
       {children}
     </AuthContext.Provider>
