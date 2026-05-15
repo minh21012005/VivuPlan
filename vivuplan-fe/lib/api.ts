@@ -82,13 +82,6 @@ export const tripApi = {
       headers: authHeaders(),
     }).then(handleResponse<TripResponse>),
 
-  updateStatus: (id: number, status: string) =>
-    fetch(`${API_BASE}/api/trips/${id}/status`, {
-      method: "PATCH",
-      headers: authHeaders(),
-      body: JSON.stringify({ status }),
-    }).then(handleResponse<TripResponse>),
-
   addActivity: (tripId: number, dayNumber: number, data: ActivityMutationRequest) =>
     fetch(`${API_BASE}/api/trips/${tripId}/days/${dayNumber}/activities`, {
       method: "POST",

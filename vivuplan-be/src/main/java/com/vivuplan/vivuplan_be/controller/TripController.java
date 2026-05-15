@@ -61,7 +61,7 @@ public class TripController {
         return ResponseEntity.ok(tripService.togglePublic(id, (Long) auth.getPrincipal()));
     }
 
-    /** Update status (PLANNED, COMPLETED) */
+    /** Update status (DRAFT, PLANNED, COMPLETED) */
     @PatchMapping("/{id}/status")
     public ResponseEntity<TripDto.TripResponse> updateStatus(
             @PathVariable Long id,

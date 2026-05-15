@@ -77,7 +77,7 @@ public class TripService {
                 .mustVisit(req.getMustVisit())
                 .avoid(req.getAvoid())
                 .notes(req.getNotes())
-                .status(Trip.TripStatus.DRAFT)
+                .status(Trip.TripStatus.PLANNED)
                 .shareCode(generateUniqueShareCode())
                 .build();
 

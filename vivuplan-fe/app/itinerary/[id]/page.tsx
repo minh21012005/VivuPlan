@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ItineraryLoadingState } from "@/components/travel/ItineraryLoadingState";
 import { tripApi, type ActivityMutationRequest, type ActivityResponse, type TripResponse } from "@/lib/api";
+import { copyTextToClipboard, getTripShareUrl } from "@/lib/share";
 import { getDestinationImage } from "@/lib/travel-data";
 import {
   AlertCircle,
@@ -16,7 +17,6 @@ import {
   ChevronDown,
   ChevronUp,
   Coffee,
-  Copy,
   Edit3,
   ExternalLink,
   MapPin,
@@ -75,6 +75,8 @@ export default function ItineraryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [shareError, setShareError] = useState("");
   const [editor, setEditor] = useState<{ mode: "add" | "edit"; dayNumber: number; activity?: ActivityResponse } | null>(null);
   const [savingActivity, setSavingActivity] = useState(false);
   const [activityError, setActivityError] = useState("");
@@ -91,6 +93,8 @@ export default function ItineraryPage() {
         if (cancelled) return;
         setTrip(data);
         setActiveDay(0);
+        setCopied(false);
+        setShareError("");
       } catch (e) {
         if (cancelled) return;
         if (!localStorage.getItem("vp_token")) {
@@ -132,11 +136,30 @@ export default function ItineraryPage() {
       ]
     : [];
 
-  const copyShareLink = async () => {
-    if (!trip?.shareCode) return;
-    await navigator.clipboard.writeText(`${window.location.origin}/itinerary/${trip.shareCode}`);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1400);
+  const shareTrip = async () => {
+    if (!trip?.shareCode) {
+      setShareError("Lịch trình chưa có link chia sẻ.");
+      return;
+    }
+
+    setSharing(true);
+    setShareError("");
+    try {
+      let shareableTrip = trip;
+      if (!trip.isPublic) {
+        const updated = await tripApi.toggleVisibility(trip.id);
+        shareableTrip = { ...trip, isPublic: updated.isPublic, shareCode: updated.shareCode };
+        setTrip(shareableTrip);
+      }
+
+      await copyTextToClipboard(getTripShareUrl(shareableTrip.shareCode));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch (e) {
+      setShareError(e instanceof Error ? e.message : "Không thể tạo link chia sẻ. Vui lòng thử lại.");
+    } finally {
+      setSharing(false);
+    }
   };
 
   const saveActivity = async (payload: ActivityMutationRequest) => {
@@ -222,14 +245,20 @@ export default function ItineraryPage() {
                 <span>{groupLabel[trip.groupType] ?? trip.groupType}</span>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <Button variant="secondary" size="sm" onClick={copyShareLink}>
-                {copied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
-                {copied ? "Đã copy" : "Copy link"}
+            <div className="itinerary-share-actions">
+              <Button
+                variant="secondary"
+                size="sm"
+                className={`trip-share-button itinerary-share-button${trip.isPublic ? " is-public" : ""}`}
+                onClick={shareTrip}
+                disabled={sharing}
+                aria-busy={sharing}
+              >
+                {sharing ? <span className="spinner spinner-inline" /> : copied ? <CheckCircle2 size={14} /> : <Share2 size={14} />}
+                {sharing ? "Đang chia sẻ..." : copied ? "Đã copy link" : "Chia sẻ"}
               </Button>
-              <Button variant="secondary" size="sm" onClick={() => tripApi.toggleVisibility(trip.id).then(setTrip)}>
-                <Share2 size={14} /> {trip.isPublic ? "Đang công khai" : "Công khai"}
-              </Button>
+              {trip.isPublic && <Badge tone="teal">Đang chia sẻ</Badge>}
+              {shareError && <span className="itinerary-share-error">{shareError}</span>}
             </div>
           </div>
         </div>
