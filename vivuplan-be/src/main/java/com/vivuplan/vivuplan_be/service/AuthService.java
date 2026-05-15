@@ -98,7 +98,8 @@ public class AuthService {
                 userRepository.findByEmail(email).map(u -> {
                     u.setGoogleId(googleId);
                     u.setProvider(User.AuthProvider.GOOGLE);
-                    if (u.getAvatarUrl() == null) u.setAvatarUrl(avatarUrl);
+                    // Always sync avatar from Google on every login
+                    if (avatarUrl != null) u.setAvatarUrl(avatarUrl);
                     return userRepository.save(u);
                 }).orElseGet(() -> {
                     User newUser = User.builder()
@@ -150,6 +151,51 @@ public class AuthService {
     public AuthDto.UserDto getProfile(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+        return AuthDto.UserDto.from(user);
+    }
+
+    @Transactional
+    public AuthDto.UserDto updateProfile(Long userId, AuthDto.UpdateProfileRequest req) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+
+        if (user.getProvider() == User.AuthProvider.GOOGLE) {
+            throw new IllegalArgumentException("Tài khoản Google không được phép cập nhật thông tin thủ công");
+        }
+
+        user.setName(req.getName().trim());
+
+        // Avatar URL is only updatable for LOCAL accounts
+        user.setAvatarUrl(req.getAvatarUrl() != null && !req.getAvatarUrl().isBlank()
+                ? req.getAvatarUrl().trim() : null);
+
+        user = userRepository.save(user);
+        return AuthDto.UserDto.from(user);
+    }
+
+    @Transactional
+    public AuthDto.UserDto changePassword(Long userId, AuthDto.ChangePasswordRequest req) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+
+        if (user.getProvider() == User.AuthProvider.GOOGLE) {
+            throw new IllegalArgumentException("Tài khoản đăng nhập bằng Google không sử dụng mật khẩu");
+        }
+
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Tài khoản này chưa thiết lập mật khẩu");
+        }
+
+        if (!passwordEncoder.matches(req.getCurrentPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Mật khẩu hiện tại không đúng");
+        }
+
+        if (passwordEncoder.matches(req.getNewPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Mật khẩu mới phải khác mật khẩu hiện tại");
+        }
+
+        user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+        user = userRepository.save(user);
         return AuthDto.UserDto.from(user);
     }
 

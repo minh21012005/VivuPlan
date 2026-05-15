@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, Compass, LayoutDashboard, LogIn, LogOut, Menu, X } from "lucide-react";
+import { ChevronDown, Compass, LayoutDashboard, LogIn, LogOut, Menu, Settings, X } from "lucide-react";
 import { BrandLogo } from "@/components/layout/BrandLogo";
 
 const links = [
@@ -13,15 +14,23 @@ const links = [
 
 const userTripsLabel = "Chuyến đi của tôi";
 
+interface StoredUser {
+  name: string;
+  avatarUrl?: string;
+  provider?: "LOCAL" | "GOOGLE";
+}
+
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [user, setUser] = useState<{ name: string } | null>(null);
+  const [user, setUser] = useState<StoredUser | null>(null);
 
   useEffect(() => {
+    setMounted(true);
     const onScroll = () => setScrolled(window.scrollY > 12);
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
@@ -29,15 +38,12 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      try {
-        const savedUser = localStorage.getItem("vp_user");
-        setUser(savedUser ? JSON.parse(savedUser) : null);
-      } catch {
-        setUser(null);
-      }
-    }, 0);
-    return () => window.clearTimeout(timer);
+    try {
+      const savedUser = localStorage.getItem("vp_user");
+      setUser(savedUser ? JSON.parse(savedUser) : null);
+    } catch {
+      setUser(null);
+    }
   }, [pathname]);
 
   const logout = () => {
@@ -50,6 +56,7 @@ export default function Navbar() {
   };
 
   const lastName = user?.name.split(" ").filter(Boolean).slice(-1)[0] ?? user?.name ?? "";
+  const initial = user?.name.charAt(0).toUpperCase() ?? "";
 
   return (
     <header className={`site-header${scrolled ? " site-header-scrolled" : ""}`}>
@@ -73,32 +80,57 @@ export default function Navbar() {
         </nav>
 
         <div className="site-nav-auth">
-          {user ? (
-            <div className="site-user-menu-wrap">
-              <button
-                id="btn-user-menu"
-                className="site-user-button"
-                onClick={() => setUserMenuOpen((open) => !open)}
-                aria-expanded={userMenuOpen}
-                aria-haspopup="menu"
-              >
-                <span className="site-user-avatar">{user.name.charAt(0).toUpperCase()}</span>
-                <span className="site-user-name">{lastName}</span>
-                <ChevronDown size={13} className="site-user-chevron" />
-              </button>
+          {mounted && (
+            user ? (
+              <div className="site-user-menu-wrap">
+                <button
+                  id="btn-user-menu"
+                  className="site-user-button"
+                  onClick={() => setUserMenuOpen((open) => !open)}
+                  aria-expanded={userMenuOpen}
+                  aria-haspopup="menu"
+                >
+                  {user.avatarUrl ? (
+                    <span className="site-user-avatar site-user-avatar-img">
+                      <Image
+                        src={user.avatarUrl}
+                        alt={user.name}
+                        width={28}
+                        height={28}
+                        className="site-user-avatar-image"
+                        referrerPolicy="no-referrer"
+                      />
+                    </span>
+                  ) : (
+                    <span className="site-user-avatar">{initial}</span>
+                  )}
+                  <span className="site-user-name">{lastName}</span>
+                  <ChevronDown size={13} className="site-user-chevron" />
+                </button>
 
-              {userMenuOpen && (
-                <div className="site-user-dropdown" role="menu" aria-labelledby="btn-user-menu">
-                  <button type="button" onClick={logout} className="site-dropdown-item site-dropdown-danger" role="menuitem">
-                    <LogOut size={15} /> Đăng xuất
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <Link href="/login" className="btn btn-primary btn-sm site-login-link">
-              <LogIn size={14} /> Đăng nhập
-            </Link>
+                {userMenuOpen && (
+                  <div className="site-user-dropdown" role="menu" aria-labelledby="btn-user-menu">
+                    {user.provider === "LOCAL" && (
+                      <Link
+                        href="/settings"
+                        className="site-dropdown-item"
+                        role="menuitem"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <Settings size={15} /> Cài đặt tài khoản
+                      </Link>
+                    )}
+                    <button type="button" onClick={logout} className="site-dropdown-item site-dropdown-danger" role="menuitem">
+                      <LogOut size={15} /> Đăng xuất
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link href="/login" className="btn btn-primary btn-sm site-login-link">
+                <LogIn size={14} /> Đăng nhập
+              </Link>
+            )
           )}
         </div>
 
@@ -134,9 +166,16 @@ export default function Navbar() {
 
             <div className="site-mobile-auth">
               {user ? (
-                <button type="button" onClick={logout} className="btn btn-secondary site-mobile-auth-button">
-                  <LogOut size={15} /> Đăng xuất
-                </button>
+                <>
+                  {user.provider === "LOCAL" && (
+                    <Link href="/settings" className="btn btn-secondary site-mobile-auth-button" onClick={() => setMobileOpen(false)}>
+                      <Settings size={15} /> Cài đặt tài khoản
+                    </Link>
+                  )}
+                  <button type="button" onClick={logout} className="btn btn-secondary site-mobile-auth-button">
+                    <LogOut size={15} /> Đăng xuất
+                  </button>
+                </>
               ) : (
                 <Link href="/login" className="btn btn-primary site-mobile-auth-button" onClick={() => setMobileOpen(false)}>
                   <LogIn size={14} /> Đăng nhập

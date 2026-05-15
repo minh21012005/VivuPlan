@@ -86,7 +86,7 @@ export default function RegisterPage() {
               {form.password.length > 0 && (
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
                   <div style={{ flex: 1, display: "flex", gap: "4px" }}>
-                    {[1,2,3].map((i) => (
+                    {[1, 2, 3].map((i) => (
                       <div key={i} style={{ flex: 1, height: "4px", borderRadius: "99px", background: i <= strength ? strengthColors[strength] : "var(--surface-3)", transition: "background 0.2s" }} />
                     ))}
                   </div>

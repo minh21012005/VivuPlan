@@ -53,6 +53,7 @@ public class AuthDto {
         private String avatarUrl;
         private String role;
         private List<String> roles;
+        private String provider;
 
         public static UserDto from(com.vivuplan.vivuplan_be.entity.User u) {
             UserDto dto = new UserDto();
@@ -62,7 +63,28 @@ public class AuthDto {
             dto.setAvatarUrl(u.getAvatarUrl());
             dto.setRole(u.getPrimaryRoleName());
             dto.setRoles(u.getRoleNames().stream().sorted().toList());
+            dto.setProvider(u.getProvider() != null ? u.getProvider().name() : "LOCAL");
             return dto;
         }
+    }
+
+    @Data
+    public static class UpdateProfileRequest {
+        @NotBlank(message = "Tên không được để trống")
+        @Size(max = 100, message = "Tên không được vượt quá 100 ký tự")
+        private String name;
+
+        // Only applied for LOCAL users; ignored for GOOGLE users
+        private String avatarUrl;
+    }
+
+    @Data
+    public static class ChangePasswordRequest {
+        @NotBlank(message = "Mật khẩu hiện tại không được để trống")
+        private String currentPassword;
+
+        @NotBlank(message = "Mật khẩu mới không được để trống")
+        @Size(min = 8, message = "Mật khẩu mới tối thiểu 8 ký tự")
+        private String newPassword;
     }
 }

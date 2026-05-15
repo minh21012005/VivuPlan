@@ -50,6 +50,20 @@ export const authApi = {
   me: () =>
     fetch(`${API_BASE}/api/auth/me`, { headers: authHeaders() })
       .then(handleResponse<User>),
+
+  updateProfile: (data: { name: string; avatarUrl?: string }) =>
+    fetch(`${API_BASE}/api/auth/me`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    }).then(handleResponse<User>),
+
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    fetch(`${API_BASE}/api/auth/me/password`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    }).then(handleResponse<User>),
 };
 
 // ─── Trip API ─────────────────────────────────────────────────────────────────
@@ -141,6 +155,7 @@ export interface User {
   avatarUrl?: string;
   role: string;
   roles?: string[];
+  provider: "LOCAL" | "GOOGLE";
 }
 
 export interface AuthResponse {

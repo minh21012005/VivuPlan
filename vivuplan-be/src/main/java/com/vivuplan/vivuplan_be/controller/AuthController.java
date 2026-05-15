@@ -38,6 +38,22 @@ public class AuthController {
         return ResponseEntity.ok(authService.getProfile(userId));
     }
 
+    @PatchMapping("/me")
+    public ResponseEntity<AuthDto.UserDto> updateProfile(
+            @Valid @RequestBody AuthDto.UpdateProfileRequest req,
+            Authentication auth) {
+        Long userId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(authService.updateProfile(userId, req));
+    }
+
+    @PatchMapping("/me/password")
+    public ResponseEntity<AuthDto.UserDto> changePassword(
+            @Valid @RequestBody AuthDto.ChangePasswordRequest req,
+            Authentication auth) {
+        Long userId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(authService.changePassword(userId, req));
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> logout() {
         // JWT is stateless – client simply discards the token
