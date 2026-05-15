@@ -1,33 +1,61 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/Button";
 import { DestinationCard } from "@/components/travel/DestinationCard";
 import { destinations, heroImages } from "@/lib/travel-data";
-import { Filter, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
-const regions = ["Tất cả", "Miền Bắc", "Miền Trung", "Miền Nam", "Tây Nguyên"];
+const regions = ["Tất cả", "Miền Bắc", "Miền Trung", "Miền Nam"];
+
+function normalizeSearch(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .trim();
+}
 
 export default function ExplorePage() {
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState("Tất cả");
-  const [sort, setSort] = useState("popular");
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const navigationResetTimer = useRef<number | null>(null);
 
   const filtered = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
+    const keyword = normalizeSearch(search);
 
     return destinations
       .filter((destination) => {
         const matchRegion = region === "Tất cả" || destination.region === region;
+        const searchableText = normalizeSearch(
+          `${destination.name} ${destination.desc} ${destination.tag} ${destination.region}`
+        );
         const matchSearch =
           !keyword ||
-          `${destination.name} ${destination.desc} ${destination.tag} ${destination.region}`.toLowerCase().includes(keyword);
+          searchableText.includes(keyword);
         return matchRegion && matchSearch;
-      })
-      .sort((a, b) => (sort === "rating" ? b.rating - a.rating : b.trips - a.trips));
-  }, [region, search, sort]);
+      });
+  }, [region, search]);
+
+  useEffect(() => {
+    return () => {
+      if (navigationResetTimer.current) window.clearTimeout(navigationResetTimer.current);
+    };
+  }, []);
+
+  const beginNavigation = (href: string) => {
+    if (pendingHref) return;
+    setPendingHref(href);
+    if (navigationResetTimer.current) window.clearTimeout(navigationResetTimer.current);
+    navigationResetTimer.current = window.setTimeout(() => {
+      setPendingHref((current) => (current === href ? null : current));
+    }, 12000);
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
@@ -91,14 +119,6 @@ export default function ExplorePage() {
               </Button>
             ))}
           </div>
-
-          <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Filter size={15} style={{ color: "var(--text-4)" }} />
-            <select className="input" value={sort} onChange={(event) => setSort(event.target.value)} style={{ width: 170, padding: "8px 12px" }}>
-              <option value="popular">Phổ biến nhất</option>
-              <option value="rating">Đánh giá cao</option>
-            </select>
-          </label>
         </div>
       </section>
 
@@ -108,9 +128,18 @@ export default function ExplorePage() {
             Hiển thị <strong style={{ color: "var(--text)" }}>{filtered.length}</strong> điểm đến
           </p>
           <div className="destination-grid">
-            {filtered.map((destination) => (
-              <DestinationCard key={destination.name} destination={destination} />
-            ))}
+            {filtered.map((destination) => {
+              const href = `/plan?destination=${encodeURIComponent(destination.name)}`;
+              return (
+                <DestinationCard
+                  key={destination.name}
+                  destination={destination}
+                  loading={pendingHref === href}
+                  disabled={pendingHref !== null}
+                  onNavigate={() => beginNavigation(href)}
+                />
+              );
+            })}
           </div>
         </div>
       </section>

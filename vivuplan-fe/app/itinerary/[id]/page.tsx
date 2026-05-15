@@ -6,6 +6,7 @@ import Navbar from "@/components/layout/Navbar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ItineraryLoadingState } from "@/components/travel/ItineraryLoadingState";
 import { tripApi, type ActivityMutationRequest, type ActivityResponse, type TripResponse } from "@/lib/api";
 import { getDestinationImage } from "@/lib/travel-data";
 import {
@@ -171,16 +172,7 @@ export default function ItineraryPage() {
   };
 
   if (loading) {
-    return (
-      <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
-        <Navbar />
-        <div style={{ minHeight: "70vh", display: "grid", placeItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--text-3)" }}>
-            <div className="spinner" /> Đang tải lịch trình...
-          </div>
-        </div>
-      </div>
-    );
+    return <ItineraryLoadingState message="Đang tải lịch trình..." />;
   }
 
   if (error || !trip || !day) {

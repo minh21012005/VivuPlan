@@ -3,9 +3,35 @@ import { ArrowRight, Clock, Star } from "lucide-react";
 import type { Destination } from "@/lib/travel-data";
 import { Badge } from "@/components/ui/Badge";
 
-export function DestinationCard({ destination }: { destination: Destination }) {
+export function DestinationCard({
+  destination,
+  loading = false,
+  disabled = false,
+  onNavigate,
+}: {
+  destination: Destination;
+  loading?: boolean;
+  disabled?: boolean;
+  onNavigate?: () => void;
+}) {
+  const href = `/plan?destination=${encodeURIComponent(destination.name)}`;
+
   return (
-    <Link href={`/plan?destination=${encodeURIComponent(destination.name)}`} className="destination-card-link">
+    <Link
+      href={href}
+      className="destination-card-link"
+      aria-busy={loading}
+      aria-disabled={disabled}
+      tabIndex={disabled ? -1 : undefined}
+      onClick={(event) => {
+        if (disabled) {
+          event.preventDefault();
+          return;
+        }
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        onNavigate?.();
+      }}
+    >
       <article className="destination-card">
         <div className="destination-card-media" style={{ backgroundImage: `url(${destination.image})` }}>
           <div style={{ position: "absolute", top: "12px", left: "12px", display: "flex", gap: "8px" }}>
@@ -45,7 +71,8 @@ export function DestinationCard({ destination }: { destination: Destination }) {
               {destination.days}
             </span>
             <strong>
-              Lên kế hoạch <ArrowRight size={13} />
+              {loading ? <span className="spinner spinner-inline" /> : null}
+              {loading ? "Đang mở..." : "Lên kế hoạch"} {loading ? null : <ArrowRight size={13} />}
             </strong>
           </div>
         </div>
@@ -53,4 +80,3 @@ export function DestinationCard({ destination }: { destination: Destination }) {
     </Link>
   );
 }
-

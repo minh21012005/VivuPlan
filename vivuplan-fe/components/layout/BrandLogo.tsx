@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 interface BrandLogoProps {
   href?: string;
@@ -7,15 +8,17 @@ interface BrandLogoProps {
 
 export function BrandLogo({ href = "/", className = "" }: BrandLogoProps) {
   return (
-    <Link href={href} className={`flex items-center group ${className}`.trim()} aria-label="VivuPlan">
-      <div className="flex items-center justify-center w-14 h-14 overflow-hidden shrink-0">
-        <img
+    <Link href={href} className={`brand-logo ${className}`.trim()} aria-label="VivuPlan">
+      <div className="brand-logo-mark">
+        <Image
           src="/logo.png"
           alt="VivuPlan Logo"
-          className="w-full h-full object-contain mix-blend-multiply contrast-125 brightness-110 scale-[2.2] origin-center"
+          width={56}
+          height={56}
+          className="brand-logo-image"
         />
       </div>
-      <span className="text-[25px] font-bold tracking-normal" aria-hidden="true">
+      <span className="brand-logo-text" aria-hidden="true">
         <span className="text-[#20BDB4]">Vivu</span>
         <span className="text-[#062A5C]">Plan</span>
       </span>

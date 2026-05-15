@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import { Badge } from "@/components/ui/Badge";
@@ -155,6 +155,7 @@ function PlanContent() {
     notes: "",
   });
   const [generating, setGenerating] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [error, setError] = useState("");
   const [focusedField, setFocusedField] = useState<"departure" | "destination" | null>(null);
   const blurTimer = useRef<number | null>(null);
@@ -184,6 +185,23 @@ function PlanContent() {
         : form.travelers > 1
           ? "Chưa chọn kiểu nhóm"
           : "Nhập số người trước";
+
+  const generationStep =
+    elapsedSeconds < 12
+      ? "Đang phân tích điểm đến, ngày đi và ngân sách của bạn."
+      : elapsedSeconds < 35
+        ? "AI đang sắp xếp lịch trình theo từng ngày và nhịp di chuyển."
+        : elapsedSeconds < 60
+          ? "Đang tinh chỉnh chi phí, địa điểm ăn uống và hoạt động phù hợp."
+          : "Vẫn đang xử lý. Một số lịch trình dài có thể mất hơn 1 phút.";
+
+  useEffect(() => {
+    if (!generating) return;
+    const timer = window.setInterval(() => {
+      setElapsedSeconds((current) => current + 1);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [generating]);
 
   const focusField = (field: "departure" | "destination") => {
     if (blurTimer.current) {
@@ -237,6 +255,7 @@ function PlanContent() {
     }
 
     setGenerating(true);
+    setElapsedSeconds(0);
     try {
       const finalDestination = form.destination.trim() || suggestDestination({ ...form, budget: budgetPerPerson });
       const planningNotes = [
@@ -338,7 +357,18 @@ function PlanContent() {
             <h2>Thiết kế hành trình của riêng bạn</h2>
           </div>
 
-          <Card className="planner-form">
+          <Card className={`planner-form${generating ? " planner-form-generating" : ""}`}>
+            {generating && (
+              <div className="planner-generation-status" role="status" aria-live="polite">
+                <div className="spinner" />
+                <div>
+                  <strong>AI đang tạo lịch trình cho bạn</strong>
+                  <p>{generationStep}</p>
+                  <span>Thường mất khoảng 30 giây đến 1 phút. Đã chờ {elapsedSeconds}s.</span>
+                </div>
+              </div>
+            )}
+
             <div className="field-group">
               <label>Điểm xuất phát</label>
               <div className="input-with-icon">

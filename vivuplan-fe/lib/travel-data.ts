@@ -1,6 +1,6 @@
 export interface Destination {
   name: string;
-  region: "Miền Bắc" | "Miền Trung" | "Miền Nam" | "Tây Nguyên";
+  region: "Miền Bắc" | "Miền Trung" | "Miền Nam";
   tag: string;
   days: string;
   rating: number;
@@ -23,7 +23,7 @@ export const heroImages = {
 export const destinations: Destination[] = [
   {
     name: "Đà Lạt",
-    region: "Tây Nguyên",
+    region: "Miền Trung",
     tag: "Rừng thông, cà phê và khí hậu mát",
     days: "3-5 ngày",
     rating: 4.9,
@@ -106,4 +106,3 @@ export const destinations: Destination[] = [
 export function getDestinationImage(destination?: string) {
   return destinations.find((item) => item.name === destination)?.image ?? heroImages.vietnamBay;
 }
-

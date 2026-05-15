@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { tripApi, type TripResponse } from "@/lib/api";
 import { getDestinationImage, heroImages } from "@/lib/travel-data";
-import { BarChart2, Clock, Eye, MapPin, Plus, Share2, Sparkles, Trash2, Wallet } from "lucide-react";
+import { Clock, Eye, Plus, Share2, Sparkles, Trash2, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const statusInfo: Record<string, { label: string; tone: "green" | "blue" | "gray" }> = {
@@ -32,6 +32,8 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [tab, setTab] = useState<"ALL" | "PLANNED" | "COMPLETED">("ALL");
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [openingTripId, setOpeningTripId] = useState<number | null>(null);
+  const openingResetTimer = useRef<number | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -48,9 +50,13 @@ export default function DashboardPage() {
     return () => window.clearTimeout(timer);
   }, [router]);
 
+  useEffect(() => {
+    return () => {
+      if (openingResetTimer.current) window.clearTimeout(openingResetTimer.current);
+    };
+  }, []);
+
   const filtered = tab === "ALL" ? trips : trips.filter((trip) => trip.status === tab);
-  const uniqueDests = new Set(trips.map((trip) => trip.destination)).size;
-  const totalDays = trips.reduce((sum, trip) => sum + trip.days, 0);
 
   const handleDelete = async (id: number) => {
     if (!confirm("Xóa lịch trình này?")) return;
@@ -72,6 +78,16 @@ export default function DashboardPage() {
     } catch {
       // Keep the current card state if the backend rejects the request.
     }
+  };
+
+  const handleOpenTrip = (id: number) => {
+    if (openingTripId !== null) return;
+
+    setOpeningTripId(id);
+    if (openingResetTimer.current) window.clearTimeout(openingResetTimer.current);
+    openingResetTimer.current = window.setTimeout(() => {
+      setOpeningTripId((current) => (current === id ? null : current));
+    }, 12000);
   };
 
   return (
@@ -97,23 +113,6 @@ export default function DashboardPage() {
       </section>
 
       <main className="container trip-library-main">
-        <div className="dashboard-stat-grid">
-          {[
-            { label: "Tổng chuyến", value: loading ? "..." : trips.length, icon: MapPin },
-            { label: "Ngày du lịch", value: loading ? "..." : totalDays, icon: Clock },
-            { label: "Điểm đến", value: loading ? "..." : uniqueDests, icon: Wallet },
-            { label: "Hoàn thành", value: loading ? "..." : trips.filter((trip) => trip.status === "COMPLETED").length, icon: BarChart2 },
-          ].map(({ label, value, icon: Icon }) => (
-            <Card key={label} className="dashboard-stat">
-              <Icon size={18} />
-              <div>
-                <strong>{value}</strong>
-                <span>{label}</span>
-              </div>
-            </Card>
-          ))}
-        </div>
-
         <div className="library-toolbar">
           <div>
             <h2>Thư viện lịch trình</h2>
@@ -165,8 +164,11 @@ export default function DashboardPage() {
                 key={trip.id}
                 trip={trip}
                 deleting={deleting === trip.id}
+                opening={openingTripId === trip.id}
+                viewDisabled={openingTripId !== null}
                 onDelete={() => handleDelete(trip.id)}
                 onToggle={() => handleToggle(trip.id)}
+                onView={() => handleOpenTrip(trip.id)}
               />
             ))}
           </div>
@@ -179,13 +181,19 @@ export default function DashboardPage() {
 function TripCard({
   trip,
   deleting,
+  opening,
+  viewDisabled,
   onDelete,
   onToggle,
+  onView,
 }: {
   trip: TripResponse;
   deleting: boolean;
+  opening: boolean;
+  viewDisabled: boolean;
   onDelete: () => void;
   onToggle: () => void;
+  onView: () => void;
 }) {
   const status = statusInfo[trip.status] ?? statusInfo.DRAFT;
 
@@ -217,8 +225,26 @@ function TripCard({
           </span>
         </div>
         <div className="trip-card-actions">
-          <Button href={`/itinerary/${trip.id}`} variant="secondary" size="sm">
-            <Eye size={13} /> Xem
+          <Button
+            href={`/itinerary/${trip.id}`}
+            variant="secondary"
+            size="sm"
+            className="trip-view-button"
+            aria-busy={opening}
+            aria-disabled={viewDisabled}
+            tabIndex={viewDisabled ? -1 : undefined}
+            onClick={(event) => {
+              if (viewDisabled) {
+                event.preventDefault();
+                return;
+              }
+
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+              onView();
+            }}
+          >
+            {opening ? <span className="spinner spinner-inline" /> : <Eye size={13} />}
+            {opening ? "Đang mở..." : "Xem"}
           </Button>
           <Button type="button" variant="ghost" size="icon" onClick={onToggle} title={trip.isPublic ? "Ẩn lịch trình" : "Công khai lịch trình"}>
             <Share2 size={15} />

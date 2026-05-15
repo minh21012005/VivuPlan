@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/Button";
@@ -59,7 +59,9 @@ export default function HomePage() {
   const [departure, setDeparture] = useState("");
   const [destination, setDestination] = useState("");
   const [focusedField, setFocusedField] = useState<"departure" | "destination" | null>(null);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
   const blurTimer = useRef<number | null>(null);
+  const navigationResetTimer = useRef<number | null>(null);
   const departureQuery = normalizeSearch(departure);
   const destinationQuery = normalizeSearch(destination);
   const departureMatches = departureQuery
@@ -69,6 +71,14 @@ export default function HomePage() {
     .map((item) => item.name)
     .filter((item) => !destinationQuery || normalizeSearch(item).includes(destinationQuery))
     .slice(0, 6);
+  const planHref = `/plan?departure=${encodeURIComponent(departure)}&destination=${encodeURIComponent(destination)}`;
+
+  useEffect(() => {
+    return () => {
+      if (blurTimer.current) window.clearTimeout(blurTimer.current);
+      if (navigationResetTimer.current) window.clearTimeout(navigationResetTimer.current);
+    };
+  }, []);
 
   const focusField = (field: "departure" | "destination") => {
     if (blurTimer.current) {
@@ -84,6 +94,16 @@ export default function HomePage() {
       setFocusedField(null);
       blurTimer.current = null;
     }, 140);
+  };
+
+  const beginNavigation = (href: string) => {
+    if (pendingHref) return;
+    setPendingHref(href);
+    setFocusedField(null);
+    if (navigationResetTimer.current) window.clearTimeout(navigationResetTimer.current);
+    navigationResetTimer.current = window.setTimeout(() => {
+      setPendingHref((current) => (current === href ? null : current));
+    }, 12000);
   };
 
   return (
@@ -147,8 +167,22 @@ export default function HomePage() {
                 </div>
               )}
             </div>
-            <Button href={`/plan?departure=${encodeURIComponent(departure)}&destination=${encodeURIComponent(destination)}`}>
-              Tạo lịch trình <ArrowRight size={16} />
+            <Button
+              href={planHref}
+              className="home-loading-link"
+              aria-busy={pendingHref === planHref}
+              aria-disabled={pendingHref !== null}
+              onClick={(event) => {
+                if (pendingHref) {
+                  event.preventDefault();
+                  return;
+                }
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                beginNavigation(planHref);
+              }}
+            >
+              {pendingHref === planHref ? <span className="spinner spinner-inline spinner-on-primary" /> : null}
+              {pendingHref === planHref ? "Đang mở..." : "Tạo lịch trình"} {pendingHref === planHref ? null : <ArrowRight size={16} />}
             </Button>
           </div>
           <div className="hero-chip-row">
@@ -201,15 +235,39 @@ export default function HomePage() {
             eyebrow="Điểm đến nổi bật"
             title="Điểm đến hàng đầu"
             action={
-              <Button href="/explore" variant="secondary">
-                Khám phá thêm <ArrowRight size={15} />
+              <Button
+                href="/explore"
+                variant="secondary"
+                className="home-loading-link"
+                aria-busy={pendingHref === "/explore"}
+                aria-disabled={pendingHref !== null}
+                onClick={(event) => {
+                  if (pendingHref) {
+                    event.preventDefault();
+                    return;
+                  }
+                  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                  beginNavigation("/explore");
+                }}
+              >
+                {pendingHref === "/explore" ? <span className="spinner spinner-inline" /> : null}
+                {pendingHref === "/explore" ? "Đang mở..." : "Khám phá thêm"} {pendingHref === "/explore" ? null : <ArrowRight size={15} />}
               </Button>
             }
           />
           <div className="destination-grid compact">
-            {destinations.slice(0, 4).map((item) => (
-              <DestinationCard key={item.name} destination={item} />
-            ))}
+            {destinations.slice(0, 4).map((item) => {
+              const href = `/plan?destination=${encodeURIComponent(item.name)}`;
+              return (
+                <DestinationCard
+                  key={item.name}
+                  destination={item}
+                  loading={pendingHref === href}
+                  disabled={pendingHref !== null}
+                  onNavigate={() => beginNavigation(href)}
+                />
+              );
+            })}
           </div>
         </div>
       </section>

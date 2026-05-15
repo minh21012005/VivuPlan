@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Compass, Globe, Camera, MessageCircle, Play, Heart } from "lucide-react";
+import { Camera, Globe, Heart, MessageCircle, Play } from "lucide-react";
 
 const footerLinks = {
   "Sản phẩm": [
@@ -31,119 +31,49 @@ const socials = [
 
 export default function Footer() {
   return (
-    <footer style={{ background: "var(--text)", color: "white", position: "relative", overflow: "hidden" }}>
-      {/* Decorative gradient blur */}
-      <div style={{
-        position: "absolute", top: -100, right: -100, width: 300, height: 300,
-        background: "radial-gradient(circle, rgba(15,159,156,0.15) 0%, transparent 70%)",
-        pointerEvents: "none"
-      }} />
-
-      <div className="container" style={{ paddingTop: "80px", paddingBottom: "40px", position: "relative", zIndex: 1 }}>
-
-        {/* ── Main grid ─────────────────────────────────────────────── */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "2fr 1fr 1fr 1fr",
-          gap: "48px",
-          marginBottom: "64px",
-        }}>
-
-          {/* Brand block */}
-          <div>
-            <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "10px", textDecoration: "none", marginBottom: "24px" }}>
-              <span style={{
-                fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "22px",
-                background: "linear-gradient(135deg, var(--primary), var(--secondary))",
-                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-              }}>
-                VivuPlan
-              </span>
+    <footer className="site-footer">
+      <div className="container site-footer-inner">
+        <div className="site-footer-grid">
+          <section className="site-footer-brand" aria-label="VivuPlan">
+            <Link href="/" className="site-footer-logo">
+              VivuPlan
             </Link>
 
-            <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.6)", lineHeight: 1.8, marginBottom: "28px", maxWidth: "320px" }}>
-              Nền tảng lập kế hoạch du lịch Việt Nam được AI hỗ trợ. Tạo lịch trình hoàn hảo chỉ trong 30 giây và khám phá những hành trình tuyệt vời nhất.
+            <p className="site-footer-copy">
+              Nền tảng lập kế hoạch du lịch Việt Nam được AI hỗ trợ. Tạo lịch trình hoàn hảo chỉ trong 30 giây và khám phá
+              những hành trình tuyệt vời nhất.
             </p>
 
-            {/* Social icons */}
-            <div style={{ display: "flex", gap: "12px" }}>
-              {socials.map(({ icon: Icon, href, label }, i) => (
-                <a
-                  key={i}
-                  href={href}
-                  aria-label={label}
-                  style={{
-                    width: 38, height: 38, borderRadius: "var(--r-md)",
-                    background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "rgba(255,255,255,0.6)", textDecoration: "none",
-                    transition: "all 0.25s",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "var(--primary)";
-                    e.currentTarget.style.borderColor = "var(--primary)";
-                    e.currentTarget.style.color = "white";
-                    e.currentTarget.style.transform = "translateY(-3px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-                    e.currentTarget.style.color = "rgba(255,255,255,0.6)";
-                    e.currentTarget.style.transform = "translateY(0)";
-                  }}
-                >
+            <div className="site-footer-socials">
+              {socials.map(({ icon: Icon, href, label }) => (
+                <a key={label} href={href} aria-label={label} className="site-footer-social-link">
                   <Icon size={18} />
                 </a>
               ))}
             </div>
-          </div>
+          </section>
 
-          {/* Link columns */}
           {Object.entries(footerLinks).map(([group, items]) => (
-            <div key={group}>
-              <h4 style={{
-                fontSize: "13px", fontWeight: 700, color: "white",
-                textTransform: "uppercase", letterSpacing: "0.1em",
-                marginBottom: "24px",
-              }}>
-                {group}
-              </h4>
-              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "14px" }}>
+            <section key={group} className="site-footer-column">
+              <h4>{group}</h4>
+              <ul>
                 {items.map((item) => (
                   <li key={item.label}>
-                    <Link
-                      href={item.href}
-                      style={{ fontSize: "14px", color: "rgba(255,255,255,0.55)", textDecoration: "none", transition: "all 0.2s" }}
-                      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--primary-muted)"; e.currentTarget.style.paddingLeft = "4px"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.55)"; e.currentTarget.style.paddingLeft = "0"; }}
-                    >
+                    <Link href={item.href} className="site-footer-link">
                       {item.label}
                     </Link>
                   </li>
                 ))}
               </ul>
-            </div>
+            </section>
           ))}
         </div>
 
-        {/* ── Bottom bar ─────────────────────────────────────────────── */}
-        <div style={{
-          borderTop: "1px solid rgba(255,255,255,0.08)",
-          paddingTop: "32px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "16px",
-        }}>
-          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.4)" }}>
-            © 2026 VivuPlan. Mọi quyền được bảo lưu.
-          </p>
+        <div className="site-footer-bottom">
+          <p>© 2026 VivuPlan. Mọi quyền được bảo lưu.</p>
 
-          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "6px" }}>
-            Tạo ra với{" "}
-            <Heart size={14} fill="#F43F5E" color="#F43F5E" />
-            {" "}tại Việt Nam 🇻🇳
+          <p className="site-footer-made">
+            Tạo ra với <Heart size={14} fill="#F43F5E" color="#F43F5E" /> tại Việt Nam
           </p>
         </div>
       </div>
