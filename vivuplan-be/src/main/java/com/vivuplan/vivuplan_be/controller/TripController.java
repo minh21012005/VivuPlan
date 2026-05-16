@@ -99,6 +99,26 @@ public class TripController {
         return ResponseEntity.ok(tripService.deleteActivity(id, (Long) auth.getPrincipal(), activityId));
     }
 
+    /** Preview an AI-regenerated version of one itinerary day without saving it */
+    @PostMapping("/{id}/days/{dayNumber}/regenerate-preview")
+    public ResponseEntity<TripDto.RegenerateDayPreviewResponse> previewRegenerateDay(
+            @PathVariable Long id,
+            @PathVariable Integer dayNumber,
+            @RequestBody TripDto.RegenerateDayRequest req,
+            Authentication auth) {
+        return ResponseEntity.ok(tripService.previewRegenerateDay(id, (Long) auth.getPrincipal(), dayNumber, req));
+    }
+
+    /** Apply a previously previewed regenerated day */
+    @PostMapping("/{id}/days/{dayNumber}/regenerate-apply")
+    public ResponseEntity<TripDto.TripResponse> applyRegenerateDay(
+            @PathVariable Long id,
+            @PathVariable Integer dayNumber,
+            @Valid @RequestBody TripDto.ApplyRegenerateDayRequest req,
+            Authentication auth) {
+        return ResponseEntity.ok(tripService.applyRegeneratedDay(id, (Long) auth.getPrincipal(), dayNumber, req));
+    }
+
     /** Public trips feed */
     @GetMapping("/public")
     public ResponseEntity<Page<TripDto.TripResponse>> publicTrips(

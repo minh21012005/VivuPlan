@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ItineraryLoadingState } from "@/components/travel/ItineraryLoadingState";
-import { ApiError, tripApi, type ActivityMutationRequest, type ActivityResponse, type TripResponse } from "@/lib/api";
+import { ApiError, tripApi, type ActivityMutationRequest, type ActivityResponse, type RegenerateDayPreviewResponse, type RegenerateDayRequest, type TripResponse } from "@/lib/api";
 import { copyTextToClipboard, getTripShareUrl } from "@/lib/share";
 import { getDestinationImage } from "@/lib/travel-data";
 import { useDestinations } from "@/lib/use-destinations";
@@ -16,22 +16,84 @@ import {
   AlertCircle,
   Camera,
   CheckCircle2,
+  Clock,
   ChevronDown,
   ChevronUp,
   Coffee,
   Edit3,
   ExternalLink,
+  ListChecks,
   MapPin,
   Navigation,
   Plus,
+  RefreshCw,
+  Route,
   Save,
   Share2,
+  Sparkles,
   Star,
   Trash2,
   Utensils,
   Wallet,
   X,
 } from "lucide-react";
+
+// ─── Lightweight toast system ────────────────────────────────────────────────
+type ToastItem = { id: number; message: string; type: "error" | "success" | "info" };
+
+function useToast() {
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const counter = useState(0);
+  const show = (message: string, type: ToastItem["type"] = "info", durationMs = 5000) => {
+    const id = ++counter[0];
+    setToasts((prev) => [...prev, { id, message, type }]);
+    window.setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), durationMs);
+  };
+  const dismiss = (id: number) => setToasts((prev) => prev.filter((t) => t.id !== id));
+  return { toasts, show, dismiss };
+}
+
+function ToastContainer({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id: number) => void }) {
+  if (toasts.length === 0) return null;
+  return (
+    <div style={{
+      position: "fixed", bottom: 24, right: 24, zIndex: 9999,
+      display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-end",
+      pointerEvents: "none",
+    }}>
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          role="alert"
+          style={{
+            pointerEvents: "auto",
+            display: "flex", alignItems: "flex-start", gap: 10,
+            minWidth: 280, maxWidth: 380,
+            padding: "12px 14px",
+            borderRadius: "var(--r-md, 10px)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.18)",
+            background: t.type === "error" ? "#FEF2F2" : t.type === "success" ? "#F0FDF4" : "#EFF6FF",
+            color: t.type === "error" ? "#B91C1C" : t.type === "success" ? "#15803D" : "#1D4ED8",
+            fontSize: 13, lineHeight: 1.5, fontWeight: 500,
+            animation: "slideInRight 0.22s ease",
+          }}
+        >
+          {t.type === "error" && <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />}
+          {t.type === "success" && <CheckCircle2 size={16} style={{ flexShrink: 0, marginTop: 1 }} />}
+          <span style={{ flex: 1 }}>{t.message}</span>
+          <button
+            type="button"
+            onClick={() => onDismiss(t.id)}
+            style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0, color: "inherit", opacity: 0.6, flexShrink: 0 }}
+            aria-label="Đóng thông báo"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const typeConfig: Record<string, { icon: typeof Coffee; color: string; bg: string; label: string }> = {
   FOOD: { icon: Utensils, color: "#0F9F9C", bg: "#E6FFFB", label: "Ăn uống" },
@@ -68,6 +130,57 @@ function fmtDate(value?: string) {
   return new Date(`${value}T00:00:00`).toLocaleDateString("vi-VN");
 }
 
+function getActivityPlace(activity: ActivityResponse, destination?: string) {
+  return [activity.name, activity.location, destination].filter(Boolean).join(" ");
+}
+
+function buildMapsSearchUrl(query: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+function buildDayDirectionsUrl(activities: ActivityResponse[], destination?: string) {
+  const places = activities
+    .map((activity) => getActivityPlace(activity, destination))
+    .filter(Boolean);
+
+  if (places.length <= 1) {
+    return buildMapsSearchUrl(places[0] || destination || "");
+  }
+
+  const query = new URLSearchParams({
+    api: "1",
+    origin: places[0],
+    destination: places[places.length - 1],
+    travelmode: "driving",
+  });
+  const waypoints = places.slice(1, -1).slice(0, 8);
+  if (waypoints.length > 0) query.set("waypoints", waypoints.join("|"));
+  return `https://www.google.com/maps/dir/?${query.toString()}`;
+}
+
+function getDayTimeRange(activities: ActivityResponse[]) {
+  const times = activities.map((activity) => activity.time).filter(Boolean).sort();
+  if (times.length === 0) return "Chưa có giờ";
+  return times.length === 1 ? times[0] : `${times[0]} - ${times[times.length - 1]}`;
+}
+
+function buildDayCopyText(trip: TripResponse, day: NonNullable<TripResponse["schedule"]>[number]) {
+  const rows = day.activities.map((activity) => {
+    const location = activity.location ? ` tại ${activity.location}` : "";
+    const cost = activity.estimatedCost ? ` - ${fmtCost(activity.estimatedCost)}` : "";
+    const note = activity.note ? `\n  Ghi chú: ${activity.note}` : "";
+    return `${activity.time} - ${activity.name}${location} (${activity.duration})${cost}${note}`;
+  });
+
+  return [
+    `Lịch trình ${trip.destination} - Ngày ${day.day}`,
+    day.title,
+    day.summary,
+    "",
+    ...rows,
+  ].filter(Boolean).join("\n");
+}
+
 export default function ItineraryPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -80,11 +193,18 @@ export default function ItineraryPage() {
   const [redirectingForbidden, setRedirectingForbidden] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [dayCopied, setDayCopied] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [shareError, setShareError] = useState("");
   const [editor, setEditor] = useState<{ mode: "add" | "edit"; dayNumber: number; activity?: ActivityResponse } | null>(null);
   const [savingActivity, setSavingActivity] = useState(false);
   const [activityError, setActivityError] = useState("");
+  const [regenerateOpen, setRegenerateOpen] = useState(false);
+  const [regeneratePreview, setRegeneratePreview] = useState<RegenerateDayPreviewResponse | null>(null);
+  const [selectedRegenerateIndexes, setSelectedRegenerateIndexes] = useState<number[]>([]);
+  const [regeneratingDay, setRegeneratingDay] = useState(false);
+  const [applyingRegeneration, setApplyingRegeneration] = useState(false);
+  const { toasts, show: showToast, dismiss: dismissToast } = useToast();
 
   useEffect(() => {
     if (authLoading || !authUser) return;
@@ -100,7 +220,11 @@ export default function ItineraryPage() {
         setTrip(data);
         setActiveDay(0);
         setCopied(false);
+        setDayCopied(false);
         setShareError("");
+        setRegenerateOpen(false);
+        setRegeneratePreview(null);
+        setSelectedRegenerateIndexes([]);
       } catch (e) {
         if (cancelled) return;
         const isForbidden =
@@ -129,7 +253,19 @@ export default function ItineraryPage() {
   const image = useMemo(() => getDestinationImage(trip?.destination, destinations), [destinations, trip?.destination]);
 
   const day = trip?.schedule?.[activeDay];
+  const dayActivities = day?.activities ?? [];
   const dayTotal = day?.activities?.reduce((sum, activity) => sum + activity.estimatedCost, 0) ?? 0;
+  const dayTransportCount = dayActivities.filter((activity) => activity.type === "TRANSPORT").length;
+  const dayPlaceCount = dayActivities.filter((activity) => activity.type !== "TRANSPORT").length;
+  const dayTimeRange = getDayTimeRange(dayActivities);
+  const dayDirectionsUrl = buildDayDirectionsUrl(dayActivities, trip?.destination);
+  const routeStops = dayActivities
+    .filter((activity) => activity.location || activity.name)
+    .map((activity) => ({
+      id: activity.id ?? `${activity.time}-${activity.name}`,
+      label: activity.location || activity.name,
+      meta: `${activity.time} · ${typeConfig[activity.type]?.label ?? activity.type}`,
+    }));
   const budget = trip?.budget;
   const targetBudget =
     trip
@@ -172,6 +308,61 @@ export default function ItineraryPage() {
       setShareError(e instanceof Error ? e.message : "Không thể tạo link chia sẻ. Vui lòng thử lại.");
     } finally {
       setSharing(false);
+    }
+  };
+
+  const copyDayPlan = async () => {
+    if (!trip || !day) return;
+    setActivityError("");
+    try {
+      await copyTextToClipboard(buildDayCopyText(trip, day));
+      setDayCopied(true);
+      window.setTimeout(() => setDayCopied(false), 1600);
+    } catch (e) {
+      setActivityError(e instanceof Error ? e.message : "Không thể copy lịch trình ngày này");
+    }
+  };
+
+  const previewRegenerateDay = async (request: RegenerateDayRequest) => {
+    if (!trip || !day) return;
+    setRegeneratingDay(true);
+    setRegeneratePreview(null);
+    setSelectedRegenerateIndexes([]);
+    try {
+      const preview = await tripApi.previewRegenerateDay(trip.id, day.day, request);
+      setRegeneratePreview(preview);
+      setSelectedRegenerateIndexes(preview.day.activities.map((_, index) => index));
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Không thể tạo phương án mới cho ngày này", "error", 6000);
+    } finally {
+      setRegeneratingDay(false);
+    }
+  };
+
+  const applyRegeneratedDay = async () => {
+    if (!trip || !regeneratePreview) return;
+    setApplyingRegeneration(true);
+    try {
+      const updated = await tripApi.applyRegenerateDay(
+        trip.id,
+        regeneratePreview.dayNumber,
+        regeneratePreview.proposalId,
+        selectedRegenerateIndexes,
+      );
+      setTrip(updated);
+      const nextIndex = updated.schedule?.findIndex((item) => item.day === regeneratePreview.dayNumber) ?? activeDay;
+      if (nextIndex >= 0) setActiveDay(nextIndex);
+      setExpanded(null);
+      setRegenerateOpen(false);
+      setRegeneratePreview(null);
+      setSelectedRegenerateIndexes([]);
+      showToast("Đã áp dụng thay đổi cho ngày thành công!", "success", 3000);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Không thể áp dụng phương án mới";
+      // Use toast for the error message
+      showToast(message, "error", 6000);
+    } finally {
+      setApplyingRegeneration(false);
     }
   };
 
@@ -232,6 +423,7 @@ export default function ItineraryPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <Navbar />
 
       <section
@@ -291,6 +483,9 @@ export default function ItineraryPage() {
                     onClick={() => {
                       setActiveDay(index);
                       setExpanded(null);
+                      setDayCopied(false);
+                      setRegenerateOpen(false);
+                      setRegeneratePreview(null);
                     }}
                     className={activeDay === index ? "btn btn-primary btn-sm" : "btn btn-secondary btn-sm"}
                   >
@@ -303,12 +498,49 @@ export default function ItineraryPage() {
               </Button>
             </div>
 
-            <Card style={{ padding: 20, marginBottom: 18 }}>
-              <div>
-                <h2 style={{ fontSize: 20, marginBottom: 4 }}>{day.title}</h2>
-                <p style={{ color: "var(--text-3)", fontSize: 14 }}>
-                  {day.activities.length} hoạt động · Chi phí trong ngày khoảng {fmtCost(dayTotal)}
-                </p>
+            <Card className="itinerary-day-overview">
+              <div className="itinerary-day-overview-head">
+                <div>
+                  <h2>{day.title}</h2>
+                  <p>{day.summary}</p>
+                </div>
+                <div className="itinerary-day-actions">
+                  <Button type="button" variant="secondary" size="sm" onClick={() => {
+                    setRegenerateOpen(true);
+                  }}>
+                    <Sparkles size={13} /> Tạo lại ngày
+                  </Button>
+                  <Button type="button" variant="secondary" size="sm" onClick={copyDayPlan}>
+                    {dayCopied ? <CheckCircle2 size={13} /> : <ListChecks size={13} />}
+                    {dayCopied ? "Đã copy" : "Copy ngày"}
+                  </Button>
+                  <Button variant="secondary" size="sm" href={dayDirectionsUrl} target="_blank" rel="noreferrer">
+                    <Route size={13} /> Mở tuyến đường
+                  </Button>
+                </div>
+              </div>
+
+              <div className="itinerary-day-insights">
+                <div>
+                  <Clock size={15} />
+                  <span>Khung giờ</span>
+                  <strong>{dayTimeRange}</strong>
+                </div>
+                <div>
+                  <ListChecks size={15} />
+                  <span>Hoạt động</span>
+                  <strong>{dayActivities.length} mục</strong>
+                </div>
+                <div>
+                  <Navigation size={15} />
+                  <span>Di chuyển</span>
+                  <strong>{dayTransportCount} chặng</strong>
+                </div>
+                <div>
+                  <Wallet size={15} />
+                  <span>Chi phí ngày</span>
+                  <strong>{fmtCost(dayTotal)}</strong>
+                </div>
               </div>
             </Card>
 
@@ -345,13 +577,27 @@ export default function ItineraryPage() {
                 <h3 style={{ fontSize: 16, marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
                   <Navigation size={16} style={{ color: "var(--primary)" }} /> Tuyến trong ngày
                 </h3>
-                <p style={{ color: "var(--text-3)", fontSize: 13, lineHeight: 1.6, marginBottom: 14 }}>
-                  {day.activities.slice(0, 3).map((activity) => activity.name).join(" → ")}
+                <p className="itinerary-route-summary">
+                  {dayPlaceCount} điểm dừng, {dayTransportCount} chặng di chuyển. Mở tuyến đường để kiểm tra khoảng cách thực tế trước khi đi.
                 </p>
+                <ol className="itinerary-route-list">
+                  {routeStops.slice(0, 6).map((stop, index) => (
+                    <li key={stop.id}>
+                      <span>{index + 1}</span>
+                      <div>
+                        <strong>{stop.label}</strong>
+                        <small>{stop.meta}</small>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+                {routeStops.length > 6 && (
+                  <p className="itinerary-route-more">+{routeStops.length - 6} điểm khác trong ngày</p>
+                )}
                 <Button
                   variant="secondary"
                   size="sm"
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${trip.destination} ${day.activities[0]?.name ?? ""}`)}`}
+                  href={dayDirectionsUrl}
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -407,24 +653,6 @@ export default function ItineraryPage() {
               </div>
             </Card>
 
-            <Card style={{ padding: 22 }}>
-              <h3 style={{ fontSize: 16, marginBottom: 14 }}>Thông tin chuyến đi</h3>
-              {[
-                [trip.destinationSuggested ? "Điểm đến được gợi ý" : "Điểm đến", trip.destination],
-                ["Xuất phát", trip.departure || "Chưa có"],
-                ["Ngày đi", fmtDate(trip.startDate) || "Chưa có"],
-                ["Ngày về", fmtDate(trip.endDate) || "Chưa có"],
-                ["Thời gian", `${trip.days} ngày`],
-                ["Phong cách", styleLabel[trip.style] ?? trip.style],
-                ["Nhóm", groupLabel[trip.groupType] ?? trip.groupType],
-                ["Trạng thái", trip.status],
-              ].map(([label, value]) => (
-                <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "10px 0", borderBottom: "1px solid var(--divider)", fontSize: 13 }}>
-                  <span style={{ color: "var(--text-3)" }}>{label}</span>
-                  <strong style={{ textAlign: "right" }}>{value}</strong>
-                </div>
-              ))}
-            </Card>
           </aside>
         </div>
       </main>
@@ -442,6 +670,25 @@ export default function ItineraryPage() {
           }}
         />
       )}
+
+      {regenerateOpen && day && (
+        <RegenerateDayModal
+          day={day}
+          preview={regeneratePreview}
+          loading={regeneratingDay}
+          applying={applyingRegeneration}
+          selectedIndexes={selectedRegenerateIndexes}
+          onSelectedIndexesChange={setSelectedRegenerateIndexes}
+          onPreview={previewRegenerateDay}
+          onApply={applyRegeneratedDay}
+          onCancel={() => {
+            if (regeneratingDay || applyingRegeneration) return;
+            setRegenerateOpen(false);
+            setRegeneratePreview(null);
+            setSelectedRegenerateIndexes([]);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -454,6 +701,333 @@ const activityTypeOptions = [
   { value: "TRANSPORT", label: "Di chuyển" },
   { value: "ACCOMMODATION", label: "Lưu trú" },
 ];
+
+function parseActivityTimeMinutes(time?: string) {
+  const match = time?.match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function parseActivityDurationMinutes(duration?: string) {
+  if (!duration?.trim()) return 60;
+  const normalized = duration
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  let minutes = 0;
+  const hourMatch = normalized.match(/(\d+(?:[\.,]\d+)?)\s*(gio|h)/);
+  if (hourMatch) minutes += Math.round(Number(hourMatch[1].replace(",", ".")) * 60);
+  const minuteMatch = normalized.match(/(\d+)\s*(phut|p|min)/);
+  if (minuteMatch) minutes += Number(minuteMatch[1]);
+  return minutes > 0 ? minutes : 60;
+}
+
+function findActivityTimeConflicts(activities: ActivityResponse[]) {
+  const ranges = activities
+    .map((activity) => {
+      const start = parseActivityTimeMinutes(activity.time);
+      if (start == null) return null;
+      return {
+        name: activity.name,
+        start,
+        end: start + Math.max(15, parseActivityDurationMinutes(activity.duration)),
+      };
+    })
+    .filter((item): item is { name: string; start: number; end: number } => Boolean(item))
+    .sort((a, b) => a.start - b.start);
+
+  const conflicts: string[] = [];
+  for (let index = 1; index < ranges.length; index++) {
+    const previous = ranges[index - 1];
+    const current = ranges[index];
+    if (current.start < previous.end) {
+      conflicts.push(`${previous.name} bị trùng giờ với ${current.name}`);
+    }
+  }
+  return conflicts;
+}
+
+function RegenerateDayModal({
+  day,
+  preview,
+  loading,
+  applying,
+  selectedIndexes,
+  onSelectedIndexesChange,
+  onPreview,
+  onApply,
+  onCancel,
+}: {
+  day: NonNullable<TripResponse["schedule"]>[number];
+  preview: RegenerateDayPreviewResponse | null;
+  loading: boolean;
+  applying: boolean;
+  selectedIndexes: number[];
+  onSelectedIndexesChange: (indexes: number[]) => void;
+  onPreview: (request: RegenerateDayRequest) => Promise<void>;
+  onApply: () => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [instruction, setInstruction] = useState("");
+  const [localError, setLocalError] = useState("");
+  const costDiff = preview ? preview.newBudget - preview.oldBudget : 0;
+  const selectedCount = preview ? selectedIndexes.length : 0;
+  const allPreviewIndexes = preview?.day.activities.map((_, index) => index) ?? [];
+  const allSelected = preview ? selectedIndexes.length === preview.day.activities.length : false;
+  const selectionTimeConflicts = useMemo(() => {
+    if (!preview) return [];
+    const selected = new Set(selectedIndexes);
+    const previewLength = preview.day.activities.length;
+    const oldLength = day.activities.length;
+    const allNewSelected = selectedIndexes.length === previewLength;
+    const mergedActivities: ActivityResponse[] = [];
+
+    for (let index = 0; index < Math.max(oldLength, previewLength); index++) {
+      const hasNew = index < previewLength && preview.day.activities[index] != null;
+      const hasOld = index < oldLength && day.activities[index] != null;
+
+      if (hasNew && selected.has(index)) {
+        mergedActivities.push(preview.day.activities[index]);
+      } else if (hasNew && !selected.has(index) && hasOld) {
+        mergedActivities.push(day.activities[index]);
+      } else if (!hasNew && hasOld && !allNewSelected) {
+        // Only keep old "tail" activities (no new counterpart) when the user is
+        // doing a PARTIAL apply. If all new activities are selected, the AI
+        // intentionally merged/replaced these activities → exclude them.
+        mergedActivities.push(day.activities[index]);
+      }
+    }
+
+    return findActivityTimeConflicts(mergedActivities);
+  }, [day.activities, preview, selectedIndexes]);
+  const previewPairs = preview
+    ? Array.from({ length: Math.max(day.activities.length, preview.day.activities.length) }, (_, index) => ({
+        oldActivity: day.activities[index],
+        newActivity: preview.day.activities[index],
+        index,
+      }))
+    : [];
+
+  const renderPreviewActivity = (activity: NonNullable<TripResponse["schedule"]>[number]["activities"][number]) => (
+    <>
+      <span>{activity.time}</span>
+      <div>
+        <strong>{activity.name}</strong>
+        <small>{activity.location || typeConfig[activity.type]?.label || activity.type} · {activity.duration} · {fmtCost(activity.estimatedCost)}</small>
+      </div>
+    </>
+  );
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedInstruction = instruction.trim();
+    if (!trimmedInstruction) {
+      setLocalError("Bạn hãy nhập điều muốn thay đổi để VivuPlan tạo phương án phù hợp hơn.");
+      return;
+    }
+    setLocalError("");
+    void onPreview({ intent: "REGENERATE", instruction: trimmedInstruction });
+  };
+
+  const toggleSelectedIndex = (index: number) => {
+    onSelectedIndexesChange(
+      selectedIndexes.includes(index)
+        ? selectedIndexes.filter((item) => item !== index)
+        : [...selectedIndexes, index].sort((a, b) => a - b),
+    );
+  };
+
+  return (
+    <div
+      className="activity-editor-modal-backdrop regenerate-day-modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !loading && !applying) onCancel();
+      }}
+    >
+      <div className="activity-editor-modal-panel regenerate-day-modal-panel">
+        <Card className="activity-editor-card regenerate-day-card">
+          <div className="regenerate-day-header">
+            <div>
+              <Badge tone="teal">Ngày {day.day}</Badge>
+              <h3>Bạn muốn chỉnh ngày này như thế nào?</h3>
+              <p>AI sẽ tạo preview cho riêng ngày này và chỉ ghi đè sau khi bạn bấm áp dụng.</p>
+            </div>
+            <button type="button" className="btn btn-ghost btn-icon" onClick={onCancel} disabled={loading || applying} aria-label="Đóng tạo lại ngày">
+              <X size={16} />
+            </button>
+          </div>
+
+          <form onSubmit={submit} className="regenerate-day-form">
+            <label className="regenerate-instruction-field regenerate-chat-field">
+              Yêu cầu của bạn
+              <textarea
+                className="input textarea-compact"
+                value={instruction}
+                onChange={(event) => {
+                  setInstruction(event.target.value);
+                  if (localError) setLocalError("");
+                }}
+                placeholder="VD: Tôi muốn ngày này tiết kiệm hơn, thêm hải sản, bớt đi bộ hoặc đổi quán ăn tối."
+                disabled={loading || applying}
+                required
+              />
+            </label>
+            <p className="regenerate-chat-hint">
+              Bạn có thể nói rất cụ thể: muốn ăn gì, tránh gì, giảm chi phí, đổi địa điểm, bớt di chuyển, thêm trải nghiệm địa phương hoặc giữ lại một điểm đang thích.
+            </p>
+
+            {localError && <div className="form-error">{localError}</div>}
+
+            {loading && (
+              <div className="regenerate-generation-status" role="status" aria-live="polite">
+                <div className="spinner" />
+                <div>
+                  <strong>AI đang tạo phương án mới cho ngày {day.day}...</strong>
+                  <p>VivuPlan đang đọc lịch trình hiện tại, giữ các ràng buộc chuyến đi và tạo bản preview để bạn đối chiếu trước khi áp dụng.</p>
+                  <span>Quá trình này có thể mất khoảng 30 giây đến 1 phút, bạn vui lòng chờ một chút nhé.</span>
+                </div>
+              </div>
+            )}
+
+            <div className="regenerate-actions">
+              <Button type="button" variant="secondary" onClick={onCancel} disabled={loading || applying}>
+                Hủy
+              </Button>
+              <Button type="submit" disabled={loading || applying}>
+                {loading ? <span className="spinner spinner-inline spinner-on-primary" /> : <RefreshCw size={14} />}
+                {loading ? "Đang tạo phương án..." : "Gửi yêu cầu"}
+              </Button>
+            </div>
+          </form>
+
+          {preview && (
+            <section className="regenerate-preview">
+              <div className="regenerate-preview-head">
+                <div>
+                  <h4>{preview.day.title}</h4>
+                  <p>{preview.day.summary}</p>
+                </div>
+                <div className={costDiff > 0 ? "regenerate-cost-diff is-up" : "regenerate-cost-diff"}>
+                  <span>{fmtCost(preview.oldBudget)} → {fmtCost(preview.newBudget)}</span>
+                  <strong>{costDiff === 0 ? "Không đổi" : `${costDiff > 0 ? "+" : ""}${fmtCost(costDiff)}`}</strong>
+                </div>
+              </div>
+
+              {preview.warnings.length > 0 && (
+                <div className="regenerate-warnings">
+                  {preview.warnings.map((warning) => (
+                    <p key={warning}><AlertCircle size={13} /> {warning}</p>
+                  ))}
+                </div>
+              )}
+
+              <div className="regenerate-selection-toolbar">
+                <p>{selectedCount}/{preview.day.activities.length} mục mới sẽ được áp dụng</p>
+                <div>
+                  <button type="button" onClick={() => onSelectedIndexesChange(allPreviewIndexes)} disabled={loading || applying || allSelected}>
+                    Chọn tất cả
+                  </button>
+                  <button type="button" onClick={() => onSelectedIndexesChange([])} disabled={loading || applying || selectedIndexes.length === 0}>
+                    Bỏ chọn
+                  </button>
+                </div>
+              </div>
+
+              {selectionTimeConflicts.length > 0 && (
+                <div className="regenerate-merge-conflicts" role="alert">
+                  <AlertCircle size={14} />
+                  <div>
+                    <strong>Lựa chọn hiện tại đang làm trùng thời gian</strong>
+                    {selectionTimeConflicts.slice(0, 3).map((conflict) => (
+                      <p key={conflict}>{conflict}</p>
+                    ))}
+                    <span>Hãy chọn thêm các mục mới liên quan, áp dụng toàn bộ ngày mới hoặc tạo lại preview với yêu cầu rõ hơn.</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="regenerate-pair-list">
+                {previewPairs.map(({ oldActivity, newActivity, index }) => {
+                  const selected = Boolean(newActivity && selectedIndexes.includes(index));
+                  return (
+                    <div
+                      key={`pair-${index}-${oldActivity?.time ?? "new"}-${newActivity?.time ?? "old"}`}
+                      className={`regenerate-pair-row${selected ? " selected" : ""}${!newActivity ? " no-new" : ""}`}
+                    >
+                      <div className="regenerate-pair-side">
+                        <div className="regenerate-pair-title">
+                          <span>{oldActivity ? `Mục cũ ${index + 1}` : "Không có mục cũ"}</span>
+                          {!selected && oldActivity && <strong>Giữ nguyên</strong>}
+                        </div>
+                        {oldActivity ? (
+                          <div className="regenerate-preview-item">
+                            {renderPreviewActivity(oldActivity)}
+                          </div>
+                        ) : (
+                          <div className="regenerate-empty-item">Nếu chọn mục mới này, nó sẽ được thêm vào ngày hiện tại.</div>
+                        )}
+                      </div>
+
+                      <div className={`regenerate-pair-status${selected ? " selected" : ""}`}>
+                        {selected ? (oldActivity ? "Thay bằng" : "Thêm mới") : "Không áp dụng"}
+                      </div>
+
+                      <div className="regenerate-pair-side is-new">
+                        <div className="regenerate-pair-title">
+                          <span>{newActivity ? `Mục mới ${index + 1}` : "Không có mục mới"}</span>
+                          {selected && <strong>Sẽ áp dụng</strong>}
+                        </div>
+                        {newActivity ? (
+                          <label className={`regenerate-selectable-item${selected ? " selected" : ""}`}>
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={() => toggleSelectedIndex(index)}
+                              disabled={loading || applying}
+                              aria-label={`Áp dụng ${newActivity.name}`}
+                            />
+                            {renderPreviewActivity(newActivity)}
+                          </label>
+                        ) : (
+                          <div className="regenerate-empty-item">Không có đề xuất mới cho vị trí này, mục cũ sẽ được giữ lại.</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="regenerate-actions">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    const trimmedInstruction = instruction.trim();
+                    if (!trimmedInstruction) {
+                      setLocalError("Bạn hãy nhập điều muốn thay đổi để VivuPlan tạo phương án phù hợp hơn.");
+                      return;
+                    }
+                    setLocalError("");
+                    void onPreview({ intent: "REGENERATE", instruction: trimmedInstruction });
+                  }}
+                  disabled={loading || applying}
+                >
+                  <RefreshCw size={14} /> Tạo lại preview
+                </Button>
+                <Button type="button" onClick={onApply} disabled={loading || applying || selectedIndexes.length === 0 || selectionTimeConflicts.length > 0}>
+                  {applying ? <span className="spinner spinner-inline spinner-on-primary" /> : <Save size={14} />}
+                  {applying ? "Đang áp dụng..." : allSelected ? "Áp dụng ngày mới" : "Áp dụng mục đã chọn"}
+                </Button>
+              </div>
+            </section>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+}
 
 function ActivityEditorModal({
   activity,

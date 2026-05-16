@@ -65,6 +65,72 @@ public class AiService {
         }
     }
 
+    public TripDto.DayResponse regenerateDay(
+            TripDto.GenerateRequest req,
+            List<TripDto.DayResponse> currentSchedule,
+            int dayNumber,
+            String intent,
+            String instruction
+    ) {
+        log.info("Regenerating day {} for trip to {} using intent {}", dayNumber, req.getDestination(), intent);
+
+        try {
+            TripDto.GenerateRequest qualityReq = withRegenerationInstruction(req, instruction);
+            String rawJson = callGeminiForSingleDay(buildDayRegenerationPrompt(req, currentSchedule, dayNumber, intent, instruction, null));
+            TripDto.DayResponse day = parseSingleDay(rawJson, dayNumber);
+            QualityCheck quality = assessRegeneratedDayQuality(day, currentSchedule, qualityReq);
+            if (quality.passed()) {
+                return day;
+            }
+
+            log.warn("AI regenerated day {} for {} failed quality check: {}. Retrying once.",
+                    dayNumber, req.getDestination(), quality.reason());
+
+            String retryJson = callGeminiForSingleDay(buildDayRegenerationPrompt(req, currentSchedule, dayNumber, intent, instruction, quality.reason()));
+            TripDto.DayResponse retryDay = parseSingleDay(retryJson, dayNumber);
+            QualityCheck retryQuality = assessRegeneratedDayQuality(retryDay, currentSchedule, qualityReq);
+            if (retryQuality.passed()) {
+                return retryDay;
+            }
+
+            log.warn("AI retry regenerated day {} for {} still failed quality check: {}.",
+                    dayNumber, req.getDestination(), retryQuality.reason());
+            throw new AiGenerationException("AI chưa tạo được phương án chỉnh ngày này đủ tốt. Vui lòng thử lại với yêu cầu cụ thể hơn.");
+        } catch (AiGenerationException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("AI day regeneration failed with Gemini model {}: {}", geminiModel, e.getMessage(), e);
+            throw new AiGenerationException("AI chưa tạo được phương án chỉnh ngày này đủ tốt. Vui lòng thử lại với yêu cầu cụ thể hơn.", e);
+        }
+    }
+
+    private TripDto.GenerateRequest withRegenerationInstruction(TripDto.GenerateRequest source, String instruction) {
+        TripDto.GenerateRequest copy = new TripDto.GenerateRequest();
+        copy.setDestination(source.getDestination());
+        copy.setDeparture(source.getDeparture());
+        copy.setStartDate(source.getStartDate());
+        copy.setEndDate(source.getEndDate());
+        copy.setDays(source.getDays());
+        copy.setBudgetPerPerson(source.getBudgetPerPerson());
+        copy.setBudgetTotal(source.getBudgetTotal());
+        copy.setBudgetMode(source.getBudgetMode());
+        copy.setTravelerCount(source.getTravelerCount());
+        copy.setStyle(source.getStyle());
+        copy.setGroupType(source.getGroupType());
+        copy.setTransport(source.getTransport());
+        copy.setOutboundTransport(source.getOutboundTransport());
+        copy.setLocalTransport(source.getLocalTransport());
+        copy.setDestinationSuggested(source.getDestinationSuggested());
+        copy.setMustVisit(source.getMustVisit());
+        copy.setAvoid(source.getAvoid());
+        String mergedNotes = String.join("\n",
+                source.getNotes() != null ? source.getNotes() : "",
+                instruction != null && !instruction.isBlank() ? "Yêu cầu chỉnh ngày: " + instruction : ""
+        ).trim();
+        copy.setNotes(mergedNotes);
+        return copy;
+    }
+
     private String buildPrompt(TripDto.GenerateRequest req) {
         return buildCostAwarePrompt(req);
     }
@@ -80,6 +146,140 @@ public class AiService {
             Add a clear local transportation plan with TRANSPORT activities for getting around %s. Do not hide rental, taxi, Grab, walking, bicycle, or local transfer costs inside FOOD/CAFE/ATTRACTION notes.
             Do not repeat the same day structure across days.
             """, reason, req.getDestination(), req.getDestination());
+    }
+
+    private String buildDayRegenerationPrompt(
+            TripDto.GenerateRequest req,
+            List<TripDto.DayResponse> currentSchedule,
+            int dayNumber,
+            String intent,
+            String instruction,
+            String retryReason
+    ) {
+        int travelers = req.getTravelerCount() != null ? Math.max(1, req.getTravelerCount()) : 1;
+        long totalBudget = resolvePromptTotalBudget(req, travelers);
+        String scheduleJson = slimScheduleJson(currentSchedule);
+
+        String retryBlock = retryReason == null || retryReason.isBlank()
+                ? ""
+                : String.format("""
+
+                    IMPORTANT RETRY INSTRUCTION:
+                    The previous proposal was rejected because: %s
+                    Fix that issue. Return a safer, more specific version of day %d only.
+                    The regenerated day should contain 4-6 activities. Never return more than 8 activities.
+                    If the day has 4 or more FOOD/CAFE/ATTRACTION/ACTIVITY items, one of the activities MUST be a local TRANSPORT item.
+                    Create a separate TRANSPORT activity with route/mode/cost instead of putting transport cost in an ATTRACTION, FOOD, CAFE, or ACTIVITY note.
+                    """, retryReason, dayNumber);
+
+        return String.format("""
+            You are a senior Vietnam travel planner. Regenerate ONE DAY of an existing itinerary.
+            Return JSON only. All user-facing text must be Vietnamese with correct accents.
+
+            Trip constraints that MUST NOT change:
+            - Departure: %s
+            - Destination: %s
+            - Start date: %s
+            - End date: %s
+            - Trip duration: %d days
+            - Travelers: %d
+            - Budget mode: %s
+            - Total group budget ceiling: %,d VND
+            - Style: %s
+            - Group: %s
+            - Outbound transport: %s
+            - Local transport: %s
+            - Must visit: %s
+            - Avoid: %s
+            - Notes: %s
+
+            Regeneration task:
+            - Regenerate day number: %d
+            - User free-form request: %s
+            - Fallback intent if request is empty: %s
+
+            Current full itinerary JSON:
+            %s
+
+            Rules:
+            1. Return exactly ONE JSON array with exactly ONE day object. The object day field MUST be %d.
+            2. Do not change other days. Use them only as context to avoid duplicate places and impossible pacing.
+            3. Keep 4-6 activities for the regenerated day. Never return more than 8 activities.
+            4. Keep times in HH:mm 24h format and avoid overlaps.
+            5. estimatedCost MUST be total VND for the whole group of %d travelers.
+            6. Preserve user constraints: avoid banned items, respect must-visit where relevant, respect style/group.
+            7. If Local transport is not MIXED, local transport activities must follow that selected mode unless clearly impractical and explained.
+            8. Add explicit TRANSPORT activities for moving between clusters or inside %s. If the regenerated day has 4 or more FOOD/CAFE/ATTRACTION/ACTIVITY items, one activity MUST be local TRANSPORT. Do not hide rental/taxi/Grab/walking costs inside non-TRANSPORT notes.
+            9. Use named, real places/restaurants/cafes. Avoid generic wording such as "địa phương", "điểm nổi bật", "khu trung tâm" unless paired with a specific real name.
+            10. Treat the user's free-form request as the primary goal. Infer the requested change from natural language, for example seafood, cheaper, lighter pacing, fewer walks, more local food, more culture, better transport, or replacing a disliked place.
+            11. If the user asks for food such as seafood, vegetarian food, coffee, local dishes, or a specific cuisine, adjust FOOD/CAFE activities while keeping the day practical.
+            12. If the user asks to save money, reduce cost without making the plan unrealistic.
+            13. If the user asks for a lighter day, reduce density, walking, and rushed transitions.
+            14. If the user asks for clearer transport, make local movement especially clear.
+            15. If the user asks to keep an existing place, preserve it when it does not break constraints.
+            16. If the user request is empty, create a generally better version of the day: more specific, realistic, well-paced, and within constraints.
+
+            JSON schema:
+            [
+              {
+                "day": %d,
+                "title": "Ngày %d - Chủ đề ngắn",
+                "summary": "Tóm tắt ngắn",
+                "activities": [
+                  {
+                    "time": "08:00",
+                    "name": "Tên địa điểm hoặc món/quán cụ thể",
+                    "type": "FOOD|CAFE|ATTRACTION|TRANSPORT|ACCOMMODATION|ACTIVITY",
+                    "location": "Địa chỉ hoặc khu vực cụ thể",
+                    "duration": "1 giờ",
+                    "estimatedCost": 50000,
+                    "note": "Gợi ý ngắn, có đơn giá nếu là chi phí cố định",
+                    "rating": 4.5,
+                    "latitude": 11.9403,
+                    "longitude": 108.4583
+                  }
+                ]
+              }
+            ]
+            %s
+            """,
+            req.getDeparture(), req.getDestination(),
+            req.getStartDate() != null ? req.getStartDate().toString() : "not provided",
+            req.getEndDate() != null ? req.getEndDate().toString() : "not provided",
+            req.getDays(),
+            travelers,
+            req.getBudgetMode() != null ? req.getBudgetMode() : "PER_PERSON",
+            totalBudget,
+            req.getStyle(),
+            req.getGroupType(),
+            req.getOutboundTransport(),
+            req.getLocalTransport(),
+            req.getMustVisit() != null && !req.getMustVisit().isBlank() ? req.getMustVisit() : "none",
+            req.getAvoid() != null && !req.getAvoid().isBlank() ? req.getAvoid() : "none",
+            req.getNotes() != null && !req.getNotes().isBlank() ? req.getNotes() : "none",
+            dayNumber,
+            instruction != null && !instruction.isBlank() ? instruction : "none",
+            intent != null && !intent.isBlank() ? intent : "REGENERATE",
+            scheduleJson,
+            dayNumber,
+            travelers,
+            req.getDestination(),
+            dayNumber,
+            dayNumber,
+            retryBlock
+        );
+    }
+
+    private TripDto.DayResponse parseSingleDay(String json, int dayNumber) {
+        List<TripDto.DayResponse> days = parseItinerary(json);
+        if (days.size() != 1) {
+            throw new RuntimeException("AI must return exactly one regenerated day");
+        }
+        TripDto.DayResponse day = days.get(0);
+        if (day.getDay() != dayNumber) {
+            throw new RuntimeException("AI returned wrong day number: " + day.getDay());
+        }
+        return day;
     }
 
     private String buildLegacyPrompt(TripDto.GenerateRequest req) {
@@ -272,9 +472,28 @@ public class AiService {
     }
 
     private String callGemini(String prompt) {
+        return callGeminiWithRetry(prompt, 20000);
+    }
+
+    /**
+     * Dedicated Gemini call for single-day regeneration.
+     * Uses a higher maxOutputTokens budget because gemini-2.5-flash consumes thinking tokens
+     * that count against the same limit, easily exhausting the 20 000-token default when
+     * the full schedule JSON is included in the prompt.
+     */
+    private String callGeminiForSingleDay(String prompt) {
+        return callGeminiWithRetry(prompt, 65536);
+    }
+
+    /**
+     * Core Gemini HTTP call with exponential-backoff retry for transient 503/429 errors.
+     * Retries up to 2 times (delays: 2 s, 4 s) before giving up.
+     */
+    private String callGeminiWithRetry(String prompt, int maxOutputTokens) {
         if (geminiApiKey == null || geminiApiKey.isBlank()) {
             throw new IllegalStateException("Gemini API key is not configured");
         }
+
         RestTemplate restTemplate = new RestTemplate();
         String url = String.format(GEMINI_URL, geminiModel, geminiApiKey);
 
@@ -284,40 +503,101 @@ public class AiService {
             )),
             "generationConfig", Map.of(
                 "temperature", 0.35,
-                "maxOutputTokens", 20000,
+                "maxOutputTokens", maxOutputTokens,
                 "responseMimeType", "application/json"
             )
         );
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
-        ResponseEntity<String> response;
-        try {
-            response = restTemplate.postForEntity(
-                url, new HttpEntity<>(body, headers), String.class
-            );
-        } catch (HttpStatusCodeException e) {
-            throw new RuntimeException("Gemini request failed for model " + geminiModel
-                    + " with status " + e.getStatusCode() + ": " + e.getResponseBodyAsString());
+        int[] retryDelaysMs = {2000, 4000};
+        HttpStatusCodeException lastTransientError = null;
+
+        for (int attempt = 0; attempt <= retryDelaysMs.length; attempt++) {
+            try {
+                ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+                return parseGeminiResponse(response.getBody(), maxOutputTokens);
+            } catch (HttpStatusCodeException e) {
+                int code = e.getStatusCode().value();
+                if ((code == 503 || code == 429) && attempt < retryDelaysMs.length) {
+                    lastTransientError = e;
+                    log.warn("Gemini returned {} (attempt {}/{}), retrying in {} ms...",
+                            code, attempt + 1, retryDelaysMs.length + 1, retryDelaysMs[attempt]);
+                    try {
+                        Thread.sleep(retryDelaysMs[attempt]);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Interrupted while waiting to retry Gemini call", ie);
+                    }
+                } else {
+                    // Non-transient error or out of retries — throw immediately.
+                    throw new RuntimeException("Gemini request failed for model " + geminiModel
+                            + " with status " + e.getStatusCode() + ": " + e.getResponseBodyAsString());
+                }
+            }
         }
 
-        JsonNode root = null;
+        // All retries exhausted for a transient error.
+        throw new AiGenerationException(
+                "Dịch vụ AI đang quá tải, vui lòng thử lại sau vài giây.",
+                lastTransientError);
+    }
+
+    private String parseGeminiResponse(String responseBody, int maxOutputTokens) {
         try {
-            root = objectMapper.readTree(response.getBody());
+            JsonNode root = objectMapper.readTree(responseBody);
             JsonNode candidate = root.path("candidates").get(0);
             String finishReason = candidate.path("finishReason").asText("");
             String text = candidate.path("content").path("parts").get(0).path("text").asText();
-            log.debug("Gemini response finishReason={}, textLength={}", finishReason, text.length());
+            log.debug("Gemini response finishReason={}, textLength={}, maxTokens={}",
+                    finishReason, text.length(), maxOutputTokens);
             if ("MAX_TOKENS".equals(finishReason)) {
-                throw new RuntimeException("Gemini response was truncated by maxOutputTokens");
+                throw new RuntimeException("Gemini response was truncated by maxOutputTokens (" + maxOutputTokens + ")");
             }
             if (text.isBlank()) {
                 throw new RuntimeException("Gemini response text is empty");
             }
             return text;
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse Gemini response: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Returns a compact JSON representation of the schedule to use as prompt context.
+     * Strips heavy / redundant fields (note, latitude, longitude, googlePlaceId, sortOrder,
+     * estimatedCost, rating, duration) that the model does not need to avoid duplicate places
+     * or understand pacing. This significantly reduces input token count.
+     */
+    private String slimScheduleJson(List<TripDto.DayResponse> schedule) {
+        if (schedule == null || schedule.isEmpty()) return "[]";
+        try {
+            List<Map<String, Object>> slim = new ArrayList<>();
+            for (TripDto.DayResponse day : schedule) {
+                List<Map<String, Object>> acts = new ArrayList<>();
+                if (day.getActivities() != null) {
+                    for (TripDto.ActivityResponse act : day.getActivities()) {
+                        Map<String, Object> a = new LinkedHashMap<>();
+                        a.put("time", act.getTime());
+                        a.put("name", act.getName());
+                        a.put("type", act.getType());
+                        a.put("location", act.getLocation());
+                        acts.add(a);
+                    }
+                }
+                Map<String, Object> d = new LinkedHashMap<>();
+                d.put("day", day.getDay());
+                d.put("title", day.getTitle());
+                d.put("activities", acts);
+                slim.add(d);
+            }
+            return objectMapper.writeValueAsString(slim);
+        } catch (Exception e) {
+            return "[]";
         }
     }
 
@@ -436,6 +716,217 @@ public class AiService {
         return QualityCheck.pass();
     }
 
+    private QualityCheck assessRegeneratedDayQuality(
+            TripDto.DayResponse day,
+            List<TripDto.DayResponse> currentSchedule,
+            TripDto.GenerateRequest req
+    ) {
+        if (day == null) {
+            return QualityCheck.fail("response has no day");
+        }
+        if (day.getActivities() == null || day.getActivities().size() < 4) {
+            return QualityCheck.fail("regenerated day has fewer than 4 activities");
+        }
+        if (day.getActivities().size() > 15) {
+            return QualityCheck.fail("regenerated day has too many activities");
+        }
+
+        int genericActivities = 0;
+        int localTransportActivities = 0;
+        int selectedLocalTransportMatches = 0;
+        int nonLogisticsActivities = 0;
+        Set<String> seenTimes = new HashSet<>();
+        List<TimeRange> ranges = new ArrayList<>();
+        String avoid = normalize(String.join("\n",
+                req.getAvoid() != null ? req.getAvoid() : "",
+                extractNegativeInstruction(req.getNotes())
+        ));
+
+        for (TripDto.ActivityResponse act : day.getActivities()) {
+            String name = normalize(act.getName());
+            String location = normalize(act.getLocation());
+            String type = normalize(act.getType());
+            String note = normalize(act.getNote());
+            String combined = String.join(" ", name, location, note);
+
+            if (name.isBlank()) {
+                return QualityCheck.fail("activity has no name");
+            }
+            if (!isValidTime(act.getTime())) {
+                return QualityCheck.fail("activity has invalid time: " + act.getTime());
+            }
+            if (!seenTimes.add(act.getTime())) {
+                return QualityCheck.fail("multiple activities start at the same time: " + act.getTime());
+            }
+            if (act.getEstimatedCost() < 0) {
+                return QualityCheck.fail("activity has negative cost: " + act.getName());
+            }
+            if (!avoid.isBlank() && containsAvoidedContent(combined, avoid)) {
+                return QualityCheck.fail("activity appears to violate avoid instruction: " + act.getName());
+            }
+            if (isGenericActivity(name, location, type)) {
+                genericActivities++;
+            }
+            if (isLocalTransportCostHiddenInNonTransport(type, name, note)) {
+                return QualityCheck.fail("local transport cost is hidden in non-transport activity: " + act.getName());
+            }
+            if (isLocalTransportActivity(type, name, location, note, req)) {
+                localTransportActivities++;
+                if (matchesSelectedLocalTransport(combined, req)) {
+                    selectedLocalTransportMatches++;
+                }
+            }
+            if (!type.equals("transport") && !type.equals("accommodation")) {
+                nonLogisticsActivities++;
+            }
+
+            ranges.add(new TimeRange(act.getTime(), parseActivityDurationMinutes(act.getDuration())));
+        }
+
+        ranges.sort(Comparator.comparing(TimeRange::start));
+        for (int i = 1; i < ranges.size(); i++) {
+            // TRANSPORT activities are bookings/rentals that do not block a fixed time slot;
+            // exclude them from strict overlap checking to avoid false positives.
+            String prevType = normalize(day.getActivities().get(i - 1).getType());
+            String currType = normalize(day.getActivities().get(i).getType());
+            if (prevType.equals("transport") || currType.equals("transport")) continue;
+            if (ranges.get(i).startsBefore(ranges.get(i - 1).end())) {
+                return QualityCheck.fail("activity times overlap");
+            }
+        }
+
+        if (genericActivities > Math.max(2, day.getActivities().size() / 2)) {
+            return QualityCheck.fail("too many generic activities in regenerated day");
+        }
+        if (nonLogisticsActivities >= 4 && localTransportActivities == 0) {
+            return QualityCheck.fail("missing explicit local transport in regenerated day");
+        }
+        if (requiresSelectedLocalTransport(req)
+                && localTransportActivities > 0
+                && selectedLocalTransportMatches == 0) {
+            return QualityCheck.fail("local transport plan does not follow selected mode " + req.getLocalTransport());
+        }
+        if (hasTooManyDuplicatePlaces(day, currentSchedule)) {
+            return QualityCheck.fail("regenerated day repeats too many places from other days");
+        }
+
+        return QualityCheck.pass();
+    }
+
+    private boolean containsAvoidedContent(String combinedActivityText, String avoidText) {
+        List<String> avoidTerms = extractAvoidTerms(avoidText);
+        if (avoidTerms.isEmpty()) {
+            return false;
+        }
+        return avoidTerms.stream().anyMatch(combinedActivityText::contains);
+    }
+
+    private String extractNegativeInstruction(String notes) {
+        return String.join("\n", extractAvoidTerms(notes));
+    }
+
+    private List<String> extractAvoidTerms(String text) {
+        String normalized = normalize(text);
+        if (normalized.isBlank()) {
+            return List.of();
+        }
+
+        // "bo" removed: too short, collides with common Vietnamese words/place names (bờ biển, bổ sung, etc.)
+        List<String> negativeMarkers = List.of("khong muon", "khong thich", "tranh", "dung", "khong can", "loai bo", "khong lay");
+        Set<String> terms = new LinkedHashSet<>();
+        for (String clause : normalized.split("[,;\\.\\n]+")) {
+            String trimmedClause = clause.trim();
+            if (trimmedClause.isBlank()) continue;
+
+            String avoidPhrase = trimmedClause;
+            for (String marker : negativeMarkers) {
+                int index = trimmedClause.indexOf(marker);
+                if (index >= 0) {
+                    avoidPhrase = trimmedClause.substring(index + marker.length()).trim();
+                    break;
+                }
+            }
+
+            for (String part : avoidPhrase.split("\\s+(?:va|hoac|hay)\\s+")) {
+                String cleaned = cleanAvoidTerm(part);
+                if (cleaned.length() >= 3) {
+                    terms.add(cleaned);
+                }
+            }
+        }
+
+        return new ArrayList<>(terms);
+    }
+
+    private String cleanAvoidTerm(String term) {
+        String cleaned = term == null ? "" : term.trim();
+        cleaned = cleaned.replaceAll("\\s+(?:tai|o)\\s+.*$", "").trim();
+        String previous;
+        do {
+            previous = cleaned;
+            cleaned = cleaned.replaceAll("^(?:an|uong|thuong thuc|dung|di|ghe|toi|tham quan|mua|check in|trai nghiem)\\s+", "").trim();
+        } while (!cleaned.equals(previous));
+        return cleaned
+                .replaceAll("\\s+(?:nua|trong ngay nay|trong lich trinh|cho ngay nay)$", "")
+                .trim();
+    }
+
+    private boolean hasTooManyDuplicatePlaces(TripDto.DayResponse regeneratedDay, List<TripDto.DayResponse> currentSchedule) {
+        Set<String> otherPlaces = new HashSet<>();
+        for (TripDto.DayResponse existingDay : currentSchedule == null ? List.<TripDto.DayResponse>of() : currentSchedule) {
+            if (existingDay.getDay() == regeneratedDay.getDay() || existingDay.getActivities() == null) continue;
+            for (TripDto.ActivityResponse activity : existingDay.getActivities()) {
+                String key = normalize(activity.getName() + " " + activity.getLocation());
+                if (!key.isBlank()) otherPlaces.add(key);
+            }
+        }
+
+        int duplicateCount = 0;
+        int comparableCount = 0;
+        for (TripDto.ActivityResponse activity : regeneratedDay.getActivities()) {
+            String type = normalize(activity.getType());
+            if (type.equals("transport") || type.equals("accommodation")) continue;
+            String key = normalize(activity.getName() + " " + activity.getLocation());
+            if (key.isBlank()) continue;
+            comparableCount++;
+            // Only count as duplicate when both the candidate key and the matched other
+            // are long enough (>= 6 chars) to avoid false positives on short words like
+            // "bien" or "dao" that appear in many place names.
+            if (key.length() >= 6 && otherPlaces.stream()
+                    .anyMatch(other -> other.length() >= 6 && (other.contains(key) || key.contains(other)))) {
+                duplicateCount++;
+            }
+        }
+
+        return comparableCount >= 3 && duplicateCount > comparableCount / 2;
+    }
+
+    private boolean isValidTime(String time) {
+        return time != null && time.matches("([01]\\d|2[0-3]):[0-5]\\d");
+    }
+
+    private int parseActivityDurationMinutes(String duration) {
+        if (duration == null || duration.isBlank()) return 60;
+        String normalized = normalize(duration);
+        int minutes = 0;
+
+        java.util.regex.Matcher hourMatcher = java.util.regex.Pattern
+                .compile("(\\d+(?:[\\.,]\\d+)?)\\s*(gio|h)")
+                .matcher(normalized);
+        if (hourMatcher.find()) {
+            minutes += Math.round(Float.parseFloat(hourMatcher.group(1).replace(",", ".")) * 60);
+        }
+
+        java.util.regex.Matcher minuteMatcher = java.util.regex.Pattern
+                .compile("(\\d+)\\s*(phut|p|min)")
+                .matcher(normalized);
+        if (minuteMatcher.find()) {
+            minutes += Integer.parseInt(minuteMatcher.group(1));
+        }
+
+        return minutes > 0 ? minutes : 60;
+    }
+
     private boolean requiresLocalTransportPlan(int expectedDays, int nonLogisticsActivities) {
         return expectedDays >= 2 && nonLogisticsActivities >= 4;
     }
@@ -482,7 +973,6 @@ public class AiService {
 
         return containsLocalTransportMode(combined)
                 || combined.contains("noi vung")
-                || combined.contains("trong moc chau")
                 || combined.contains("trong " + normalize(req.getDestination()))
                 || combined.contains("giua cac diem")
                 || combined.contains("ve homestay")
@@ -505,9 +995,16 @@ public class AiService {
         }
 
         String combined = normalizedName + " " + normalizedNote;
+        // Use more specific cost signals to avoid false-positives from common Vietnamese words:
+        // - "gia" collides with "gia dinh", "gia lai", place names containing "Gia".
+        // - "dong" collides with directional/geographical words ("dong bac", "song dong").
+        // - "ngay" collides with "ngay mai", "ngay dau", etc.
+        // Only flag when a clearly monetary signal is present alongside a transport mode.
         return containsLocalTransportMode(combined)
-                && (combined.contains("chi phi") || combined.contains("gia") || combined.contains("vnd")
-                || combined.contains("dong") || combined.contains("k/") || combined.contains("ngay"));
+                && (combined.contains("chi phi") || combined.contains("vnd")
+                || combined.contains("k/nguoi") || combined.contains("k/xe")
+                || combined.contains("/ngay") || combined.contains("thue phi")
+                || java.util.regex.Pattern.compile("\\d+[\\s]*k").matcher(combined).find());
     }
 
     private boolean containsLocalTransportMode(String normalizedText) {
@@ -516,10 +1013,14 @@ public class AiService {
                 "xe may",
                 "taxi",
                 "grab",
+                "thue xe o to",
                 "thue o to",
                 "thue oto",
                 "o to rieng",
                 "oto rieng",
+                "xe rieng",
+                "co tai xe",
+                "xe hop dong",
                 "xe dua don",
                 "xe dien",
                 "xe dap",
@@ -566,6 +1067,16 @@ public class AiService {
                 .replace("Đ", "D")
                 .toLowerCase(Locale.ROOT)
                 .trim();
+    }
+
+    private record TimeRange(String start, int durationMinutes) {
+        java.time.LocalTime end() {
+            return java.time.LocalTime.parse(start).plusMinutes(Math.max(15, durationMinutes));
+        }
+
+        boolean startsBefore(java.time.LocalTime otherEnd) {
+            return java.time.LocalTime.parse(start).isBefore(otherEnd);
+        }
     }
 
     private record QualityCheck(boolean passed, String reason) {

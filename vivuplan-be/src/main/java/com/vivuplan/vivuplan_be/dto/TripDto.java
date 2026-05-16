@@ -169,6 +169,29 @@ public class TripDto {
     }
 
     @Data
+    public static class RegenerateDayRequest {
+        private String intent = "REGENERATE";
+        private String instruction;
+    }
+
+    @Data
+    public static class ApplyRegenerateDayRequest {
+        @NotBlank
+        private String proposalId;
+        private List<Integer> selectedActivityIndexes;
+    }
+
+    @Data
+    public static class RegenerateDayPreviewResponse {
+        private String proposalId;
+        private Integer dayNumber;
+        private DayResponse day;
+        private long oldBudget;
+        private long newBudget;
+        private List<String> warnings;
+    }
+
+    @Data
     public static class GenerateRequest {
         @NotBlank
         private String destination;

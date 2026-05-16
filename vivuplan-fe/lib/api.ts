@@ -126,6 +126,20 @@ export const tripApi = {
       headers: authHeaders(),
     }).then(handleResponse<TripResponse>),
 
+  previewRegenerateDay: (tripId: number, dayNumber: number, data: RegenerateDayRequest) =>
+    fetch(`${API_BASE}/api/trips/${tripId}/days/${dayNumber}/regenerate-preview`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    }).then(handleResponse<RegenerateDayPreviewResponse>),
+
+  applyRegenerateDay: (tripId: number, dayNumber: number, proposalId: string, selectedActivityIndexes?: number[]) =>
+    fetch(`${API_BASE}/api/trips/${tripId}/days/${dayNumber}/regenerate-apply`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ proposalId, selectedActivityIndexes }),
+    }).then(handleResponse<TripResponse>),
+
   publicTrips: (page = 0, size = 12) =>
     fetch(`${API_BASE}/api/trips/public?page=${page}&size=${size}`)
       .then(handleResponse<{ content: TripResponse[]; totalElements: number }>),
@@ -257,6 +271,20 @@ export interface ActivityMutationRequest {
   longitude?: number;
   googlePlaceId?: string;
   sortOrder?: number;
+}
+
+export interface RegenerateDayRequest {
+  intent: "REGENERATE" | "LIGHTER" | "CHEAPER" | "MORE_LOCAL" | "ADD_TRANSPORT" | "OPTIMIZE_TIME";
+  instruction?: string;
+}
+
+export interface RegenerateDayPreviewResponse {
+  proposalId: string;
+  dayNumber: number;
+  day: DayResponse;
+  oldBudget: number;
+  newBudget: number;
+  warnings: string[];
 }
 
 export interface BudgetBreakdown {
