@@ -38,15 +38,7 @@ export function DestinationCard({
           <div style={{ position: "absolute", top: "12px", left: "12px", display: "flex", gap: "8px" }}>
             <Badge tone="glass">{destination.region}</Badge>
           </div>
-          <div style={{ position: "absolute", top: "12px", right: "12px", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-            <div className="destination-rating" style={{
-              background: "rgba(255, 255, 255, 0.9)", padding: "4px 8px",
-              borderRadius: "var(--r-sm)", fontSize: "13px",
-              boxShadow: "var(--shadow-sm)", display: "flex", alignItems: "center", gap: 4,
-            }}>
-              <Star size={14} fill="#FBBF24" color="#FBBF24" />
-              {destination.rating}
-            </div>
+          <div style={{ position: "absolute", top: "12px", right: "12px" }}>
             {destination.latitude != null && destination.longitude != null && (
               <DestinationWeatherBadge lat={destination.latitude} lon={destination.longitude} />
             )}
@@ -54,7 +46,7 @@ export function DestinationCard({
         </div>
         <div className="destination-card-body">
           <div style={{ marginBottom: "16px" }}>
-            <h3 style={{ fontSize: "20px", marginBottom: "10px", color: "var(--text)" }}>{destination.name}</h3>
+            <h3 style={{ fontSize: "19px", color: "var(--text)", margin: 0, lineHeight: 1.3, marginBottom: "8px" }}>{destination.name}</h3>
             <Badge tone="teal" style={{ 
               width: "100%", 
               justifyContent: "flex-start", 

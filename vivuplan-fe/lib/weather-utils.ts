@@ -36,8 +36,8 @@ export function interpretWeatherCode(code: number): WeatherCondition {
 
 const OUTDOOR_RISKY_KEYWORDS = [
   "thuyền", "kayak", "vịnh", "biển", "bơi", "lặn", "leo núi", "trekking",
-  "cáp treo", "đèo", "thác", "ngoài trời", "công viên", "bãi biển", "hồ",
-  "boat", "cruise", "snorkeling", "diving", "hiking", "waterfall", "beach",
+  "cáp treo", "đèo", "thác", "ngoài trời", "công viên", "bãi biển", "hồ", "cao nguyên", "thung lũng", "di tích",
+  "boat", "cruise", "snorkeling", "diving", "hiking", "waterfall", "beach", "plateau", "valley",
 ];
 
 export function isOutdoorRiskyActivity(activityName: string, activityLocation?: string): boolean {
@@ -76,7 +76,7 @@ export function getActivityWeatherWarning(
   if (condition.isFoggy && (activityName.toLowerCase().includes("cáp treo") || activityName.toLowerCase().includes("leo"))) {
     return `🌫️ Có sương mù – Hoạt động ${actText} có thể bị hạn chế tầm nhìn, hãy kiểm tra trước khi khởi hành.`;
   }
-  if (condition.severity === "moderate" && condition.isRainy && weather.precipitationProbability >= 60) {
+  if (condition.severity === "moderate" && condition.isRainy && weather.precipitationProbability >= 40) {
     return `🌦️ Xác suất mưa ${weather.precipitationProbability}% – Nên mang áo mưa khi tham gia ${actText}.`;
   }
   return null;
@@ -85,7 +85,7 @@ export function getActivityWeatherWarning(
 // ─── Packing suggestions ──────────────────────────────────────────────────────
 
 export interface PackingSuggestion {
-  icon: string;
+  icon: "jacket" | "scarf" | "sun-glasses" | "umbrella-heavy" | "umbrella" | "fog" | "wind" | "check";
   text: string;
 }
 
@@ -100,31 +100,31 @@ export function getPackingSuggestions(forecast: DailyWeather[]): PackingSuggesti
   const hasStrongWind = forecast.some((d) => d.windspeedKmh > 35);
 
   if (minTemp < 15) {
-    suggestions.push({ icon: "🧥", text: `Thời tiết lạnh (xuống ${minTemp.toFixed(0)}°C) – Mang áo khoác dày, áo len và quần dài.` });
+    suggestions.push({ icon: "jacket", text: `Thời tiết lạnh (xuống ${minTemp.toFixed(0)}°C) – Mang áo khoác dày, áo len và quần dài.` });
   } else if (minTemp < 22) {
-    suggestions.push({ icon: "🧣", text: `Trời mát (${minTemp.toFixed(0)}–${maxTemp.toFixed(0)}°C) – Nên mang theo áo khoác mỏng hoặc áo gió.` });
+    suggestions.push({ icon: "scarf", text: `Trời mát (${minTemp.toFixed(0)}–${maxTemp.toFixed(0)}°C) – Nên mang theo áo khoác mỏng hoặc áo gió.` });
   }
 
   if (maxTemp > 33) {
-    suggestions.push({ icon: "🕶️", text: `Nắng nóng (đến ${maxTemp.toFixed(0)}°C) – Chuẩn bị kem chống nắng SPF50+, kính mắt và mũ rộng vành.` });
+    suggestions.push({ icon: "sun-glasses", text: `Nắng nóng (đến ${maxTemp.toFixed(0)}°C) – Chuẩn bị kem chống nắng SPF50+, kính mắt và mũ rộng vành.` });
   }
 
   if (hasHeavyRain) {
-    suggestions.push({ icon: "☂️", text: "Có thể có mưa lớn – Mang theo ô loại lớn hoặc áo mưa che toàn thân." });
+    suggestions.push({ icon: "umbrella-heavy", text: "Có thể có mưa lớn – Mang theo ô loại lớn hoặc áo mưa che toàn thân." });
   } else if (hasRain) {
-    suggestions.push({ icon: "🌂", text: "Dự báo có mưa – Đừng quên mang ô dù và túi chống nước cho đồ điện tử." });
+    suggestions.push({ icon: "umbrella", text: "Dự báo có mưa – Đừng quên mang ô dù và túi chống nước cho đồ điện tử." });
   }
 
   if (hasFog) {
-    suggestions.push({ icon: "🌫️", text: "Sẽ có sương mù – Mang giày chống trơn nếu có hoạt động leo núi hoặc đi đường đèo." });
+    suggestions.push({ icon: "fog", text: "Sẽ có sương mù – Mang giày chống trơn nếu có hoạt động leo núi hoặc đi đường đèo." });
   }
 
   if (hasStrongWind) {
-    suggestions.push({ icon: "💨", text: "Gió mạnh được dự báo – Tránh mặc quần áo rộng quá, buộc chắc mũ nón khi ra ngoài." });
+    suggestions.push({ icon: "wind", text: "Gió mạnh được dự báo – Tránh mặc quần áo rộng quá, buộc chắc mũ nón khi ra ngoài." });
   }
 
   if (suggestions.length === 0) {
-    suggestions.push({ icon: "😎", text: `Thời tiết thuận lợi (${minTemp.toFixed(0)}–${maxTemp.toFixed(0)}°C) – Chỉ cần trang phục nhẹ, thoải mái là đủ!` });
+    suggestions.push({ icon: "check", text: `Thời tiết thuận lợi (${minTemp.toFixed(0)}–${maxTemp.toFixed(0)}°C) – Chỉ cần trang phục nhẹ, thoải mái là đủ!` });
   }
 
   return suggestions;

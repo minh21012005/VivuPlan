@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import React, { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import Navbar from "@/components/layout/Navbar";
@@ -19,6 +19,7 @@ import {
   getPackingSuggestions,
   getRescheduleSuggestions,
   getActivityWeatherWarning,
+  type PackingSuggestion,
 } from "@/lib/weather-utils";
 
 import {
@@ -26,6 +27,7 @@ import {
   Calendar,
   Camera,
   CheckCircle2,
+  CheckCircle,
   Clock,
   ChevronDown,
   ChevronUp,
@@ -42,12 +44,36 @@ import {
   Share2,
   Sparkles,
   Star,
+  Thermometer,
   Trash2,
   Users,
   Utensils,
   Wallet,
+  Wind,
   X,
 } from "lucide-react";
+
+const PACKING_ICON_MAP: Record<PackingSuggestion["icon"], React.ReactNode> = {
+  "jacket": <Thermometer size={16} />,
+  "scarf": <Thermometer size={16} />,
+  "sun-glasses": <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="15" r="4" /><circle cx="18" cy="15" r="4" /><path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2" /><path d="M2.5 13 5 7c.7-1.3 1.4-2 3-2" /><path d="M21.5 13 19 7c-.7-1.3-1.4-2-3-2" /></svg>,
+  "umbrella-heavy": <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 12a11.05 11.05 0 0 0-22 0zm-5 7a3 3 0 0 1-6 0v-7" /></svg>,
+  "umbrella": <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 12a11.05 11.05 0 0 0-22 0zm-5 7a3 3 0 0 1-6 0v-7" /></svg>,
+  "fog": <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h18M3 12h18M3 16h18" opacity="0.5" /></svg>,
+  "wind": <Wind size={16} />,
+  "check": <CheckCircle size={16} />,
+};
+
+const PACKING_ICON_COLORS: Record<PackingSuggestion["icon"], { bg: string; color: string }> = {
+  "jacket": { bg: "#dbeafe", color: "#1d4ed8" },
+  "scarf": { bg: "#e0f2fe", color: "#0369a1" },
+  "sun-glasses": { bg: "#fef9c3", color: "#a16207" },
+  "umbrella-heavy": { bg: "#dbeafe", color: "#1e40af" },
+  "umbrella": { bg: "#e0f2fe", color: "#0369a1" },
+  "fog": { bg: "#f1f5f9", color: "#64748b" },
+  "wind": { bg: "#f0fdf4", color: "#16a34a" },
+  "check": { bg: "#dcfce7", color: "#15803d" },
+};
 
 // ─── Lightweight toast system ────────────────────────────────────────────────
 type ToastItem = { id: number; message: string; type: "error" | "success" | "info" };
@@ -607,9 +633,6 @@ export default function ItineraryPage() {
                       {dayCopied ? <CheckCircle2 size={13} /> : <ListChecks size={13} />}
                       {dayCopied ? "Đã copy" : "Copy ngày"}
                     </Button>
-                    <Button variant="secondary" size="sm" href={dayDirectionsUrl} target="_blank" rel="noreferrer">
-                      <Route size={13} /> Mở tuyến đường
-                    </Button>
                   </div>
                 </div>
                 <p style={{ color: "var(--text-3)", fontSize: 14, lineHeight: 1.65, margin: 0 }}>{day.summary}</p>
@@ -622,30 +645,19 @@ export default function ItineraryPage() {
                   <strong>{dayTimeRange}</strong>
                 </div>
                 <div>
-                  <ListChecks size={15} />
-                  <span>Hoạt động</span>
-                  <strong>{dayActivities.length} mục</strong>
-                </div>
-                <div>
-                  <Navigation size={15} />
-                  <span>Di chuyển</span>
-                  <strong>{dayTransportCount} chặng</strong>
-                </div>
-                <div>
                   <Wallet size={15} />
                   <span>Chi phí ngày</span>
                   <strong>{fmtCost(dayTotal)}</strong>
                 </div>
-                {/* Feature 3 – Weather insight chip */}
+                {/* Feature 3 – Weather insight chip (always rendered for layout consistency) */}
                 {(() => {
                   const dw = getByDayIndex(activeDay, trip.startDate);
-                  if (!dw) return null;
-                  const dc = interpretWeatherCode(dw.code);
+                  const dc = dw ? interpretWeatherCode(dw.code) : null;
                   return (
-                    <div title={`Mưa ${dw.precipitationProbability}% · Gió ${dw.windspeedKmh.toFixed(0)} km/h`}>
-                      <span style={{ fontSize: 16 }}>{dc.emoji}</span>
+                    <div title={dw ? `Mưa ${dw.precipitationProbability}% · Gió ${dw.windspeedKmh.toFixed(0)} km/h` : "Chưa có dữ liệu thời tiết"}>
+                      <span style={{ fontSize: 16 }}>{dc?.emoji ?? "🌡️"}</span>
                       <span>Thời tiết</span>
-                      <strong>{dw.minTemp.toFixed(0)}–{dw.maxTemp.toFixed(0)}°C</strong>
+                      <strong>{dw ? `${dw.minTemp.toFixed(0)}–${dw.maxTemp.toFixed(0)}°C` : "--°C"}</strong>
                     </div>
                   );
                 })()}
@@ -814,12 +826,23 @@ export default function ItineraryPage() {
                     })}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {packing.length > 0 ? packing.map((item, i) => (
-                      <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "8px 10px", borderRadius: "var(--r-md)", background: "var(--surface-2)", fontSize: 13, lineHeight: 1.55 }}>
-                        <span style={{ fontSize: 20, flexShrink: 0, lineHeight: 1.1 }}>{item.icon}</span>
-                        <span style={{ color: "var(--text-2)" }}>{item.text}</span>
-                      </div>
-                    )) : (
+                    {packing.length > 0 ? packing.map((item, i) => {
+                      const colors = PACKING_ICON_COLORS[item.icon];
+                      const iconNode = PACKING_ICON_MAP[item.icon];
+                      return (
+                        <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "9px 12px", borderRadius: "var(--r-md)", background: "var(--surface-2)", fontSize: 13, lineHeight: 1.55 }}>
+                          <span style={{
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            flexShrink: 0, width: 28, height: 28, borderRadius: "var(--r-md)",
+                            background: colors?.bg ?? "var(--primary-light)",
+                            color: colors?.color ?? "var(--primary)",
+                          }}>
+                            {iconNode}
+                          </span>
+                          <span style={{ color: "var(--text-2)", paddingTop: 5 }}>{item.text}</span>
+                        </div>
+                      );
+                    }) : (
                       <div style={{ padding: "8px 10px", fontSize: 12, color: "var(--text-3)", fontStyle: "italic", textAlign: "center" }}>
                         Cần có dữ liệu thời tiết để gợi ý hành lý
                       </div>
