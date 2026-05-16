@@ -57,7 +57,7 @@ function ToastContainer({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss:
   if (toasts.length === 0) return null;
   return (
     <div style={{
-      position: "fixed", bottom: 24, right: 24, zIndex: 9999,
+      position: "fixed", top: 86, right: 24, zIndex: 9999,
       display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-end",
       pointerEvents: "none",
     }}>
@@ -891,15 +891,17 @@ function RegenerateDayModal({
               </div>
             )}
 
-            <div className="regenerate-actions">
-              <Button type="button" variant="secondary" onClick={onCancel} disabled={loading || applying}>
-                Hủy
-              </Button>
-              <Button type="submit" disabled={loading || applying}>
-                {loading ? <span className="spinner spinner-inline spinner-on-primary" /> : <RefreshCw size={14} />}
-                {loading ? "Đang tạo phương án..." : "Gửi yêu cầu"}
-              </Button>
-            </div>
+            {!preview && (
+              <div className="regenerate-actions">
+                <Button type="button" variant="secondary" onClick={onCancel} disabled={loading || applying}>
+                  Hủy
+                </Button>
+                <Button type="submit" disabled={loading || applying}>
+                  {loading ? <span className="spinner spinner-inline spinner-on-primary" /> : <RefreshCw size={14} />}
+                  {loading ? "Đang tạo phương án..." : "Gửi yêu cầu"}
+                </Button>
+              </div>
+            )}
           </form>
 
           {preview && (
@@ -1000,6 +1002,9 @@ function RegenerateDayModal({
               </div>
 
               <div className="regenerate-actions">
+                <Button type="button" variant="secondary" onClick={onCancel} disabled={loading || applying}>
+                  Hủy
+                </Button>
                 <Button
                   type="button"
                   variant="secondary"
