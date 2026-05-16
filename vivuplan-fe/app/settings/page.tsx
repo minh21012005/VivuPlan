@@ -241,7 +241,7 @@ export default function SettingsPage() {
       {/* Hero */}
       <section className="settings-hero">
         <div className="container">
-          <Link href="/dashboard" className="settings-back-link">
+          <Link href="/itinerary" className="settings-back-link">
             <ArrowLeft size={16} /> Quay lại thư viện
           </Link>
           <h1>Cài đặt tài khoản</h1>

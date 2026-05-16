@@ -70,7 +70,10 @@ export default function Navbar() {
             </Link>
           ))}
           {user && (
-            <Link href="/dashboard" className={`site-nav-link${pathname === "/dashboard" ? " active" : ""}`}>
+            <Link 
+              href="/itinerary" 
+              className={`site-nav-link${pathname.startsWith("/itinerary") ? " active" : ""}`}
+            >
               {userTripsLabel}
             </Link>
           )}
@@ -155,7 +158,11 @@ export default function Navbar() {
             ))}
 
             {user && (
-              <Link href="/dashboard" className={`site-mobile-link${pathname === "/dashboard" ? " active" : ""}`} onClick={() => setMobileOpen(false)}>
+              <Link 
+                href="/itinerary" 
+                className={`site-mobile-link${pathname.startsWith("/itinerary") ? " active" : ""}`} 
+                onClick={() => setMobileOpen(false)}
+              >
                 <LayoutDashboard size={16} /> {userTripsLabel}
               </Link>
             )}

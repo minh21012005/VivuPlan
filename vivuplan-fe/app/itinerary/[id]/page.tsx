@@ -416,7 +416,7 @@ export default function ItineraryPage() {
             <AlertCircle size={34} style={{ color: "#DC2626", marginBottom: 12 }} />
             <h1 style={{ fontSize: 22, marginBottom: 8 }}>Không thể mở lịch trình</h1>
             <p style={{ color: "var(--text-3)", marginBottom: 18 }}>{error || "Lịch trình không có dữ liệu hoạt động."}</p>
-            <Button onClick={() => router.push("/dashboard")}>Quay về dashboard</Button>
+            <Button onClick={() => router.push("/itinerary")}>Quay về chuyến đi của tôi</Button>
           </Card>
         </div>
       </div>
@@ -435,6 +435,7 @@ export default function ItineraryPage() {
           backgroundSize: "cover",
           backgroundPosition: "center",
           color: "white",
+          minWidth: "100vh",
         }}
       >
         <div className="container" style={{ paddingTop: 54, paddingBottom: 42 }}>

@@ -55,7 +55,7 @@ function getTripTimingBadge(trip: TripResponse): TripTimingBadge {
   return { label: "Sắp tới", tone: "blue" };
 }
 
-export default function DashboardPage() {
+export default function ItineraryLibraryPage() {
   const router = useRouter();
   const { user: authUser, loading: authLoading } = useRequireAuth();
   const { destinations } = useDestinations();
@@ -173,7 +173,7 @@ export default function DashboardPage() {
   if (authLoading || !authUser) return null;
 
   return (
-    <div className="trip-library-page">
+    <div className="itinerary-library-page">
       <Navbar />
 
       <section
@@ -187,10 +187,12 @@ export default function DashboardPage() {
             <Sparkles size={13} /> Trip library
           </Badge>
           <h1>Những chuyến đi của bạn</h1>
-          <p>Lưu, xem lại, chia sẻ hoặc tiếp tục tối ưu các lịch trình đã tạo.</p>
-          <Button href="/plan">
-            <Plus size={16} /> Tạo lịch trình mới
-          </Button>
+          <div className="library-hero-bottom">
+            <p>Lưu, xem lại, chia sẻ hoặc tiếp tục tối ưu các lịch trình đã tạo.</p>
+            <Button href="/plan">
+              <Plus size={16} /> Tạo lịch trình mới
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -287,7 +289,7 @@ export default function DashboardPage() {
         />
       )}
 
-      {toast && <div className={`dashboard-toast dashboard-toast-${toast.tone}`}>{toast.message}</div>}
+      {toast && <div className={`itinerary-toast itinerary-toast-${toast.tone}`}>{toast.message}</div>}
     </div>
   );
 }

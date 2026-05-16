@@ -1481,11 +1481,20 @@ textarea.input.textarea-compact {
 }
 
 .trip-library-hero p {
-  max-width: 560px;
+  max-width: 600px;
   color: rgba(255, 255, 255, 0.86);
   font-size: 16px;
   line-height: 1.7;
-  margin-bottom: 24px;
+  margin-bottom: 0;
+}
+
+.library-hero-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+  margin-top: 8px;
 }
 
 .trip-library-main {
@@ -2160,6 +2169,32 @@ textarea.input.textarea-compact {
   height: calc(100% - 130px);
   color: rgba(234, 88, 12, 0.82);
   filter: drop-shadow(0 6px 10px rgba(234, 88, 12, 0.15));
+}
+
+.itinerary-toast {
+  position: fixed;
+  top: 86px;
+  right: 24px;
+  z-index: 1000;
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border-left: 4px solid var(--primary);
+}
+
+.itinerary-toast-success {
+  border-left-color: #10B981;
+  background: #ECFDF5;
+}
+
+.itinerary-toast-error {
+  border-left-color: #EF4444;
+  background: #FEF2F2;
 }
 
 .auth-route-pin {
@@ -3980,7 +4015,7 @@ textarea.input.textarea-compact {
     grid-template-columns: 1fr;
   }
 
-  .dashboard-toast {
+  .itinerary-toast {
     right: 12px;
     bottom: 12px;
     max-width: calc(100vw - 24px);
