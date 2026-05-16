@@ -14,6 +14,7 @@ import { getDestinationImage } from "@/lib/travel-data";
 import { useDestinations } from "@/lib/use-destinations";
 import {
   AlertCircle,
+  Calendar,
   Camera,
   CheckCircle2,
   Clock,
@@ -33,6 +34,7 @@ import {
   Sparkles,
   Star,
   Trash2,
+  Users,
   Utensils,
   Wallet,
   X,
@@ -444,13 +446,40 @@ export default function ItineraryPage() {
               <h1 style={{ color: "white", fontSize: "clamp(30px, 5vw, 52px)", fontWeight: 900, marginBottom: 12 }}>
                 Lịch trình {trip.destination} {trip.days} ngày
               </h1>
-              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", color: "rgba(255,255,255,0.9)" }}>
-                <span>{trip.departure || "Điểm xuất phát"} → {trip.destination}</span>
-                {trip.startDate && trip.endDate && <span>{fmtDate(trip.startDate)} - {fmtDate(trip.endDate)}</span>}
-                <span>{trip.days} ngày {trip.days - 1} đêm</span>
-                <span>{fmtCost(trip.budgetPerPerson)} / người</span>
-                <span>{styleLabel[trip.style] ?? trip.style}</span>
-                <span>{groupLabel[trip.groupType] ?? trip.groupType}</span>
+              <div className="itinerary-header-meta">
+                <div className="itinerary-meta-item">
+                  <Navigation size={15} />
+                  <span>{trip.departure || "Điểm xuất phát"} → {trip.destination}</span>
+                </div>
+                <div className="itinerary-meta-divider" />
+                {trip.startDate && trip.endDate && (
+                  <>
+                    <div className="itinerary-meta-item">
+                      <Calendar size={15} />
+                      <span>{fmtDate(trip.startDate)} - {fmtDate(trip.endDate)}</span>
+                    </div>
+                    <div className="itinerary-meta-divider" />
+                  </>
+                )}
+                <div className="itinerary-meta-item">
+                  <Clock size={15} />
+                  <span>{trip.days}N{trip.days - 1}Đ</span>
+                </div>
+                <div className="itinerary-meta-divider" />
+                <div className="itinerary-meta-item">
+                  <Wallet size={15} />
+                  <span>{fmtCost(trip.budgetTotal || trip.budgetPerPerson * (trip.travelerCount || 1))}</span>
+                </div>
+                <div className="itinerary-meta-divider" />
+                <div className="itinerary-meta-item">
+                  <Sparkles size={15} />
+                  <span>{styleLabel[trip.style] ?? trip.style}</span>
+                </div>
+                <div className="itinerary-meta-divider" />
+                <div className="itinerary-meta-item">
+                  <Users size={15} />
+                  <span>{groupLabel[trip.groupType] ?? trip.groupType} ({trip.travelerCount || 1} người)</span>
+                </div>
               </div>
             </div>
             <div className="itinerary-share-actions">
@@ -500,24 +529,24 @@ export default function ItineraryPage() {
 
             <Card className="itinerary-day-overview">
               <div className="itinerary-day-overview-head">
-                <div>
+                <div className="itinerary-day-title-row">
                   <h2>{day.title}</h2>
-                  <p>{day.summary}</p>
+                  <div className="itinerary-day-actions">
+                    <Button type="button" variant="secondary" size="sm" onClick={() => {
+                      setRegenerateOpen(true);
+                    }}>
+                      <Sparkles size={13} /> Tạo lại ngày
+                    </Button>
+                    <Button type="button" variant="secondary" size="sm" onClick={copyDayPlan}>
+                      {dayCopied ? <CheckCircle2 size={13} /> : <ListChecks size={13} />}
+                      {dayCopied ? "Đã copy" : "Copy ngày"}
+                    </Button>
+                    <Button variant="secondary" size="sm" href={dayDirectionsUrl} target="_blank" rel="noreferrer">
+                      <Route size={13} /> Mở tuyến đường
+                    </Button>
+                  </div>
                 </div>
-                <div className="itinerary-day-actions">
-                  <Button type="button" variant="secondary" size="sm" onClick={() => {
-                    setRegenerateOpen(true);
-                  }}>
-                    <Sparkles size={13} /> Tạo lại ngày
-                  </Button>
-                  <Button type="button" variant="secondary" size="sm" onClick={copyDayPlan}>
-                    {dayCopied ? <CheckCircle2 size={13} /> : <ListChecks size={13} />}
-                    {dayCopied ? "Đã copy" : "Copy ngày"}
-                  </Button>
-                  <Button variant="secondary" size="sm" href={dayDirectionsUrl} target="_blank" rel="noreferrer">
-                    <Route size={13} /> Mở tuyến đường
-                  </Button>
-                </div>
+                <p style={{ color: "var(--text-3)", fontSize: 14, lineHeight: 1.65, margin: 0 }}>{day.summary}</p>
               </div>
 
               <div className="itinerary-day-insights">
@@ -802,10 +831,10 @@ function RegenerateDayModal({
   }, [day.activities, preview, selectedIndexes]);
   const previewPairs = preview
     ? Array.from({ length: Math.max(day.activities.length, preview.day.activities.length) }, (_, index) => ({
-        oldActivity: day.activities[index],
-        newActivity: preview.day.activities[index],
-        index,
-      }))
+      oldActivity: day.activities[index],
+      newActivity: preview.day.activities[index],
+      index,
+    }))
     : [];
 
   const renderPreviewActivity = (activity: NonNullable<TripResponse["schedule"]>[number]["activities"][number]) => (
@@ -907,14 +936,14 @@ function RegenerateDayModal({
           {preview && (
             <section className="regenerate-preview">
               <div className="regenerate-preview-head">
-                <div>
+                <div className="regenerate-preview-title-row">
                   <h4>{preview.day.title}</h4>
-                  <p>{preview.day.summary}</p>
+                  <div className={costDiff > 0 ? "regenerate-cost-diff is-up" : "regenerate-cost-diff"}>
+                    <span>{fmtCost(preview.oldBudget)} → {fmtCost(preview.newBudget)}</span>
+                    <strong>{costDiff === 0 ? "Không đổi" : `${costDiff > 0 ? "+" : ""}${fmtCost(costDiff)}`}</strong>
+                  </div>
                 </div>
-                <div className={costDiff > 0 ? "regenerate-cost-diff is-up" : "regenerate-cost-diff"}>
-                  <span>{fmtCost(preview.oldBudget)} → {fmtCost(preview.newBudget)}</span>
-                  <strong>{costDiff === 0 ? "Không đổi" : `${costDiff > 0 ? "+" : ""}${fmtCost(costDiff)}`}</strong>
-                </div>
+                <p>{preview.day.summary}</p>
               </div>
 
               {preview.warnings.length > 0 && (

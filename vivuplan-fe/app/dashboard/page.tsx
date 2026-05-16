@@ -9,7 +9,7 @@ import { tripApi, type TripResponse } from "@/lib/api";
 import { copyTextToClipboard, getTripShareUrl } from "@/lib/share";
 import { getDestinationImage, heroImages, type Destination } from "@/lib/travel-data";
 import { useDestinations } from "@/lib/use-destinations";
-import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Clock, Eye, Plus, Share2, Sparkles, Trash2, Wallet, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Clock, Eye, Plus, Share2, Sparkles, Trash2, Users, Wallet, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRequireAuth } from "@/hooks/useRequireAuth"
 
@@ -26,6 +26,21 @@ function fmtDateRange(trip: TripResponse) {
   if (!trip.startDate || !trip.endDate) return null;
   return `${new Date(`${trip.startDate}T00:00:00`).toLocaleDateString("vi-VN")} - ${new Date(`${trip.endDate}T00:00:00`).toLocaleDateString("vi-VN")}`;
 }
+
+const styleLabel: Record<string, string> = {
+  ADVENTURE: "Phiêu lưu",
+  RELAXING: "Nghỉ dưỡng",
+  CULTURAL: "Văn hóa",
+  NIGHTLIFE: "Khám phá đêm",
+  FOODIE: "Ẩm thực",
+};
+
+const groupLabel: Record<string, string> = {
+  SOLO: "Một mình",
+  COUPLE: "Cặp đôi",
+  FRIENDS: "Nhóm bạn",
+  FAMILY: "Gia đình",
+};
 
 function getTripTimingBadge(trip: TripResponse): TripTimingBadge {
   const today = new Date();
@@ -323,10 +338,10 @@ function TripCard({
             <Clock size={13} /> {trip.days}N{trip.days - 1}Đ
           </span>
           <span>
-            <Wallet size={13} /> {fmtBudget(trip.budgetPerPerson)}
+            <Wallet size={13} /> {fmtBudget(trip.budgetTotal || trip.budgetPerPerson * (trip.travelerCount || 1))}
           </span>
           <span>
-            <Eye size={13} /> {trip.viewCount} lượt xem
+            <Users size={13} /> {groupLabel[trip.groupType] ?? trip.groupType} ({trip.travelerCount || 1} người)
           </span>
         </div>
         <div className="trip-card-actions">
