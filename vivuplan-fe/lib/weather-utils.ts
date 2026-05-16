@@ -52,14 +52,21 @@ export function isOutdoorRiskyActivity(activityName: string, activityLocation?: 
   );
 }
 
+export interface ActivityWeatherWarning {
+  icon: "wind" | "rain" | "fog";
+  message: string;
+}
+
 export function getActivityWeatherWarning(
   activityName: string,
   weather: DailyWeather,
   activityLocation?: string,
   activityType?: string,
-): string | null {
-  // Food and cafe activities are indoors — weather doesn't affect them
-  if (activityType === "FOOD" || activityType === "CAFE") return null;
+): ActivityWeatherWarning | null {
+  // Indoor activities and transport are not strictly 'outdoor activities' in the sense of being canceled by rain
+  if (activityType === "FOOD" || activityType === "CAFE" || activityType === "ACCOMMODATION" || activityType === "TRANSPORT") {
+    return null;
+  }
 
   const condition = interpretWeatherCode(weather.code);
   const isRisky = isOutdoorRiskyActivity(activityName, activityLocation);
@@ -68,16 +75,16 @@ export function getActivityWeatherWarning(
   const actText = `"${activityName}"`;
 
   if (weather.windspeedKmh > 50 && (activityName.toLowerCase().includes("vịnh") || activityName.toLowerCase().includes("biển") || activityName.toLowerCase().includes("thuyền"))) {
-    return `⚠️ Gió mạnh (${weather.windspeedKmh.toFixed(0)} km/h) – Hoạt động ${actText} có thể bị hoãn. Kiểm tra lại với đơn vị vận hành.`;
+    return { icon: "wind", message: `Gió mạnh (${weather.windspeedKmh.toFixed(0)} km/h) – Hoạt động ${actText} có thể bị hoãn. Kiểm tra lại với đơn vị vận hành.` };
   }
   if (condition.severity === "severe" && condition.isRainy) {
-    return `🌧️ Dự báo mưa lớn – Hoạt động ngoài trời ${actText} có thể bị ảnh hưởng, hãy chuẩn bị phương án thay thế.`;
+    return { icon: "rain", message: `Dự báo mưa lớn – Hoạt động ngoài trời ${actText} có thể bị ảnh hưởng, hãy chuẩn bị phương án thay thế.` };
   }
   if (condition.isFoggy && (activityName.toLowerCase().includes("cáp treo") || activityName.toLowerCase().includes("leo"))) {
-    return `🌫️ Có sương mù – Hoạt động ${actText} có thể bị hạn chế tầm nhìn, hãy kiểm tra trước khi khởi hành.`;
+    return { icon: "fog", message: `Có sương mù – Hoạt động ${actText} có thể bị hạn chế tầm nhìn, hãy kiểm tra trước khi khởi hành.` };
   }
   if (condition.severity === "moderate" && condition.isRainy && weather.precipitationProbability >= 40) {
-    return `🌦️ Xác suất mưa ${weather.precipitationProbability}% – Nên mang áo mưa khi tham gia ${actText}.`;
+    return { icon: "rain", message: `Xác suất mưa ${weather.precipitationProbability}% – Nên mang áo mưa khi tham gia ${actText}.` };
   }
   return null;
 }

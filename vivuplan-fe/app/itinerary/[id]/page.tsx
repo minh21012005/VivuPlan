@@ -51,6 +51,8 @@ import {
   Wallet,
   Wind,
   X,
+  CloudRain,
+  CloudFog,
 } from "lucide-react";
 
 const PACKING_ICON_MAP: Record<PackingSuggestion["icon"], React.ReactNode> = {
@@ -669,12 +671,21 @@ export default function ItineraryPage() {
                 if (!dw) return null;
                 const warnings = day.activities
                   .map((a) => getActivityWeatherWarning(a.name, dw, a.location, a.type))
-                  .filter((w): w is string => w !== null);
+                  .filter((w): w is NonNullable<typeof w> => w !== null);
                 if (warnings.length === 0) return null;
                 return (
-                  <div style={{ marginTop: 14, padding: "12px 16px", borderRadius: "var(--r-md)", background: "#fffbeb", border: "1px solid #fde68a", display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ marginTop: 14, padding: "12px 16px", borderRadius: "var(--r-md)", background: "#fffbeb", border: "1px solid #fde68a", display: "flex", flexDirection: "column", gap: 8 }}>
                     {warnings.map((w, i) => (
-                      <p key={i} style={{ margin: 0, fontSize: 13, color: "#92400e", lineHeight: 1.55 }}>{w}</p>
+                      <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13, color: "#92400e", lineHeight: 1.55 }}>
+                        <span style={{
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          flexShrink: 0, width: 24, height: 24, borderRadius: "50%",
+                          background: "rgba(245, 158, 11, 0.15)", color: "#d97706", marginTop: -2
+                        }}>
+                          {w.icon === "wind" ? <Wind size={13} /> : w.icon === "rain" ? <CloudRain size={13} /> : <CloudFog size={13} />}
+                        </span>
+                        <p style={{ margin: 0 }}>{w.message}</p>
+                      </div>
                     ))}
                   </div>
                 );
@@ -717,20 +728,6 @@ export default function ItineraryPage() {
                 <p className="itinerary-route-summary">
                   {dayPlaceCount} điểm dừng, {dayTransportCount} chặng di chuyển. Mở tuyến đường để kiểm tra khoảng cách thực tế trước khi đi.
                 </p>
-                <ol className="itinerary-route-list">
-                  {routeStops.slice(0, 6).map((stop, index) => (
-                    <li key={stop.id}>
-                      <span>{index + 1}</span>
-                      <div>
-                        <strong>{stop.label}</strong>
-                        <small>{stop.meta}</small>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-                {routeStops.length > 6 && (
-                  <p className="itinerary-route-more">+{routeStops.length - 6} điểm khác trong ngày</p>
-                )}
                 <Button
                   variant="secondary"
                   size="sm"
@@ -789,68 +786,6 @@ export default function ItineraryPage() {
                 ))}
               </div>
             </Card>
-
-            {/* Feature 2 - Weather forecast + Packing Assistant */}
-            {forecast.length > 0 && (() => {
-              const tripForecast = Array.from({ length: trip.days }, (_, i) =>
-                getByDayIndex(i, trip.startDate)
-              ).filter((d): d is NonNullable<typeof d> => d != null);
-              if (tripForecast.length === 0) return null;
-              const packing = getPackingSuggestions(tripForecast);
-              return (
-                <Card style={{ padding: 22 }}>
-                  <h3 style={{ fontSize: 16, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-                    Dự báo thời tiết
-                  </h3>
-                  <div style={{ display: "flex", gap: 5, overflowX: "auto", marginBottom: 16, paddingBottom: 4 }} className="no-scrollbar">
-                    {Array.from({ length: trip.days }).map((_, i) => {
-                      const dw = getByDayIndex(i, trip.startDate);
-                      const dc = dw ? interpretWeatherCode(dw.code) : null;
-                      return (
-                        <div
-                          key={i}
-                          style={{
-                            display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
-                            minWidth: 42, padding: "7px 4px", borderRadius: "var(--r-md)",
-                            background: i === activeDay ? "var(--primary-light)" : "var(--surface-2)",
-                            border: i === activeDay ? "1px solid var(--primary)" : "1px solid transparent",
-                            opacity: dw ? 1 : 0.4
-                          }}
-                          title={dw && dc ? `Ngày ${i + 1}: ${dc.label} - ${dw.minTemp.toFixed(0)}-${dw.maxTemp.toFixed(0)}°C` : `Ngày ${i + 1}: Không có dữ liệu`}
-                        >
-                          <span style={{ fontSize: 9, color: "var(--text-3)", fontWeight: 700 }}>N{i + 1}</span>
-                          <span style={{ fontSize: 18, lineHeight: 1 }}>{dc?.emoji ?? ""}</span>
-                          <span style={{ fontSize: 10, fontWeight: 700, color: "var(--primary)" }}>{dw ? dw.maxTemp.toFixed(0) : "--"}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {packing.length > 0 ? packing.map((item, i) => {
-                      const colors = PACKING_ICON_COLORS[item.icon];
-                      const iconNode = PACKING_ICON_MAP[item.icon];
-                      return (
-                        <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "9px 12px", borderRadius: "var(--r-md)", background: "var(--surface-2)", fontSize: 13, lineHeight: 1.55 }}>
-                          <span style={{
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            flexShrink: 0, width: 28, height: 28, borderRadius: "var(--r-md)",
-                            background: colors?.bg ?? "var(--primary-light)",
-                            color: colors?.color ?? "var(--primary)",
-                          }}>
-                            {iconNode}
-                          </span>
-                          <span style={{ color: "var(--text-2)", paddingTop: 5 }}>{item.text}</span>
-                        </div>
-                      );
-                    }) : (
-                      <div style={{ padding: "8px 10px", fontSize: 12, color: "var(--text-3)", fontStyle: "italic", textAlign: "center" }}>
-                        Cần có dữ liệu thời tiết để gợi ý hành lý
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              );
-            })()}
 
           </aside>
         </div>
