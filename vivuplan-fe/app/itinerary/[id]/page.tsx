@@ -648,7 +648,7 @@ export default function ItineraryPage() {
                 const dw = getByDayIndex(activeDay, trip.startDate);
                 if (!dw) return null;
                 const warnings = day.activities
-                  .map((a) => getActivityWeatherWarning(a.name, dw, a.location))
+                  .map((a) => getActivityWeatherWarning(a.name, dw, a.location, a.type))
                   .filter((w): w is string => w !== null);
                 if (warnings.length === 0) return null;
                 return (

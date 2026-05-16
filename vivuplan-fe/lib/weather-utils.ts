@@ -41,15 +41,26 @@ const OUTDOOR_RISKY_KEYWORDS = [
 ];
 
 export function isOutdoorRiskyActivity(activityName: string, activityLocation?: string): boolean {
-  const text = `${activityName} ${activityLocation ?? ""}`.toLowerCase();
-  return OUTDOOR_RISKY_KEYWORDS.some((kw) => text.includes(kw));
+  // Replace punctuation with spaces, then pad with spaces to allow whole-word matching.
+  // This prevents false positives e.g. "Hồng Mai" incorrectly matching keyword "hồ".
+  const text = ` ${activityName} ${activityLocation ?? ""} `
+    .toLowerCase()
+    .replace(/[.,!?;:()\-/]/g, " ");
+
+  return OUTDOOR_RISKY_KEYWORDS.some((kw) =>
+    text.includes(` ${kw.toLowerCase()} `)
+  );
 }
 
 export function getActivityWeatherWarning(
   activityName: string,
   weather: DailyWeather,
   activityLocation?: string,
+  activityType?: string,
 ): string | null {
+  // Food and cafe activities are indoors — weather doesn't affect them
+  if (activityType === "FOOD" || activityType === "CAFE") return null;
+
   const condition = interpretWeatherCode(weather.code);
   const isRisky = isOutdoorRiskyActivity(activityName, activityLocation);
   if (!isRisky) return null;
