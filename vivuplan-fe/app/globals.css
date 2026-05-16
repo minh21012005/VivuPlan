@@ -3819,6 +3819,14 @@ textarea.input.textarea-compact {
   .home-destination-grid,
   .destination-grid,
   .destination-grid.compact,
+  .trip-card-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .explore-filter {
+    position: static;
+  }
+
   .explore-filter-inner {
     grid-template-columns: 1fr !important;
   }

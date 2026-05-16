@@ -8,7 +8,9 @@ import { Card } from "@/components/ui/Card";
 import { DestinationCard } from "@/components/travel/DestinationCard";
 import { heroImages, normalizeVietnameseSearch } from "@/lib/travel-data";
 import { useDestinations } from "@/lib/use-destinations";
-import { Search } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+
+const ITEMS_PER_PAGE = 12;
 
 const regions = ["Tất cả", "Miền Bắc", "Miền Trung", "Miền Nam"];
 
@@ -22,6 +24,7 @@ export default function ExplorePage() {
   const { destinations, loading, error } = useDestinations();
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState(getInitialRegion);
+  const [currentPage, setCurrentPage] = useState(1);
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const navigationResetTimer = useRef<number | null>(null);
 
@@ -40,6 +43,18 @@ export default function ExplorePage() {
         return matchRegion && matchSearch;
       });
   }, [destinations, region, search]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, region]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const page = Math.min(currentPage, totalPages);
+
+  const paginatedDestinations = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return filtered.slice(start, start + ITEMS_PER_PAGE);
+  }, [filtered, page]);
 
   useEffect(() => {
     return () => {
@@ -145,7 +160,7 @@ export default function ExplorePage() {
                 Hiển thị <strong style={{ color: "var(--text)" }}>{filtered.length}</strong> điểm đến
               </p>
               <div className="destination-grid">
-                {filtered.map((destination) => {
+                {paginatedDestinations.map((destination) => {
                   const href = `/plan?destination=${encodeURIComponent(destination.name)}`;
                   return (
                     <DestinationCard
@@ -158,6 +173,29 @@ export default function ExplorePage() {
                   );
                 })}
               </div>
+
+              {totalPages > 1 && (
+                <nav className="library-pagination" aria-label="Phân trang điểm đến" style={{ marginTop: 40 }}>
+                  <Button type="button" variant="secondary" size="icon" onClick={() => setCurrentPage((c) => Math.max(1, c - 1))} disabled={page === 1} title="Trang trước">
+                    <ChevronLeft size={16} />
+                  </Button>
+                  <div className="library-page-list">
+                    {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+                      <button
+                        key={pageNumber}
+                        className={`library-page-button${page === pageNumber ? " active" : ""}`}
+                        onClick={() => setCurrentPage(pageNumber)}
+                        aria-current={page === pageNumber ? "page" : undefined}
+                      >
+                        {pageNumber}
+                      </button>
+                    ))}
+                  </div>
+                  <Button type="button" variant="secondary" size="icon" onClick={() => setCurrentPage((c) => Math.min(totalPages, c + 1))} disabled={page === totalPages} title="Trang sau">
+                    <ChevronRight size={16} />
+                  </Button>
+                </nav>
+              )}
             </>
           )}
         </div>
