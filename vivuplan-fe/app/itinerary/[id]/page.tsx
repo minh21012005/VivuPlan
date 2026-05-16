@@ -13,6 +13,7 @@ import { copyTextToClipboard, getTripShareUrl } from "@/lib/share";
 import { getDestinationImage } from "@/lib/travel-data";
 import { useDestinations } from "@/lib/use-destinations";
 import { useWeather } from "@/lib/use-weather";
+import { useGeocode } from "@/lib/use-geocode";
 import {
   interpretWeatherCode,
   getPackingSuggestions,
@@ -217,7 +218,8 @@ export default function ItineraryPage() {
   const { toasts, show: showToast, dismiss: dismissToast } = useToast();
 
   // ─── Weather ──────────────────────────────────────────────────────────────
-  const destCoords = useMemo(() => {
+  // Step 1: try to get coordinates from the known destinations list (DB-backed)
+  const dbCoords = useMemo(() => {
     if (!trip) return null;
     const match = destinations.find(
       (d) => d.name.toLowerCase() === trip.destination.toLowerCase(),
@@ -226,6 +228,12 @@ export default function ItineraryPage() {
       ? { lat: match.latitude, lon: match.longitude }
       : null;
   }, [trip, destinations]);
+
+  // Step 2: if not in DB, fall back to Nominatim geocoding
+  const geocodedCoords = useGeocode(dbCoords ? null : trip?.destination);
+
+  // Use DB coordinates first, then geocoded, then null (no weather)
+  const destCoords = dbCoords ?? geocodedCoords;
 
   const { forecast, getByDayIndex } = useWeather(destCoords?.lat, destCoords?.lon);
 

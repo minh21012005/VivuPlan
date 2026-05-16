@@ -377,16 +377,24 @@ public class TripService {
         String destName = req.getDestination();
         if (destName == null || destName.isBlank()) return "none";
 
-        return destinationRepository
-                .findByNameIgnoreCaseOrSlugIgnoreCase(destName, destName)
-                .map(d -> {
-                    List<WeatherService.DailyWeather> forecast =
-                            weatherService.getForecast(d.getLatitude(), d.getLongitude());
-                    LocalDate start = req.getStartDate() != null ? req.getStartDate() : LocalDate.now();
-                    LocalDate end   = req.getEndDate()   != null ? req.getEndDate()   : start.plusDays(Math.max(0, req.getDays() - 1));
-                    return formatWeatherForAi(forecast, start, end);
-                })
-                .orElse("none");
+        // 1. Try to get coordinates from local DB first (fastest path)
+        Double lat = null, lon = null;
+        var dbDest = destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(destName, destName);
+        if (dbDest.isPresent()) {
+            lat = dbDest.get().getLatitude();
+            lon = dbDest.get().getLongitude();
+        }
+
+        // 2. getForecastForDestination will automatically fall back to Nominatim
+        //    geocoding if lat/lon are null (unknown destination)
+        List<WeatherService.DailyWeather> forecast =
+                weatherService.getForecastForDestination(destName, lat, lon);
+
+        if (forecast.isEmpty()) return "none";
+
+        LocalDate start = req.getStartDate() != null ? req.getStartDate() : LocalDate.now();
+        LocalDate end   = req.getEndDate()   != null ? req.getEndDate()   : start.plusDays(Math.max(0, req.getDays() - 1));
+        return formatWeatherForAi(forecast, start, end);
     }
 
     /**
