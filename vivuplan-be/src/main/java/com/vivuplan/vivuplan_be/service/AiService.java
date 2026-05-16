@@ -192,6 +192,13 @@ public class AiService {
             - Must visit: %s
             - Avoid: %s
             - Notes: %s
+            - Weather Forecast (per trip day): %s
+
+            Weather-aware planning rules:
+            1. Each forecast line is "Day N (date): condition, temp, rain chance → risk level".
+            2. For the day being regenerated, honor its risk level: "HIGH RAIN RISK" → indoor activities only; "LIGHT RAIN" → mostly indoor, short outdoor if rain < 60%%; "Good weather" → outdoor preferred.
+            3. Never mention the weather in user-facing text. Just naturally plan appropriate activities.
+            4. If forecast is "none", plan normally without weather constraints.
 
             Regeneration task:
             - Regenerate day number: %d
@@ -257,6 +264,7 @@ public class AiService {
             req.getMustVisit() != null && !req.getMustVisit().isBlank() ? req.getMustVisit() : "none",
             req.getAvoid() != null && !req.getAvoid().isBlank() ? req.getAvoid() : "none",
             req.getNotes() != null && !req.getNotes().isBlank() ? req.getNotes() : "none",
+            req.getWeatherForecast() != null && !req.getWeatherForecast().isBlank() ? req.getWeatherForecast() : "none",
             dayNumber,
             instruction != null && !instruction.isBlank() ? instruction : "none",
             intent != null && !intent.isBlank() ? intent : "REGENERATE",
@@ -387,6 +395,15 @@ public class AiService {
             - Must visit: %s
             - Avoid: %s
             - Notes: %s
+            - Weather Forecast (per trip day): %s
+
+            Weather-aware planning rules:
+            1. Read the Weather Forecast carefully. Each line is labeled "Day N (date): condition, temp, rain chance → risk level".
+            2. For days labeled "HIGH RAIN RISK": schedule museums, indoor markets, cooking classes, spa, or covered shopping areas. Move boat tours, trekking, beach, or open-air sightseeing to a lower-risk day.
+            3. For days labeled "LIGHT RAIN": mix indoor-heavy morning with short outdoor activities in the afternoon if the rain chance is below 60%.
+            4. For days labeled "Good weather": maximize outdoor, scenic, or active experiences.
+            5. Never mention the weather forecast to the user in the output text. Just naturally plan the right activities.
+            6. If forecast is "none" or unavailable, plan normally without weather constraints.
 
             Cost rules:
             1. estimatedCost MUST be the estimated total VND for the whole group of %d travelers.
@@ -457,6 +474,7 @@ public class AiService {
             req.getMustVisit() != null && !req.getMustVisit().isBlank() ? req.getMustVisit() : "none",
             req.getAvoid() != null && !req.getAvoid().isBlank() ? req.getAvoid() : "none",
             req.getNotes() != null && !req.getNotes().isBlank() ? req.getNotes() : "none",
+            req.getWeatherForecast() != null && !req.getWeatherForecast().isBlank() ? req.getWeatherForecast() : "none",
             travelers,
             req.getDestination(),
             days,

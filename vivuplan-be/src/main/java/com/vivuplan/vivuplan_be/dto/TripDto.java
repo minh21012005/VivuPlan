@@ -213,5 +213,6 @@ public class TripDto {
         private String mustVisit;
         private String avoid;
         private String notes;
+        private String weatherForecast;
     }
 }

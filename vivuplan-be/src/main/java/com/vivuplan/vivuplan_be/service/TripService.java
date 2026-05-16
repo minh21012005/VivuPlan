@@ -2,6 +2,7 @@ package com.vivuplan.vivuplan_be.service;
 
 import com.vivuplan.vivuplan_be.dto.TripDto;
 import com.vivuplan.vivuplan_be.entity.*;
+import com.vivuplan.vivuplan_be.repository.DestinationRepository;
 import com.vivuplan.vivuplan_be.repository.TripRepository;
 import com.vivuplan.vivuplan_be.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -30,7 +32,9 @@ public class TripService {
 
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
+    private final DestinationRepository destinationRepository;
     private final AiService aiService;
+    private final WeatherService weatherService;
     private final Map<String, DayRegenerationProposal> dayRegenerationProposals = new ConcurrentHashMap<>();
     private static final int REGENERATION_PROPOSAL_TTL_MINUTES = 30;
 
@@ -60,6 +64,7 @@ public class TripService {
         aiReq.setMustVisit(req.getMustVisit());
         aiReq.setAvoid(req.getAvoid());
         aiReq.setNotes(req.getNotes());
+        aiReq.setWeatherForecast(fetchWeatherContext(req));
 
         List<TripDto.DayResponse> aiSchedule = aiService.generateItinerary(aiReq);
 
@@ -354,7 +359,66 @@ public class TripService {
         req.setMustVisit(trip.getMustVisit());
         req.setAvoid(trip.getAvoid());
         req.setNotes(trip.getNotes());
+        req.setWeatherForecast(fetchWeatherContext(req));
         return req;
+    }
+
+    /**
+     * Resolves weather forecast for the trip's destination and formats it as a
+     * concise, human-readable summary for injection into the AI prompt.
+     *
+     * Optimizations vs. original:
+     *  - Uses a targeted DB query (findByNameOrSlug) instead of findAll()
+     *  - Falls back gracefully when no startDate is provided (uses "today")
+     *  - Annotates each day with a weather label and outdoor risk level so the AI
+     *    gets richer context than a raw WMO code integer
+     */
+    private String fetchWeatherContext(TripDto.GenerateRequest req) {
+        String destName = req.getDestination();
+        if (destName == null || destName.isBlank()) return "none";
+
+        return destinationRepository
+                .findByNameIgnoreCaseOrSlugIgnoreCase(destName, destName)
+                .map(d -> {
+                    List<WeatherService.DailyWeather> forecast =
+                            weatherService.getForecast(d.getLatitude(), d.getLongitude());
+                    LocalDate start = req.getStartDate() != null ? req.getStartDate() : LocalDate.now();
+                    LocalDate end   = req.getEndDate()   != null ? req.getEndDate()   : start.plusDays(Math.max(0, req.getDays() - 1));
+                    return formatWeatherForAi(forecast, start, end);
+                })
+                .orElse("none");
+    }
+
+    /**
+     * Produces a concise day-by-day weather summary for the AI prompt.
+     * Example line: "Day 1 (2025-06-10): Rain, 22–28°C, rain chance 75% – AVOID outdoor activities"
+     */
+    private String formatWeatherForAi(List<WeatherService.DailyWeather> forecast, LocalDate start, LocalDate end) {
+        if (forecast == null || forecast.isEmpty() || start == null || end == null) return "none";
+
+        StringBuilder sb = new StringBuilder();
+        int dayNum = 1;
+        for (WeatherService.DailyWeather dw : forecast) {
+            LocalDate date = LocalDate.parse(dw.getDate());
+            if (date.isBefore(start)) continue;
+            if (date.isAfter(end)) break;
+
+            String risk = switch (dw.outdoorRiskLevel()) {
+                case 2 -> "HIGH RAIN RISK – prefer indoor activities";
+                case 1 -> "LIGHT RAIN – mix indoor and outdoor";
+                default -> "Good weather – outdoor activities recommended";
+            };
+
+            sb.append(String.format("Day %d (%s): %s, %.0f–%.0f°C, rain chance %d%% → %s%n",
+                    dayNum++,
+                    dw.getDate(),
+                    dw.toWeatherLabel(),
+                    dw.getMinTemp(),
+                    dw.getMaxTemp(),
+                    dw.getPrecipitationProbability(),
+                    risk));
+        }
+        return sb.length() > 0 ? sb.toString().trim() : "none";
     }
 
     private void validateRegeneratedDayProposal(Trip trip, TripDto.DayResponse proposedDay) {

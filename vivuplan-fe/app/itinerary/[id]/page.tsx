@@ -12,6 +12,14 @@ import { ApiError, tripApi, type ActivityMutationRequest, type ActivityResponse,
 import { copyTextToClipboard, getTripShareUrl } from "@/lib/share";
 import { getDestinationImage } from "@/lib/travel-data";
 import { useDestinations } from "@/lib/use-destinations";
+import { useWeather } from "@/lib/use-weather";
+import {
+  interpretWeatherCode,
+  getPackingSuggestions,
+  getRescheduleSuggestions,
+  getActivityWeatherWarning,
+} from "@/lib/weather-utils";
+
 import {
   AlertCircle,
   Calendar,
@@ -207,6 +215,19 @@ export default function ItineraryPage() {
   const [regeneratingDay, setRegeneratingDay] = useState(false);
   const [applyingRegeneration, setApplyingRegeneration] = useState(false);
   const { toasts, show: showToast, dismiss: dismissToast } = useToast();
+
+  // ─── Weather ──────────────────────────────────────────────────────────────
+  const destCoords = useMemo(() => {
+    if (!trip) return null;
+    const match = destinations.find(
+      (d) => d.name.toLowerCase() === trip.destination.toLowerCase(),
+    );
+    return match?.latitude != null && match?.longitude != null
+      ? { lat: match.latitude, lon: match.longitude }
+      : null;
+  }, [trip, destinations]);
+
+  const { forecast, getByDayIndex } = useWeather(destCoords?.lat, destCoords?.lon);
 
   useEffect(() => {
     if (authLoading || !authUser) return;
@@ -503,25 +524,59 @@ export default function ItineraryPage() {
       </section>
 
       <main className="container" style={{ paddingTop: 30, paddingBottom: 80 }}>
+
+        {/* Feature 1 – Smart Reschedule Suggestions */}
+        {trip.startDate && forecast.length > 0 && (() => {
+          const suggestions = getRescheduleSuggestions(
+            (trip.schedule ?? []).map((d) => ({
+              day: d.day,
+              activities: d.activities.map((a) => ({ name: a.name, type: a.type, location: a.location })),
+            })),
+            forecast,
+            trip.startDate,
+          );
+          if (suggestions.length === 0) return null;
+          return (
+            <div style={{ marginBottom: 20, padding: "14px 18px", borderRadius: "var(--r-lg)", background: "#eff6ff", border: "1px solid #bfdbfe" }}>
+              <p style={{ margin: "0 0 8px", fontWeight: 700, fontSize: 14, color: "#1d4ed8", display: "flex", alignItems: "center", gap: 6 }}>
+                🔄 Gợi ý sắp xếp lại lịch theo thời tiết
+              </p>
+              {suggestions.map((s, i) => (
+                <p key={i} style={{ margin: "0 0 4px", fontSize: 13, color: "#1e40af", lineHeight: 1.6 }}>
+                  💡 Cân nhắc chuyển <strong>"{s.activityName}"</strong> từ Ngày {s.fromDay} sang Ngày {s.toDay}: {s.reason}
+                </p>
+              ))}
+            </div>
+          );
+        })()}
+
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 320px", gap: 24 }} className="itinerary-grid">
           <section>
+
             <div className="itinerary-day-toolbar">
               <div style={{ display: "flex", gap: 8, overflowX: "auto", minWidth: 0 }} className="no-scrollbar">
-                {trip.schedule?.map((item, index) => (
-                  <button
-                    key={item.day}
-                    onClick={() => {
-                      setActiveDay(index);
-                      setExpanded(null);
-                      setDayCopied(false);
-                      setRegenerateOpen(false);
-                      setRegeneratePreview(null);
-                    }}
-                    className={activeDay === index ? "btn btn-primary btn-sm" : "btn btn-secondary btn-sm"}
-                  >
-                    Ngày {item.day}
-                  </button>
-                ))}
+                {trip.schedule?.map((item, index) => {
+                  const dw = getByDayIndex(item.day - 1, trip.startDate);
+                  const dc = dw ? interpretWeatherCode(dw.code) : null;
+                  return (
+                    <button
+                      key={item.day}
+                      onClick={() => {
+                        setActiveDay(index);
+                        setExpanded(null);
+                        setDayCopied(false);
+                        setRegenerateOpen(false);
+                        setRegeneratePreview(null);
+                      }}
+                      className={activeDay === index ? "btn btn-primary btn-sm" : "btn btn-secondary btn-sm"}
+                      title={dc ? `${dc.label} · ${dw?.minTemp.toFixed(0)}–${dw?.maxTemp.toFixed(0)}°C` : undefined}
+                      style={{ display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}
+                    >
+                      {dc && <span aria-hidden>{dc.emoji}</span>}
+                      Ngày {item.day}
+                    </button>
+                  );
+                })}
               </div>
               <Button variant="primary" size="sm" onClick={() => setEditor({ mode: "add", dayNumber: day.day })}>
                 <Plus size={13} /> Thêm hoạt động
@@ -571,7 +626,37 @@ export default function ItineraryPage() {
                   <span>Chi phí ngày</span>
                   <strong>{fmtCost(dayTotal)}</strong>
                 </div>
+                {/* Feature 3 – Weather insight chip */}
+                {(() => {
+                  const dw = getByDayIndex(activeDay, trip.startDate);
+                  if (!dw) return null;
+                  const dc = interpretWeatherCode(dw.code);
+                  return (
+                    <div title={`Mưa ${dw.precipitationProbability}% · Gió ${dw.windspeedKmh.toFixed(0)} km/h`}>
+                      <span style={{ fontSize: 16 }}>{dc.emoji}</span>
+                      <span>Thời tiết</span>
+                      <strong>{dw.minTemp.toFixed(0)}–{dw.maxTemp.toFixed(0)}°C</strong>
+                    </div>
+                  );
+                })()}
               </div>
+
+              {/* Feature 4 – Activity safety warnings */}
+              {(() => {
+                const dw = getByDayIndex(activeDay, trip.startDate);
+                if (!dw) return null;
+                const warnings = day.activities
+                  .map((a) => getActivityWeatherWarning(a.name, dw, a.location))
+                  .filter((w): w is string => w !== null);
+                if (warnings.length === 0) return null;
+                return (
+                  <div style={{ marginTop: 14, padding: "12px 16px", borderRadius: "var(--r-md)", background: "#fffbeb", border: "1px solid #fde68a", display: "flex", flexDirection: "column", gap: 6 }}>
+                    {warnings.map((w, i) => (
+                      <p key={i} style={{ margin: 0, fontSize: 13, color: "#92400e", lineHeight: 1.55 }}>{w}</p>
+                    ))}
+                  </div>
+                );
+              })()}
             </Card>
 
             {activityError && !editor && (
@@ -682,6 +767,51 @@ export default function ItineraryPage() {
                 ))}
               </div>
             </Card>
+
+            {/* Feature 2 - Weather forecast + Packing Assistant */}
+            {forecast.length > 0 && (() => {
+              const tripForecast = Array.from({ length: trip.days }, (_, i) =>
+                getByDayIndex(i, trip.startDate)
+              ).filter((d): d is NonNullable<typeof d> => d != null);
+              if (tripForecast.length === 0) return null;
+              const packing = getPackingSuggestions(tripForecast);
+              return (
+                <Card style={{ padding: 22 }}>
+                  <h3 style={{ fontSize: 16, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                    Thoi tiet & Hanh ly
+                  </h3>
+                  <div style={{ display: "flex", gap: 5, overflowX: "auto", marginBottom: 16, paddingBottom: 4 }} className="no-scrollbar">
+                    {tripForecast.map((dw, i) => {
+                      const dc = interpretWeatherCode(dw.code);
+                      return (
+                        <div
+                          key={dw.date}
+                          style={{
+                            display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                            minWidth: 42, padding: "7px 4px", borderRadius: "var(--r-md)",
+                            background: i === activeDay ? "var(--primary-light)" : "var(--surface-2)",
+                            border: i === activeDay ? "1px solid var(--primary)" : "1px solid transparent",
+                          }}
+                          title={`Ngay ${i + 1}: ${dc.label} - ${dw.minTemp.toFixed(0)}-${dw.maxTemp.toFixed(0)} do C`}
+                        >
+                          <span style={{ fontSize: 9, color: "var(--text-3)", fontWeight: 700 }}>N{i + 1}</span>
+                          <span style={{ fontSize: 18, lineHeight: 1 }}>{dc.emoji}</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: "var(--primary)" }}>{dw.maxTemp.toFixed(0)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {packing.map((item, i) => (
+                      <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "8px 10px", borderRadius: "var(--r-md)", background: "var(--surface-2)", fontSize: 13, lineHeight: 1.55 }}>
+                        <span style={{ fontSize: 20, flexShrink: 0, lineHeight: 1.1 }}>{item.icon}</span>
+                        <span style={{ color: "var(--text-2)" }}>{item.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              );
+            })()}
 
           </aside>
         </div>

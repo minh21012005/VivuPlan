@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Clock, Star } from "lucide-react";
 import { heroImages, type Destination } from "@/lib/travel-data";
 import { Badge } from "@/components/ui/Badge";
+import { DestinationWeatherBadge } from "@/components/travel/DestinationWeatherBadge";
 
 export function DestinationCard({
   destination,
@@ -37,14 +38,18 @@ export function DestinationCard({
           <div style={{ position: "absolute", top: "12px", left: "12px", display: "flex", gap: "8px" }}>
             <Badge tone="glass">{destination.region}</Badge>
           </div>
-          <div className="destination-rating" style={{ 
-            position: "absolute", top: "12px", right: "12px", 
-            background: "rgba(255, 255, 255, 0.9)", padding: "4px 8px", 
-            borderRadius: "var(--r-sm)", fontSize: "13px", zIndex: 10,
-            boxShadow: "var(--shadow-sm)"
-          }}>
-            <Star size={14} fill="#FBBF24" color="#FBBF24" />
-            {destination.rating}
+          <div style={{ position: "absolute", top: "12px", right: "12px", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+            <div className="destination-rating" style={{
+              background: "rgba(255, 255, 255, 0.9)", padding: "4px 8px",
+              borderRadius: "var(--r-sm)", fontSize: "13px",
+              boxShadow: "var(--shadow-sm)", display: "flex", alignItems: "center", gap: 4,
+            }}>
+              <Star size={14} fill="#FBBF24" color="#FBBF24" />
+              {destination.rating}
+            </div>
+            {destination.latitude != null && destination.longitude != null && (
+              <DestinationWeatherBadge lat={destination.latitude} lon={destination.longitude} />
+            )}
           </div>
         </div>
         <div className="destination-card-body">

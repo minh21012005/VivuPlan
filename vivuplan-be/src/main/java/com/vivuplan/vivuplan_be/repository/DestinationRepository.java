@@ -13,4 +13,6 @@ public interface DestinationRepository extends JpaRepository<Destination, Long> 
     List<Destination> findByFeaturedTrueAndActiveTrueOrderByDisplayOrderAscNameAsc();
     Optional<Destination> findBySlugAndActiveTrue(String slug);
     Optional<Destination> findBySlug(String slug);
+    /** Used by WeatherService context resolution — targeted lookup, no full-table scan. */
+    Optional<Destination> findByNameIgnoreCaseOrSlugIgnoreCase(String name, String slug);
 }
