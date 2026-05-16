@@ -28,7 +28,8 @@ export function interpretWeatherCode(code: number): WeatherCondition {
   if (code <= 77) return { label: "Có tuyết", emoji: "❄️", severity: "severe", isRainy: false, isWindy: false, isFoggy: false };
   if (code <= 82) return { label: code === 82 ? "Mưa rào lớn" : "Mưa rào", emoji: code === 82 ? "⛈️" : "🌧️", severity: code === 82 ? "severe" : "moderate", isRainy: true, isWindy: false, isFoggy: false };
   if (code <= 86) return { label: "Mưa tuyết", emoji: "🌨️", severity: "severe", isRainy: true, isWindy: false, isFoggy: false };
-  return { label: "Giông bão", emoji: "⛈️", severity: "severe", isRainy: true, isWindy: true, isFoggy: false };
+  if (code <= 99) return { label: "Giông bão", emoji: "⛈️", severity: "severe", isRainy: true, isWindy: true, isFoggy: false };
+  return { label: "N/A", emoji: "", severity: "mild", isRainy: false, isWindy: false, isFoggy: false };
 }
 
 // ─── Activity outdoor risk assessment ────────────────────────────────────────

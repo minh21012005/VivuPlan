@@ -570,9 +570,11 @@ export default function ItineraryPage() {
                       }}
                       className={activeDay === index ? "btn btn-primary btn-sm" : "btn btn-secondary btn-sm"}
                       title={dc ? `${dc.label} · ${dw?.minTemp.toFixed(0)}–${dw?.maxTemp.toFixed(0)}°C` : undefined}
-                      style={{ display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}
+                      style={{ display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}
                     >
-                      {dc && <span aria-hidden>{dc.emoji}</span>}
+                      {dc?.emoji && (
+                        <span aria-hidden style={{ fontSize: 15 }}>{dc.emoji}</span>
+                      )}
                       Ngày {item.day}
                     </button>
                   );
@@ -778,36 +780,42 @@ export default function ItineraryPage() {
               return (
                 <Card style={{ padding: 22 }}>
                   <h3 style={{ fontSize: 16, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-                    Thoi tiet & Hanh ly
+                    Dự báo thời tiết
                   </h3>
                   <div style={{ display: "flex", gap: 5, overflowX: "auto", marginBottom: 16, paddingBottom: 4 }} className="no-scrollbar">
-                    {tripForecast.map((dw, i) => {
-                      const dc = interpretWeatherCode(dw.code);
+                    {Array.from({ length: trip.days }).map((_, i) => {
+                      const dw = getByDayIndex(i, trip.startDate);
+                      const dc = dw ? interpretWeatherCode(dw.code) : null;
                       return (
                         <div
-                          key={dw.date}
+                          key={i}
                           style={{
                             display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
                             minWidth: 42, padding: "7px 4px", borderRadius: "var(--r-md)",
                             background: i === activeDay ? "var(--primary-light)" : "var(--surface-2)",
                             border: i === activeDay ? "1px solid var(--primary)" : "1px solid transparent",
+                            opacity: dw ? 1 : 0.4
                           }}
-                          title={`Ngay ${i + 1}: ${dc.label} - ${dw.minTemp.toFixed(0)}-${dw.maxTemp.toFixed(0)} do C`}
+                          title={dw && dc ? `Ngày ${i + 1}: ${dc.label} - ${dw.minTemp.toFixed(0)}-${dw.maxTemp.toFixed(0)}°C` : `Ngày ${i + 1}: Không có dữ liệu`}
                         >
                           <span style={{ fontSize: 9, color: "var(--text-3)", fontWeight: 700 }}>N{i + 1}</span>
-                          <span style={{ fontSize: 18, lineHeight: 1 }}>{dc.emoji}</span>
-                          <span style={{ fontSize: 10, fontWeight: 700, color: "var(--primary)" }}>{dw.maxTemp.toFixed(0)}</span>
+                          <span style={{ fontSize: 18, lineHeight: 1 }}>{dc?.emoji ?? ""}</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: "var(--primary)" }}>{dw ? dw.maxTemp.toFixed(0) : "--"}</span>
                         </div>
                       );
                     })}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {packing.map((item, i) => (
+                    {packing.length > 0 ? packing.map((item, i) => (
                       <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "8px 10px", borderRadius: "var(--r-md)", background: "var(--surface-2)", fontSize: 13, lineHeight: 1.55 }}>
                         <span style={{ fontSize: 20, flexShrink: 0, lineHeight: 1.1 }}>{item.icon}</span>
                         <span style={{ color: "var(--text-2)" }}>{item.text}</span>
                       </div>
-                    ))}
+                    )) : (
+                      <div style={{ padding: "8px 10px", fontSize: 12, color: "var(--text-3)", fontStyle: "italic", textAlign: "center" }}>
+                        Cần có dữ liệu thời tiết để gợi ý hành lý
+                      </div>
+                    )}
                   </div>
                 </Card>
               );

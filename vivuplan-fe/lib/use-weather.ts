@@ -91,10 +91,17 @@ export function useWeather(lat?: number, lon?: number) {
    * Get forecast for a trip day index (0-based) given the trip start date
    */
   function getByDayIndex(dayIndex: number, startDate?: string): DailyWeather | undefined {
-    if (!startDate) return forecast[dayIndex]; // fallback: use index from today
+    if (!startDate) return forecast[dayIndex];
+
     const date = new Date(`${startDate}T00:00:00`);
     date.setDate(date.getDate() + dayIndex);
-    const dateStr = date.toISOString().slice(0, 10);
+
+    // Format as YYYY-MM-DD using local time to avoid UTC shift
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const dateStr = `${year}-${month}-${day}`;
+
     return getByDate(dateStr);
   }
 
