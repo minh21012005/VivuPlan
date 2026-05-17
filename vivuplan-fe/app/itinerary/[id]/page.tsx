@@ -256,6 +256,7 @@ export default function ItineraryPage() {
   const [clientWarnings, setClientWarnings] = useState<string[]>([]);
   const [aiWarningsDismissed, setAiWarningsDismissed] = useState(false);
   const [aiWarningsExpanded, setAiWarningsExpanded] = useState(false);
+  const [weatherAdvisoryDismissed, setWeatherAdvisoryDismissed] = useState(false);
   const { toasts, show: showToast, dismiss: dismissToast } = useToast();
 
   // ─── Weather ──────────────────────────────────────────────────────────────
@@ -380,6 +381,42 @@ export default function ItineraryPage() {
       window.localStorage.removeItem(`vivuplan:trip:${trip.id}:warnings-dismissed`);
     }
     setAiWarningsDismissed(false);
+  };
+
+  const weatherSignature = useMemo(() => {
+    if (!trip?.id || !trip.startDate || forecast.length === 0) return "";
+    const suggestions = getRescheduleSuggestions(
+      (trip.schedule ?? []).map((d) => ({
+        day: d.day,
+        activities: d.activities.map((a) => ({ name: a.name, type: a.type, location: a.location })),
+      })),
+      forecast,
+      trip.startDate,
+    );
+    if (suggestions.length === 0) return "";
+    return suggestions.map((s) => `${s.activityName}-${s.fromDay}-${s.toDay}`).join("|");
+  }, [trip?.schedule, trip?.startDate, forecast]);
+
+  useEffect(() => {
+    if (!trip?.id || !weatherSignature || typeof window === "undefined") {
+      setWeatherAdvisoryDismissed(false);
+      return;
+    }
+    const dismissedSignature = window.localStorage.getItem(`vivuplan:trip:${trip.id}:weather-dismissed`);
+    setWeatherAdvisoryDismissed(dismissedSignature === weatherSignature);
+  }, [trip?.id, weatherSignature]);
+
+  const dismissWeatherAdvisory = () => {
+    if (!trip?.id || !weatherSignature || typeof window === "undefined") return;
+    window.localStorage.setItem(`vivuplan:trip:${trip.id}:weather-dismissed`, weatherSignature);
+    setWeatherAdvisoryDismissed(true);
+  };
+
+  const restoreWeatherAdvisory = () => {
+    if (trip?.id && typeof window !== "undefined") {
+      window.localStorage.removeItem(`vivuplan:trip:${trip.id}:weather-dismissed`);
+    }
+    setWeatherAdvisoryDismissed(false);
   };
 
   const shownWarnings = aiWarningsExpanded ? visibleWarnings : visibleWarnings.slice(0, 2);
@@ -685,7 +722,13 @@ export default function ItineraryPage() {
             trip.startDate,
           );
           if (suggestions.length === 0) return null;
-          return (
+
+          return weatherAdvisoryDismissed ? (
+            <div className="itinerary-weather-messages-collapsed">
+              <span><Sparkles size={13} style={{ color: "#2563eb" }} /> Trợ lý AI gợi ý tối ưu lịch trình theo thời tiết</span>
+              <button type="button" onClick={restoreWeatherAdvisory}>Hiện lại</button>
+            </div>
+          ) : (
             <div style={{
               marginBottom: 24,
               padding: "16px 20px",
@@ -702,7 +745,30 @@ export default function ItineraryPage() {
                   <Sparkles size={16} className="animate-pulse" style={{ color: "#2563eb" }} />
                   Trợ lý AI gợi ý tối ưu lịch trình theo thời tiết
                 </p>
-                <span style={{ fontSize: 11, background: "#dbeafe", color: "#1e40af", padding: "2px 8px", borderRadius: 99, fontWeight: 600 }}>Tối ưu</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 11, background: "#dbeafe", color: "#1e40af", padding: "2px 8px", borderRadius: 99, fontWeight: 600 }}>Tối ưu</span>
+                  <button
+                    type="button"
+                    style={{
+                      border: 0,
+                      background: "transparent",
+                      color: "#1e40af",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 2,
+                      opacity: 0.7,
+                      transition: "opacity 0.15s ease"
+                    }}
+                    onClick={dismissWeatherAdvisory}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
+                    onMouseLeave={(e) => e.currentTarget.style.opacity = "0.7"}
+                    aria-label="Ẩn gợi ý thời tiết"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {suggestions.map((s, i) => (

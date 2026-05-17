@@ -1931,8 +1931,7 @@ textarea.input.textarea-compact {
   gap: 8px;
 }
 
-.itinerary-ai-message-actions button,
-.itinerary-ai-messages-collapsed button {
+.itinerary-ai-message-actions button {
   border: 0;
   background: transparent;
   color: #92400E;
@@ -1941,10 +1940,33 @@ textarea.input.textarea-compact {
   font-weight: 800;
 }
 
-.itinerary-ai-message-actions button:hover,
-.itinerary-ai-messages-collapsed button:hover {
+.itinerary-ai-message-actions button:hover {
   color: #78350F;
   text-decoration: underline;
+}
+
+.itinerary-ai-messages-collapsed button {
+  border: 1px solid #fcd34d;
+  background: #ffffff;
+  color: #b45309;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 99px;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(146, 64, 14, 0.05);
+  outline: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.itinerary-ai-messages-collapsed button:hover {
+  background: #fffbeb;
+  border-color: #f59e0b;
+  color: #92400E;
+  box-shadow: 0 1px 3px rgba(146, 64, 14, 0.1);
 }
 
 .itinerary-ai-messages-collapsed {
@@ -1966,6 +1988,51 @@ textarea.input.textarea-compact {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.itinerary-weather-messages-collapsed {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 9px 12px;
+  border: 1px solid #93c5fd;
+  border-radius: var(--r-md);
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.itinerary-weather-messages-collapsed span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.itinerary-weather-messages-collapsed button {
+  border: 1px solid #93c5fd;
+  background: #ffffff;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 99px;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.05);
+  outline: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.itinerary-weather-messages-collapsed button:hover {
+  background: #f0f7ff;
+  border-color: #2563eb;
+  color: #1e40af;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.1);
 }
 
 .itinerary-header-meta-container {
