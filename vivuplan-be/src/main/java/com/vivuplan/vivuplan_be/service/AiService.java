@@ -19,6 +19,11 @@ import java.util.*;
 @Slf4j
 public class AiService {
 
+    public record RegeneratedDayResult(
+            TripDto.DayResponse day,
+            TripDto.RequestFulfillment requestFulfillment) {
+    }
+
     @Value("${app.ai.gemini.api-key:}")
     private String geminiApiKey;
 
@@ -65,7 +70,7 @@ public class AiService {
         }
     }
 
-    public TripDto.DayResponse regenerateDay(
+    public RegeneratedDayResult regenerateDay(
             TripDto.GenerateRequest req,
             List<TripDto.DayResponse> currentSchedule,
             int dayNumber,
@@ -77,20 +82,20 @@ public class AiService {
         try {
             TripDto.GenerateRequest qualityReq = withRegenerationInstruction(req, instruction);
             String rawJson = callGeminiForSingleDay(buildDayRegenerationPrompt(req, currentSchedule, dayNumber, intent, instruction, null));
-            TripDto.DayResponse day = parseSingleDay(rawJson, dayNumber);
-            QualityCheck quality = assessRegeneratedDayQuality(day, currentSchedule, qualityReq);
+            RegeneratedDayResult result = parseRegeneratedDayResult(rawJson, dayNumber);
+            QualityCheck quality = assessRegeneratedDayQuality(result.day(), currentSchedule, qualityReq);
             if (quality.passed()) {
-                return day;
+                return result;
             }
 
             log.warn("AI regenerated day {} for {} failed quality check: {}. Retrying once.",
                     dayNumber, req.getDestination(), quality.reason());
 
             String retryJson = callGeminiForSingleDay(buildDayRegenerationPrompt(req, currentSchedule, dayNumber, intent, instruction, quality.reason()));
-            TripDto.DayResponse retryDay = parseSingleDay(retryJson, dayNumber);
-            QualityCheck retryQuality = assessRegeneratedDayQuality(retryDay, currentSchedule, qualityReq);
+            RegeneratedDayResult retryResult = parseRegeneratedDayResult(retryJson, dayNumber);
+            QualityCheck retryQuality = assessRegeneratedDayQuality(retryResult.day(), currentSchedule, qualityReq);
             if (retryQuality.passed()) {
-                return retryDay;
+                return retryResult;
             }
 
             log.warn("AI retry regenerated day {} for {} still failed quality check: {}.",
@@ -175,6 +180,7 @@ public class AiService {
         return String.format("""
             You are a senior Vietnam travel planner. Regenerate ONE DAY of an existing itinerary.
             Return JSON only. All user-facing text must be Vietnamese with correct accents.
+            The response MUST be one JSON object with keys "day" and "requestFulfillment".
 
             Trip constraints that MUST NOT change:
             - Departure: %s
@@ -197,7 +203,8 @@ public class AiService {
             Weather-aware planning rules:
             1. Each forecast line is "Day N (date): condition, temp, rain chance → risk level".
             2. For the day being regenerated, honor its risk level: "HIGH RAIN RISK" → indoor activities only; "LIGHT RAIN" → mostly indoor, short outdoor if rain < 60%%; "Good weather" → outdoor preferred.
-            3. Never mention the weather in user-facing text. Just naturally plan appropriate activities.
+            3. Never mention the weather in the regenerated day's title, summary, activities, or notes. Just naturally plan appropriate activities.
+               If weather or another constraint blocks the user's request, explain that in requestFulfillment.items[].userMessage.
             4. If forecast is "none", plan normally without weather constraints.
 
             Regeneration task:
@@ -209,7 +216,7 @@ public class AiService {
             %s
 
             Rules:
-            1. Return exactly ONE JSON array with exactly ONE day object. The object day field MUST be %d.
+            1. Return exactly ONE JSON object. Its "day" key MUST contain exactly ONE day object whose day value is %d.
             2. Do not change other days. Use them only as context to avoid duplicate places and impossible pacing.
             3. Keep 4-6 activities for the regenerated day. Never return more than 8 activities.
             4. Keep times in HH:mm 24h format and avoid overlaps.
@@ -225,10 +232,17 @@ public class AiService {
             14. If the user asks for clearer transport, make local movement especially clear.
             15. If the user asks to keep an existing place, preserve it when it does not break constraints.
             16. If the user request is empty, create a generally better version of the day: more specific, realistic, well-paced, and within constraints.
+            17. Always evaluate the user's free-form request in requestFulfillment.
+            18. Split meaningful user requests into concrete requested items. Treat implicit phrasing as a request when it proposes an activity, place, food, experience, or constraint, for example "nhảy dù ở Đà Nẵng cũng hay mà".
+            19. If a requested item is fully reflected in the regenerated day, mark it FULFILLED with reasonCode APPLIED.
+            20. If a requested item is omitted, substituted, weakened, unsafe, too expensive, duplicated, or impossible under constraints, mark it PARTIAL or NOT_APPLIED and write a short Vietnamese userMessage explaining why.
+            21. Use reasonCode WEATHER_SAFETY when rain/storm/weather risk is the main reason. Other allowed reasonCode values: APPLIED, BUDGET, TIME_CONFLICT, DUPLICATE, CONSTRAINT, UNCLEAR, OTHER.
+            22. If there is no meaningful request, set overallStatus to NO_REQUEST and items to [].
+            23. If you are unsure whether the request was satisfied, mark the item UNCLEAR and explain what the user should check.
 
             JSON schema:
-            [
-              {
+            {
+              "day": {
                 "day": %d,
                 "title": "Ngày %d - Chủ đề ngắn",
                 "summary": "Tóm tắt ngắn",
@@ -246,8 +260,19 @@ public class AiService {
                     "longitude": 108.4583
                   }
                 ]
+              },
+              "requestFulfillment": {
+                "overallStatus": "FULFILLED|PARTIAL|NOT_FULFILLED|UNCLEAR|NO_REQUEST",
+                "items": [
+                  {
+                    "requestedText": "Hoạt động, địa điểm, món ăn, trải nghiệm, hoặc ràng buộc user đã yêu cầu",
+                    "status": "FULFILLED|PARTIAL|NOT_APPLIED|UNCLEAR",
+                    "reasonCode": "APPLIED|WEATHER_SAFETY|BUDGET|TIME_CONFLICT|DUPLICATE|CONSTRAINT|UNCLEAR|OTHER",
+                    "userMessage": "Thông báo ngắn bằng tiếng Việt nếu chưa đáp ứng đầy đủ; để trống nếu đã đáp ứng đầy đủ"
+                  }
+                ]
               }
-            ]
+            }
             %s
             """,
             req.getDeparture(), req.getDestination(),
@@ -278,8 +303,35 @@ public class AiService {
         );
     }
 
-    private TripDto.DayResponse parseSingleDay(String json, int dayNumber) {
-        List<TripDto.DayResponse> days = parseItinerary(json);
+    private RegeneratedDayResult parseRegeneratedDayResult(String json, int dayNumber) {
+        try {
+            JsonNode root = objectMapper.readTree(cleanJson(json));
+            TripDto.DayResponse day;
+            TripDto.RequestFulfillment requestFulfillment = null;
+
+            if (root.isArray()) {
+                List<TripDto.DayResponse> days = parseItinerary(json);
+                day = requireSingleRegeneratedDay(days, dayNumber);
+            } else if (root.path("day").isObject()) {
+                day = parseDayNode(root.path("day"));
+                requestFulfillment = parseRequestFulfillment(root.path("requestFulfillment"));
+            } else if (root.path("activities").isArray()) {
+                day = parseDayNode(root);
+            } else {
+                throw new IllegalArgumentException("AI response is not a regenerated day JSON object");
+            }
+
+            if (day.getDay() != dayNumber) {
+                throw new RuntimeException("AI returned wrong day number: " + day.getDay());
+            }
+            return new RegeneratedDayResult(day, requestFulfillment);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse AI regenerated day JSON: " + e.getMessage()
+                    + ". Raw length=" + (json != null ? json.length() : 0), e);
+        }
+    }
+
+    private TripDto.DayResponse requireSingleRegeneratedDay(List<TripDto.DayResponse> days, int dayNumber) {
         if (days.size() != 1) {
             throw new RuntimeException("AI must return exactly one regenerated day");
         }
@@ -288,6 +340,31 @@ public class AiService {
             throw new RuntimeException("AI returned wrong day number: " + day.getDay());
         }
         return day;
+    }
+
+    private TripDto.RequestFulfillment parseRequestFulfillment(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return null;
+        }
+
+        TripDto.RequestFulfillment fulfillment = new TripDto.RequestFulfillment();
+        String overallStatus = node.path("overallStatus").asText("");
+        fulfillment.setOverallStatus(overallStatus.isBlank() ? "UNCLEAR" : overallStatus);
+
+        List<TripDto.RequestFulfillmentItem> items = new ArrayList<>();
+        JsonNode itemsNode = node.path("items");
+        if (itemsNode.isArray()) {
+            for (JsonNode itemNode : itemsNode) {
+                TripDto.RequestFulfillmentItem item = new TripDto.RequestFulfillmentItem();
+                item.setRequestedText(blankToNull(itemNode.path("requestedText").asText("")));
+                item.setStatus(blankToNull(itemNode.path("status").asText("")));
+                item.setReasonCode(blankToNull(itemNode.path("reasonCode").asText("")));
+                item.setUserMessage(blankToNull(itemNode.path("userMessage").asText("")));
+                items.add(item);
+            }
+        }
+        fulfillment.setItems(items);
+        return fulfillment;
     }
 
     private String buildLegacyPrompt(TripDto.GenerateRequest req) {
@@ -621,49 +698,64 @@ public class AiService {
 
     private List<TripDto.DayResponse> parseItinerary(String json) {
         try {
-            // Strip markdown code fences if present
-            String cleaned = json.replaceAll("```json\\s*", "").replaceAll("```\\s*", "").trim();
-            JsonNode arr = objectMapper.readTree(cleaned);
+            JsonNode arr = objectMapper.readTree(cleanJson(json));
             if (!arr.isArray()) {
                 throw new IllegalArgumentException("AI response is not a JSON array");
             }
 
             List<TripDto.DayResponse> result = new ArrayList<>();
             for (JsonNode dayNode : arr) {
-                TripDto.DayResponse day = new TripDto.DayResponse();
-                day.setDay(dayNode.path("day").asInt());
-                day.setTitle(dayNode.path("title").asText());
-                day.setSummary(dayNode.path("summary").asText());
-
-                List<TripDto.ActivityResponse> activities = new ArrayList<>();
-                int order = 0;
-                for (JsonNode actNode : dayNode.path("activities")) {
-                    TripDto.ActivityResponse act = new TripDto.ActivityResponse();
-                    act.setTime(actNode.path("time").asText("09:00"));
-                    act.setName(actNode.path("name").asText());
-                    act.setType(actNode.path("type").asText("ATTRACTION"));
-                    act.setLocation(actNode.path("location").asText());
-                    act.setDuration(actNode.path("duration").asText());
-                    act.setEstimatedCost(actNode.path("estimatedCost").asLong(0));
-                    act.setNote(actNode.path("note").asText());
-                    act.setRating(actNode.path("rating").asDouble(0));
-                    if (!actNode.path("latitude").isMissingNode())
-                        act.setLatitude(actNode.path("latitude").asDouble());
-                    if (!actNode.path("longitude").isMissingNode())
-                        act.setLongitude(actNode.path("longitude").asDouble());
-                    if (!actNode.path("googlePlaceId").isMissingNode())
-                        act.setGooglePlaceId(actNode.path("googlePlaceId").asText());
-                    act.setSortOrder(order++);
-                    activities.add(act);
-                }
-                day.setActivities(activities);
-                result.add(day);
+                result.add(parseDayNode(dayNode));
             }
             return result;
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse AI itinerary JSON: " + e.getMessage()
                     + ". Raw length=" + (json != null ? json.length() : 0), e);
         }
+    }
+
+    private TripDto.DayResponse parseDayNode(JsonNode dayNode) {
+        TripDto.DayResponse day = new TripDto.DayResponse();
+        day.setDay(dayNode.path("day").asInt());
+        day.setTitle(dayNode.path("title").asText());
+        day.setSummary(dayNode.path("summary").asText());
+
+        List<TripDto.ActivityResponse> activities = new ArrayList<>();
+        int order = 0;
+        for (JsonNode actNode : dayNode.path("activities")) {
+            TripDto.ActivityResponse act = new TripDto.ActivityResponse();
+            act.setTime(actNode.path("time").asText("09:00"));
+            act.setName(actNode.path("name").asText());
+            act.setType(actNode.path("type").asText("ATTRACTION"));
+            act.setLocation(actNode.path("location").asText());
+            act.setDuration(actNode.path("duration").asText());
+            act.setEstimatedCost(actNode.path("estimatedCost").asLong(0));
+            act.setNote(actNode.path("note").asText());
+            act.setRating(actNode.path("rating").asDouble(0));
+            if (!actNode.path("latitude").isMissingNode()) {
+                act.setLatitude(actNode.path("latitude").asDouble());
+            }
+            if (!actNode.path("longitude").isMissingNode()) {
+                act.setLongitude(actNode.path("longitude").asDouble());
+            }
+            if (!actNode.path("googlePlaceId").isMissingNode()) {
+                act.setGooglePlaceId(actNode.path("googlePlaceId").asText());
+            }
+            act.setSortOrder(order++);
+            activities.add(act);
+        }
+        day.setActivities(activities);
+        return day;
+    }
+
+    private String cleanJson(String json) {
+        return json == null
+                ? ""
+                : json.replaceAll("```json\\s*", "").replaceAll("```\\s*", "").trim();
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     private QualityCheck assessItineraryQuality(List<TripDto.DayResponse> days, TripDto.GenerateRequest req) {

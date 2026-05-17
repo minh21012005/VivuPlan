@@ -5,6 +5,7 @@ import com.vivuplan.vivuplan_be.entity.Activity;
 import com.vivuplan.vivuplan_be.entity.ItineraryDay;
 import com.vivuplan.vivuplan_be.entity.Trip;
 import com.vivuplan.vivuplan_be.entity.User;
+import com.vivuplan.vivuplan_be.repository.DestinationRepository;
 import com.vivuplan.vivuplan_be.repository.TripRepository;
 import com.vivuplan.vivuplan_be.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +21,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,12 +36,18 @@ class TripServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private DestinationRepository destinationRepository;
+
+    @Mock
     private AiService aiService;
+
+    @Mock
+    private WeatherService weatherService;
 
     @Test
     void addActivitySortsByTimeAndRecalculatesBudget() {
         Trip trip = sampleTrip();
-        TripService service = new TripService(tripRepository, userRepository, aiService);
+        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
         when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
         when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -61,7 +72,7 @@ class TripServiceTest {
     @Test
     void updateActivityRejectsOverlappingTimeWindow() {
         Trip trip = sampleTrip();
-        TripService service = new TripService(tripRepository, userRepository, aiService);
+        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
         when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
 
         TripDto.UpdateActivityRequest req = new TripDto.UpdateActivityRequest();
@@ -75,6 +86,115 @@ class TripServiceTest {
         assertThatThrownBy(() -> service.updateActivity(1L, 7L, 101L, req))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("trùng");
+    }
+
+    @Test
+    void previewRegenerateDayWarnsFromAiRequestFulfillmentReport() {
+        Trip trip = sampleTrip();
+        trip.setStartDate(LocalDate.now());
+        trip.setEndDate(LocalDate.now());
+
+        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        when(weatherService.getForecastForDestination(anyString(), nullable(Double.class), nullable(Double.class)))
+                .thenReturn(List.of(WeatherService.DailyWeather.builder()
+                        .date(LocalDate.now().toString())
+                        .code(63)
+                        .minTemp(22)
+                        .maxTemp(28)
+                        .precipitationProbability(80)
+                        .build()));
+        String userMessage = "Yêu cầu \"Nhảy dù ở Đà Nẵng\" chưa được áp dụng vì ngày này có mưa bão, hoạt động này không an toàn.";
+        TripDto.RequestFulfillment requestFulfillment = requestFulfillment(
+                "NOT_FULFILLED",
+                "Nhảy dù ở Đà Nẵng",
+                "NOT_APPLIED",
+                "WEATHER_SAFETY",
+                userMessage);
+        when(aiService.regenerateDay(any(TripDto.GenerateRequest.class), any(), anyInt(), anyString(), anyString()))
+                .thenReturn(new AiService.RegeneratedDayResult(proposedDayWithoutRequestedActivity(), requestFulfillment));
+
+        TripDto.RegenerateDayRequest req = new TripDto.RegenerateDayRequest();
+        req.setInstruction("Nhảy dù ở Đà Nẵng cũng hay mà");
+
+        TripDto.RegenerateDayPreviewResponse response = service.previewRegenerateDay(1L, 7L, 1, req);
+
+        assertThat(response.getRequestFulfillment()).isSameAs(requestFulfillment);
+        assertThat(response.getWarnings()).contains(userMessage);
+    }
+
+    @Test
+    void previewRegenerateDayWarnsWhenAiDoesNotReturnRequestFulfillmentReport() {
+        Trip trip = sampleTrip();
+        trip.setStartDate(LocalDate.now());
+        trip.setEndDate(LocalDate.now());
+
+        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        when(weatherService.getForecastForDestination(anyString(), nullable(Double.class), nullable(Double.class)))
+                .thenReturn(List.of(WeatherService.DailyWeather.builder()
+                        .date(LocalDate.now().toString())
+                        .code(63)
+                        .minTemp(22)
+                        .maxTemp(28)
+                        .precipitationProbability(80)
+                        .build()));
+        when(aiService.regenerateDay(any(TripDto.GenerateRequest.class), any(), anyInt(), anyString(), anyString()))
+                .thenReturn(new AiService.RegeneratedDayResult(proposedDayWithoutRequestedActivity(), null));
+
+        TripDto.RegenerateDayRequest req = new TripDto.RegenerateDayRequest();
+        req.setInstruction("Nhảy dù ở Đà Nẵng cũng hay mà");
+
+        TripDto.RegenerateDayPreviewResponse response = service.previewRegenerateDay(1L, 7L, 1, req);
+
+        assertThat(response.getWarnings())
+                .contains("Yêu cầu của bạn chưa được VivuPlan xác minh đầy đủ trong preview này. Hãy kiểm tra lại trước khi áp dụng.");
+    }
+
+    private TripDto.RequestFulfillment requestFulfillment(
+            String overallStatus,
+            String requestedText,
+            String status,
+            String reasonCode,
+            String userMessage) {
+        TripDto.RequestFulfillment fulfillment = new TripDto.RequestFulfillment();
+        fulfillment.setOverallStatus(overallStatus);
+        TripDto.RequestFulfillmentItem item = new TripDto.RequestFulfillmentItem();
+        item.setRequestedText(requestedText);
+        item.setStatus(status);
+        item.setReasonCode(reasonCode);
+        item.setUserMessage(userMessage);
+        fulfillment.setItems(List.of(item));
+        return fulfillment;
+    }
+
+    private TripDto.DayResponse proposedDayWithoutRequestedActivity() {
+        TripDto.DayResponse day = new TripDto.DayResponse();
+        day.setDay(1);
+        day.setTitle("Ngày 1 - Phương án trong nhà");
+        day.setSummary("Lịch trình nhẹ nhàng, ít phụ thuộc thời tiết.");
+        day.setActivities(List.of(
+                activity("08:00", "Ăn sáng tại trung tâm", "FOOD"),
+                activity("10:00", "Tham quan bảo tàng địa phương", "ATTRACTION"),
+                activity("12:00", "Di chuyển bằng taxi nội thành", "TRANSPORT"),
+                activity("14:00", "Cà phê acoustic", "CAFE")));
+        return day;
+    }
+
+    private TripDto.ActivityResponse activity(String time, String name, String type) {
+        TripDto.ActivityResponse activity = new TripDto.ActivityResponse();
+        activity.setTime(time);
+        activity.setName(name);
+        activity.setType(type);
+        activity.setLocation("Trung tâm");
+        activity.setDuration("1 giờ");
+        activity.setEstimatedCost(0);
+        activity.setRating(4.5);
+        return activity;
     }
 
     private Trip sampleTrip() {

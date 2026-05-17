@@ -394,6 +394,10 @@ export default function ItineraryPage() {
       const preview = await tripApi.previewRegenerateDay(trip.id, day.day, request);
       setRegeneratePreview(preview);
       setSelectedRegenerateIndexes(preview.day.activities.map((_, index) => index));
+      const requestWarning = preview.warnings.find((warning) => warning.includes("Yêu cầu"));
+      if (requestWarning) {
+        showToast(requestWarning, "info", 9000);
+      }
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Không thể tạo phương án mới cho ngày này", "error", 6000);
     } finally {

@@ -262,18 +262,26 @@ public class TripService {
         List<TripDto.DayResponse> currentSchedule = mapDays(trip.getItineraryDays());
         TripDto.GenerateRequest aiReq = toGenerateRequest(trip);
 
-        TripDto.DayResponse proposedDay = aiService.regenerateDay(
+        String instruction = req != null ? req.getInstruction() : null;
+        AiService.RegeneratedDayResult regeneratedDay = aiService.regenerateDay(
                 aiReq,
                 currentSchedule,
                 dayNumber,
                 req != null ? req.getIntent() : "REGENERATE",
-                req != null ? req.getInstruction() : null);
+                instruction);
+        TripDto.DayResponse proposedDay = regeneratedDay.day();
+        TripDto.RequestFulfillment requestFulfillment = regeneratedDay.requestFulfillment();
         normalizeActivityCosts(List.of(proposedDay), trip);
         validateRegeneratedDayProposal(trip, proposedDay);
 
         long oldBudget = sumDayCost(existingDay);
         long newBudget = sumDayCost(proposedDay);
-        List<String> warnings = buildRegenerationWarnings(trip, existingDay, proposedDay);
+        List<String> warnings = buildRegenerationWarnings(
+                trip,
+                existingDay,
+                proposedDay,
+                requestFulfillment,
+                instruction);
         String proposalId = UUID.randomUUID().toString();
         dayRegenerationProposals.put(proposalId, new DayRegenerationProposal(
                 proposalId,
@@ -292,6 +300,7 @@ public class TripService {
         response.setOldBudget(oldBudget);
         response.setNewBudget(newBudget);
         response.setWarnings(warnings);
+        response.setRequestFulfillment(requestFulfillment);
         return response;
     }
 
@@ -594,8 +603,14 @@ public class TripService {
         return calculateBudget(trip, schedule).getTotal();
     }
 
-    private List<String> buildRegenerationWarnings(Trip trip, ItineraryDay oldDay, TripDto.DayResponse proposedDay) {
+    private List<String> buildRegenerationWarnings(
+            Trip trip,
+            ItineraryDay oldDay,
+            TripDto.DayResponse proposedDay,
+            TripDto.RequestFulfillment requestFulfillment,
+            String instruction) {
         List<String> warnings = new ArrayList<>();
+        warnings.addAll(buildRequestFulfillmentWarnings(requestFulfillment, instruction));
         long oldBudget = sumDayCost(oldDay);
         long newBudget = sumDayCost(proposedDay);
         if (oldBudget > 0 && newBudget > Math.round(oldBudget * 1.25)) {
@@ -614,6 +629,81 @@ public class TripService {
             warnings.add("Ngày mới chưa có chặng di chuyển riêng, hãy kiểm tra lại nếu các điểm ở xa nhau.");
         }
         return warnings;
+    }
+
+    private List<String> buildRequestFulfillmentWarnings(
+            TripDto.RequestFulfillment requestFulfillment,
+            String instruction) {
+        if (instruction == null || instruction.isBlank()) {
+            return List.of();
+        }
+        if (requestFulfillment == null) {
+            return List.of(unverifiedRequestWarning());
+        }
+
+        List<TripDto.RequestFulfillmentItem> items = requestFulfillment.getItems() != null
+                ? requestFulfillment.getItems()
+                : List.of();
+        if (items.isEmpty()) {
+            return List.of(unverifiedRequestWarning());
+        }
+
+        List<String> warnings = new ArrayList<>();
+        for (TripDto.RequestFulfillmentItem item : items) {
+            String status = normalizeFulfillmentToken(item.getStatus());
+            String reasonCode = normalizeFulfillmentToken(item.getReasonCode());
+            if ("FULFILLED".equals(status)
+                    || "APPLIED".equals(status)
+                    || (status.isBlank() && "APPLIED".equals(reasonCode))) {
+                continue;
+            }
+
+            String message = item.getUserMessage();
+            if (message == null || message.isBlank()) {
+                String requestedText = item.getRequestedText() != null && !item.getRequestedText().isBlank()
+                        ? item.getRequestedText().trim()
+                        : instruction.trim();
+                message = String.format(
+                        "Yêu cầu \"%s\" chưa được phản ánh đầy đủ trong preview. Hãy kiểm tra lại trước khi áp dụng.",
+                        requestedText);
+            }
+            warnings.add(toRequestWarning(message));
+        }
+
+        if (warnings.isEmpty() && isUnfulfilledOverallStatus(requestFulfillment.getOverallStatus())) {
+            warnings.add(unverifiedRequestWarning());
+        }
+        return warnings;
+    }
+
+    private boolean isUnfulfilledOverallStatus(String status) {
+        String normalizedStatus = normalizeFulfillmentToken(status);
+        return normalizedStatus.isBlank()
+                || "PARTIAL".equals(normalizedStatus)
+                || "NOT_FULFILLED".equals(normalizedStatus)
+                || "UNCLEAR".equals(normalizedStatus)
+                || "NO_REQUEST".equals(normalizedStatus);
+    }
+
+    private String normalizeFulfillmentToken(String value) {
+        return value == null
+                ? ""
+                : value.trim()
+                        .toUpperCase(java.util.Locale.ROOT)
+                        .replace('-', '_')
+                        .replace(' ', '_');
+    }
+
+    private String toRequestWarning(String message) {
+        String trimmed = message == null ? "" : message.trim();
+        if (trimmed.startsWith("Yêu cầu")) {
+            return trimmed;
+        }
+        return "Yêu cầu: " + trimmed;
+    }
+
+    private String unverifiedRequestWarning() {
+        return "Yêu cầu của bạn chưa được VivuPlan xác minh đầy đủ trong preview này. Hãy kiểm tra lại trước khi áp dụng.";
     }
 
     private void cleanupExpiredRegenerationProposals() {

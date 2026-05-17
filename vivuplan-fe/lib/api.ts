@@ -285,6 +285,19 @@ export interface RegenerateDayPreviewResponse {
   oldBudget: number;
   newBudget: number;
   warnings: string[];
+  requestFulfillment?: RequestFulfillment;
+}
+
+export interface RequestFulfillment {
+  overallStatus?: "FULFILLED" | "PARTIAL" | "NOT_FULFILLED" | "UNCLEAR" | "NO_REQUEST" | string;
+  items?: RequestFulfillmentItem[];
+}
+
+export interface RequestFulfillmentItem {
+  requestedText?: string;
+  status?: "FULFILLED" | "PARTIAL" | "NOT_APPLIED" | "UNCLEAR" | string;
+  reasonCode?: "APPLIED" | "WEATHER_SAFETY" | "BUDGET" | "TIME_CONFLICT" | "DUPLICATE" | "CONSTRAINT" | "UNCLEAR" | "OTHER" | string;
+  userMessage?: string;
 }
 
 export interface BudgetBreakdown {

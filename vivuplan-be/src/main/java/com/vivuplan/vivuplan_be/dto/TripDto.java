@@ -189,6 +189,31 @@ public class TripDto {
         private long oldBudget;
         private long newBudget;
         private List<String> warnings;
+        private RequestFulfillment requestFulfillment;
+    }
+
+    @Data
+    public static class RequestFulfillment {
+        /**
+         * FULFILLED | PARTIAL | NOT_FULFILLED | UNCLEAR | NO_REQUEST
+         */
+        private String overallStatus;
+        private List<RequestFulfillmentItem> items;
+    }
+
+    @Data
+    public static class RequestFulfillmentItem {
+        private String requestedText;
+        /**
+         * FULFILLED | PARTIAL | NOT_APPLIED | UNCLEAR
+         */
+        private String status;
+        /**
+         * APPLIED | WEATHER_SAFETY | BUDGET | TIME_CONFLICT | DUPLICATE |
+         * CONSTRAINT | UNCLEAR | OTHER
+         */
+        private String reasonCode;
+        private String userMessage;
     }
 
     @Data
