@@ -15,7 +15,7 @@ import {
   MapPin,
   Route,
   Search,
-  ShieldCheck,
+  CloudSun,
   Wallet,
 } from "lucide-react";
 
@@ -28,14 +28,14 @@ const features = [
     desc: "Sắp xếp hoạt động theo thời gian, khu vực và nhịp di chuyển hợp lý cho từng ngày.",
   },
   {
-    icon: Wallet,
-    title: "Ngân sách rõ ràng",
-    desc: "Ước tính chi phí ăn uống, lưu trú, di chuyển và tham quan theo tổng ngân sách của bạn.",
+    icon: CloudSun,
+    title: "Trợ lý thời tiết thông minh",
+    desc: "Tự động thiết kế lịch trình dựa trên thời tiết thực tế, ưu tiên các hoạt động phù hợp để chuyến đi luôn trọn vẹn.",
   },
   {
-    icon: ShieldCheck,
-    title: "Địa điểm đã xác thực",
-    desc: "Mọi điểm đến và lộ trình đều được kiểm tra tính thực tế, giúp bạn an tâm tận hưởng hành trình.",
+    icon: Wallet,
+    title: "Ngân sách rõ ràng",
+    desc: "Ước tính chi phí ăn uống, lưu trú, di chuyển và tham quan bám sát theo tổng ngân sách của bạn.",
   },
 ];
 
@@ -111,81 +111,81 @@ export default function HomePage() {
       >
         <div className="container home-hero-shell">
           <div className="travel-hero-content home-hero-content">
-          <span className="home-hero-eyebrow">VivuPlan AI Travel Planner</span>
-          <h1>Lập kế hoạch du lịch thông minh hơn cùng AI</h1>
-          <p>
-            Biến ý tưởng du lịch thành lịch trình rõ ràng chỉ trong vài giây.
-          </p>
+            <span className="home-hero-eyebrow">VivuPlan AI Travel Planner</span>
+            <h1>Lập kế hoạch du lịch thông minh hơn cùng AI</h1>
+            <p>
+              Biến ý tưởng du lịch thành lịch trình rõ ràng chỉ trong vài giây.
+            </p>
 
-          <div className="hero-search hero-planner" style={{ width: "100%" }}>
-            <div className="hero-search-field">
-              <MapPin size={18} />
-              <input
-                className="input"
-                value={departure}
-                onChange={(event) => setDeparture(event.target.value)}
-                onFocus={() => focusField("departure")}
-                onBlur={closeSuggestionsSoon}
-                placeholder="Đi từ đâu? (VD: Hà Nội)"
-              />
-              {focusedField === "departure" && departureMatches.length > 0 && (
-                <div className="hero-suggestions">
-                  {departureMatches.map((item) => (
-                    <button key={item} type="button" onMouseDown={() => { setDeparture(item); setFocusedField(null); }}>
-                      <MapPin size={13} /> {item}
-                    </button>
-                  ))}
-                </div>
-              )}
+            <div className="hero-search hero-planner" style={{ width: "100%" }}>
+              <div className="hero-search-field">
+                <MapPin size={18} />
+                <input
+                  className="input"
+                  value={departure}
+                  onChange={(event) => setDeparture(event.target.value)}
+                  onFocus={() => focusField("departure")}
+                  onBlur={closeSuggestionsSoon}
+                  placeholder="Đi từ đâu? (VD: Hà Nội)"
+                />
+                {focusedField === "departure" && departureMatches.length > 0 && (
+                  <div className="hero-suggestions">
+                    {departureMatches.map((item) => (
+                      <button key={item} type="button" onMouseDown={() => { setDeparture(item); setFocusedField(null); }}>
+                        <MapPin size={13} /> {item}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="hero-search-field">
+                <Search size={18} />
+                <input
+                  className="input"
+                  value={destination}
+                  onChange={(event) => setDestination(event.target.value)}
+                  onFocus={() => focusField("destination")}
+                  onBlur={closeSuggestionsSoon}
+                  placeholder="Bạn muốn đi đâu? (VD: Quy Nhơn)"
+                />
+                {focusedField === "destination" && destinationMatches.length > 0 && (
+                  <div className="hero-suggestions">
+                    {destinationMatches.map((item) => (
+                      <button key={item} type="button" onMouseDown={() => { setDestination(item); setFocusedField(null); }}>
+                        <MapPin size={13} /> {item}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Button
+                href={planHref}
+                className="home-loading-link"
+                aria-busy={pendingHref === planHref}
+                aria-disabled={pendingHref !== null}
+                onClick={(event) => {
+                  if (pendingHref) {
+                    event.preventDefault();
+                    return;
+                  }
+                  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                  beginNavigation(planHref);
+                }}
+              >
+                {pendingHref === planHref ? <span className="spinner spinner-inline spinner-on-primary" /> : null}
+                {pendingHref === planHref ? "Đang mở..." : "Tạo lịch trình"} {pendingHref === planHref ? null : <ArrowRight size={16} />}
+              </Button>
             </div>
-            <div className="hero-search-field">
-              <Search size={18} />
-              <input
-                className="input"
-                value={destination}
-                onChange={(event) => setDestination(event.target.value)}
-                onFocus={() => focusField("destination")}
-                onBlur={closeSuggestionsSoon}
-                placeholder="Bạn muốn đi đâu? (VD: Quy Nhơn)"
-              />
-              {focusedField === "destination" && destinationMatches.length > 0 && (
-                <div className="hero-suggestions">
-                  {destinationMatches.map((item) => (
-                    <button key={item} type="button" onMouseDown={() => { setDestination(item); setFocusedField(null); }}>
-                      <MapPin size={13} /> {item}
-                    </button>
-                  ))}
-                </div>
-              )}
+            <div className="hero-chip-row">
+              {featuredDestinations.slice(0, 5).map((item) => (
+                <span key={item.slug} className="badge hero-chip">
+                  <MapPin size={12} /> {item.name}
+                </span>
+              ))}
             </div>
-            <Button
-              href={planHref}
-              className="home-loading-link"
-              aria-busy={pendingHref === planHref}
-              aria-disabled={pendingHref !== null}
-              onClick={(event) => {
-                if (pendingHref) {
-                  event.preventDefault();
-                  return;
-                }
-                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                beginNavigation(planHref);
-              }}
-            >
-              {pendingHref === planHref ? <span className="spinner spinner-inline spinner-on-primary" /> : null}
-              {pendingHref === planHref ? "Đang mở..." : "Tạo lịch trình"} {pendingHref === planHref ? null : <ArrowRight size={16} />}
-            </Button>
-          </div>
-          <div className="hero-chip-row">
-            {featuredDestinations.slice(0, 5).map((item) => (
-              <span key={item.slug} className="badge hero-chip">
-                <MapPin size={12} /> {item.name}
-              </span>
-            ))}
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
       <section className="section">
         <div className="container split-grid">
