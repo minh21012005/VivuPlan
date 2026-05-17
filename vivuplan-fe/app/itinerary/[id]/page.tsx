@@ -152,6 +152,13 @@ const fmtCost = (value: number) => {
   return `${Math.round(value / 1000)}k ₫`;
 };
 
+const needsCostReview = (activity: ActivityResponse) => activity.costEstimateStatus === "NEEDS_REVIEW";
+
+const fmtActivityCost = (activity: ActivityResponse) => {
+  if (needsCostReview(activity)) return "Cần kiểm tra";
+  return fmtCost(activity.estimatedCost);
+};
+
 const styleLabel: Record<string, string> = {
   ADVENTURE: "Phiêu lưu",
   RELAXING: "Nghỉ dưỡng",
@@ -209,7 +216,7 @@ function getDayTimeRange(activities: ActivityResponse[]) {
 function buildDayCopyText(trip: TripResponse, day: NonNullable<TripResponse["schedule"]>[number]) {
   const rows = day.activities.map((activity) => {
     const location = activity.location ? ` tại ${activity.location}` : "";
-    const cost = activity.estimatedCost ? ` - ${fmtCost(activity.estimatedCost)}` : "";
+    const cost = activity.estimatedCost || needsCostReview(activity) ? ` - ${fmtActivityCost(activity)}` : "";
     const note = activity.note ? `\n  Ghi chú: ${activity.note}` : "";
     return `${activity.time} - ${activity.name}${location} (${activity.duration})${cost}${note}`;
   });
@@ -974,7 +981,7 @@ function RegenerateDayModal({
       <span>{activity.time}</span>
       <div>
         <strong>{activity.name}</strong>
-        <small>{activity.location || typeConfig[activity.type]?.label || activity.type} · {activity.duration} · {fmtCost(activity.estimatedCost)}</small>
+        <small>{activity.location || typeConfig[activity.type]?.label || activity.type} · {activity.duration} · {fmtActivityCost(activity)}</small>
       </div>
     </>
   );
@@ -1453,7 +1460,7 @@ function ActivityItem({
             </h3>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, color: "var(--text-4)", fontSize: 12 }}>
               <span>{activity.duration}</span>
-              <span style={{ fontWeight: 700, color: activity.estimatedCost ? "var(--text-2)" : "var(--accent)" }}>{fmtCost(activity.estimatedCost)}</span>
+              <span style={{ fontWeight: 700, color: needsCostReview(activity) ? "#d97706" : activity.estimatedCost ? "var(--text-2)" : "var(--accent)" }}>{fmtActivityCost(activity)}</span>
               {activity.rating > 0 && (
                 <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
                   <Star size={11} fill="#FBBF24" color="#FBBF24" /> {activity.rating.toFixed(1)}
@@ -1495,6 +1502,25 @@ function ActivityItem({
                   {warning.icon === "wind" ? <Wind size={11} /> : warning.icon === "rain" ? <CloudRain size={11} /> : <CloudFog size={11} />}
                 </span>
                 <span style={{ flex: 1 }}>{warning.message}</span>
+              </div>
+            )}
+            {needsCostReview(activity) && (
+              <div style={{
+                display: "flex",
+                gap: 8,
+                alignItems: "flex-start",
+                padding: "10px 12px",
+                background: "#fffbeb",
+                border: "1px solid #fde68a",
+                borderRadius: "var(--r-md)",
+                fontSize: 13,
+                color: "#92400e",
+                lineHeight: 1.5,
+                marginTop: 12,
+                marginBottom: 8
+              }}>
+                <AlertTriangle size={14} style={{ color: "#d97706", flexShrink: 0, marginTop: 2 }} />
+                <span>{activity.costEstimateMessage || "Chi phí này cần được kiểm tra lại trước khi sử dụng."}</span>
               </div>
             )}
             <div style={{ display: "flex", gap: 7, marginTop: 12, marginBottom: 10, color: "var(--text-3)", fontSize: 13 }}>

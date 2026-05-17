@@ -37,6 +37,11 @@ public class TripService {
     private final WeatherService weatherService;
     private final Map<String, DayRegenerationProposal> dayRegenerationProposals = new ConcurrentHashMap<>();
     private static final int REGENERATION_PROPOSAL_TTL_MINUTES = 30;
+    private static final String COST_REVIEW_STATUS = "NEEDS_REVIEW";
+    private static final String COST_REVIEW_MESSAGE =
+            "Chi phí này cần được kiểm tra lại vì AI chưa đưa ra mức ước tính đáng tin cậy.";
+    private static final String COST_REVIEW_NOTE =
+            "Chi phí cần kiểm tra: hoạt động này có thể phát sinh phí, nhưng AI chưa đưa ra mức ước tính đáng tin cậy.";
 
     @Transactional
     public TripDto.TripResponse generateAndSave(Long userId, TripDto.GenerateRequest req) {
@@ -1015,6 +1020,9 @@ public class TripService {
                 if (normalizedCost > originalCost) {
                     activity.setNote(normalizeIncludedCostNote(activity.getNote()));
                 }
+                if (normalizedCost == 0 && isRequiredPaidActivityWithoutCost(activity, trip)) {
+                    markCostNeedsReview(activity);
+                }
             }
         }
     }
@@ -1053,16 +1061,28 @@ public class TripService {
                 nullToBlank(activity.getNote())));
 
         Long mentionedCost = extractLargestMentionedCost(activity.getNote());
-        if (isTripIntercityTransportActivity(type, combined, trip)) {
-            return estimateIntercityTransportCost(combined, trip, mentionedCost);
+        if (isTripIntercityTransportActivity(type, combined, trip) && mentionedCost != null) {
+            return mentionedCost;
         }
-        if (isVehicleRentalStartActivity(type, combined)) {
+        if (isVehicleRentalStartActivity(type, combined) && mentionedCost != null) {
             return estimateVehicleRentalCost(combined, trip, mentionedCost);
         }
         if (mentionsExcludedRequiredCost(combined) && mentionedCost != null) {
             return mentionedCost;
         }
         return null;
+    }
+
+    private boolean isRequiredPaidActivityWithoutCost(TripDto.ActivityResponse activity, Trip trip) {
+        String type = normalizeText(activity.getType());
+        String combined = normalizeText(String.join(" ",
+                nullToBlank(activity.getName()),
+                nullToBlank(activity.getLocation()),
+                nullToBlank(activity.getNote())));
+
+        return isTripIntercityTransportActivity(type, combined, trip)
+                || isVehicleRentalStartActivity(type, combined)
+                || mentionsExcludedRequiredCost(combined);
     }
 
     private boolean isTripIntercityTransportActivity(String normalizedType, String normalizedText, Trip trip) {
@@ -1075,28 +1095,6 @@ public class TripService {
                 && !destination.isBlank()
                 && normalizedText.contains(departure)
                 && normalizedText.contains(destination);
-    }
-
-    private long estimateIntercityTransportCost(String normalizedText, Trip trip, Long mentionedCost) {
-        if (mentionedCost != null && mentionedCost > 0) {
-            return mentionedCost;
-        }
-
-        int travelers = Math.max(1, trip.getTravelerCount());
-        String selected = trip.getOutboundTransport() != null ? trip.getOutboundTransport().name().toLowerCase() : "";
-        if (selected.equals("plane") || containsAny(normalizedText, "may bay", "bay", "san bay")) {
-            return 1_500_000L * travelers;
-        }
-        if (selected.equals("train") || containsAny(normalizedText, "tau hoa", "tau lua")) {
-            return 700_000L * travelers;
-        }
-        if (selected.equals("bus") || containsAny(normalizedText, "xe khach", "xe bus", "xe buyt")) {
-            return 450_000L * travelers;
-        }
-        if (selected.equals("car") || containsAny(normalizedText, "o to", "oto", "xe rieng")) {
-            return Math.max(1_200_000L, 600_000L * travelers);
-        }
-        return 1_000_000L * travelers;
     }
 
     private boolean isVehicleRentalStartActivity(String normalizedType, String normalizedText) {
@@ -1118,20 +1116,34 @@ public class TripService {
     }
 
     private long estimateVehicleRentalCost(String normalizedText, Trip trip, Long mentionedCost) {
+        if (mentionedCost == null || mentionedCost <= 0) {
+            return 0;
+        }
         int travelers = Math.max(1, trip.getTravelerCount());
         if (containsAny(normalizedText, "xe may")) {
-            long unitCost = mentionedCost != null && mentionedCost > 0 ? mentionedCost : 180_000L;
             int bikeCount = Math.max(1, (int) Math.ceil(travelers / 2.0));
-            return unitCost * bikeCount;
+            return mentionedCost * bikeCount;
         }
         if (containsAny(normalizedText, "xe dap")) {
-            long unitCost = mentionedCost != null && mentionedCost > 0 ? mentionedCost : 80_000L;
-            return unitCost * travelers;
+            return mentionedCost * travelers;
         }
-        if (containsAny(normalizedText, "o to", "oto")) {
-            return mentionedCost != null && mentionedCost > 0 ? mentionedCost : 900_000L;
+        return mentionedCost;
+    }
+
+    private void markCostNeedsReview(TripDto.ActivityResponse activity) {
+        activity.setCostEstimateStatus(COST_REVIEW_STATUS);
+        activity.setCostEstimateMessage(COST_REVIEW_MESSAGE);
+        activity.setNote(appendCostReviewNote(activity.getNote()));
+    }
+
+    private String appendCostReviewNote(String note) {
+        if (note != null && note.contains("Chi phí cần kiểm tra")) {
+            return note;
         }
-        return mentionedCost != null && mentionedCost > 0 ? mentionedCost : 150_000L;
+        if (note == null || note.isBlank()) {
+            return COST_REVIEW_NOTE;
+        }
+        return note + " " + COST_REVIEW_NOTE;
     }
 
     private boolean mentionsExcludedRequiredCost(String normalizedText) {

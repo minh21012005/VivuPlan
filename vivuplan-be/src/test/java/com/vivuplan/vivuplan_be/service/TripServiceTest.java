@@ -170,9 +170,41 @@ class TripServiceTest {
         TripDto.TripResponse response = service.generateAndSave(7L, req);
 
         List<TripDto.ActivityResponse> activities = response.getSchedule().get(0).getActivities();
-        assertThat(activities.get(0).getEstimatedCost()).isGreaterThanOrEqualTo(1_500_000L);
+        assertThat(activities.get(0).getEstimatedCost()).isZero();
+        assertThat(activities.get(0).getCostEstimateStatus()).isEqualTo("NEEDS_REVIEW");
+        assertThat(activities.get(0).getCostEstimateMessage()).isNotBlank();
         assertThat(activities.get(1).getEstimatedCost()).isGreaterThanOrEqualTo(200_000L);
-        assertThat(response.getBudget().getTransport()).isGreaterThanOrEqualTo(1_700_000L);
+        assertThat(response.getBudget().getTransport()).isGreaterThanOrEqualTo(200_000L);
+    }
+
+    @Test
+    void generateAndSaveDoesNotOverridePlausibleShortRouteTransportCost() {
+        User user = sampleUser();
+        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        mockRainForecast();
+        when(tripRepository.existsByShareCode(anyString())).thenReturn(false);
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> {
+            Trip saved = invocation.getArgument(0);
+            saved.setId(1L);
+            return saved;
+        });
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class)))
+                .thenReturn(new AiService.GeneratedItineraryResult(
+                        List.of(proposedShortRouteBusDay()),
+                        noRequestFulfillment()));
+
+        TripDto.GenerateRequest req = generateRequest("", "");
+        req.setDestination("Ninh BÃ¬nh");
+        req.setOutboundTransport("BUS");
+
+        TripDto.TripResponse response = service.generateAndSave(7L, req);
+
+        TripDto.ActivityResponse busActivity = response.getSchedule().get(0).getActivities().get(0);
+        assertThat(busActivity.getEstimatedCost()).isEqualTo(120_000L);
+        assertThat(busActivity.getCostEstimateStatus()).isNull();
     }
 
     @Test
@@ -256,9 +288,11 @@ class TripServiceTest {
         TripDto.RegenerateDayPreviewResponse response = service.previewRegenerateDay(1L, 7L, 1, req);
 
         List<TripDto.ActivityResponse> activities = response.getDay().getActivities();
-        assertThat(activities.get(0).getEstimatedCost()).isGreaterThanOrEqualTo(1_500_000L);
+        assertThat(activities.get(0).getEstimatedCost()).isZero();
+        assertThat(activities.get(0).getCostEstimateStatus()).isEqualTo("NEEDS_REVIEW");
+        assertThat(activities.get(0).getCostEstimateMessage()).isNotBlank();
         assertThat(activities.get(1).getEstimatedCost()).isGreaterThanOrEqualTo(200_000L);
-        assertThat(response.getNewBudget()).isGreaterThanOrEqualTo(1_700_000L);
+        assertThat(response.getNewBudget()).isGreaterThanOrEqualTo(200_000L);
     }
 
     private void mockRainForecast() {
@@ -354,6 +388,26 @@ class TripServiceTest {
                         "Chi phí di chuyển địa phương và nhiên liệu xe máy trong ngày. Chi phí thuê xe máy khoảng 150.000 - 200.000 VND/ngày, không bao gồm trong chi phí này."),
                 activity("12:00", "Thưởng thức Mì Quảng", "FOOD"),
                 activity("14:00", "Khám phá Bảo tàng Đà Nẵng", "ATTRACTION")));
+        return day;
+    }
+
+    private TripDto.DayResponse proposedShortRouteBusDay() {
+        TripDto.DayResponse day = new TripDto.DayResponse();
+        day.setDay(1);
+        day.setTitle("Ngay 1 - Ninh Binh");
+        day.setSummary("Lich trinh ngan ngay bang xe khach.");
+        day.setActivities(List.of(
+                activity(
+                        "08:00",
+                        "Di chuyen tu Ha Noi den Ninh Binh",
+                        "TRANSPORT",
+                        "Ben xe Giap Bat -> Trung tam Ninh Binh",
+                        "2 gio",
+                        120_000,
+                        "Xe khach mot chieu, uoc tinh 120k/nguoi."),
+                activity("10:30", "Tham quan Trang An", "ATTRACTION"),
+                activity("12:30", "An trua com chay de nui", "FOOD"),
+                activity("14:00", "Tham quan chua Bai Dinh", "ATTRACTION")));
         return day;
     }
 

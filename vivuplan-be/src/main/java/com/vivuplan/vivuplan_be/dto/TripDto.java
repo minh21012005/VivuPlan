@@ -118,6 +118,8 @@ public class TripDto {
         private String location;
         private String duration;
         private long estimatedCost;
+        private String costEstimateStatus;
+        private String costEstimateMessage;
         private String note;
         private double rating;
         private Double latitude;
@@ -136,6 +138,10 @@ public class TripDto {
             r.setDuration(a.getDuration());
             r.setEstimatedCost(a.getEstimatedCost() != null ? a.getEstimatedCost() : 0);
             r.setNote(a.getNote());
+            if (a.getNote() != null && a.getNote().contains("Chi phí cần kiểm tra")) {
+                r.setCostEstimateStatus("NEEDS_REVIEW");
+                r.setCostEstimateMessage("Chi phí này cần được kiểm tra lại vì AI chưa đưa ra mức ước tính đáng tin cậy.");
+            }
             r.setRating(a.getRating() != null ? a.getRating() : 0);
             r.setLatitude(a.getLatitude());
             r.setLongitude(a.getLongitude());

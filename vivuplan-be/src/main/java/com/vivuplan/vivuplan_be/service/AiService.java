@@ -1015,36 +1015,16 @@ public class AiService {
             return "activity excludes a required cost from estimatedCost: " + act.getName();
         }
         if (isOutboundOrReturnTransport(combined, req)) {
-            long minimum = minimumIntercityTransportCost(combined, req);
-            if (cost < minimum) {
-                return "intercity transport cost is unrealistically low: " + act.getName();
+            if (cost == 0) {
+                return "intercity transport cost is missing: " + act.getName();
             }
         }
         if (isVehicleRentalStartActivity(normalizedType, combined)) {
-            long minimum = minimumVehicleRentalCost(combined, req);
-            if (cost < minimum) {
-                return "vehicle rental cost is missing or too low: " + act.getName();
+            if (cost == 0) {
+                return "vehicle rental cost is missing: " + act.getName();
             }
         }
         return null;
-    }
-
-    private long minimumIntercityTransportCost(String normalizedText, TripDto.GenerateRequest req) {
-        int travelers = req.getTravelerCount() != null ? Math.max(1, req.getTravelerCount()) : 1;
-        String selected = normalize(req.getOutboundTransport());
-        if (selected.equals("plane") || containsAny(normalizedText, "may bay", "bay", "san bay")) {
-            return 800_000L * travelers;
-        }
-        if (selected.equals("train") || containsAny(normalizedText, "tau hoa", "tau lua")) {
-            return 350_000L * travelers;
-        }
-        if (selected.equals("bus") || containsAny(normalizedText, "xe khach", "xe bus", "xe buyt")) {
-            return 250_000L * travelers;
-        }
-        if (selected.equals("car") || containsAny(normalizedText, "o to", "oto", "xe rieng")) {
-            return Math.max(600_000L, 300_000L * travelers);
-        }
-        return 300_000L * travelers;
     }
 
     private boolean isVehicleRentalStartActivity(String normalizedType, String normalizedText) {
@@ -1063,20 +1043,6 @@ public class AiService {
                 "nhan oto",
                 "lay o to",
                 "lay oto");
-    }
-
-    private long minimumVehicleRentalCost(String normalizedText, TripDto.GenerateRequest req) {
-        int travelers = req.getTravelerCount() != null ? Math.max(1, req.getTravelerCount()) : 1;
-        if (containsAny(normalizedText, "xe may")) {
-            return 100_000L * Math.max(1, (int) Math.ceil(travelers / 2.0));
-        }
-        if (containsAny(normalizedText, "xe dap")) {
-            return 40_000L * travelers;
-        }
-        if (containsAny(normalizedText, "o to", "oto")) {
-            return 500_000L;
-        }
-        return 80_000L;
     }
 
     private boolean mentionsExcludedRequiredCost(String normalizedText) {

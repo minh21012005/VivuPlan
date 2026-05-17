@@ -253,6 +253,8 @@ export interface ActivityResponse {
   location: string;
   duration: string;
   estimatedCost: number;
+  costEstimateStatus?: string;
+  costEstimateMessage?: string;
   note: string;
   rating: number;
   latitude?: number;
