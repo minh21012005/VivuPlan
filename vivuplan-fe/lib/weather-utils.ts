@@ -17,19 +17,20 @@ export interface WeatherCondition {
   isRainy: boolean;
   isWindy: boolean;
   isFoggy: boolean;
+  iconKey: "sun" | "cloudy" | "fog" | "rain" | "snow" | "storm" | "unknown";
 }
 
 export function interpretWeatherCode(code: number): WeatherCondition {
-  if (code === 0) return { label: "Trời nắng", emoji: "☀️", severity: "clear", isRainy: false, isWindy: false, isFoggy: false };
-  if (code <= 3) return { label: "Có mây", emoji: "⛅", severity: "mild", isRainy: false, isWindy: false, isFoggy: false };
-  if (code <= 49) return { label: "Sương mù", emoji: "🌫️", severity: "mild", isRainy: false, isWindy: false, isFoggy: true };
-  if (code <= 57) return { label: "Mưa phùn", emoji: "🌦️", severity: "mild", isRainy: true, isWindy: false, isFoggy: false };
-  if (code <= 65) return { label: code >= 63 ? "Mưa to" : "Mưa nhỏ", emoji: code >= 63 ? "🌧️" : "🌦️", severity: code >= 63 ? "severe" : "moderate", isRainy: true, isWindy: false, isFoggy: false };
-  if (code <= 77) return { label: "Có tuyết", emoji: "❄️", severity: "severe", isRainy: false, isWindy: false, isFoggy: false };
-  if (code <= 82) return { label: code === 82 ? "Mưa rào lớn" : "Mưa rào", emoji: code === 82 ? "⛈️" : "🌧️", severity: code === 82 ? "severe" : "moderate", isRainy: true, isWindy: false, isFoggy: false };
-  if (code <= 86) return { label: "Mưa tuyết", emoji: "🌨️", severity: "severe", isRainy: true, isWindy: false, isFoggy: false };
-  if (code <= 99) return { label: "Giông bão", emoji: "⛈️", severity: "severe", isRainy: true, isWindy: true, isFoggy: false };
-  return { label: "N/A", emoji: "", severity: "mild", isRainy: false, isWindy: false, isFoggy: false };
+  if (code === 0) return { label: "Trời nắng", emoji: "☀️", severity: "clear", isRainy: false, isWindy: false, isFoggy: false, iconKey: "sun" };
+  if (code <= 3) return { label: "Có mây", emoji: "⛅", severity: "mild", isRainy: false, isWindy: false, isFoggy: false, iconKey: "cloudy" };
+  if (code <= 49) return { label: "Sương mù", emoji: "🌫️", severity: "mild", isRainy: false, isWindy: false, isFoggy: true, iconKey: "fog" };
+  if (code <= 57) return { label: "Mưa phùn", emoji: "🌦️", severity: "mild", isRainy: true, isWindy: false, isFoggy: false, iconKey: "rain" };
+  if (code <= 65) return { label: code >= 63 ? "Mưa to" : "Mưa nhỏ", emoji: code >= 63 ? "🌧️" : "🌦️", severity: code >= 63 ? "severe" : "moderate", isRainy: true, isWindy: false, isFoggy: false, iconKey: "rain" };
+  if (code <= 77) return { label: "Có tuyết", emoji: "❄️", severity: "severe", isRainy: false, isWindy: false, isFoggy: false, iconKey: "snow" };
+  if (code <= 82) return { label: code === 82 ? "Mưa rào lớn" : "Mưa rào", emoji: code === 82 ? "⛈️" : "🌧️", severity: code === 82 ? "severe" : "moderate", isRainy: true, isWindy: false, isFoggy: false, iconKey: "rain" };
+  if (code <= 86) return { label: "Mưa tuyết", emoji: "🌨️", severity: "severe", isRainy: true, isWindy: false, isFoggy: false, iconKey: "snow" };
+  if (code <= 99) return { label: "Giông bão", emoji: "⛈️", severity: "severe", isRainy: true, isWindy: true, isFoggy: false, iconKey: "storm" };
+  return { label: "N/A", emoji: "", severity: "mild", isRainy: false, isWindy: false, isFoggy: false, iconKey: "unknown" };
 }
 
 // ─── Activity outdoor risk assessment ────────────────────────────────────────

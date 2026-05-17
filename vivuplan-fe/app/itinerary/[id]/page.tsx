@@ -14,6 +14,7 @@ import { getDestinationImage } from "@/lib/travel-data";
 import { useDestinations } from "@/lib/use-destinations";
 import { useWeather } from "@/lib/use-weather";
 import { useGeocode } from "@/lib/use-geocode";
+import { WeatherIcon } from "@/components/travel/WeatherIcon";
 import {
   interpretWeatherCode,
   getPackingSuggestions,
@@ -608,8 +609,8 @@ export default function ItineraryPage() {
                       title={dc ? `${dc.label} · ${dw?.minTemp.toFixed(0)}–${dw?.maxTemp.toFixed(0)}°C` : undefined}
                       style={{ display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}
                     >
-                      {dc?.emoji && (
-                        <span aria-hidden style={{ fontSize: 15 }}>{dc.emoji}</span>
+                      {dc && (
+                        <WeatherIcon iconKey={dc.iconKey} size={14} />
                       )}
                       Ngày {item.day}
                     </button>
@@ -657,7 +658,7 @@ export default function ItineraryPage() {
                   const dc = dw ? interpretWeatherCode(dw.code) : null;
                   return (
                     <div title={dw ? `Mưa ${dw.precipitationProbability}% · Gió ${dw.windspeedKmh.toFixed(0)} km/h` : "Chưa có dữ liệu thời tiết"}>
-                      <span style={{ fontSize: 16 }}>{dc?.emoji ?? "🌡️"}</span>
+                      {dc ? <WeatherIcon iconKey={dc.iconKey} size={16} /> : <Thermometer size={16} />}
                       <span>Thời tiết</span>
                       <strong>{dw ? `${dw.minTemp.toFixed(0)}–${dw.maxTemp.toFixed(0)}°C` : "--°C"}</strong>
                     </div>

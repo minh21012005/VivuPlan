@@ -2,6 +2,7 @@
 
 import { useWeather } from "@/lib/use-weather";
 import { interpretWeatherCode } from "@/lib/weather-utils";
+import { WeatherIcon } from "@/components/travel/WeatherIcon";
 
 interface Props {
   lat: number;
@@ -38,7 +39,7 @@ export function DestinationWeatherBadge({ lat, lon }: Props) {
         boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
       }}
     >
-      {condition.emoji} {avgTemp}°C
+      <WeatherIcon iconKey={condition.iconKey} size={14} style={{ marginRight: 2 }} /> {avgTemp}°C
     </span>
   );
 }

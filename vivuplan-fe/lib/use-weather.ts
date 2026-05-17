@@ -15,11 +15,39 @@ interface OpenMeteoResponse {
   };
 }
 
-// Simple in-memory cache to avoid re-fetching on re-renders
-const cache = new Map<string, { data: DailyWeather[]; ts: number }>();
+// Persistent cache using localStorage to avoid re-fetching across page reloads
+const CACHE_KEY_PREFIX = "weather_cache_";
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
-async function fetchWeather(lat: number, lon: number): Promise<DailyWeather[]> {
+function getCachedWeather(key: string): DailyWeather[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const cachedStr = localStorage.getItem(CACHE_KEY_PREFIX + key);
+    if (!cachedStr) return null;
+    const cached = JSON.parse(cachedStr);
+    if (Date.now() - cached.ts < CACHE_TTL_MS) {
+      return cached.data;
+    }
+    localStorage.removeItem(CACHE_KEY_PREFIX + key);
+  } catch (e) {
+    // Ignore localStorage errors
+  }
+  return null;
+}
+
+function setCachedWeather(key: string, data: DailyWeather[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(
+      CACHE_KEY_PREFIX + key,
+      JSON.stringify({ data, ts: Date.now() })
+    );
+  } catch (e) {
+    // Ignore localStorage errors
+  }
+}
+
+async function fetchWeather(lat: number, lon: number, signal?: AbortSignal, retries = 2): Promise<DailyWeather[]> {
   const url =
     `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}` +
@@ -27,19 +55,29 @@ async function fetchWeather(lat: number, lon: number): Promise<DailyWeather[]> {
     `&timezone=Asia%2FHo_Chi_Minh` +
     `&forecast_days=16`;
 
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Weather fetch failed");
-  const json: OpenMeteoResponse = await res.json();
+  try {
+    const res = await fetch(url, { signal });
+    if (!res.ok) throw new Error(`Weather fetch failed: ${res.status}`);
+    const json: OpenMeteoResponse = await res.json();
 
-  return json.daily.time.map((date, i) => ({
-    date,
-    code: json.daily.weathercode[i] ?? 0,
-    maxTemp: json.daily.temperature_2m_max[i] ?? 0,
-    minTemp: json.daily.temperature_2m_min[i] ?? 0,
-    precipitationMm: json.daily.precipitation_sum[i] ?? 0,
-    precipitationProbability: json.daily.precipitation_probability_max[i] ?? 0,
-    windspeedKmh: json.daily.windspeed_10m_max[i] ?? 0,
-  }));
+    return json.daily.time.map((date, i) => ({
+      date,
+      code: json.daily.weathercode[i] ?? 0,
+      maxTemp: json.daily.temperature_2m_max[i] ?? 0,
+      minTemp: json.daily.temperature_2m_min[i] ?? 0,
+      precipitationMm: json.daily.precipitation_sum[i] ?? 0,
+      precipitationProbability: json.daily.precipitation_probability_max[i] ?? 0,
+      windspeedKmh: json.daily.windspeed_10m_max[i] ?? 0,
+    }));
+  } catch (err: any) {
+    if (err.name === "AbortError") throw err;
+    if (retries > 0) {
+      // Exponential-like backoff before retrying (1000ms, then 2000ms if needed)
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      return fetchWeather(lat, lon, signal, retries - 1);
+    }
+    throw err;
+  }
 }
 
 /**
@@ -55,9 +93,9 @@ export function useWeather(lat?: number, lon?: number) {
     if (lat == null || lon == null) return;
 
     const key = `${lat.toFixed(4)},${lon.toFixed(4)}`;
-    const cached = cache.get(key);
-    if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
-      setForecast(cached.data);
+    const cached = getCachedWeather(key);
+    if (cached) {
+      setForecast(cached);
       return;
     }
 
@@ -65,12 +103,13 @@ export function useWeather(lat?: number, lon?: number) {
     abortRef.current = new AbortController();
     setLoading(true);
 
-    fetchWeather(lat, lon)
+    fetchWeather(lat, lon, abortRef.current.signal)
       .then((data) => {
-        cache.set(key, { data, ts: Date.now() });
+        setCachedWeather(key, data);
         setForecast(data);
       })
-      .catch(() => {
+      .catch((err) => {
+        if (err.name === "AbortError") return;
         // Silently fail — weather is enhancement, not core feature
       })
       .finally(() => setLoading(false));
