@@ -400,7 +400,7 @@ public class AiService {
             Weather-aware planning rules:
             1. Read the Weather Forecast carefully. Each line is labeled "Day N (date): condition, temp, rain chance → risk level".
             2. For days labeled "HIGH RAIN RISK": schedule museums, indoor markets, cooking classes, spa, or covered shopping areas. Move boat tours, trekking, beach, or open-air sightseeing to a lower-risk day.
-            3. For days labeled "LIGHT RAIN": mix indoor-heavy morning with short outdoor activities in the afternoon if the rain chance is below 60%.
+            3. For days labeled "LIGHT RAIN": mix indoor-heavy morning with short outdoor activities in the afternoon if the rain chance is below 60%%.
             4. For days labeled "Good weather": maximize outdoor, scenic, or active experiences.
             5. Never mention the weather forecast to the user in the output text. Just naturally plan the right activities.
             6. If forecast is "none" or unavailable, plan normally without weather constraints.

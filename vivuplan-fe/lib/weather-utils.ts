@@ -173,6 +173,9 @@ export function getRescheduleSuggestions(
 
     // Find risky outdoor activities on this bad-weather day
     day.activities.forEach((act) => {
+      // Không bao giờ gợi ý dời lịch đối với các hoạt động di chuyển, nhận phòng hay ăn uống
+      if (["TRANSPORT", "ACCOMMODATION", "FOOD", "CAFE"].includes(act.type)) return;
+
       if (!isOutdoorRiskyActivity(act.name, act.location)) return;
 
       // Find a better day in the schedule
