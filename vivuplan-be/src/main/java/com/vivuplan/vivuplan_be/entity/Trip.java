@@ -100,6 +100,9 @@ public class Trip {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Column(columnDefinition = "TEXT")
+    private String aiWarnings;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default

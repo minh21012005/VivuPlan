@@ -155,13 +155,22 @@ public class TripService {
         }
         trip.setItineraryDays(days);
 
+        TripDto.BudgetBreakdown budget = calculateBudget(trip, aiSchedule);
+        List<String> warnings = buildGenerationWarnings(
+                trip,
+                aiSchedule,
+                budget,
+                requestFulfillment,
+                buildGenerationRequestText(req));
+        trip.setAiWarnings(serializeWarnings(warnings));
+
         trip = tripRepository.saveAndFlush(trip);
 
         TripDto.TripResponse response = TripDto.TripResponse.from(trip);
         response.setSchedule(mapDays(trip.getItineraryDays()));
-        response.setBudget(calculateBudget(trip, aiSchedule));
+        response.setBudget(budget);
         response.setRequestFulfillment(requestFulfillment);
-        response.setWarnings(buildGenerationWarnings(trip, response.getBudget(), requestFulfillment, buildGenerationRequestText(req)));
+        response.setWarnings(warnings);
         return response;
     }
 
@@ -300,6 +309,7 @@ public class TripService {
                 proposedDay,
                 oldBudget,
                 newBudget,
+                warnings,
                 LocalDateTime.now().plusMinutes(REGENERATION_PROPOSAL_TTL_MINUTES)));
 
         TripDto.RegenerateDayPreviewResponse response = new TripDto.RegenerateDayPreviewResponse();
@@ -351,6 +361,7 @@ public class TripService {
             }
         }
         resequenceActivities(day);
+        trip.setAiWarnings(serializeWarnings(mergeWarnings(parseWarnings(trip.getAiWarnings()), proposal.warnings())));
         trip = tripRepository.saveAndFlush(trip);
         dayRegenerationProposals.remove(req.getProposalId());
         return toTripResponse(trip);
@@ -656,11 +667,13 @@ public class TripService {
 
     private List<String> buildGenerationWarnings(
             Trip trip,
+            List<TripDto.DayResponse> schedule,
             TripDto.BudgetBreakdown budget,
             TripDto.RequestFulfillment requestFulfillment,
             String requestText) {
         List<String> warnings = new ArrayList<>();
         warnings.addAll(buildRequestFulfillmentWarnings(requestFulfillment, requestText, "lịch trình vừa tạo"));
+        warnings.addAll(buildCostReviewWarnings(schedule, "lịch trình vừa tạo"));
         warnings.addAll(buildBudgetWarnings(trip, budget));
         return warnings;
     }
@@ -692,6 +705,7 @@ public class TripService {
             String instruction) {
         List<String> warnings = new ArrayList<>();
         warnings.addAll(buildRequestFulfillmentWarnings(requestFulfillment, instruction, "preview này"));
+        warnings.addAll(buildCostReviewWarnings(List.of(proposedDay), "preview này"));
         long oldBudget = sumDayCost(oldDay);
         long newBudget = sumDayCost(proposedDay);
         if (oldBudget > 0 && newBudget > Math.round(oldBudget * 1.25)) {
@@ -710,6 +724,65 @@ public class TripService {
             warnings.add("Ngày mới chưa có chặng di chuyển riêng, hãy kiểm tra lại nếu các điểm ở xa nhau.");
         }
         return warnings;
+    }
+
+    private List<String> buildCostReviewWarnings(List<TripDto.DayResponse> schedule, String contextLabel) {
+        if (schedule == null || schedule.isEmpty()) {
+            return List.of();
+        }
+        boolean hasCostReview = schedule.stream()
+                .filter(day -> day.getActivities() != null)
+                .flatMap(day -> day.getActivities().stream())
+                .anyMatch(activity -> COST_REVIEW_STATUS.equals(activity.getCostEstimateStatus()));
+        if (!hasCostReview) {
+            return List.of();
+        }
+        return List.of("Một số chi phí bắt buộc trong " + contextLabel
+                + " chưa có ước tính đáng tin cậy. Các mục này sẽ hiển thị là \"Cần kiểm tra\" để bạn rà soát trước khi chốt lịch.");
+    }
+
+    private String serializeWarnings(List<String> warnings) {
+        List<String> normalized = mergeWarnings(warnings);
+        if (normalized.isEmpty()) {
+            return null;
+        }
+        return normalized.stream()
+                .map(warning -> warning.replaceAll("\\R+", " ").trim())
+                .collect(Collectors.joining("\n"));
+    }
+
+    private List<String> parseWarnings(String rawWarnings) {
+        if (rawWarnings == null || rawWarnings.isBlank()) {
+            return List.of();
+        }
+        return java.util.Arrays.stream(rawWarnings.split("\\R"))
+                .map(String::trim)
+                .filter(warning -> !warning.isBlank())
+                .toList();
+    }
+
+    @SafeVarargs
+    private static List<String> mergeWarnings(List<String>... warningGroups) {
+        if (warningGroups == null || warningGroups.length == 0) {
+            return List.of();
+        }
+        List<String> merged = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (List<String> warnings : warningGroups) {
+            if (warnings == null) {
+                continue;
+            }
+            for (String warning : warnings) {
+                if (warning == null || warning.isBlank()) {
+                    continue;
+                }
+                String normalized = warning.replaceAll("\\R+", " ").trim();
+                if (seen.add(normalized)) {
+                    merged.add(normalized);
+                }
+            }
+        }
+        return merged;
     }
 
     private List<String> buildRequestFulfillmentWarnings(
@@ -1019,37 +1092,56 @@ public class TripService {
     private void normalizeActivityCosts(List<TripDto.DayResponse> schedule, Trip trip) {
         if (schedule == null || schedule.isEmpty())
             return;
+        boolean bundledIntercityTransportCost = hasBundledIntercityTransportCost(schedule, trip);
         for (TripDto.DayResponse day : schedule) {
             if (day.getActivities() == null)
                 continue;
             for (TripDto.ActivityResponse activity : day.getActivities()) {
                 long originalCost = Math.max(0, activity.getEstimatedCost());
-                long normalizedCost = normalizeActivityCost(activity, trip);
+                long normalizedCost = normalizeActivityCost(activity, trip, bundledIntercityTransportCost);
                 activity.setEstimatedCost(normalizedCost);
                 if (normalizedCost > originalCost) {
                     activity.setNote(normalizeIncludedCostNote(activity.getNote()));
                 }
-                if (normalizedCost == 0 && isRequiredPaidActivityWithoutCost(activity, trip)) {
+                if (normalizedCost == 0 && isRequiredPaidActivityWithoutCost(activity, trip, bundledIntercityTransportCost)) {
                     markCostNeedsReview(activity);
                 }
             }
         }
     }
 
-    private long normalizeActivityCost(TripDto.ActivityResponse activity, Trip trip) {
+    private long normalizeActivityCost(TripDto.ActivityResponse activity, Trip trip, boolean bundledIntercityTransportCost) {
         long current = Math.max(0, activity.getEstimatedCost());
-        Long perPersonCost = extractPerPersonCost(activity.getNote());
-        if (perPersonCost != null) {
-            long expected = roundToNearest(perPersonCost * Math.max(1, trip.getTravelerCount()), 10_000);
-            current = reconcileRequiredCost(current, expected, 0.10);
-        }
+        boolean zeroCostBundledIntercity = isZeroCostBundledIntercityActivity(activity, trip, bundledIntercityTransportCost);
+        if (!zeroCostBundledIntercity) {
+            Long perPersonCost = extractPerPersonCost(activity.getNote());
+            if (perPersonCost != null) {
+                long expected = roundToNearest(perPersonCost * Math.max(1, trip.getTravelerCount()), 10_000);
+                current = reconcileRequiredCost(current, expected, 0.10);
+            }
 
-        Long requiredCost = inferRequiredActivityCost(activity, trip);
-        if (requiredCost != null) {
-            current = reconcileRequiredCost(current, roundToNearest(requiredCost, 10_000), 0.25);
+            Long requiredCost = inferRequiredActivityCost(activity, trip, bundledIntercityTransportCost);
+            if (requiredCost != null) {
+                current = reconcileRequiredCost(current, roundToNearest(requiredCost, 10_000), 0.25);
+            }
         }
 
         return current;
+    }
+
+    private boolean isZeroCostBundledIntercityActivity(
+            TripDto.ActivityResponse activity,
+            Trip trip,
+            boolean bundledIntercityTransportCost) {
+        if (!bundledIntercityTransportCost || Math.max(0, activity.getEstimatedCost()) != 0) {
+            return false;
+        }
+        String type = normalizeText(activity.getType());
+        String combined = normalizeText(String.join(" ",
+                nullToBlank(activity.getName()),
+                nullToBlank(activity.getLocation()),
+                nullToBlank(activity.getNote())));
+        return isTripIntercityTransportActivity(type, combined, trip);
     }
 
     private long reconcileRequiredCost(long current, long expected, double allowedUnderrun) {
@@ -1062,7 +1154,8 @@ public class TripService {
         return current < Math.round(expected * (1 - allowedUnderrun)) ? expected : current;
     }
 
-    private Long inferRequiredActivityCost(TripDto.ActivityResponse activity, Trip trip) {
+    private Long inferRequiredActivityCost(TripDto.ActivityResponse activity, Trip trip, boolean bundledIntercityTransportCost) {
+        long current = Math.max(0, activity.getEstimatedCost());
         String type = normalizeText(activity.getType());
         String combined = normalizeText(String.join(" ",
                 nullToBlank(activity.getName()),
@@ -1071,6 +1164,9 @@ public class TripService {
 
         Long mentionedCost = extractLargestMentionedCost(activity.getNote());
         if (isTripIntercityTransportActivity(type, combined, trip) && mentionedCost != null) {
+            if (current == 0 && bundledIntercityTransportCost) {
+                return null;
+            }
             return mentionedCost;
         }
         if (isVehicleRentalStartActivity(type, combined) && mentionedCost != null) {
@@ -1082,16 +1178,42 @@ public class TripService {
         return null;
     }
 
-    private boolean isRequiredPaidActivityWithoutCost(TripDto.ActivityResponse activity, Trip trip) {
+    private boolean isRequiredPaidActivityWithoutCost(TripDto.ActivityResponse activity, Trip trip, boolean bundledIntercityTransportCost) {
         String type = normalizeText(activity.getType());
         String combined = normalizeText(String.join(" ",
                 nullToBlank(activity.getName()),
                 nullToBlank(activity.getLocation()),
                 nullToBlank(activity.getNote())));
 
-        return isTripIntercityTransportActivity(type, combined, trip)
+        return (isTripIntercityTransportActivity(type, combined, trip) && !bundledIntercityTransportCost)
                 || isVehicleRentalStartActivity(type, combined)
                 || mentionsExcludedRequiredCost(combined);
+    }
+
+    private boolean hasBundledIntercityTransportCost(List<TripDto.DayResponse> schedule, Trip trip) {
+        if (schedule == null || schedule.isEmpty()) {
+            return false;
+        }
+        for (TripDto.DayResponse day : schedule) {
+            if (day == null || day.getActivities() == null) {
+                continue;
+            }
+            for (TripDto.ActivityResponse activity : day.getActivities()) {
+                String type = normalizeText(activity.getType());
+                if (!type.equals("transport") || Math.max(0, activity.getEstimatedCost()) == 0) {
+                    continue;
+                }
+                String combined = normalizeText(String.join(" ",
+                        nullToBlank(activity.getName()),
+                        nullToBlank(activity.getLocation()),
+                        nullToBlank(activity.getNote())));
+                if (isTripIntercityTransportActivity(type, combined, trip)
+                        && mentionsBundledIntercityTransportCost(combined)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private boolean isTripIntercityTransportActivity(String normalizedType, String normalizedText, Trip trip) {
@@ -1162,6 +1284,24 @@ public class TripService {
                 "khong bao gom vao chi phi",
                 "chua bao gom vao chi phi",
                 "not included");
+    }
+
+    private boolean mentionsBundledIntercityTransportCost(String normalizedText) {
+        return containsAny(normalizedText,
+                "khu hoi",
+                "hai chieu",
+                "2 chieu",
+                "ca di va ve",
+                "di va ve",
+                "ca di ca ve",
+                "round trip",
+                "round-trip",
+                "return ticket",
+                "bao gom chieu ve",
+                "bao gom ca chieu ve",
+                "bao gom chuyen bay ve",
+                "bao gom ve ve",
+                "bao gom ca tien ve");
     }
 
     private String normalizeIncludedCostNote(String note) {
@@ -1283,6 +1423,7 @@ public class TripService {
             TripDto.DayResponse day,
             long oldBudget,
             long newBudget,
+            List<String> warnings,
             LocalDateTime expiresAt) {
     }
 }

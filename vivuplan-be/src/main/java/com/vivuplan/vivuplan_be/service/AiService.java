@@ -64,6 +64,12 @@ public class AiService {
                 return retryResult;
             }
 
+            if (isRecoverableCostQualityIssue(retryQuality.reason())) {
+                log.warn("AI retry itinerary for {} still has a cost completeness issue: {}. Returning with cost review markers.",
+                        req.getDestination(), retryQuality.reason());
+                return retryResult;
+            }
+
             log.warn("AI retry itinerary for {} still failed quality check: {}. Returning error to user.",
                     req.getDestination(), retryQuality.reason());
             throw new AiGenerationException(AI_GENERATION_USER_MESSAGE);
@@ -100,6 +106,12 @@ public class AiService {
             RegeneratedDayResult retryResult = parseRegeneratedDayResult(retryJson, dayNumber);
             QualityCheck retryQuality = assessRegeneratedDayQuality(retryResult.day(), currentSchedule, qualityReq);
             if (retryQuality.passed()) {
+                return retryResult;
+            }
+
+            if (isRecoverableCostQualityIssue(retryQuality.reason())) {
+                log.warn("AI retry regenerated day {} for {} still has a cost completeness issue: {}. Returning with cost review markers.",
+                        dayNumber, req.getDestination(), retryQuality.reason());
                 return retryResult;
             }
 
@@ -845,6 +857,8 @@ public class AiService {
         int localTransportActivities = 0;
         int localTransportActivitiesMatchingSelection = 0;
         int nonLogisticsActivities = 0;
+        String recoverableCostIssue = null;
+        boolean bundledIntercityTransportCost = hasBundledIntercityTransportCost(days, req);
         for (TripDto.DayResponse day : days) {
             if (day.getActivities() == null || day.getActivities().size() < 4) {
                 return QualityCheck.fail("day " + day.getDay() + " has fewer than 4 activities");
@@ -860,9 +874,13 @@ public class AiService {
                 if (act.getEstimatedCost() < 0) {
                     return QualityCheck.fail("activity has negative cost: " + act.getName());
                 }
-                String costIssue = requiredActivityCostIssue(act, req, type, name, location, note);
+                String costIssue = requiredActivityCostIssue(act, req, type, name, location, note, bundledIntercityTransportCost);
                 if (costIssue != null) {
-                    return QualityCheck.fail(costIssue);
+                    if (isRecoverableCostQualityIssue(costIssue)) {
+                        recoverableCostIssue = recoverableCostIssue == null ? costIssue : recoverableCostIssue;
+                    } else {
+                        return QualityCheck.fail(costIssue);
+                    }
                 }
                 if (isGenericActivity(name, location, type)) {
                     genericActivities++;
@@ -902,6 +920,10 @@ public class AiService {
             return QualityCheck.fail("local transport plan does not follow selected mode " + req.getLocalTransport());
         }
 
+        if (recoverableCostIssue != null) {
+            return QualityCheck.fail(recoverableCostIssue);
+        }
+
         return QualityCheck.pass();
     }
 
@@ -924,8 +946,15 @@ public class AiService {
         int localTransportActivities = 0;
         int selectedLocalTransportMatches = 0;
         int nonLogisticsActivities = 0;
+        String recoverableCostIssue = null;
         Set<String> seenTimes = new HashSet<>();
         List<TimeRange> ranges = new ArrayList<>();
+        List<TripDto.DayResponse> scheduleForCostContext = new ArrayList<>();
+        scheduleForCostContext.add(day);
+        if (currentSchedule != null) {
+            scheduleForCostContext.addAll(currentSchedule);
+        }
+        boolean bundledIntercityTransportCost = hasBundledIntercityTransportCost(scheduleForCostContext, req);
         String avoid = normalize(String.join("\n",
                 req.getAvoid() != null ? req.getAvoid() : "",
                 extractNegativeInstruction(req.getNotes())
@@ -950,9 +979,13 @@ public class AiService {
             if (act.getEstimatedCost() < 0) {
                 return QualityCheck.fail("activity has negative cost: " + act.getName());
             }
-            String costIssue = requiredActivityCostIssue(act, req, type, name, location, note);
+            String costIssue = requiredActivityCostIssue(act, req, type, name, location, note, bundledIntercityTransportCost);
             if (costIssue != null) {
-                return QualityCheck.fail(costIssue);
+                if (isRecoverableCostQualityIssue(costIssue)) {
+                    recoverableCostIssue = recoverableCostIssue == null ? costIssue : recoverableCostIssue;
+                } else {
+                    return QualityCheck.fail(costIssue);
+                }
             }
             if (!avoid.isBlank() && containsAvoidedContent(combined, avoid)) {
                 return QualityCheck.fail("activity appears to violate avoid instruction: " + act.getName());
@@ -1003,6 +1036,10 @@ public class AiService {
             return QualityCheck.fail("regenerated day repeats too many places from other days");
         }
 
+        if (recoverableCostIssue != null) {
+            return QualityCheck.fail(recoverableCostIssue);
+        }
+
         return QualityCheck.pass();
     }
 
@@ -1012,7 +1049,8 @@ public class AiService {
             String normalizedType,
             String normalizedName,
             String normalizedLocation,
-            String normalizedNote
+            String normalizedNote,
+            boolean bundledIntercityTransportCost
     ) {
         String combined = String.join(" ", normalizedName, normalizedLocation, normalizedNote);
         long cost = Math.max(0, act.getEstimatedCost());
@@ -1021,7 +1059,7 @@ public class AiService {
             return "activity excludes a required cost from estimatedCost: " + act.getName();
         }
         if (isOutboundOrReturnTransport(combined, req)) {
-            if (cost == 0) {
+            if (cost == 0 && !bundledIntercityTransportCost) {
                 return "intercity transport cost is missing: " + act.getName();
             }
         }
@@ -1031,6 +1069,58 @@ public class AiService {
             }
         }
         return null;
+    }
+
+    private boolean isRecoverableCostQualityIssue(String reason) {
+        if (reason == null || reason.isBlank()) {
+            return false;
+        }
+        return reason.startsWith("intercity transport cost is missing:")
+                || reason.startsWith("vehicle rental cost is missing:")
+                || reason.startsWith("activity excludes a required cost from estimatedCost:");
+    }
+
+    private boolean hasBundledIntercityTransportCost(List<TripDto.DayResponse> days, TripDto.GenerateRequest req) {
+        if (days == null || days.isEmpty()) {
+            return false;
+        }
+        for (TripDto.DayResponse day : days) {
+            if (day == null || day.getActivities() == null) {
+                continue;
+            }
+            for (TripDto.ActivityResponse activity : day.getActivities()) {
+                String type = normalize(activity.getType());
+                if (!type.equals("transport") || Math.max(0, activity.getEstimatedCost()) == 0) {
+                    continue;
+                }
+                String combined = normalize(String.join(" ",
+                        activity.getName() != null ? activity.getName() : "",
+                        activity.getLocation() != null ? activity.getLocation() : "",
+                        activity.getNote() != null ? activity.getNote() : ""));
+                if (isOutboundOrReturnTransport(combined, req) && mentionsBundledIntercityTransportCost(combined)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean mentionsBundledIntercityTransportCost(String normalizedText) {
+        return containsAny(normalizedText,
+                "khu hoi",
+                "hai chieu",
+                "2 chieu",
+                "ca di va ve",
+                "di va ve",
+                "ca di ca ve",
+                "round trip",
+                "round-trip",
+                "return ticket",
+                "bao gom chieu ve",
+                "bao gom ca chieu ve",
+                "bao gom chuyen bay ve",
+                "bao gom ve ve",
+                "bao gom ca tien ve");
     }
 
     private boolean isVehicleRentalStartActivity(String normalizedType, String normalizedText) {

@@ -89,6 +89,21 @@ class TripServiceTest {
     }
 
     @Test
+    void getTripReturnsPersistedAiWarnings() {
+        Trip trip = sampleTrip();
+        trip.setAiWarnings("Yêu cầu chèo sup chưa được áp dụng vì trời mưa.\nTổng chi phí có thể vượt ngân sách.");
+        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+
+        TripDto.TripResponse response = service.getTrip(1L, 7L);
+
+        assertThat(response.getWarnings())
+                .containsExactly(
+                        "Yêu cầu chèo sup chưa được áp dụng vì trời mưa.",
+                        "Tổng chi phí có thể vượt ngân sách.");
+    }
+
+    @Test
     void generateAndSaveWarnsFromAiRequestFulfillmentReport() {
         User user = sampleUser();
         TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
@@ -175,6 +190,7 @@ class TripServiceTest {
         assertThat(activities.get(0).getCostEstimateMessage()).isNotBlank();
         assertThat(activities.get(1).getEstimatedCost()).isGreaterThanOrEqualTo(200_000L);
         assertThat(response.getBudget().getTransport()).isGreaterThanOrEqualTo(200_000L);
+        assertThat(response.getWarnings()).anyMatch(warning -> warning.contains("Cần kiểm tra"));
     }
 
     @Test
@@ -205,6 +221,37 @@ class TripServiceTest {
         TripDto.ActivityResponse busActivity = response.getSchedule().get(0).getActivities().get(0);
         assertThat(busActivity.getEstimatedCost()).isEqualTo(120_000L);
         assertThat(busActivity.getCostEstimateStatus()).isNull();
+    }
+
+    @Test
+    void generateAndSaveDoesNotFlagReturnFlightWhenRoundTripCostIsBundled() {
+        User user = sampleUser();
+        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        mockRainForecast();
+        when(tripRepository.existsByShareCode(anyString())).thenReturn(false);
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> {
+            Trip saved = invocation.getArgument(0);
+            saved.setId(1L);
+            return saved;
+        });
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class)))
+                .thenReturn(new AiService.GeneratedItineraryResult(
+                        List.of(proposedRoundTripIncludedFlightDay()),
+                        noRequestFulfillment()));
+
+        TripDto.GenerateRequest req = generateRequest("", "");
+        req.setBudgetPerPerson(5_000_000L);
+
+        TripDto.TripResponse response = service.generateAndSave(7L, req);
+
+        TripDto.ActivityResponse returnFlight = response.getSchedule().get(0).getActivities().get(3);
+        assertThat(returnFlight.getEstimatedCost()).isZero();
+        assertThat(returnFlight.getCostEstimateStatus()).isNull();
+        assertThat(response.getWarnings()).noneMatch(warning -> warning.contains("Cần kiểm tra"));
+        assertThat(response.getBudget().getTransport()).isEqualTo(3_600_000L);
     }
 
     @Test
@@ -321,6 +368,7 @@ class TripServiceTest {
         assertThat(activities.get(0).getCostEstimateMessage()).isNotBlank();
         assertThat(activities.get(1).getEstimatedCost()).isGreaterThanOrEqualTo(200_000L);
         assertThat(response.getNewBudget()).isGreaterThanOrEqualTo(200_000L);
+        assertThat(response.getWarnings()).anyMatch(warning -> warning.contains("Cần kiểm tra"));
     }
 
     @Test
@@ -469,6 +517,33 @@ class TripServiceTest {
                 activity("10:30", "Tham quan Trang An", "ATTRACTION"),
                 activity("12:30", "An trua com chay de nui", "FOOD"),
                 activity("14:00", "Tham quan chua Bai Dinh", "ATTRACTION")));
+        return day;
+    }
+
+    private TripDto.DayResponse proposedRoundTripIncludedFlightDay() {
+        TripDto.DayResponse day = new TripDto.DayResponse();
+        day.setDay(1);
+        day.setTitle("Ngay 1 - Da Nang");
+        day.setSummary("Lich trinh co ve may bay khu hoi tinh mot lan.");
+        day.setActivities(List.of(
+                activity(
+                        "08:00",
+                        "Ve may bay khu hoi Ha Noi - Da Nang",
+                        "TRANSPORT",
+                        "San bay Noi Bai (HAN) <-> San bay Da Nang (DAD)",
+                        "2 gio",
+                        3_600_000L,
+                        "Chi phi ve may bay khu hoi cho ca nhom, bao gom ca chieu di va chieu ve."),
+                activity("11:30", "An trua Mi Quang Ba Mua", "FOOD", "231 Tran Phu, Da Nang", "1 gio", 200_000L, null),
+                activity("14:00", "Tham quan Bao tang Da Nang", "ATTRACTION", "24 Tran Phu, Da Nang", "2 gio", 80_000L, null),
+                activity(
+                        "20:00",
+                        "Chuyen bay Da Nang - Ha Noi",
+                        "TRANSPORT",
+                        "San bay Da Nang (DAD) -> San bay Noi Bai (HAN)",
+                        "2 gio",
+                        0,
+                        "Ve chieu ve khoang 1.800.000 VND da duoc tinh trong ve may bay khu hoi o chang di.")));
         return day;
     }
 

@@ -253,6 +253,9 @@ export default function ItineraryPage() {
   const [selectedRegenerateIndexes, setSelectedRegenerateIndexes] = useState<number[]>([]);
   const [regeneratingDay, setRegeneratingDay] = useState(false);
   const [applyingRegeneration, setApplyingRegeneration] = useState(false);
+  const [clientWarnings, setClientWarnings] = useState<string[]>([]);
+  const [aiWarningsDismissed, setAiWarningsDismissed] = useState(false);
+  const [aiWarningsExpanded, setAiWarningsExpanded] = useState(false);
   const { toasts, show: showToast, dismiss: dismissToast } = useToast();
 
   // ─── Weather ──────────────────────────────────────────────────────────────
@@ -291,6 +294,9 @@ export default function ItineraryPage() {
         setCopied(false);
         setDayCopied(false);
         setShareError("");
+        setClientWarnings([]);
+        setAiWarningsDismissed(false);
+        setAiWarningsExpanded(false);
         setRegenerateOpen(false);
         setRegeneratePreview(null);
         setSelectedRegenerateIndexes([]);
@@ -329,18 +335,54 @@ export default function ItineraryPage() {
     try {
       const warnings = JSON.parse(rawWarnings);
       if (Array.isArray(warnings)) {
-        warnings
-          .filter((warning): warning is string => typeof warning === "string" && warning.trim().length > 0)
-          .forEach((warning) => showToast(warning, "info", 9000));
+        setClientWarnings(warnings.filter((warning): warning is string => typeof warning === "string" && warning.trim().length > 0));
         return;
       }
     } catch {
-      // Fall through and show the raw value below.
+      // Fall through and store the raw value below.
     }
-    showToast(rawWarnings, "info", 9000);
-  }, [trip?.id, showToast]);
+    setClientWarnings([rawWarnings]);
+  }, [trip?.id]);
 
   const image = useMemo(() => getDestinationImage(trip?.destination, destinations), [destinations, trip?.destination]);
+  const visibleWarnings = useMemo(() => {
+    const seen = new Set<string>();
+    return [...(trip?.warnings ?? []), ...clientWarnings]
+      .map((warning) => warning.trim())
+      .filter((warning) => {
+        if (warning.length === 0 || seen.has(warning)) return false;
+        seen.add(warning);
+        return true;
+      });
+  }, [clientWarnings, trip?.warnings]);
+  const warningSignature = visibleWarnings.join("\u001f");
+
+  useEffect(() => {
+    if (!trip?.id || !warningSignature || typeof window === "undefined") {
+      setAiWarningsDismissed(false);
+      setAiWarningsExpanded(false);
+      return;
+    }
+    const dismissedSignature = window.localStorage.getItem(`vivuplan:trip:${trip.id}:warnings-dismissed`);
+    setAiWarningsDismissed(dismissedSignature === warningSignature);
+    setAiWarningsExpanded(false);
+  }, [trip?.id, warningSignature]);
+
+  const dismissAiWarnings = () => {
+    if (!trip?.id || !warningSignature || typeof window === "undefined") return;
+    window.localStorage.setItem(`vivuplan:trip:${trip.id}:warnings-dismissed`, warningSignature);
+    setAiWarningsDismissed(true);
+    setAiWarningsExpanded(false);
+  };
+
+  const restoreAiWarnings = () => {
+    if (trip?.id && typeof window !== "undefined") {
+      window.localStorage.removeItem(`vivuplan:trip:${trip.id}:warnings-dismissed`);
+    }
+    setAiWarningsDismissed(false);
+  };
+
+  const shownWarnings = aiWarningsExpanded ? visibleWarnings : visibleWarnings.slice(0, 2);
 
   const day = trip?.schedule?.[activeDay];
   const dayActivities = day?.activities ?? [];
@@ -595,6 +637,42 @@ export default function ItineraryPage() {
       </section>
 
       <main className="container" style={{ paddingTop: 30, paddingBottom: 80 }}>
+        {visibleWarnings.length > 0 && (
+          aiWarningsDismissed ? (
+            <div className="itinerary-ai-messages-collapsed">
+              <span><AlertCircle size={13} /> Đã ẩn {visibleWarnings.length} thông điệp từ AI</span>
+              <button type="button" onClick={restoreAiWarnings}>Hiện lại</button>
+            </div>
+          ) : (
+            <section className="itinerary-ai-messages" aria-label="Thông điệp từ AI">
+              <div className="itinerary-ai-messages-head">
+                <AlertCircle size={16} />
+                <div>
+                  <strong>Thông điệp từ AI cho lịch trình này</strong>
+                  <span>Các lưu ý này được giữ lại để bạn kiểm tra trong suốt quá trình chỉnh lịch.</span>
+                </div>
+                <button type="button" className="itinerary-ai-dismiss" onClick={dismissAiWarnings} aria-label="Ẩn thông điệp từ AI">
+                  <X size={14} />
+                </button>
+              </div>
+              <div className="itinerary-ai-message-list">
+                {shownWarnings.map((warning) => (
+                  <p key={warning}>{warning}</p>
+                ))}
+              </div>
+              {(visibleWarnings.length > 2 || aiWarningsExpanded) && (
+                <div className="itinerary-ai-message-actions">
+                  {visibleWarnings.length > 2 && (
+                    <button type="button" onClick={() => setAiWarningsExpanded((value) => !value)}>
+                      {aiWarningsExpanded ? "Thu gọn" : `Xem thêm ${visibleWarnings.length - 2} thông điệp`}
+                    </button>
+                  )}
+                  <button type="button" onClick={dismissAiWarnings}>Đã hiểu, ẩn phần này</button>
+                </div>
+              )}
+            </section>
+          )
+        )}
 
         {/* Feature 1 – Smart Reschedule Suggestions */}
         {trip.startDate && forecast.length > 0 && (() => {

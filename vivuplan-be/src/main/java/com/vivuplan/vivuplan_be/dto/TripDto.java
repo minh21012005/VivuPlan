@@ -6,6 +6,7 @@ import lombok.Data;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 
 public class TripDto {
@@ -96,8 +97,19 @@ public class TripDto {
             r.setPublic(trip.getIsPublic());
             r.setShareCode(trip.getShareCode());
             r.setViewCount(trip.getViewCount());
+            r.setWarnings(parseWarnings(trip.getAiWarnings()));
             r.setCreatedAt(trip.getCreatedAt() != null ? trip.getCreatedAt().toString() : null);
             return r;
+        }
+
+        private static List<String> parseWarnings(String rawWarnings) {
+            if (rawWarnings == null || rawWarnings.isBlank()) {
+                return List.of();
+            }
+            return Arrays.stream(rawWarnings.split("\\R"))
+                    .map(String::trim)
+                    .filter(warning -> !warning.isBlank())
+                    .toList();
         }
     }
 

@@ -1849,6 +1849,125 @@ textarea.input.textarea-compact {
   margin-bottom: 18px;
 }
 
+.itinerary-ai-messages {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 16px 18px;
+  border: 1px solid #FBBF24;
+  border-radius: var(--r-lg);
+  background: #FFFBEB;
+  color: #78350F;
+  box-shadow: 0 8px 24px -18px rgba(146, 64, 14, 0.45);
+}
+
+.itinerary-ai-messages-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.itinerary-ai-messages-head svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #D97706;
+}
+
+.itinerary-ai-messages-head strong,
+.itinerary-ai-messages-head span {
+  display: block;
+}
+
+.itinerary-ai-messages-head strong {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.itinerary-ai-messages-head span {
+  margin-top: 2px;
+  color: #92400E;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.itinerary-ai-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  border: 1px solid rgba(146, 64, 14, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  color: #92400E;
+  cursor: pointer;
+}
+
+.itinerary-ai-dismiss:hover {
+  background: #FEF3C7;
+}
+
+.itinerary-ai-message-list {
+  display: grid;
+  gap: 8px;
+}
+
+.itinerary-ai-message-list p {
+  margin: 0;
+  padding: 9px 10px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.72);
+  color: #78350F;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.itinerary-ai-message-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.itinerary-ai-message-actions button,
+.itinerary-ai-messages-collapsed button {
+  border: 0;
+  background: transparent;
+  color: #92400E;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.itinerary-ai-message-actions button:hover,
+.itinerary-ai-messages-collapsed button:hover {
+  color: #78350F;
+  text-decoration: underline;
+}
+
+.itinerary-ai-messages-collapsed {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 9px 12px;
+  border: 1px solid #FDE68A;
+  border-radius: var(--r-md);
+  background: #FFFBEB;
+  color: #92400E;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.itinerary-ai-messages-collapsed span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .itinerary-header-meta-container {
   display: flex;
   flex-direction: column;
