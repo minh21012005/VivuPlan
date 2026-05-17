@@ -12,7 +12,6 @@ export interface DailyWeather {
 
 export interface WeatherCondition {
   label: string;
-  emoji: string;
   severity: "clear" | "mild" | "moderate" | "severe";
   isRainy: boolean;
   isWindy: boolean;
@@ -21,16 +20,16 @@ export interface WeatherCondition {
 }
 
 export function interpretWeatherCode(code: number): WeatherCondition {
-  if (code === 0) return { label: "Trời nắng", emoji: "☀️", severity: "clear", isRainy: false, isWindy: false, isFoggy: false, iconKey: "sun" };
-  if (code <= 3) return { label: "Có mây", emoji: "⛅", severity: "mild", isRainy: false, isWindy: false, isFoggy: false, iconKey: "cloudy" };
-  if (code <= 49) return { label: "Sương mù", emoji: "🌫️", severity: "mild", isRainy: false, isWindy: false, isFoggy: true, iconKey: "fog" };
-  if (code <= 57) return { label: "Mưa phùn", emoji: "🌦️", severity: "mild", isRainy: true, isWindy: false, isFoggy: false, iconKey: "rain" };
-  if (code <= 65) return { label: code >= 63 ? "Mưa to" : "Mưa nhỏ", emoji: code >= 63 ? "🌧️" : "🌦️", severity: code >= 63 ? "severe" : "moderate", isRainy: true, isWindy: false, isFoggy: false, iconKey: "rain" };
-  if (code <= 77) return { label: "Có tuyết", emoji: "❄️", severity: "severe", isRainy: false, isWindy: false, isFoggy: false, iconKey: "snow" };
-  if (code <= 82) return { label: code === 82 ? "Mưa rào lớn" : "Mưa rào", emoji: code === 82 ? "⛈️" : "🌧️", severity: code === 82 ? "severe" : "moderate", isRainy: true, isWindy: false, isFoggy: false, iconKey: "rain" };
-  if (code <= 86) return { label: "Mưa tuyết", emoji: "🌨️", severity: "severe", isRainy: true, isWindy: false, isFoggy: false, iconKey: "snow" };
-  if (code <= 99) return { label: "Giông bão", emoji: "⛈️", severity: "severe", isRainy: true, isWindy: true, isFoggy: false, iconKey: "storm" };
-  return { label: "N/A", emoji: "", severity: "mild", isRainy: false, isWindy: false, isFoggy: false, iconKey: "unknown" };
+  if (code === 0) return { label: "Trời nắng", severity: "clear", isRainy: false, isWindy: false, isFoggy: false, iconKey: "sun" };
+  if (code <= 3) return { label: "Có mây", severity: "mild", isRainy: false, isWindy: false, isFoggy: false, iconKey: "cloudy" };
+  if (code <= 49) return { label: "Sương mù", severity: "mild", isRainy: false, isWindy: false, isFoggy: true, iconKey: "fog" };
+  if (code <= 57) return { label: "Mưa phùn", severity: "mild", isRainy: true, isWindy: false, isFoggy: false, iconKey: "rain" };
+  if (code <= 65) return { label: code >= 63 ? "Mưa to" : "Mưa nhỏ", severity: code >= 63 ? "severe" : "moderate", isRainy: true, isWindy: false, isFoggy: false, iconKey: "rain" };
+  if (code <= 77) return { label: "Có tuyết", severity: "severe", isRainy: false, isWindy: false, isFoggy: false, iconKey: "snow" };
+  if (code <= 82) return { label: code === 82 ? "Mưa rào lớn" : "Mưa rào", severity: code === 82 ? "severe" : "moderate", isRainy: true, isWindy: false, isFoggy: false, iconKey: "rain" };
+  if (code <= 86) return { label: "Mưa tuyết", severity: "severe", isRainy: true, isWindy: false, isFoggy: false, iconKey: "snow" };
+  if (code <= 99) return { label: "Giông bão", severity: "severe", isRainy: true, isWindy: true, isFoggy: false, iconKey: "storm" };
+  return { label: "N/A", severity: "mild", isRainy: false, isWindy: false, isFoggy: false, iconKey: "unknown" };
 }
 
 // ─── Activity outdoor risk assessment ────────────────────────────────────────
@@ -155,11 +154,18 @@ export function getRescheduleSuggestions(
   const suggestions: RescheduleSuggestion[] = [];
   if (!startDate || forecast.length === 0) return suggestions;
 
-  const start = new Date(`${startDate}T00:00:00`);
+  const getForecastForDay = (dayNum: number): DailyWeather | undefined => {
+    const date = new Date(`${startDate}T00:00:00`);
+    date.setDate(date.getDate() + dayNum - 1);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const dayStr = String(date.getDate()).padStart(2, "0");
+    const dateStr = `${year}-${month}-${dayStr}`;
+    return forecast.find((d) => d.date === dateStr);
+  };
 
   schedule.forEach((day) => {
-    const dayIndex = day.day - 1;
-    const forecastForDay = forecast[dayIndex];
+    const forecastForDay = getForecastForDay(day.day);
     if (!forecastForDay) return;
 
     const condition = interpretWeatherCode(forecastForDay.code);
@@ -172,20 +178,20 @@ export function getRescheduleSuggestions(
       // Find a better day in the schedule
       const betterDayEntry = schedule.find((other) => {
         if (other.day === day.day) return false;
-        const otherForecast = forecast[other.day - 1];
+        const otherForecast = getForecastForDay(other.day);
         if (!otherForecast) return false;
         const otherCondition = interpretWeatherCode(otherForecast.code);
         return otherCondition.severity === "clear" || otherCondition.severity === "mild";
       });
 
       if (betterDayEntry) {
-        const betterDayForecast = forecast[betterDayEntry.day - 1];
+        const betterDayForecast = getForecastForDay(betterDayEntry.day)!;
         const betterCondition = interpretWeatherCode(betterDayForecast.code);
         suggestions.push({
           fromDay: day.day,
           toDay: betterDayEntry.day,
           activityName: act.name,
-          reason: `Ngày ${day.day} dự báo ${condition.label} (${forecastForDay.precipitationProbability}% mưa), trong khi Ngày ${betterDayEntry.day} ${betterCondition.emoji} ${betterCondition.label} phù hợp hơn.`,
+          reason: `Ngày ${day.day} dự báo ${condition.label} (${forecastForDay.precipitationProbability}% mưa), trong khi Ngày ${betterDayEntry.day} thời tiết ${betterCondition.label} phù hợp hơn.`,
         });
       }
     });
@@ -194,20 +200,4 @@ export function getRescheduleSuggestions(
   return suggestions;
 }
 
-// ─── Current weather for Explore ─────────────────────────────────────────────
 
-export function getWeatherStatusBadge(weather: DailyWeather): { text: string; emoji: string; color: string } {
-  const condition = interpretWeatherCode(weather.code);
-  const temp = Math.round((weather.maxTemp + weather.minTemp) / 2);
-
-  let color = "#0d9488"; // teal default
-  if (condition.severity === "severe") color = "#dc2626";
-  else if (condition.severity === "moderate") color = "#d97706";
-  else if (condition.severity === "clear") color = "#16a34a";
-
-  return {
-    text: `${temp}°C · ${condition.label}`,
-    emoji: condition.emoji,
-    color,
-  };
-}

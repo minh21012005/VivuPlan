@@ -25,6 +25,7 @@ import {
 
 import {
   AlertCircle,
+  AlertTriangle,
   Calendar,
   Camera,
   CheckCircle2,
@@ -35,6 +36,7 @@ import {
   Coffee,
   Edit3,
   ExternalLink,
+  Lightbulb,
   ListChecks,
   MapPin,
   Navigation,
@@ -574,15 +576,41 @@ export default function ItineraryPage() {
           );
           if (suggestions.length === 0) return null;
           return (
-            <div style={{ marginBottom: 20, padding: "14px 18px", borderRadius: "var(--r-lg)", background: "#eff6ff", border: "1px solid #bfdbfe" }}>
-              <p style={{ margin: "0 0 8px", fontWeight: 700, fontSize: 14, color: "#1d4ed8", display: "flex", alignItems: "center", gap: 6 }}>
-                🔄 Gợi ý sắp xếp lại lịch theo thời tiết
-              </p>
-              {suggestions.map((s, i) => (
-                <p key={i} style={{ margin: "0 0 4px", fontSize: 13, color: "#1e40af", lineHeight: 1.6 }}>
-                  💡 Cân nhắc chuyển <strong>"{s.activityName}"</strong> từ Ngày {s.fromDay} sang Ngày {s.toDay}: {s.reason}
+            <div style={{
+              marginBottom: 24,
+              padding: "16px 20px",
+              borderRadius: "var(--r-lg)",
+              background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
+              border: "1px solid #93c5fd",
+              boxShadow: "0 4px 18px -4px rgba(59, 130, 246, 0.12)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 12
+            }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: "#1e40af", display: "flex", alignItems: "center", gap: 8 }}>
+                  <Sparkles size={16} className="animate-pulse" style={{ color: "#2563eb" }} />
+                  Trợ lý AI gợi ý tối ưu lịch trình theo thời tiết
                 </p>
-              ))}
+                <span style={{ fontSize: 11, background: "#dbeafe", color: "#1e40af", padding: "2px 8px", borderRadius: 99, fontWeight: 600 }}>Tối ưu</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {suggestions.map((s, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", background: "rgba(255, 255, 255, 0.6)", borderRadius: "var(--r-md)", border: "1px solid rgba(147, 197, 253, 0.3)" }}>
+                    <span style={{
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      flexShrink: 0, width: 22, height: 22, borderRadius: "50%",
+                      background: "rgba(245, 158, 11, 0.12)", color: "#d97706",
+                      marginTop: 1
+                    }}>
+                      <Lightbulb size={12} />
+                    </span>
+                    <p style={{ margin: 0, fontSize: 13, color: "#1e40af", lineHeight: 1.5 }}>
+                      Cân nhắc chuyển <strong>"{s.activityName}"</strong> từ Ngày {s.fromDay} sang Ngày {s.toDay}: {s.reason}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           );
         })()}
