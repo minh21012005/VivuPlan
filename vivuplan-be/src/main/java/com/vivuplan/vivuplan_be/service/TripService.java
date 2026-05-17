@@ -83,7 +83,9 @@ public class TripService {
         aiReq.setNotes(req.getNotes());
         aiReq.setWeatherForecast(fetchWeatherContext(req));
 
-        List<TripDto.DayResponse> aiSchedule = aiService.generateItinerary(aiReq);
+        AiService.GeneratedItineraryResult generatedItinerary = aiService.generateItinerary(aiReq);
+        List<TripDto.DayResponse> aiSchedule = generatedItinerary.days();
+        TripDto.RequestFulfillment requestFulfillment = generatedItinerary.requestFulfillment();
 
         // 2. Build and save Trip entity
         Trip trip = Trip.builder()
@@ -153,6 +155,8 @@ public class TripService {
         TripDto.TripResponse response = TripDto.TripResponse.from(trip);
         response.setSchedule(mapDays(trip.getItineraryDays()));
         response.setBudget(calculateBudget(trip, aiSchedule));
+        response.setRequestFulfillment(requestFulfillment);
+        response.setWarnings(buildGenerationWarnings(requestFulfillment, buildGenerationRequestText(req)));
         return response;
     }
 
@@ -389,6 +393,54 @@ public class TripService {
         return req;
     }
 
+    private String buildGenerationRequestText(TripDto.GenerateRequest req) {
+        if (req == null) {
+            return "";
+        }
+
+        List<String> requestParts = new ArrayList<>();
+        if (req.getMustVisit() != null && !req.getMustVisit().isBlank()) {
+            requestParts.add("Nơi muốn ghé: " + req.getMustVisit().trim());
+        }
+        if (req.getAvoid() != null && !req.getAvoid().isBlank()) {
+            requestParts.add("Điều muốn tránh: " + req.getAvoid().trim());
+        }
+
+        String userNotes = extractUserAuthoredNotes(req);
+        if (!userNotes.isBlank()) {
+            requestParts.add(userNotes);
+        }
+        return String.join("\n", requestParts).trim();
+    }
+
+    private String extractUserAuthoredNotes(TripDto.GenerateRequest req) {
+        String notes = req.getNotes();
+        if (notes == null || notes.isBlank()) {
+            return "";
+        }
+
+        List<String> userLines = new ArrayList<>();
+        for (String rawLine : notes.split("\\R")) {
+            String line = rawLine.trim();
+            if (line.isBlank() || isGeneratedPlanningNoteLine(line, req)) {
+                continue;
+            }
+            userLines.add(line);
+        }
+        return String.join("\n", userLines).trim();
+    }
+
+    private boolean isGeneratedPlanningNoteLine(String line, TripDto.GenerateRequest req) {
+        String normalized = normalizeText(line).replaceAll("\\s+", " ").trim();
+        return normalized.startsWith("so nguoi:")
+                || normalized.startsWith("ngan sach")
+                || normalized.startsWith("thanh phan nhom:")
+                || normalized.startsWith("di chuyen den diem den:")
+                || normalized.startsWith("di chuyen trong chuyen di:")
+                || (normalized.startsWith("noi muon ghe:") && req.getMustVisit() != null && !req.getMustVisit().isBlank())
+                || (normalized.startsWith("dieu muon tranh:") && req.getAvoid() != null && !req.getAvoid().isBlank());
+    }
+
     /**
      * Resolves weather forecast for the trip's destination and formats it as a
      * concise, human-readable summary for injection into the AI prompt.
@@ -603,6 +655,12 @@ public class TripService {
         return calculateBudget(trip, schedule).getTotal();
     }
 
+    private List<String> buildGenerationWarnings(
+            TripDto.RequestFulfillment requestFulfillment,
+            String requestText) {
+        return buildRequestFulfillmentWarnings(requestFulfillment, requestText, "lịch trình vừa tạo");
+    }
+
     private List<String> buildRegenerationWarnings(
             Trip trip,
             ItineraryDay oldDay,
@@ -610,7 +668,7 @@ public class TripService {
             TripDto.RequestFulfillment requestFulfillment,
             String instruction) {
         List<String> warnings = new ArrayList<>();
-        warnings.addAll(buildRequestFulfillmentWarnings(requestFulfillment, instruction));
+        warnings.addAll(buildRequestFulfillmentWarnings(requestFulfillment, instruction, "preview này"));
         long oldBudget = sumDayCost(oldDay);
         long newBudget = sumDayCost(proposedDay);
         if (oldBudget > 0 && newBudget > Math.round(oldBudget * 1.25)) {
@@ -633,19 +691,20 @@ public class TripService {
 
     private List<String> buildRequestFulfillmentWarnings(
             TripDto.RequestFulfillment requestFulfillment,
-            String instruction) {
+            String instruction,
+            String contextLabel) {
         if (instruction == null || instruction.isBlank()) {
             return List.of();
         }
         if (requestFulfillment == null) {
-            return List.of(unverifiedRequestWarning());
+            return List.of(unverifiedRequestWarning(contextLabel));
         }
 
         List<TripDto.RequestFulfillmentItem> items = requestFulfillment.getItems() != null
                 ? requestFulfillment.getItems()
                 : List.of();
         if (items.isEmpty()) {
-            return List.of(unverifiedRequestWarning());
+            return List.of(unverifiedRequestWarning(contextLabel));
         }
 
         List<String> warnings = new ArrayList<>();
@@ -664,14 +723,15 @@ public class TripService {
                         ? item.getRequestedText().trim()
                         : instruction.trim();
                 message = String.format(
-                        "Yêu cầu \"%s\" chưa được phản ánh đầy đủ trong preview. Hãy kiểm tra lại trước khi áp dụng.",
-                        requestedText);
+                        "Yêu cầu \"%s\" chưa được phản ánh đầy đủ trong %s. Hãy kiểm tra lại trước khi sử dụng.",
+                        requestedText,
+                        contextLabel);
             }
             warnings.add(toRequestWarning(message));
         }
 
         if (warnings.isEmpty() && isUnfulfilledOverallStatus(requestFulfillment.getOverallStatus())) {
-            warnings.add(unverifiedRequestWarning());
+            warnings.add(unverifiedRequestWarning(contextLabel));
         }
         return warnings;
     }
@@ -702,8 +762,8 @@ public class TripService {
         return "Yêu cầu: " + trimmed;
     }
 
-    private String unverifiedRequestWarning() {
-        return "Yêu cầu của bạn chưa được VivuPlan xác minh đầy đủ trong preview này. Hãy kiểm tra lại trước khi áp dụng.";
+    private String unverifiedRequestWarning(String contextLabel) {
+        return "Yêu cầu của bạn chưa được VivuPlan xác minh đầy đủ trong " + contextLabel + ". Hãy kiểm tra lại trước khi sử dụng.";
     }
 
     private void cleanupExpiredRegenerationProposals() {
@@ -949,7 +1009,12 @@ public class TripService {
             if (day.getActivities() == null)
                 continue;
             for (TripDto.ActivityResponse activity : day.getActivities()) {
-                activity.setEstimatedCost(normalizeActivityCost(activity, trip));
+                long originalCost = Math.max(0, activity.getEstimatedCost());
+                long normalizedCost = normalizeActivityCost(activity, trip);
+                activity.setEstimatedCost(normalizedCost);
+                if (normalizedCost > originalCost) {
+                    activity.setNote(normalizeIncludedCostNote(activity.getNote()));
+                }
             }
         }
     }
@@ -957,17 +1022,151 @@ public class TripService {
     private long normalizeActivityCost(TripDto.ActivityResponse activity, Trip trip) {
         long current = Math.max(0, activity.getEstimatedCost());
         Long perPersonCost = extractPerPersonCost(activity.getNote());
-        if (perPersonCost == null) {
-            return current;
+        if (perPersonCost != null) {
+            long expected = roundToNearest(perPersonCost * Math.max(1, trip.getTravelerCount()), 10_000);
+            current = reconcileRequiredCost(current, expected, 0.10);
         }
 
-        long expected = roundToNearest(perPersonCost * Math.max(1, trip.getTravelerCount()), 10_000);
+        Long requiredCost = inferRequiredActivityCost(activity, trip);
+        if (requiredCost != null) {
+            current = reconcileRequiredCost(current, roundToNearest(requiredCost, 10_000), 0.25);
+        }
+
+        return current;
+    }
+
+    private long reconcileRequiredCost(long current, long expected, double allowedUnderrun) {
+        if (expected <= 0) {
+            return current;
+        }
         if (current == 0) {
             return expected;
         }
+        return current < Math.round(expected * (1 - allowedUnderrun)) ? expected : current;
+    }
 
-        double variance = Math.abs(current - expected) / (double) Math.max(1, expected);
-        return variance > 0.10 ? expected : current;
+    private Long inferRequiredActivityCost(TripDto.ActivityResponse activity, Trip trip) {
+        String type = normalizeText(activity.getType());
+        String combined = normalizeText(String.join(" ",
+                nullToBlank(activity.getName()),
+                nullToBlank(activity.getLocation()),
+                nullToBlank(activity.getNote())));
+
+        Long mentionedCost = extractLargestMentionedCost(activity.getNote());
+        if (isTripIntercityTransportActivity(type, combined, trip)) {
+            return estimateIntercityTransportCost(combined, trip, mentionedCost);
+        }
+        if (isVehicleRentalStartActivity(type, combined)) {
+            return estimateVehicleRentalCost(combined, trip, mentionedCost);
+        }
+        if (mentionsExcludedRequiredCost(combined) && mentionedCost != null) {
+            return mentionedCost;
+        }
+        return null;
+    }
+
+    private boolean isTripIntercityTransportActivity(String normalizedType, String normalizedText, Trip trip) {
+        if (!normalizedType.equals("transport")) {
+            return false;
+        }
+        String departure = normalizeText(trip.getDeparture());
+        String destination = normalizeText(trip.getDestination());
+        return !departure.isBlank()
+                && !destination.isBlank()
+                && normalizedText.contains(departure)
+                && normalizedText.contains(destination);
+    }
+
+    private long estimateIntercityTransportCost(String normalizedText, Trip trip, Long mentionedCost) {
+        if (mentionedCost != null && mentionedCost > 0) {
+            return mentionedCost;
+        }
+
+        int travelers = Math.max(1, trip.getTravelerCount());
+        String selected = trip.getOutboundTransport() != null ? trip.getOutboundTransport().name().toLowerCase() : "";
+        if (selected.equals("plane") || containsAny(normalizedText, "may bay", "bay", "san bay")) {
+            return 1_500_000L * travelers;
+        }
+        if (selected.equals("train") || containsAny(normalizedText, "tau hoa", "tau lua")) {
+            return 700_000L * travelers;
+        }
+        if (selected.equals("bus") || containsAny(normalizedText, "xe khach", "xe bus", "xe buyt")) {
+            return 450_000L * travelers;
+        }
+        if (selected.equals("car") || containsAny(normalizedText, "o to", "oto", "xe rieng")) {
+            return Math.max(1_200_000L, 600_000L * travelers);
+        }
+        return 1_000_000L * travelers;
+    }
+
+    private boolean isVehicleRentalStartActivity(String normalizedType, String normalizedText) {
+        if (!normalizedType.equals("transport")) {
+            return false;
+        }
+        return containsAny(normalizedText,
+                "thue xe may",
+                "nhan xe may",
+                "lay xe may",
+                "thue xe dap",
+                "nhan xe dap",
+                "thue o to",
+                "thue oto",
+                "nhan o to",
+                "nhan oto",
+                "lay o to",
+                "lay oto");
+    }
+
+    private long estimateVehicleRentalCost(String normalizedText, Trip trip, Long mentionedCost) {
+        int travelers = Math.max(1, trip.getTravelerCount());
+        if (containsAny(normalizedText, "xe may")) {
+            long unitCost = mentionedCost != null && mentionedCost > 0 ? mentionedCost : 180_000L;
+            int bikeCount = Math.max(1, (int) Math.ceil(travelers / 2.0));
+            return unitCost * bikeCount;
+        }
+        if (containsAny(normalizedText, "xe dap")) {
+            long unitCost = mentionedCost != null && mentionedCost > 0 ? mentionedCost : 80_000L;
+            return unitCost * travelers;
+        }
+        if (containsAny(normalizedText, "o to", "oto")) {
+            return mentionedCost != null && mentionedCost > 0 ? mentionedCost : 900_000L;
+        }
+        return mentionedCost != null && mentionedCost > 0 ? mentionedCost : 150_000L;
+    }
+
+    private boolean mentionsExcludedRequiredCost(String normalizedText) {
+        return containsAny(normalizedText,
+                "khong bao gom trong chi phi nay",
+                "chua bao gom trong chi phi nay",
+                "khong bao gom vao chi phi",
+                "chua bao gom vao chi phi",
+                "not included");
+    }
+
+    private String normalizeIncludedCostNote(String note) {
+        if (note == null || note.isBlank()) {
+            return note;
+        }
+        if (!mentionsExcludedRequiredCost(normalizeText(note))) {
+            return note;
+        }
+        return note + " Khoản chi phí bắt buộc này đã được cộng vào ước tính.";
+    }
+
+    private boolean containsAny(String text, String... terms) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+        for (String term : terms) {
+            if (text.contains(term)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String nullToBlank(String value) {
+        return value == null ? "" : value;
     }
 
     private Long extractPerPersonCost(String note) {
@@ -985,6 +1184,23 @@ public class TripService {
         while (matcher.find()) {
             Long parsed = parseMoney(matcher.group(1), matcher.group(2));
             if (parsed != null && parsed > 0) {
+                result = parsed;
+            }
+        }
+        return result;
+    }
+
+    private Long extractLargestMentionedCost(String text) {
+        String normalized = normalizeText(text)
+                .replace("vnÄ‘", " vnd")
+                .replace("â‚«", " vnd");
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+                "(\\d+(?:[\\.,]\\d+)*)\\s*(trieu|tr|k|nghin|ngan|vnd|d)");
+        java.util.regex.Matcher matcher = pattern.matcher(normalized);
+        Long result = null;
+        while (matcher.find()) {
+            Long parsed = parseMoney(matcher.group(1), matcher.group(2));
+            if (parsed != null && parsed > 0 && (result == null || parsed > result)) {
                 result = parsed;
             }
         }

@@ -19,6 +19,11 @@ import java.util.*;
 @Slf4j
 public class AiService {
 
+    public record GeneratedItineraryResult(
+            List<TripDto.DayResponse> days,
+            TripDto.RequestFulfillment requestFulfillment) {
+    }
+
     public record RegeneratedDayResult(
             TripDto.DayResponse day,
             TripDto.RequestFulfillment requestFulfillment) {
@@ -37,26 +42,26 @@ public class AiService {
     private static final String AI_GENERATION_USER_MESSAGE =
             "AI chưa tạo được lịch trình đủ cụ thể cho chuyến đi này. Vui lòng thử lại hoặc bổ sung thêm điểm muốn ghé, điều cần tránh hay ghi chú để VivuPlan lập lại lịch trình.";
 
-    public List<TripDto.DayResponse> generateItinerary(TripDto.GenerateRequest req) {
+    public GeneratedItineraryResult generateItinerary(TripDto.GenerateRequest req) {
         String prompt = buildPrompt(req);
         log.info("Generating itinerary for: {} - {}N using Gemini model {}", req.getDestination(), req.getDays(), geminiModel);
 
         try {
             String rawJson = callGemini(prompt);
-            List<TripDto.DayResponse> itinerary = parseItinerary(rawJson);
-            QualityCheck quality = assessItineraryQuality(itinerary, req);
+            GeneratedItineraryResult result = parseGeneratedItineraryResult(rawJson);
+            QualityCheck quality = assessItineraryQuality(result.days(), req);
             if (quality.passed()) {
-                return itinerary;
+                return result;
             }
 
             log.warn("AI itinerary for {} failed quality check: {}. Retrying once with stricter prompt.",
                     req.getDestination(), quality.reason());
 
             String retryJson = callGemini(buildQualityRetryPrompt(req, quality.reason()));
-            List<TripDto.DayResponse> retryItinerary = parseItinerary(retryJson);
-            QualityCheck retryQuality = assessItineraryQuality(retryItinerary, req);
+            GeneratedItineraryResult retryResult = parseGeneratedItineraryResult(retryJson);
+            QualityCheck retryQuality = assessItineraryQuality(retryResult.days(), req);
             if (retryQuality.passed()) {
-                return retryItinerary;
+                return retryResult;
             }
 
             log.warn("AI retry itinerary for {} still failed quality check: {}. Returning error to user.",
@@ -149,6 +154,7 @@ public class AiService {
             Use named, real places and restaurants in or near %s.
             Avoid placeholder wording such as "địa điểm nổi bật", "đặc sản địa phương", "khu trung tâm", "vùng ven", "nhà hàng địa phương", or "cà phê view đẹp" unless paired with a specific real name and location.
             Add a clear local transportation plan with TRANSPORT activities for getting around %s. Do not hide rental, taxi, Grab, walking, bicycle, or local transfer costs inside FOOD/CAFE/ATTRACTION notes.
+            Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
             Do not repeat the same day structure across days.
             """, reason, req.getDestination(), req.getDestination());
     }
@@ -175,6 +181,7 @@ public class AiService {
                     The regenerated day should contain 4-6 activities. Never return more than 8 activities.
                     If the day has 4 or more FOOD/CAFE/ATTRACTION/ACTIVITY items, one of the activities MUST be a local TRANSPORT item.
                     Create a separate TRANSPORT activity with route/mode/cost instead of putting transport cost in an ATTRACTION, FOOD, CAFE, or ACTIVITY note.
+                    Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
                     """, retryReason, dayNumber);
 
         return String.format("""
@@ -221,6 +228,9 @@ public class AiService {
             3. Keep 4-6 activities for the regenerated day. Never return more than 8 activities.
             4. Keep times in HH:mm 24h format and avoid overlaps.
             5. estimatedCost MUST be total VND for the whole group of %d travelers.
+            5a. Never set estimatedCost to 0 for paid intercity transport such as flights, trains, buses, private cars, airport transfers, vehicle rental pickup, lodging, tickets, tours, shows, or paid experiences.
+            5b. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
+            5c. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
             6. Preserve user constraints: avoid banned items, respect must-visit where relevant, respect style/group.
             7. If Local transport is not MIXED, local transport activities must follow that selected mode unless clearly impractical and explained.
             8. Add explicit TRANSPORT activities for moving between clusters or inside %s. If the regenerated day has 4 or more FOOD/CAFE/ATTRACTION/ACTIVITY items, one activity MUST be local TRANSPORT. Do not hide rental/taxi/Grab/walking costs inside non-TRANSPORT notes.
@@ -453,6 +463,7 @@ public class AiService {
         return String.format("""
             You are a senior Vietnam travel planner. Create a practical itinerary for Vietnamese travelers.
             Return JSON only. All text values shown to users must be written in Vietnamese with correct accents.
+            The response MUST be one JSON object with keys "itinerary" and "requestFulfillment".
 
             Trip:
             - Departure: %s
@@ -490,9 +501,12 @@ public class AiService {
             5. Include realistic major costs: round-trip outbound transport, local transport, accommodation, food, entrance tickets, paid tours, shows, and shopping only if useful.
             6. For fixed-price items such as cable car, theme park, show, museum, paid tour, boat tour, or entrance ticket, use a realistic recent public-market estimate and mention the unit basis in note, for example "khoảng 850k/người".
             7. For accommodation, include a clear ACCOMMODATION activity with total lodging cost for all nights and all travelers. Do not use the accommodation type for a taxi/check-in only.
-            8. If the budget cannot support all expensive attractions, choose fewer paid activities instead of exceeding budget.
-            9. Prefer specific real places, restaurants, dishes, addresses/areas, and realistic travel pacing.
-            10. Keep notes concise. Do not invent exact official prices when unsure; use "ước tính" or "khoảng".
+            8. Never set estimatedCost to 0 for paid intercity transport such as flights, trains, buses, private cars, airport transfers, vehicle rental pickup, lodging, tickets, tours, shows, or paid experiences.
+            9. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
+            10. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
+            11. If the budget cannot support all expensive attractions, choose fewer paid activities instead of exceeding budget.
+            12. Prefer specific real places, restaurants, dishes, addresses/areas, and realistic travel pacing.
+            13. Keep notes concise. Do not invent exact official prices when unsure; use "ước tính" or "khoảng".
 
             Local transportation rules:
             1. Always make the local transportation plan explicit. Users must know how to move between places inside %s.
@@ -504,7 +518,7 @@ public class AiService {
             7. Do not put all local transport detail into one unrelated dinner or attraction note.
 
             Itinerary quality rules:
-            1. Return exactly %d days.
+            1. Return exactly %d days in the itinerary array.
             2. Each day must have 4-6 activities.
             3. FOOD/CAFE activities must name a specific dish or restaurant/cafe.
             4. ATTRACTION/ACTIVITY activities must name a specific real place in or near %s.
@@ -512,9 +526,20 @@ public class AiService {
             6. Do not use generic names like "ăn sáng đặc sản địa phương", "tham quan điểm nổi bật", "khám phá khu vực lân cận", "nhà hàng địa phương", or "cà phê view đẹp".
             7. Days must be clearly different and should not repeat the same activity sequence.
 
+            User request fulfillment rules:
+            1. Always evaluate user-specific requests from Must visit, Avoid, and Notes in requestFulfillment.
+            2. Split meaningful requests into concrete requested items. Treat implicit phrasing as a request when it proposes an activity, place, food, experience, or constraint, for example "nhảy dù ở Đà Nẵng cũng hay mà".
+            3. If a requested item is fully reflected in the itinerary, mark it FULFILLED with reasonCode APPLIED.
+            4. If a requested item is omitted, substituted, weakened, unsafe, too expensive, duplicated, or impossible under constraints, mark it PARTIAL or NOT_APPLIED and write a short Vietnamese userMessage explaining why.
+            5. Use reasonCode WEATHER_SAFETY when rain/storm/weather risk is the main reason. Other allowed reasonCode values: APPLIED, BUDGET, TIME_CONFLICT, DUPLICATE, CONSTRAINT, UNCLEAR, OTHER.
+            6. If there is no meaningful user-specific request, set overallStatus to NO_REQUEST and items to [].
+            7. If you are unsure whether a request was satisfied, mark the item UNCLEAR and explain what the user should check.
+            8. Never mention the weather in itinerary day titles, summaries, activities, or notes. If weather blocks a user request, explain it only in requestFulfillment.items[].userMessage.
+
             JSON schema:
-            [
-              {
+            {
+              "itinerary": [
+                {
                 "day": 1,
                 "title": "Ngày 1 - Chủ đề ngắn",
                 "summary": "Tóm tắt ngắn",
@@ -532,8 +557,20 @@ public class AiService {
                     "longitude": 108.4583
                   }
                 ]
+                }
+              ],
+              "requestFulfillment": {
+                "overallStatus": "FULFILLED|PARTIAL|NOT_FULFILLED|UNCLEAR|NO_REQUEST",
+                "items": [
+                  {
+                    "requestedText": "Hoạt động, địa điểm, món ăn, trải nghiệm, hoặc ràng buộc user đã yêu cầu",
+                    "status": "FULFILLED|PARTIAL|NOT_APPLIED|UNCLEAR",
+                    "reasonCode": "APPLIED|WEATHER_SAFETY|BUDGET|TIME_CONFLICT|DUPLICATE|CONSTRAINT|UNCLEAR|OTHER",
+                    "userMessage": "Thông báo ngắn bằng tiếng Việt nếu chưa đáp ứng đầy đủ; để trống nếu đã đáp ứng đầy đủ"
+                  }
+                ]
               }
-            ]
+            }
             """,
             req.getDeparture(), req.getDestination(),
             req.getStartDate() != null ? req.getStartDate().toString() : "not provided",
@@ -696,6 +733,35 @@ public class AiService {
         }
     }
 
+    private GeneratedItineraryResult parseGeneratedItineraryResult(String json) {
+        try {
+            JsonNode root = objectMapper.readTree(cleanJson(json));
+            if (root.isArray()) {
+                return new GeneratedItineraryResult(parseItinerary(json), null);
+            }
+
+            JsonNode itineraryNode = root.path("itinerary");
+            if (itineraryNode.isMissingNode() || itineraryNode.isNull()) {
+                itineraryNode = root.path("schedule");
+            }
+            if (itineraryNode.isMissingNode() || itineraryNode.isNull()) {
+                itineraryNode = root.path("days");
+            }
+            if (!itineraryNode.isArray()) {
+                throw new IllegalArgumentException("AI response is not an itinerary JSON object");
+            }
+
+            List<TripDto.DayResponse> days = new ArrayList<>();
+            for (JsonNode dayNode : itineraryNode) {
+                days.add(parseDayNode(dayNode));
+            }
+            return new GeneratedItineraryResult(days, parseRequestFulfillment(root.path("requestFulfillment")));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse AI itinerary JSON: " + e.getMessage()
+                    + ". Raw length=" + (json != null ? json.length() : 0), e);
+        }
+    }
+
     private List<TripDto.DayResponse> parseItinerary(String json) {
         try {
             JsonNode arr = objectMapper.readTree(cleanJson(json));
@@ -785,6 +851,13 @@ public class AiService {
                 String type = normalize(act.getType());
                 String note = normalize(act.getNote());
                 fingerprint.append(name).append("|");
+                if (act.getEstimatedCost() < 0) {
+                    return QualityCheck.fail("activity has negative cost: " + act.getName());
+                }
+                String costIssue = requiredActivityCostIssue(act, req, type, name, location, note);
+                if (costIssue != null) {
+                    return QualityCheck.fail(costIssue);
+                }
                 if (isGenericActivity(name, location, type)) {
                     genericActivities++;
                 }
@@ -871,6 +944,10 @@ public class AiService {
             if (act.getEstimatedCost() < 0) {
                 return QualityCheck.fail("activity has negative cost: " + act.getName());
             }
+            String costIssue = requiredActivityCostIssue(act, req, type, name, location, note);
+            if (costIssue != null) {
+                return QualityCheck.fail(costIssue);
+            }
             if (!avoid.isBlank() && containsAvoidedContent(combined, avoid)) {
                 return QualityCheck.fail("activity appears to violate avoid instruction: " + act.getName());
             }
@@ -921,6 +998,106 @@ public class AiService {
         }
 
         return QualityCheck.pass();
+    }
+
+    private String requiredActivityCostIssue(
+            TripDto.ActivityResponse act,
+            TripDto.GenerateRequest req,
+            String normalizedType,
+            String normalizedName,
+            String normalizedLocation,
+            String normalizedNote
+    ) {
+        String combined = String.join(" ", normalizedName, normalizedLocation, normalizedNote);
+        long cost = Math.max(0, act.getEstimatedCost());
+
+        if (mentionsExcludedRequiredCost(combined)) {
+            return "activity excludes a required cost from estimatedCost: " + act.getName();
+        }
+        if (isOutboundOrReturnTransport(combined, req)) {
+            long minimum = minimumIntercityTransportCost(combined, req);
+            if (cost < minimum) {
+                return "intercity transport cost is unrealistically low: " + act.getName();
+            }
+        }
+        if (isVehicleRentalStartActivity(normalizedType, combined)) {
+            long minimum = minimumVehicleRentalCost(combined, req);
+            if (cost < minimum) {
+                return "vehicle rental cost is missing or too low: " + act.getName();
+            }
+        }
+        return null;
+    }
+
+    private long minimumIntercityTransportCost(String normalizedText, TripDto.GenerateRequest req) {
+        int travelers = req.getTravelerCount() != null ? Math.max(1, req.getTravelerCount()) : 1;
+        String selected = normalize(req.getOutboundTransport());
+        if (selected.equals("plane") || containsAny(normalizedText, "may bay", "bay", "san bay")) {
+            return 800_000L * travelers;
+        }
+        if (selected.equals("train") || containsAny(normalizedText, "tau hoa", "tau lua")) {
+            return 350_000L * travelers;
+        }
+        if (selected.equals("bus") || containsAny(normalizedText, "xe khach", "xe bus", "xe buyt")) {
+            return 250_000L * travelers;
+        }
+        if (selected.equals("car") || containsAny(normalizedText, "o to", "oto", "xe rieng")) {
+            return Math.max(600_000L, 300_000L * travelers);
+        }
+        return 300_000L * travelers;
+    }
+
+    private boolean isVehicleRentalStartActivity(String normalizedType, String normalizedText) {
+        if (!normalizedType.equals("transport")) {
+            return false;
+        }
+        return containsAny(normalizedText,
+                "thue xe may",
+                "nhan xe may",
+                "lay xe may",
+                "thue xe dap",
+                "nhan xe dap",
+                "thue o to",
+                "thue oto",
+                "nhan o to",
+                "nhan oto",
+                "lay o to",
+                "lay oto");
+    }
+
+    private long minimumVehicleRentalCost(String normalizedText, TripDto.GenerateRequest req) {
+        int travelers = req.getTravelerCount() != null ? Math.max(1, req.getTravelerCount()) : 1;
+        if (containsAny(normalizedText, "xe may")) {
+            return 100_000L * Math.max(1, (int) Math.ceil(travelers / 2.0));
+        }
+        if (containsAny(normalizedText, "xe dap")) {
+            return 40_000L * travelers;
+        }
+        if (containsAny(normalizedText, "o to", "oto")) {
+            return 500_000L;
+        }
+        return 80_000L;
+    }
+
+    private boolean mentionsExcludedRequiredCost(String normalizedText) {
+        return containsAny(normalizedText,
+                "khong bao gom trong chi phi nay",
+                "chua bao gom trong chi phi nay",
+                "khong bao gom vao chi phi",
+                "chua bao gom vao chi phi",
+                "not included");
+    }
+
+    private boolean containsAny(String text, String... terms) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+        for (String term : terms) {
+            if (text.contains(term)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean containsAvoidedContent(String combinedActivityText, String avoidText) {

@@ -233,6 +233,8 @@ export interface TripResponse {
   viewCount: number;
   schedule?: DayResponse[];
   budget?: BudgetBreakdown;
+  warnings?: string[];
+  requestFulfillment?: RequestFulfillment;
   createdAt: string;
 }
 

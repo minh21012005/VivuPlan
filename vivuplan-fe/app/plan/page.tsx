@@ -397,6 +397,10 @@ function PlanContent() {
         avoid: form.avoid.trim() || undefined,
         notes: planningNotes || undefined,
       });
+      const requestWarnings = trip.warnings?.filter((warning) => warning.includes("Yêu cầu")) ?? [];
+      if (requestWarnings.length > 0 && typeof window !== "undefined") {
+        window.sessionStorage.setItem(`vivuplan:trip:${trip.id}:warnings`, JSON.stringify(requestWarnings));
+      }
       router.push(`/itinerary/${trip.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Không thể tạo lịch trình. Hãy kiểm tra đăng nhập hoặc backend.");

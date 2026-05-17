@@ -68,6 +68,8 @@ public class TripDto {
         private int viewCount;
         private List<DayResponse> schedule;
         private BudgetBreakdown budget;
+        private List<String> warnings;
+        private RequestFulfillment requestFulfillment;
         private String createdAt;
 
         public static TripResponse from(Trip trip) {

@@ -312,6 +312,27 @@ export default function ItineraryPage() {
     };
   }, [params.id, authLoading, authUser, router]);
 
+  useEffect(() => {
+    if (!trip?.id || typeof window === "undefined") return;
+    const storageKey = `vivuplan:trip:${trip.id}:warnings`;
+    const rawWarnings = window.sessionStorage.getItem(storageKey);
+    if (!rawWarnings) return;
+
+    window.sessionStorage.removeItem(storageKey);
+    try {
+      const warnings = JSON.parse(rawWarnings);
+      if (Array.isArray(warnings)) {
+        warnings
+          .filter((warning): warning is string => typeof warning === "string" && warning.trim().length > 0)
+          .forEach((warning) => showToast(warning, "info", 9000));
+        return;
+      }
+    } catch {
+      // Fall through and show the raw value below.
+    }
+    showToast(rawWarnings, "info", 9000);
+  }, [trip?.id, showToast]);
+
   const image = useMemo(() => getDestinationImage(trip?.destination, destinations), [destinations, trip?.destination]);
 
   const day = trip?.schedule?.[activeDay];
