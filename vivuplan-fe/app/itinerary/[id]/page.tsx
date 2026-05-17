@@ -693,56 +693,29 @@ export default function ItineraryPage() {
                   );
                 })()}
               </div>
-
-              {/* Feature 4 – Activity safety warnings */}
-              {(() => {
-                const dw = getByDayIndex(activeDay, trip.startDate);
-                if (!dw) return null;
-                const warnings = day.activities
-                  .map((a) => getActivityWeatherWarning(a.name, dw, a.location, a.type))
-                  .filter((w): w is NonNullable<typeof w> => w !== null);
-                if (warnings.length === 0) return null;
-                return (
-                  <div style={{ marginTop: 14, padding: "12px 16px", borderRadius: "var(--r-md)", background: "#fffbeb", border: "1px solid #fde68a", display: "flex", flexDirection: "column", gap: 8 }}>
-                    {warnings.map((w, i) => (
-                      <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13, color: "#92400e", lineHeight: 1.55 }}>
-                        <span style={{
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          flexShrink: 0, width: 24, height: 24, borderRadius: "50%",
-                          background: "rgba(245, 158, 11, 0.15)", color: "#d97706", marginTop: -2
-                        }}>
-                          {w.icon === "wind" ? <Wind size={13} /> : w.icon === "rain" ? <CloudRain size={13} /> : <CloudFog size={13} />}
-                        </span>
-                        <p style={{ margin: 0 }}>{w.message}</p>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
             </Card>
-
-            {activityError && !editor && (
-              <div style={{ marginBottom: 12, padding: "10px 12px", borderRadius: "var(--r-md)", background: "#FEF2F2", color: "#B91C1C", fontSize: 13 }}>
-                {activityError}
-              </div>
-            )}
 
             <div style={{ position: "relative" }}>
               <div style={{ position: "absolute", left: 22, top: 18, bottom: 18, width: 2, background: "linear-gradient(to bottom, var(--primary), var(--border))", borderRadius: 99 }} />
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {day.activities.map((activity, index) => (
-                  <ActivityItem
-                    key={activity.id ?? `${activity.time}-${activity.name}`}
-                    activity={activity}
-                    expanded={expanded === `${activeDay}-${index}`}
-                    onToggle={() => setExpanded(expanded === `${activeDay}-${index}` ? null : `${activeDay}-${index}`)}
-                    onEdit={() => {
-                      setActivityError("");
-                      setEditor({ mode: "edit", dayNumber: day.day, activity });
-                    }}
-                    onDelete={() => void deleteActivity(activity)}
-                  />
-                ))}
+                {day.activities.map((activity, index) => {
+                  const dw = getByDayIndex(activeDay, trip.startDate);
+                  const warning = dw ? getActivityWeatherWarning(activity.name, dw, activity.location, activity.type) : null;
+                  return (
+                    <ActivityItem
+                      key={activity.id ?? `${activity.time}-${activity.name}`}
+                      activity={activity}
+                      warning={warning}
+                      expanded={expanded === `${activeDay}-${index}`}
+                      onToggle={() => setExpanded(expanded === `${activeDay}-${index}` ? null : `${activeDay}-${index}`)}
+                      onEdit={() => {
+                        setActivityError("");
+                        setEditor({ mode: "edit", dayNumber: day.day, activity });
+                      }}
+                      onDelete={() => void deleteActivity(activity)}
+                    />
+                  );
+                })}
               </div>
             </div>
           </section>
@@ -1382,12 +1355,14 @@ function ActivityEditor({
 
 function ActivityItem({
   activity,
+  warning,
   expanded,
   onToggle,
   onEdit,
   onDelete,
 }: {
   activity: ActivityResponse;
+  warning?: { icon: "wind" | "rain" | "fog"; message: string } | null;
   expanded: boolean;
   onToggle: () => void;
   onEdit: () => void;
@@ -1428,7 +1403,29 @@ function ActivityItem({
             {activity.time}
           </span>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <h3 style={{ fontSize: 15, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{activity.name}</h3>
+            <h3 style={{ fontSize: 15, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{activity.name}</span>
+              {warning && (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: "#d97706",
+                    background: "rgba(245, 158, 11, 0.1)",
+                    padding: "2px 8px",
+                    borderRadius: 99,
+                    border: "1px solid rgba(245, 158, 11, 0.2)",
+                    flexShrink: 0
+                  }}
+                >
+                  <AlertTriangle size={10} style={{ color: "#d97706" }} />
+                  Lưu ý thời tiết
+                </span>
+              )}
+            </h3>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, color: "var(--text-4)", fontSize: 12 }}>
               <span>{activity.duration}</span>
               <span style={{ fontWeight: 700, color: activity.estimatedCost ? "var(--text-2)" : "var(--accent)" }}>{fmtCost(activity.estimatedCost)}</span>
@@ -1443,6 +1440,38 @@ function ActivityItem({
         </button>
         {expanded && (
           <div style={{ padding: "0 16px 16px", borderTop: "1px solid var(--divider)" }}>
+            {warning && (
+              <div style={{
+                display: "flex",
+                gap: 8,
+                alignItems: "flex-start",
+                padding: "10px 12px",
+                background: "#fffbeb",
+                border: "1px solid #fde68a",
+                borderRadius: "var(--r-md)",
+                fontSize: 13,
+                color: "#92400e",
+                lineHeight: 1.5,
+                marginTop: 12,
+                marginBottom: 8
+              }}>
+                <span style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  width: 22,
+                  height: 22,
+                  borderRadius: "50%",
+                  background: "rgba(245, 158, 11, 0.15)",
+                  color: "#d97706",
+                  marginTop: 1
+                }}>
+                  {warning.icon === "wind" ? <Wind size={11} /> : warning.icon === "rain" ? <CloudRain size={11} /> : <CloudFog size={11} />}
+                </span>
+                <span style={{ flex: 1 }}>{warning.message}</span>
+              </div>
+            )}
             <div style={{ display: "flex", gap: 7, marginTop: 12, marginBottom: 10, color: "var(--text-3)", fontSize: 13 }}>
               <MapPin size={14} style={{ color: "var(--primary)", flexShrink: 0, marginTop: 2 }} />
               <span>{activity.location}</span>
