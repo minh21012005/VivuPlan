@@ -202,16 +202,46 @@ public class WeatherService {
         List<Number> minTemps = (List<Number>) daily.get("temperature_2m_min");
         List<Number> rainProbs = (List<Number>) daily.get("precipitation_probability_max");
 
+        if (times == null || times.isEmpty()) {
+            return List.of();
+        }
+
         List<DailyWeather> result = new ArrayList<>(times.size());
         for (int i = 0; i < times.size(); i++) {
+            String date = getString(times, i);
+            if (date == null || date.isBlank()) {
+                continue;
+            }
+            Double maxTemp = getDouble(maxTemps, i);
+            Double minTemp = getDouble(minTemps, i);
+            double resolvedMaxTemp = maxTemp != null ? maxTemp : minTemp != null ? minTemp : 0;
+            double resolvedMinTemp = minTemp != null ? minTemp : maxTemp != null ? maxTemp : 0;
             result.add(DailyWeather.builder()
-                    .date(times.get(i))
-                    .code(codes.get(i).intValue())
-                    .maxTemp(maxTemps.get(i).doubleValue())
-                    .minTemp(minTemps.get(i).doubleValue())
-                    .precipitationProbability(rainProbs.get(i) != null ? rainProbs.get(i).intValue() : 0)
+                    .date(date)
+                    .code(getInt(codes, i, 0))
+                    .maxTemp(resolvedMaxTemp)
+                    .minTemp(resolvedMinTemp)
+                    .precipitationProbability(getInt(rainProbs, i, 0))
                     .build());
         }
         return result;
+    }
+
+    private String getString(List<String> values, int index) {
+        return values != null && index < values.size() ? values.get(index) : null;
+    }
+
+    private int getInt(List<Number> values, int index, int fallback) {
+        Number value = getNumber(values, index);
+        return value != null ? value.intValue() : fallback;
+    }
+
+    private Double getDouble(List<Number> values, int index) {
+        Number value = getNumber(values, index);
+        return value != null ? value.doubleValue() : null;
+    }
+
+    private Number getNumber(List<Number> values, int index) {
+        return values != null && index < values.size() ? values.get(index) : null;
     }
 }
