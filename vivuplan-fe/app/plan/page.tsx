@@ -397,9 +397,9 @@ function PlanContent() {
         avoid: form.avoid.trim() || undefined,
         notes: planningNotes || undefined,
       });
-      const requestWarnings = trip.warnings?.filter((warning) => warning.includes("Yêu cầu")) ?? [];
-      if (requestWarnings.length > 0 && typeof window !== "undefined") {
-        window.sessionStorage.setItem(`vivuplan:trip:${trip.id}:warnings`, JSON.stringify(requestWarnings));
+      const creationWarnings = trip.warnings?.filter((warning) => warning.trim().length > 0) ?? [];
+      if (creationWarnings.length > 0 && typeof window !== "undefined") {
+        window.sessionStorage.setItem(`vivuplan:trip:${trip.id}:warnings`, JSON.stringify(creationWarnings));
       }
       router.push(`/itinerary/${trip.id}`);
     } catch (e) {

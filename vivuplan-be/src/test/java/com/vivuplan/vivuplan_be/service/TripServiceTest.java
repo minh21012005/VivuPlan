@@ -208,6 +208,34 @@ class TripServiceTest {
     }
 
     @Test
+    void generateAndSaveWarnsWhenPlanExceedsBudget() {
+        User user = sampleUser();
+        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        mockRainForecast();
+        when(tripRepository.existsByShareCode(anyString())).thenReturn(false);
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> {
+            Trip saved = invocation.getArgument(0);
+            saved.setId(1L);
+            return saved;
+        });
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class)))
+                .thenReturn(new AiService.GeneratedItineraryResult(
+                        List.of(proposedOverBudgetDay()),
+                        noRequestFulfillment()));
+
+        TripDto.GenerateRequest req = generateRequest("", "");
+        req.setBudgetPerPerson(3_000_000L);
+
+        TripDto.TripResponse response = service.generateAndSave(7L, req);
+
+        assertThat(response.getBudget().getTotal()).isGreaterThan(3_000_000L);
+        assertThat(response.getWarnings()).anyMatch(warning -> warning.contains("vượt ngân sách"));
+    }
+
+    @Test
     void previewRegenerateDayWarnsFromAiRequestFulfillmentReport() {
         Trip trip = sampleTrip();
         trip.setStartDate(LocalDate.now());
@@ -293,6 +321,39 @@ class TripServiceTest {
         assertThat(activities.get(0).getCostEstimateMessage()).isNotBlank();
         assertThat(activities.get(1).getEstimatedCost()).isGreaterThanOrEqualTo(200_000L);
         assertThat(response.getNewBudget()).isGreaterThanOrEqualTo(200_000L);
+    }
+
+    @Test
+    void previewRegenerateDayWarnsWhenOverBudgetAndStillAllowsApply() {
+        Trip trip = sampleTrip();
+        trip.setStartDate(LocalDate.now());
+        trip.setEndDate(LocalDate.now());
+        trip.setBudgetPerPerson(230_000L);
+
+        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        mockRainForecast();
+        when(aiService.regenerateDay(any(TripDto.GenerateRequest.class), any(), anyInt(), anyString(), anyString()))
+                .thenReturn(new AiService.RegeneratedDayResult(
+                        proposedOverBudgetDay(),
+                        noRequestFulfillment()));
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TripDto.RegenerateDayRequest req = new TripDto.RegenerateDayRequest();
+        req.setInstruction("Regenerate with realistic costs");
+
+        TripDto.RegenerateDayPreviewResponse preview = service.previewRegenerateDay(1L, 7L, 1, req);
+
+        assertThat(preview.getWarnings()).anyMatch(warning -> warning.contains("ngân sách"));
+
+        TripDto.ApplyRegenerateDayRequest applyRequest = new TripDto.ApplyRegenerateDayRequest();
+        applyRequest.setProposalId(preview.getProposalId());
+        TripDto.TripResponse updated = service.applyRegeneratedDay(1L, 7L, 1, applyRequest);
+
+        assertThat(updated.getSchedule().get(0).getActivities()).hasSize(4);
+        assertThat(updated.getBudget().getTotal()).isGreaterThan(trip.getBudgetPerPerson());
     }
 
     private void mockRainForecast() {
@@ -408,6 +469,19 @@ class TripServiceTest {
                 activity("10:30", "Tham quan Trang An", "ATTRACTION"),
                 activity("12:30", "An trua com chay de nui", "FOOD"),
                 activity("14:00", "Tham quan chua Bai Dinh", "ATTRACTION")));
+        return day;
+    }
+
+    private TripDto.DayResponse proposedOverBudgetDay() {
+        TripDto.DayResponse day = new TripDto.DayResponse();
+        day.setDay(1);
+        day.setTitle("Ngay 1 - Chi phi cao");
+        day.setSummary("Lich trinh co tong chi phi vuot ngan sach.");
+        day.setActivities(List.of(
+                activity("08:00", "Bay den Da Nang", "TRANSPORT", "San bay", "2 gio", 2_000_000L, "Uoc tinh ve may bay."),
+                activity("11:00", "Nhan phong khach san", "ACCOMMODATION", "Khach san", "30 phut", 1_500_000L, "Uoc tinh luu tru."),
+                activity("13:00", "An trua hai san", "FOOD", "Nha hang", "1 gio", 800_000L, null),
+                activity("15:00", "Tour trong ngay", "ACTIVITY", "Da Nang", "2 gio", 900_000L, null)));
         return day;
     }
 

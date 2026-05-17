@@ -161,7 +161,7 @@ public class TripService {
         response.setSchedule(mapDays(trip.getItineraryDays()));
         response.setBudget(calculateBudget(trip, aiSchedule));
         response.setRequestFulfillment(requestFulfillment);
-        response.setWarnings(buildGenerationWarnings(requestFulfillment, buildGenerationRequestText(req)));
+        response.setWarnings(buildGenerationWarnings(trip, response.getBudget(), requestFulfillment, buildGenerationRequestText(req)));
         return response;
     }
 
@@ -536,12 +536,6 @@ public class TripService {
         }
         resequenceActivities(tempDay);
 
-        long proposedTripTotal = calculateBudgetWithReplacement(trip, proposedDay);
-        long budgetCeiling = resolveGroupBudget(trip);
-        if (budgetCeiling > 0 && proposedTripTotal > Math.round(budgetCeiling * 1.15)) {
-            throw new IllegalArgumentException(
-                    "Phương án mới vượt ngân sách quá nhiều. Vui lòng thử yêu cầu giảm chi phí.");
-        }
     }
 
     private TripDto.DayResponse mergeSelectedRegeneratedActivities(
@@ -661,9 +655,33 @@ public class TripService {
     }
 
     private List<String> buildGenerationWarnings(
+            Trip trip,
+            TripDto.BudgetBreakdown budget,
             TripDto.RequestFulfillment requestFulfillment,
             String requestText) {
-        return buildRequestFulfillmentWarnings(requestFulfillment, requestText, "lịch trình vừa tạo");
+        List<String> warnings = new ArrayList<>();
+        warnings.addAll(buildRequestFulfillmentWarnings(requestFulfillment, requestText, "lịch trình vừa tạo"));
+        warnings.addAll(buildBudgetWarnings(trip, budget));
+        return warnings;
+    }
+
+    private List<String> buildBudgetWarnings(Trip trip, TripDto.BudgetBreakdown budget) {
+        if (trip == null || budget == null) {
+            return List.of();
+        }
+        long budgetCeiling = resolveGroupBudget(trip);
+        if (budgetCeiling <= 0 || budget.getTotal() <= budgetCeiling) {
+            return List.of();
+        }
+
+        long overPercent = Math.round(((budget.getTotal() - budgetCeiling) / (double) budgetCeiling) * 100);
+        return List.of("Tổng chi phí ước tính "
+                + formatVnd(budget.getTotal())
+                + " có thể vượt ngân sách "
+                + formatVnd(budgetCeiling)
+                + " khoảng "
+                + overPercent
+                + "%. Hãy kiểm tra lại các chi phí lớn trước khi chốt lịch.");
     }
 
     private List<String> buildRegenerationWarnings(
@@ -990,15 +1008,6 @@ public class TripService {
         }
 
         long total = food + transport + accommodation + activities;
-        long budgetCeiling = resolveGroupBudget(trip);
-        if (budgetCeiling > 0 && total > budgetCeiling) {
-            double overrun = (total - budgetCeiling) / (double) budgetCeiling;
-            if (overrun > 0.10) {
-                log.warn("Estimated trip cost exceeds user budget by {}%: estimated={}, budgetCeiling={}",
-                        Math.round(overrun * 100), total, budgetCeiling);
-            }
-        }
-
         b.setTotal(total);
         b.setTransport(transport);
         b.setAccommodation(accommodation);
@@ -1244,6 +1253,10 @@ public class TripService {
             return trip.getBudgetTotal();
         }
         return Math.max(0, trip.getBudgetPerPerson()) * Math.max(1, trip.getTravelerCount());
+    }
+
+    private String formatVnd(long value) {
+        return String.format(java.util.Locale.forLanguageTag("vi-VN"), "%,d VND", value);
     }
 
     private long roundToNearest(long value, long unit) {

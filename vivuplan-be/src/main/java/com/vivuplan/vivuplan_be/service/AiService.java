@@ -155,6 +155,9 @@ public class AiService {
             Avoid placeholder wording such as "địa điểm nổi bật", "đặc sản địa phương", "khu trung tâm", "vùng ven", "nhà hàng địa phương", or "cà phê view đẹp" unless paired with a specific real name and location.
             Add a clear local transportation plan with TRANSPORT activities for getting around %s. Do not hide rental, taxi, Grab, walking, bicycle, or local transfer costs inside FOOD/CAFE/ATTRACTION notes.
             Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
+            Before returning, sum every activity.estimatedCost and keep the total at or below the total group budget unless the required outbound/return transport alone makes that impossible.
+            If the budget is tight, keep required transport realistic but reduce optional paid attractions, tours, premium meals, shopping, and accommodation comfort instead of exceeding budget.
+            If realistic required costs make the budget impossible, return realistic costs anyway. Never understate costs to fit the budget.
             Do not repeat the same day structure across days.
             """, reason, req.getDestination(), req.getDestination());
     }
@@ -505,8 +508,11 @@ public class AiService {
             9. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
             10. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
             11. If the budget cannot support all expensive attractions, choose fewer paid activities instead of exceeding budget.
-            12. Prefer specific real places, restaurants, dishes, addresses/areas, and realistic travel pacing.
-            13. Keep notes concise. Do not invent exact official prices when unsure; use "ước tính" or "khoảng".
+            12. Before returning, sum every activity.estimatedCost and keep the total at or below the total group budget unless the required outbound/return transport alone makes that impossible.
+            13. If the budget is tight, keep required transport realistic but reduce optional paid attractions, tours, premium meals, shopping, and accommodation comfort instead of exceeding budget.
+            14. If realistic required costs make the budget impossible, return realistic costs anyway. Never understate costs to fit the budget.
+            15. Prefer specific real places, restaurants, dishes, addresses/areas, and realistic travel pacing.
+            16. Keep notes concise. Do not invent exact official prices when unsure; use "ước tính" or "khoảng".
 
             Local transportation rules:
             1. Always make the local transportation plan explicit. Users must know how to move between places inside %s.
