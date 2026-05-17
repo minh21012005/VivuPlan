@@ -42,7 +42,24 @@ public class TripService {
     public TripDto.TripResponse generateAndSave(Long userId, TripDto.GenerateRequest req) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+
+        if (req.getStartDate() == null || req.getEndDate() == null) {
+            throw new IllegalArgumentException("Ngày đi và ngày về không được để trống");
+        }
+        if (req.getStartDate().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Ngày đi không được ở trong quá khứ");
+        }
+        if (req.getStartDate().isAfter(LocalDate.now().plusYears(1))) {
+            throw new IllegalArgumentException("Ngày đi không được quá 1 năm kể từ hôm nay");
+        }
+
         int tripDays = resolveTripDays(req);
+        if (tripDays <= 0) {
+            throw new IllegalArgumentException("Thời gian chuyến đi không hợp lệ");
+        }
+        if (tripDays > 30) {
+            throw new IllegalArgumentException("Thời gian chuyến đi tối đa là 30 ngày");
+        }
 
         // 1. Call AI to generate itinerary
         TripDto.GenerateRequest aiReq = new TripDto.GenerateRequest();

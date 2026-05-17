@@ -101,11 +101,27 @@ function getTodayDateInput() {
   return `${year}-${month}-${day}`;
 }
 
+function getOneYearLaterDateInput() {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() + 1);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function isBeforeToday(value: string) {
   if (!value) return false;
   const selected = new Date(`${value}T00:00:00`);
   const today = new Date(`${getTodayDateInput()}T00:00:00`);
   return selected < today;
+}
+
+function isAfterOneYear(value: string) {
+  if (!value) return false;
+  const selected = new Date(`${value}T00:00:00`);
+  const oneYearLater = new Date(`${getOneYearLaterDateInput()}T00:00:00`);
+  return selected > oneYearLater;
 }
 
 function getRecommendedDayCount(value?: string) {
@@ -243,6 +259,7 @@ function PlanContent() {
   const budgetPerPerson =
     form.budgetMode === "total" && form.travelers > 0 ? Math.round(form.budget / form.travelers) : form.budget;
   const todayInput = getTodayDateInput();
+  const oneYearLaterInput = getOneYearLaterDateInput();
   const compatibleGroupOptions = getGroupOptions(form.travelers);
   const groupSummary =
     form.travelers === 1
@@ -298,6 +315,10 @@ function PlanContent() {
     }
     if (isBeforeToday(form.startDate)) {
       setError("Ngày đi không được ở trong quá khứ.");
+      return;
+    }
+    if (isAfterOneYear(form.startDate)) {
+      setError("Ngày đi không được quá 1 năm kể từ hôm nay.");
       return;
     }
     if (computedDays > 30) {
@@ -526,6 +547,7 @@ function PlanContent() {
                     className="input"
                     type="date"
                     min={todayInput}
+                    max={oneYearLaterInput}
                     value={form.startDate}
                     onChange={(event) => setForm((prev) => ({
                       ...prev,
