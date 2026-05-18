@@ -243,7 +243,7 @@ export default function ItineraryPage() {
       : null;
   }, [trip, destinations]);
 
-  // Step 2: after DB destinations finish loading, fall back to Nominatim only for unknown places
+  // Step 2: after DB destinations finish loading, fall back to backend geocoding only for unknown places
   const shouldGeocodeDestination = Boolean(trip?.destination && !destinationsLoading && !dbCoords);
   const geocodedCoords = useGeocode(shouldGeocodeDestination ? trip?.destination : null);
 
@@ -402,6 +402,16 @@ export default function ItineraryPage() {
   const dayTimeRange = getDayTimeRange(dayActivities);
   const dayDirectionsUrl = buildDayDirectionsUrl(dayActivities, trip?.destination);
   const budget = trip?.budget;
+  const qualityInsights = trip?.qualityInsights;
+  const qualityInsightWarnings = [
+    ...(qualityInsights?.budgetWarnings ?? []),
+    ...(qualityInsights?.routeWarnings ?? []),
+  ];
+  const shouldShowQualityInsights =
+    !!qualityInsights &&
+    (qualityInsightWarnings.length > 0 ||
+      qualityInsights.budgetConfidence !== "HIGH" ||
+      qualityInsights.routeSanity !== "GOOD");
   const targetBudget =
     trip
       ? trip.budgetMode === "TOTAL" && trip.budgetTotal
@@ -839,6 +849,38 @@ export default function ItineraryPage() {
 
             <div style={{ position: "relative" }}>
               <div style={{ position: "absolute", left: 22, top: 18, bottom: 18, width: 2, background: "linear-gradient(to bottom, var(--primary), var(--border))", borderRadius: 99 }} />
+              {shouldShowQualityInsights && qualityInsights && (
+                <div
+                  style={{
+                    marginBottom: 16,
+                    padding: "10px 12px",
+                    borderRadius: "var(--r-md)",
+                    background: qualityInsightWarnings.length ? "#FFF7ED" : "var(--surface-2)",
+                    color: qualityInsightWarnings.length ? "#9A3412" : "var(--text-3)",
+                    fontSize: 12,
+                    lineHeight: 1.55,
+                  }}
+                >
+                  <strong>
+                    Độ tin cậy chi phí: {qualityInsights.budgetConfidence === "HIGH"
+                      ? "cao"
+                      : qualityInsights.budgetConfidence === "MEDIUM"
+                      ? "trung bình"
+                      : qualityInsights.budgetConfidence === "NEEDS_REVIEW"
+                      ? "cần kiểm tra"
+                      : "thấp"}
+                    {" · "}
+                    Lộ trình: {qualityInsights.routeSanity === "GOOD" ? "ổn" : "cần rà soát"}
+                  </strong>
+                  {qualityInsightWarnings.length > 0 && (
+                    <ul style={{ margin: "6px 0 0", paddingLeft: 16 }}>
+                      {qualityInsightWarnings.slice(0, 3).map((warning, index) => (
+                        <li key={`${warning}-${index}`}>{warning}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {day.activities.map((activity, index) => {
                   const dw = getByDayIndex(activeDay, trip.startDate);

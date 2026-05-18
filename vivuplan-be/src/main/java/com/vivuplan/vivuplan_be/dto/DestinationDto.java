@@ -63,4 +63,23 @@ public class DestinationDto {
                     .build();
         }
     }
+
+    @Data
+    @Builder
+    public static class LatLonResponse {
+        private Double lat;
+        private Double lon;
+    }
+
+    @Data
+    @Builder
+    public static class WeatherDayResponse {
+        private String date;
+        private int code;
+        private double maxTemp;
+        private double minTemp;
+        private double precipitationMm;
+        private int precipitationProbability;
+        private double windspeedKmh;
+    }
 }

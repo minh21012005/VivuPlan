@@ -3,8 +3,10 @@ package com.vivuplan.vivuplan_be.config;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vivuplan.vivuplan_be.entity.Destination;
+import com.vivuplan.vivuplan_be.entity.Place;
 import com.vivuplan.vivuplan_be.entity.Role;
 import com.vivuplan.vivuplan_be.repository.DestinationRepository;
+import com.vivuplan.vivuplan_be.repository.PlaceRepository;
 import com.vivuplan.vivuplan_be.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
     private final DestinationRepository destinationRepository;
+    private final PlaceRepository placeRepository;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -34,6 +37,7 @@ public class DataInitializer implements CommandLineRunner {
         ensureRole(Role.RoleName.USER, "Standard user");
         ensureRole(Role.RoleName.ADMIN, "System administrator");
         ensureDestinations();
+        ensurePlaces();
     }
 
     private void ensureRole(Role.RoleName roleName, String description) {
@@ -93,6 +97,53 @@ public class DataInitializer implements CommandLineRunner {
         destination.setSourceUrl(seed.sourceUrl());
     }
 
+    private void ensurePlaces() {
+        ClassPathResource resource = new ClassPathResource("data/places.seed.json");
+        if (!resource.exists()) {
+            log.warn("Place seed file not found");
+            return;
+        }
+
+        try {
+            List<PlaceSeed> seeds = objectMapper.readValue(resource.getInputStream(), new TypeReference<>() {});
+            for (PlaceSeed seed : seeds) {
+                Place place = resolveSeedPlace(seed);
+                applySeed(place, seed);
+                placeRepository.save(place);
+            }
+            log.info("Place seed synchronized: {} records", seeds.size());
+        } catch (IOException e) {
+            throw new IllegalStateException("Khong the import du lieu dia diem", e);
+        }
+    }
+
+    private Place resolveSeedPlace(PlaceSeed seed) {
+        if (seed.googlePlaceId() != null && !seed.googlePlaceId().isBlank()) {
+            return placeRepository.findByGooglePlaceId(seed.googlePlaceId()).orElseGet(Place::new);
+        }
+        return placeRepository.findByDestinationIgnoreCaseAndNameIgnoreCase(seed.destination(), seed.name())
+                .orElseGet(Place::new);
+    }
+
+    private void applySeed(Place place, PlaceSeed seed) {
+        place.setName(seed.name());
+        place.setDestination(seed.destination());
+        place.setType(seed.type());
+        place.setAddress(seed.address());
+        place.setPriceLevel(seed.priceLevel());
+        place.setEstimatedCostMin(seed.estimatedCostMin());
+        place.setEstimatedCostMax(seed.estimatedCostMax());
+        place.setRating(seed.rating());
+        place.setLatitude(seed.latitude());
+        place.setLongitude(seed.longitude());
+        place.setGooglePlaceId(seed.googlePlaceId());
+        place.setImageUrl(seed.imageUrl());
+        place.setDescription(seed.description());
+        place.setOpeningHours(seed.openingHours());
+        place.setVerified(seed.verified() == null || seed.verified());
+        place.setSource(seed.source());
+    }
+
     private record DestinationSeed(
             String name,
             String slug,
@@ -118,5 +169,24 @@ public class DataInitializer implements CommandLineRunner {
             Integer displayOrder,
             String sourceName,
             String sourceUrl
+    ) {}
+
+    private record PlaceSeed(
+            String name,
+            String destination,
+            Place.PlaceType type,
+            String address,
+            String priceLevel,
+            Long estimatedCostMin,
+            Long estimatedCostMax,
+            Double rating,
+            Double latitude,
+            Double longitude,
+            String googlePlaceId,
+            String imageUrl,
+            String description,
+            String openingHours,
+            Boolean verified,
+            String source
     ) {}
 }

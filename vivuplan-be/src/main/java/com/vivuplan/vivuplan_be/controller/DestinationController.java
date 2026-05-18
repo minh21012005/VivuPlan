@@ -28,6 +28,20 @@ public class DestinationController {
         return ResponseEntity.ok(destinationService.getFeaturedDestinations());
     }
 
+    @GetMapping("/geocode")
+    public ResponseEntity<DestinationDto.LatLonResponse> geocode(@RequestParam String q) {
+        DestinationDto.LatLonResponse response = destinationService.geocode(q);
+        return response != null ? ResponseEntity.ok(response) : ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/weather")
+    public ResponseEntity<List<DestinationDto.WeatherDayResponse>> weather(
+            @RequestParam(required = false) String destination,
+            @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lon) {
+        return ResponseEntity.ok(destinationService.getWeather(destination, lat, lon));
+    }
+
     @GetMapping("/{slug}")
     public ResponseEntity<DestinationDto.DestinationResponse> destination(@PathVariable String slug) {
         return ResponseEntity.ok(destinationService.getBySlug(slug));

@@ -215,6 +215,8 @@ public class AiService {
                 source.getNotes() != null ? source.getNotes() : "",
                 instruction != null && !instruction.isBlank() ? "Yêu cầu chỉnh ngày: " + instruction : "").trim();
         copy.setNotes(mergedNotes);
+        copy.setWeatherForecast(source.getWeatherForecast());
+        copy.setVerifiedPlacesContext(source.getVerifiedPlacesContext());
         return copy;
     }
 
@@ -334,6 +336,7 @@ public class AiService {
                         - Avoid: %s
                         - Notes: %s
                         - Weather Forecast (per trip day): %s
+                        - Verified place candidates for this destination: %s
 
                         Weather-aware planning rules:
                         1. Each forecast line is "Day N (date): condition, temp, rain chance → risk level".
@@ -342,6 +345,12 @@ public class AiService {
                            If weather or another constraint blocks the user's request, explain that in requestFulfillment.items[].userMessage.
                         4. If forecast is "none", plan normally without weather constraints.
                         %s
+
+                        Verified place rules:
+                        1. Prefer the verified place candidates when they fit this regenerated day, the user's request, route, weather, and budget.
+                        2. When using a verified place candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
+                        3. You may use other real places only when the verified candidates do not cover the user's request, but avoid generic unnamed places.
+                        4. Do not force every candidate into the day; choose only what makes the day practical.
 
                         Regeneration task:
                         - Regenerate day number: %d
@@ -429,6 +438,9 @@ public class AiService {
                 req.getAvoid() != null && !req.getAvoid().isBlank() ? req.getAvoid() : "none",
                 req.getNotes() != null && !req.getNotes().isBlank() ? req.getNotes() : "none",
                 req.getWeatherForecast() != null && !req.getWeatherForecast().isBlank() ? req.getWeatherForecast()
+                        : "none",
+                req.getVerifiedPlacesContext() != null && !req.getVerifiedPlacesContext().isBlank()
+                        ? req.getVerifiedPlacesContext()
                         : "none",
                 weatherSafetyOverrideGuidance(req.getWeatherForecast()),
                 dayNumber,
@@ -536,6 +548,7 @@ public class AiService {
                         - Avoid: %s
                         - Notes: %s
                         - Weather Forecast (per trip day): %s
+                        - Verified place candidates for this destination: %s
 
                         Weather-aware planning rules:
                         1. Read the Weather Forecast carefully. Each line is labeled "Day N (date): condition, temp, rain chance → risk level".
@@ -563,6 +576,12 @@ public class AiService {
                         14. If realistic required costs make the budget impossible, return realistic costs anyway. Never understate costs to fit the budget.
                         15. Prefer specific real places, restaurants, dishes, addresses/areas, and realistic travel pacing.
                         16. Keep notes concise. Do not invent exact official prices when unsure; use "ước tính" or "khoảng".
+
+                        Verified place rules:
+                        1. Prefer the verified place candidates when they fit the user's constraints, route, weather, and budget.
+                        2. When using a verified place candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
+                        3. You may use other real places only when the verified candidates do not cover the user's request, but avoid generic unnamed places.
+                        4. Do not force every candidate into the trip; choose only what makes the itinerary practical.
 
                         Local transportation rules:
                         1. Make the local transportation plan explicit when places are far apart or movement has meaningful cost. Users must know how to move between places inside %s.
@@ -645,6 +664,9 @@ public class AiService {
                 req.getAvoid() != null && !req.getAvoid().isBlank() ? req.getAvoid() : "none",
                 req.getNotes() != null && !req.getNotes().isBlank() ? req.getNotes() : "none",
                 req.getWeatherForecast() != null && !req.getWeatherForecast().isBlank() ? req.getWeatherForecast()
+                        : "none",
+                req.getVerifiedPlacesContext() != null && !req.getVerifiedPlacesContext().isBlank()
+                        ? req.getVerifiedPlacesContext()
                         : "none",
                 weatherSafetyOverrideGuidance(req.getWeatherForecast()),
                 travelers,

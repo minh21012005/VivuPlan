@@ -168,6 +168,22 @@ export const destinationApi = {
   getBySlug: (slug: string) =>
     fetch(`${API_BASE}/api/destinations/${slug}`)
       .then(handleResponse<DestinationResponse>),
+
+  geocode: (q: string) => {
+    const query = new URLSearchParams({ q });
+    return fetch(`${API_BASE}/api/destinations/geocode?${query}`)
+      .then(handleResponse<LatLonResponse>);
+  },
+
+  weather: (params: { destination?: string; lat?: number; lon?: number }) => {
+    const query = new URLSearchParams();
+    if (params.destination) query.set("destination", params.destination);
+    if (params.lat !== undefined) query.set("lat", String(params.lat));
+    if (params.lon !== undefined) query.set("lon", String(params.lon));
+    const suffix = query.toString() ? `?${query}` : "";
+    return fetch(`${API_BASE}/api/destinations/weather${suffix}`)
+      .then(handleResponse<WeatherDayResponse[]>);
+  },
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -233,6 +249,7 @@ export interface TripResponse {
   viewCount: number;
   schedule?: DayResponse[];
   budget?: BudgetBreakdown;
+  qualityInsights?: TripQualityInsights;
   warnings?: string[];
   requestFulfillment?: RequestFulfillment;
   createdAt: string;
@@ -312,6 +329,13 @@ export interface BudgetBreakdown {
   activities: number;
 }
 
+export interface TripQualityInsights {
+  budgetConfidence: "HIGH" | "MEDIUM" | "LOW" | "NEEDS_REVIEW";
+  routeSanity: "GOOD" | "REVIEW";
+  budgetWarnings: string[];
+  routeWarnings: string[];
+}
+
 export interface DestinationResponse {
   id: number;
   name: string;
@@ -336,4 +360,19 @@ export interface DestinationResponse {
   featured: boolean;
   sourceName?: string;
   sourceUrl?: string;
+}
+
+export interface LatLonResponse {
+  lat: number;
+  lon: number;
+}
+
+export interface WeatherDayResponse {
+  date: string;
+  code: number;
+  maxTemp: number;
+  minTemp: number;
+  precipitationMm: number;
+  precipitationProbability: number;
+  windspeedKmh: number;
 }

@@ -10,6 +10,8 @@ import java.util.Optional;
 @Repository
 public interface PlaceRepository extends JpaRepository<Place, Long> {
     List<Place> findByDestinationAndVerifiedTrueOrderByRatingDesc(String destination);
+    List<Place> findByDestinationIgnoreCaseAndVerifiedTrueOrderByRatingDesc(String destination);
     List<Place> findByDestinationAndTypeAndVerifiedTrueOrderByRatingDesc(String destination, Place.PlaceType type);
+    Optional<Place> findByDestinationIgnoreCaseAndNameIgnoreCase(String destination, String name);
     Optional<Place> findByGooglePlaceId(String googlePlaceId);
 }

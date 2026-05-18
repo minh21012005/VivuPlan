@@ -12,6 +12,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.LocalDateTime;
@@ -19,6 +21,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -35,6 +38,7 @@ public class TripService {
     private final DestinationRepository destinationRepository;
     private final AiService aiService;
     private final WeatherService weatherService;
+    private final PlacePlanningService placePlanningService;
     private final Map<String, DayRegenerationProposal> dayRegenerationProposals = new ConcurrentHashMap<>();
     private static final int REGENERATION_PROPOSAL_TTL_MINUTES = 30;
     private static final String COST_REVIEW_STATUS = "NEEDS_REVIEW";
@@ -91,10 +95,12 @@ public class TripService {
         aiReq.setAvoid(req.getAvoid());
         aiReq.setNotes(req.getNotes());
         aiReq.setWeatherForecast(fetchWeatherContext(req));
+        aiReq.setVerifiedPlacesContext(placePlanningService.buildVerifiedPlacesContext(aiReq));
 
         AiService.GeneratedItineraryResult generatedItinerary = aiService.generateItinerary(aiReq);
         List<TripDto.DayResponse> aiSchedule = generatedItinerary.days();
         TripDto.RequestFulfillment requestFulfillment = generatedItinerary.requestFulfillment();
+        placePlanningService.enrichScheduleWithVerifiedPlaces(aiSchedule, req.getDestination());
 
         // 2. Build and save Trip entity
         Trip trip = Trip.builder()
@@ -150,6 +156,7 @@ public class TripService {
                     act.setLatitude(ar.getLatitude());
                     act.setLongitude(ar.getLongitude());
                     act.setGooglePlaceId(ar.getGooglePlaceId());
+                    placePlanningService.attachVerifiedPlace(act, ar.getPlaceId());
                     act.setSortOrder(ar.getSortOrder());
                     activities.add(act);
                 }
@@ -160,6 +167,7 @@ public class TripService {
         trip.setItineraryDays(days);
 
         TripDto.BudgetBreakdown budget = calculateBudget(trip, aiSchedule);
+        TripDto.TripQualityInsights qualityInsights = buildQualityInsights(trip, aiSchedule, budget);
         String requestText = buildGenerationRequestText(req);
         List<String> persistentWarnings = buildRequestFulfillmentWarnings(
                 requestFulfillment,
@@ -174,6 +182,7 @@ public class TripService {
 
         TripDto.TripResponse response = toTripResponse(trip);
         response.setBudget(budget);
+        response.setQualityInsights(qualityInsights);
         response.setRequestFulfillment(requestFulfillment);
         response.setWarnings(warnings);
         return response;
@@ -292,6 +301,7 @@ public class TripService {
                 instruction);
         TripDto.DayResponse proposedDay = regeneratedDay.day();
         TripDto.RequestFulfillment requestFulfillment = regeneratedDay.requestFulfillment();
+        placePlanningService.enrichScheduleWithVerifiedPlaces(List.of(proposedDay), trip.getDestination());
         normalizeActivityCosts(List.of(proposedDay), trip);
         validateRegeneratedDayProposal(trip, proposedDay);
 
@@ -414,6 +424,7 @@ public class TripService {
         req.setAvoid(trip.getAvoid());
         req.setNotes(trip.getNotes());
         req.setWeatherForecast(fetchWeatherContext(req));
+        req.setVerifiedPlacesContext(placePlanningService.buildVerifiedPlacesContext(req));
         return req;
     }
 
@@ -481,7 +492,7 @@ public class TripService {
 
         // 1. Try to get coordinates from local DB first (fastest path)
         Double lat = null, lon = null;
-        var dbDest = destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(destName, destName);
+        var dbDest = destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(destName, toDestinationSlug(destName));
         if (dbDest.isPresent()) {
             lat = dbDest.get().getLatitude();
             lon = dbDest.get().getLongitude();
@@ -497,6 +508,18 @@ public class TripService {
         LocalDate start = req.getStartDate() != null ? req.getStartDate() : LocalDate.now();
         LocalDate end   = req.getEndDate()   != null ? req.getEndDate()   : start.plusDays(Math.max(0, req.getDays() - 1));
         return formatWeatherForAi(forecast, start, end);
+    }
+
+    private String toDestinationSlug(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        String ascii = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replace("đ", "d")
+                .replace("Đ", "D")
+                .toLowerCase(Locale.ROOT);
+        return ascii.replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
     }
 
     /**
@@ -661,6 +684,7 @@ public class TripService {
         copy.setRating(source.getRating());
         copy.setLatitude(source.getLatitude());
         copy.setLongitude(source.getLongitude());
+        copy.setPlaceId(source.getPlaceId());
         copy.setGooglePlaceId(source.getGooglePlaceId());
         copy.setSortOrder(source.getSortOrder());
         return copy;
@@ -690,6 +714,7 @@ public class TripService {
         activity.setLatitude(response.getLatitude());
         activity.setLongitude(response.getLongitude());
         activity.setGooglePlaceId(response.getGooglePlaceId());
+        placePlanningService.attachVerifiedPlace(activity, response.getPlaceId());
         activity.setSortOrder(response.getSortOrder());
         return activity;
     }
@@ -966,7 +991,7 @@ public class TripService {
 
     private String toRequestWarning(String message) {
         String trimmed = message == null ? "" : message.trim();
-        if (trimmed.startsWith("Yêu cầu")) {
+        if (normalizeText(trimmed).startsWith("yeu cau")) {
             return trimmed;
         }
         return "Yêu cầu: " + trimmed;
@@ -993,6 +1018,7 @@ public class TripService {
         TripDto.TripResponse response = TripDto.TripResponse.from(trip);
         response.setSchedule(mapDays(trip.getItineraryDays()));
         response.setBudget(calculateBudget(trip, response.getSchedule()));
+        response.setQualityInsights(buildQualityInsights(trip, response.getSchedule(), response.getBudget()));
         List<String> persistentWarnings = filterPersistentWarnings(response.getWarnings());
         response.setWarnings(mergeWarnings(
                 persistentWarnings,
@@ -1232,6 +1258,121 @@ public class TripService {
         b.setFood(food);
         b.setActivities(activities);
         return b;
+    }
+
+    private TripDto.TripQualityInsights buildQualityInsights(
+            Trip trip,
+            List<TripDto.DayResponse> schedule,
+            TripDto.BudgetBreakdown budget) {
+        TripDto.TripQualityInsights insights = new TripDto.TripQualityInsights();
+        List<String> budgetWarnings = buildBudgetInsightWarnings(trip, schedule, budget);
+        List<String> routeWarnings = buildRouteInsightWarnings(schedule);
+        insights.setBudgetWarnings(budgetWarnings);
+        insights.setRouteWarnings(routeWarnings);
+        insights.setBudgetConfidence(resolveBudgetConfidence(trip, budget, budgetWarnings));
+        insights.setRouteSanity(routeWarnings.isEmpty() ? "GOOD" : "REVIEW");
+        return insights;
+    }
+
+    private List<String> buildBudgetInsightWarnings(
+            Trip trip,
+            List<TripDto.DayResponse> schedule,
+            TripDto.BudgetBreakdown budget) {
+        List<String> warnings = new ArrayList<>();
+        if (budget == null) {
+            return warnings;
+        }
+        long budgetCeiling = resolveGroupBudget(trip);
+        if (budgetCeiling > 0 && budget.getTotal() > Math.round(budgetCeiling * 1.05)) {
+            warnings.add("Ước tính hiện vượt ngân sách người dùng nhập. Cần kiểm tra lại chi phí bắt buộc và hoạt động trả phí.");
+        }
+        if (hasCostReviewItems(schedule)) {
+            warnings.add("Một số mục có chi phí bắt buộc nhưng AI chưa đưa ra ước tính đủ tin cậy.");
+        }
+        if (trip.getDays() != null && trip.getDays() > 1 && budget.getAccommodation() == 0) {
+            warnings.add("Chuyến đi qua đêm nhưng chưa thấy chi phí lưu trú rõ ràng trong lịch trình.");
+        }
+        if (hasDifferentDepartureAndDestination(trip) && budget.getTransport() == 0) {
+            warnings.add("Chưa thấy chi phí di chuyển chính rõ ràng giữa điểm xuất phát và điểm đến.");
+        }
+        if (budget.getTotal() == 0) {
+            warnings.add("Tổng chi phí đang bằng 0, không đủ cơ sở để đánh giá ngân sách.");
+        }
+        return warnings;
+    }
+
+    private String resolveBudgetConfidence(
+            Trip trip,
+            TripDto.BudgetBreakdown budget,
+            List<String> budgetWarnings) {
+        if (budget == null || budget.getTotal() <= 0) {
+            return "LOW";
+        }
+        long budgetCeiling = resolveGroupBudget(trip);
+        if (budgetCeiling > 0 && budget.getTotal() > Math.round(budgetCeiling * 1.05)) {
+            return "NEEDS_REVIEW";
+        }
+        if (budgetWarnings == null || budgetWarnings.isEmpty()) {
+            return "HIGH";
+        }
+        boolean importantGap = budgetWarnings.stream().anyMatch(warning ->
+                warning.contains("lưu trú") || warning.contains("di chuyển chính") || warning.contains("bằng 0"));
+        return importantGap ? "LOW" : "MEDIUM";
+    }
+
+    private boolean hasCostReviewItems(List<TripDto.DayResponse> schedule) {
+        return schedule != null && schedule.stream()
+                .filter(day -> day.getActivities() != null)
+                .flatMap(day -> day.getActivities().stream())
+                .anyMatch(activity -> COST_REVIEW_STATUS.equals(activity.getCostEstimateStatus())
+                        || (activity.getNote() != null && activity.getNote().contains("Chi phí cần kiểm tra")));
+    }
+
+    private boolean hasDifferentDepartureAndDestination(Trip trip) {
+        String departure = normalizeText(trip.getDeparture());
+        String destination = normalizeText(trip.getDestination());
+        return !departure.isBlank() && !destination.isBlank() && !departure.equals(destination);
+    }
+
+    private List<String> buildRouteInsightWarnings(List<TripDto.DayResponse> schedule) {
+        List<String> warnings = new ArrayList<>();
+        if (schedule == null) {
+            return warnings;
+        }
+        for (TripDto.DayResponse day : schedule) {
+            if (day.getActivities() == null) {
+                continue;
+            }
+            boolean hasTransport = day.getActivities().stream()
+                    .anyMatch(activity -> "TRANSPORT".equalsIgnoreCase(activity.getType()));
+            List<TripDto.ActivityResponse> places = day.getActivities().stream()
+                    .filter(activity -> activity.getLatitude() != null && activity.getLongitude() != null)
+                    .filter(activity -> activity.getType() == null
+                            || (!"TRANSPORT".equalsIgnoreCase(activity.getType())
+                                    && !"ACCOMMODATION".equalsIgnoreCase(activity.getType())))
+                    .toList();
+            if (places.size() < 2) {
+                continue;
+            }
+            double totalDistance = 0;
+            double maxSegment = 0;
+            for (int i = 1; i < places.size(); i++) {
+                TripDto.ActivityResponse previous = places.get(i - 1);
+                TripDto.ActivityResponse current = places.get(i);
+                double distance = distanceKm(previous.getLatitude(), previous.getLongitude(),
+                        current.getLatitude(), current.getLongitude());
+                totalDistance += distance;
+                maxSegment = Math.max(maxSegment, distance);
+            }
+            if (!hasTransport && maxSegment >= 12) {
+                warnings.add("Ngày " + day.getDay() + " có điểm cách nhau khoảng "
+                        + Math.round(maxSegment) + "km nhưng chưa thấy mục di chuyển rõ ràng.");
+            } else if (!hasTransport && totalDistance >= 25) {
+                warnings.add("Ngày " + day.getDay()
+                        + " có tổng quãng đường giữa các điểm khá dài nhưng chưa thấy kế hoạch di chuyển rõ ràng.");
+            }
+        }
+        return warnings;
     }
 
     private void normalizeActivityCosts(List<TripDto.DayResponse> schedule, Trip trip) {
@@ -1549,11 +1690,28 @@ public class TripService {
     private String normalizeText(String value) {
         if (value == null)
             return "";
-        return java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
+        String repaired = repairMojibake(value);
+        return java.text.Normalizer.normalize(repaired, java.text.Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "")
                 .replace("đ", "d")
                 .replace("Đ", "D")
                 .toLowerCase(java.util.Locale.ROOT);
+    }
+
+    private String repairMojibake(String value) {
+        if (value == null || value.isBlank()) {
+            return value;
+        }
+        if (!(value.contains("Ã") || value.contains("Â") || value.contains("Ä") || value.contains("á")
+                || value.contains("Æ"))) {
+            return value;
+        }
+        try {
+            String repaired = new String(value.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
+            return repaired.indexOf('\uFFFD') >= 0 ? value : repaired;
+        } catch (RuntimeException e) {
+            return value;
+        }
     }
 
     private record DayRegenerationProposal(

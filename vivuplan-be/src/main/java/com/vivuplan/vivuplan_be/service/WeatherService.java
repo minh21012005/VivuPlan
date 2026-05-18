@@ -53,7 +53,9 @@ public class WeatherService {
         private int    code;
         private double maxTemp;
         private double minTemp;
+        private double precipitationMm;
         private int    precipitationProbability;
+        private double windspeedKmh;
 
         /** Human-readable WMO weather label for AI prompts. */
         public String toWeatherLabel() {
@@ -100,7 +102,7 @@ public class WeatherService {
         String url = UriComponentsBuilder.fromHttpUrl(OPEN_METEO_BASE)
                 .queryParam("latitude",  String.format("%.4f", lat))
                 .queryParam("longitude", String.format("%.4f", lon))
-                .queryParam("daily", "weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max")
+                .queryParam("daily", "weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max,precipitation_probability_max")
                 .queryParam("timezone", "Asia/Ho_Chi_Minh")
                 .queryParam("forecast_days", 16)
                 .build(true)
@@ -200,6 +202,8 @@ public class WeatherService {
         List<Number> codes    = (List<Number>) daily.get("weathercode");
         List<Number> maxTemps = (List<Number>) daily.get("temperature_2m_max");
         List<Number> minTemps = (List<Number>) daily.get("temperature_2m_min");
+        List<Number> precipitationSums = (List<Number>) daily.get("precipitation_sum");
+        List<Number> windSpeeds = (List<Number>) daily.get("windspeed_10m_max");
         List<Number> rainProbs = (List<Number>) daily.get("precipitation_probability_max");
 
         if (times == null || times.isEmpty()) {
@@ -221,7 +225,9 @@ public class WeatherService {
                     .code(getInt(codes, i, 0))
                     .maxTemp(resolvedMaxTemp)
                     .minTemp(resolvedMinTemp)
+                    .precipitationMm(getDouble(precipitationSums, i, 0))
                     .precipitationProbability(getInt(rainProbs, i, 0))
+                    .windspeedKmh(getDouble(windSpeeds, i, 0))
                     .build());
         }
         return result;
@@ -239,6 +245,11 @@ public class WeatherService {
     private Double getDouble(List<Number> values, int index) {
         Number value = getNumber(values, index);
         return value != null ? value.doubleValue() : null;
+    }
+
+    private double getDouble(List<Number> values, int index, double fallback) {
+        Number value = getNumber(values, index);
+        return value != null ? value.doubleValue() : fallback;
     }
 
     private Number getNumber(List<Number> values, int index) {

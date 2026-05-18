@@ -3,6 +3,7 @@ package com.vivuplan.vivuplan_be.service;
 import com.vivuplan.vivuplan_be.dto.TripDto;
 import com.vivuplan.vivuplan_be.entity.Activity;
 import com.vivuplan.vivuplan_be.entity.ItineraryDay;
+import com.vivuplan.vivuplan_be.entity.Place;
 import com.vivuplan.vivuplan_be.entity.Trip;
 import com.vivuplan.vivuplan_be.entity.User;
 import com.vivuplan.vivuplan_be.repository.DestinationRepository;
@@ -25,6 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,10 +47,23 @@ class TripServiceTest {
     @Mock
     private WeatherService weatherService;
 
+    @Mock
+    private PlacePlanningService placePlanningService;
+
+    private TripService service() {
+        return new TripService(
+                tripRepository,
+                userRepository,
+                destinationRepository,
+                aiService,
+                weatherService,
+                placePlanningService);
+    }
+
     @Test
     void addActivitySortsByTimeAndRecalculatesBudget() {
         Trip trip = sampleTrip();
-        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        TripService service = service();
         when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
         when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -73,7 +88,7 @@ class TripServiceTest {
     @Test
     void updateActivityRejectsOverlappingTimeWindow() {
         Trip trip = sampleTrip();
-        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        TripService service = service();
         when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
 
         TripDto.UpdateActivityRequest req = new TripDto.UpdateActivityRequest();
@@ -95,7 +110,7 @@ class TripServiceTest {
         Activity activity = trip.getItineraryDays().get(0).getActivities().get(0);
         activity.setEstimatedCost(0L);
         activity.setNote("Chi phí cần kiểm tra: hoạt động này có thể phát sinh phí, nhưng AI chưa đưa ra mức ước tính đáng tin cậy.");
-        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        TripService service = service();
         when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
         when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -120,7 +135,7 @@ class TripServiceTest {
     void getTripReturnsPersistedAiWarnings() {
         Trip trip = sampleTrip();
         trip.setAiWarnings("Yêu cầu chèo sup chưa được áp dụng vì trời mưa.\nTổng chi phí có thể vượt ngân sách.");
-        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        TripService service = service();
         when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
 
         TripDto.TripResponse response = service.getTrip(1L, 7L);
@@ -133,7 +148,7 @@ class TripServiceTest {
     @Test
     void generateAndSaveWarnsFromAiRequestFulfillmentReport() {
         User user = sampleUser();
-        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        TripService service = service();
         when(userRepository.findById(7L)).thenReturn(Optional.of(user));
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
@@ -166,7 +181,7 @@ class TripServiceTest {
     @Test
     void generateAndSaveWarnsWhenAiDoesNotReturnRequestFulfillmentReport() {
         User user = sampleUser();
-        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        TripService service = service();
         when(userRepository.findById(7L)).thenReturn(Optional.of(user));
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
@@ -191,7 +206,7 @@ class TripServiceTest {
     @Test
     void generateAndSaveDoesNotWarnWhenAiReportsNoMeaningfulRequest() {
         User user = sampleUser();
-        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        TripService service = service();
         when(userRepository.findById(7L)).thenReturn(Optional.of(user));
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
@@ -216,9 +231,60 @@ class TripServiceTest {
     }
 
     @Test
+    void generateAndSaveInjectsAndAppliesVerifiedPlaces() {
+        User user = sampleUser();
+        TripService service = service();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        when(placePlanningService.buildVerifiedPlacesContext(any(TripDto.GenerateRequest.class)))
+                .thenReturn("- Bảo tàng Đà Nẵng | type=ATTRACTION | address=24 Trần Phú");
+        doAnswer(invocation -> {
+            @SuppressWarnings("unchecked")
+            List<TripDto.DayResponse> schedule = invocation.getArgument(0);
+            TripDto.ActivityResponse activity = schedule.get(0).getActivities().get(0);
+            activity.setPlaceId(44L);
+            activity.setLatitude(16.0746);
+            activity.setLongitude(108.2231);
+            return null;
+        }).when(placePlanningService).enrichScheduleWithVerifiedPlaces(any(), anyString());
+        doAnswer(invocation -> {
+            Activity activity = invocation.getArgument(0);
+            Long placeId = invocation.getArgument(1);
+            activity.setPlace(Place.builder().id(placeId).build());
+            return null;
+        }).when(placePlanningService).attachVerifiedPlace(any(Activity.class), any());
+        mockRainForecast();
+        when(tripRepository.existsByShareCode(anyString())).thenReturn(false);
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> {
+            Trip saved = invocation.getArgument(0);
+            saved.setId(1L);
+            return saved;
+        });
+        AtomicReference<TripDto.GenerateRequest> capturedRequest = new AtomicReference<>();
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class)))
+                .thenAnswer(invocation -> {
+                    capturedRequest.set(invocation.getArgument(0));
+                    return new AiService.GeneratedItineraryResult(
+                            List.of(proposedVerifiedPlaceDay()),
+                            noRequestFulfillment());
+                });
+
+        TripDto.TripResponse response = service.generateAndSave(7L, generateRequest("", ""));
+
+        assertThat(capturedRequest.get().getVerifiedPlacesContext())
+                .contains("Bảo tàng Đà Nẵng")
+                .contains("24 Trần Phú");
+        TripDto.ActivityResponse activity = response.getSchedule().get(0).getActivities().get(0);
+        assertThat(activity.getPlaceId()).isEqualTo(44L);
+        assertThat(activity.getLatitude()).isEqualTo(16.0746);
+        assertThat(activity.getLongitude()).isEqualTo(108.2231);
+    }
+
+    @Test
     void generateAndSaveNormalizesRequiredTransportCosts() {
         User user = sampleUser();
-        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        TripService service = service();
         when(userRepository.findById(7L)).thenReturn(Optional.of(user));
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
@@ -253,7 +319,7 @@ class TripServiceTest {
     @Test
     void generateAndSaveDoesNotOverridePlausibleShortRouteTransportCost() {
         User user = sampleUser();
-        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        TripService service = service();
         when(userRepository.findById(7L)).thenReturn(Optional.of(user));
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
@@ -283,7 +349,7 @@ class TripServiceTest {
     @Test
     void generateAndSaveDoesNotFlagReturnFlightWhenRoundTripCostIsBundled() {
         User user = sampleUser();
-        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        TripService service = service();
         when(userRepository.findById(7L)).thenReturn(Optional.of(user));
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
@@ -314,7 +380,7 @@ class TripServiceTest {
     @Test
     void generateAndSaveKeepsBudgetOverageInBudgetCardInsteadOfAiWarnings() {
         User user = sampleUser();
-        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        TripService service = service();
         when(userRepository.findById(7L)).thenReturn(Optional.of(user));
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
@@ -345,7 +411,7 @@ class TripServiceTest {
         trip.setStartDate(LocalDate.now());
         trip.setEndDate(LocalDate.now());
 
-        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        TripService service = service();
         when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
@@ -375,7 +441,7 @@ class TripServiceTest {
         trip.setStartDate(LocalDate.now());
         trip.setEndDate(LocalDate.now());
 
-        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        TripService service = service();
         when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
@@ -404,7 +470,7 @@ class TripServiceTest {
         trip.setStartDate(LocalDate.now());
         trip.setEndDate(LocalDate.now());
 
-        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        TripService service = service();
         when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
@@ -435,7 +501,7 @@ class TripServiceTest {
         trip.setEndDate(LocalDate.now());
         trip.setBudgetPerPerson(230_000L);
 
-        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        TripService service = service();
         when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
@@ -555,6 +621,16 @@ class TripServiceTest {
                         "Chi phí di chuyển địa phương và nhiên liệu xe máy trong ngày. Chi phí thuê xe máy khoảng 150.000 - 200.000 VND/ngày, không bao gồm trong chi phí này."),
                 activity("12:00", "Thưởng thức Mì Quảng", "FOOD"),
                 activity("14:00", "Khám phá Bảo tàng Đà Nẵng", "ATTRACTION")));
+        return day;
+    }
+
+    private TripDto.DayResponse proposedVerifiedPlaceDay() {
+        TripDto.DayResponse day = new TripDto.DayResponse();
+        day.setDay(1);
+        day.setTitle("Ngày 1 - Đà Nẵng");
+        day.setSummary("Lịch trình dùng POI đã xác thực.");
+        day.setActivities(List.of(
+                activity("09:00", "Khám phá Bảo tàng Đà Nẵng", "ATTRACTION")));
         return day;
     }
 
@@ -717,3 +793,4 @@ class TripServiceTest {
         return trip;
     }
 }
+

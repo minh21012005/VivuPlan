@@ -69,6 +69,7 @@ public class TripDto {
         private int viewCount;
         private List<DayResponse> schedule;
         private BudgetBreakdown budget;
+        private TripQualityInsights qualityInsights;
         private List<String> warnings;
         private RequestFulfillment requestFulfillment;
         private String createdAt;
@@ -174,6 +175,20 @@ public class TripDto {
     }
 
     @Data
+    public static class TripQualityInsights {
+        /**
+         * HIGH | MEDIUM | LOW | NEEDS_REVIEW
+         */
+        private String budgetConfidence;
+        /**
+         * GOOD | REVIEW
+         */
+        private String routeSanity;
+        private List<String> budgetWarnings;
+        private List<String> routeWarnings;
+    }
+
+    @Data
     public static class UpdateActivityRequest {
         private String time;
         private String name;
@@ -259,5 +274,6 @@ public class TripDto {
         private String avoid;
         private String notes;
         private String weatherForecast;
+        private String verifiedPlacesContext;
     }
 }

@@ -2,18 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import type { DailyWeather } from "@/lib/weather-utils";
-
-interface OpenMeteoResponse {
-  daily: {
-    time: string[];
-    weathercode: number[];
-    temperature_2m_max: number[];
-    temperature_2m_min: number[];
-    precipitation_sum: number[];
-    windspeed_10m_max: number[];
-    precipitation_probability_max: number[];
-  };
-}
+import { destinationApi } from "@/lib/api";
 
 // Persistent cache using localStorage to avoid re-fetching across page reloads
 const CACHE_KEY_PREFIX = "weather_cache_";
@@ -47,41 +36,8 @@ function setCachedWeather(key: string, data: DailyWeather[]) {
   }
 }
 
-async function fetchWeather(lat: number, lon: number, signal?: AbortSignal, retries = 2): Promise<DailyWeather[]> {
-  const url =
-    `https://api.open-meteo.com/v1/forecast` +
-    `?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}` +
-    `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max,precipitation_probability_max` +
-    `&timezone=Asia%2FHo_Chi_Minh` +
-    `&forecast_days=16`;
-
-  try {
-    const res = await fetch(url, { signal });
-    if (!res.ok) throw new Error(`Weather fetch failed: ${res.status}`);
-    const json: OpenMeteoResponse = await res.json();
-
-    return json.daily.time.map((date, i) => ({
-      date,
-      code: json.daily.weathercode[i] ?? 0,
-      maxTemp: json.daily.temperature_2m_max[i] ?? 0,
-      minTemp: json.daily.temperature_2m_min[i] ?? 0,
-      precipitationMm: json.daily.precipitation_sum[i] ?? 0,
-      precipitationProbability: json.daily.precipitation_probability_max[i] ?? 0,
-      windspeedKmh: json.daily.windspeed_10m_max[i] ?? 0,
-    }));
-  } catch (err: unknown) {
-    if (err instanceof Error && err.name === "AbortError") throw err;
-    if (retries > 0) {
-      // Exponential-like backoff before retrying (1000ms, then 2000ms if needed)
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      return fetchWeather(lat, lon, signal, retries - 1);
-    }
-    throw err;
-  }
-}
-
 /**
- * Fetch 16-day daily forecast from Open-Meteo for a given lat/lon.
+ * Fetch 16-day daily forecast through the backend for a given lat/lon.
  * Returns an empty array while loading or on error (fails silently — weather is non-critical UI).
  */
 export function useWeather(lat?: number, lon?: number) {
@@ -90,29 +46,34 @@ export function useWeather(lat?: number, lon?: number) {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (lat == null || lon == null) return;
+    if (lat == null || lon == null) {
+      return;
+    }
 
     const key = `${lat.toFixed(4)},${lon.toFixed(4)}`;
     const cached = getCachedWeather(key);
     if (cached) {
-      setForecast(cached);
+      queueMicrotask(() => setForecast(cached));
       return;
     }
 
     abortRef.current?.abort();
     abortRef.current = new AbortController();
-    setLoading(true);
+    queueMicrotask(() => setLoading(true));
 
-    fetchWeather(lat, lon, abortRef.current.signal)
+    const signal = abortRef.current.signal;
+    destinationApi.weather({ lat, lon })
       .then((data) => {
+        if (signal.aborted) return;
         setCachedWeather(key, data);
         setForecast(data);
       })
-      .catch((err) => {
-        if (err instanceof Error && err.name === "AbortError") return;
+      .catch(() => {
         // Silently fail — weather is enhancement, not core feature
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!signal.aborted) setLoading(false);
+      });
 
     return () => {
       abortRef.current?.abort();
