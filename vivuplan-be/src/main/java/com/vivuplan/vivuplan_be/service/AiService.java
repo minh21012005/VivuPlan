@@ -29,6 +29,12 @@ public class AiService {
             TripDto.RequestFulfillment requestFulfillment) {
     }
 
+    private static class AiResponseFormatException extends RuntimeException {
+        private AiResponseFormatException(String message) {
+            super(message);
+        }
+    }
+
     @Value("${app.ai.gemini.api-key:}")
     private String geminiApiKey;
 
@@ -48,10 +54,32 @@ public class AiService {
 
         try {
             String rawJson = callGemini(prompt);
-            GeneratedItineraryResult result = parseGeneratedItineraryResult(rawJson);
+            boolean usedRetry = false;
+            GeneratedItineraryResult result;
+            try {
+                result = parseGeneratedItineraryResult(rawJson);
+            } catch (AiResponseFormatException e) {
+                usedRetry = true;
+                log.warn("AI itinerary for {} returned invalid response contract: {}. Retrying once with strict JSON contract.",
+                        req.getDestination(), e.getMessage());
+                String retryJson = callGemini(buildQualityRetryPrompt(req, formatContractRetryReason(e.getMessage())));
+                result = parseGeneratedItineraryResult(retryJson);
+            }
             QualityCheck quality = assessItineraryQuality(result.days(), req);
             if (quality.passed()) {
                 return result;
+            }
+
+            if (usedRetry) {
+                if (isRecoverableCostQualityIssue(quality.reason())) {
+                    log.warn("AI retry itinerary for {} still has a cost completeness issue: {}. Returning with cost review markers.",
+                            req.getDestination(), quality.reason());
+                    return result;
+                }
+
+                log.warn("AI retry itinerary for {} still failed quality check after contract retry: {}. Returning error to user.",
+                        req.getDestination(), quality.reason());
+                throw new AiGenerationException(AI_GENERATION_USER_MESSAGE);
             }
 
             log.warn("AI itinerary for {} failed quality check: {}. Retrying once with stricter prompt.",
@@ -93,10 +121,38 @@ public class AiService {
         try {
             TripDto.GenerateRequest qualityReq = withRegenerationInstruction(req, instruction);
             String rawJson = callGeminiForSingleDay(buildDayRegenerationPrompt(req, currentSchedule, dayNumber, intent, instruction, null));
-            RegeneratedDayResult result = parseRegeneratedDayResult(rawJson, dayNumber);
+            boolean usedRetry = false;
+            RegeneratedDayResult result;
+            try {
+                result = parseRegeneratedDayResult(rawJson, dayNumber);
+            } catch (AiResponseFormatException e) {
+                usedRetry = true;
+                log.warn("AI regenerated day {} for {} returned invalid response contract: {}. Retrying once with strict JSON contract.",
+                        dayNumber, req.getDestination(), e.getMessage());
+                String retryJson = callGeminiForSingleDay(buildDayRegenerationPrompt(
+                        req,
+                        currentSchedule,
+                        dayNumber,
+                        intent,
+                        instruction,
+                        formatContractRetryReason(e.getMessage())));
+                result = parseRegeneratedDayResult(retryJson, dayNumber);
+            }
             QualityCheck quality = assessRegeneratedDayQuality(result.day(), currentSchedule, qualityReq);
             if (quality.passed()) {
                 return result;
+            }
+
+            if (usedRetry) {
+                if (isRecoverableCostQualityIssue(quality.reason())) {
+                    log.warn("AI retry regenerated day {} for {} still has a cost completeness issue: {}. Returning with cost review markers.",
+                            dayNumber, req.getDestination(), quality.reason());
+                    return result;
+                }
+
+                log.warn("AI retry regenerated day {} for {} still failed quality check after contract retry: {}.",
+                        dayNumber, req.getDestination(), quality.reason());
+                throw new AiGenerationException("AI chưa tạo được phương án chỉnh ngày này đủ tốt. Vui lòng thử lại với yêu cầu cụ thể hơn.");
             }
 
             log.warn("AI regenerated day {} for {} failed quality check: {}. Retrying once.",
@@ -157,12 +213,17 @@ public class AiService {
         return buildCostAwarePrompt(req);
     }
 
+    private String formatContractRetryReason(String reason) {
+        return "response JSON contract was invalid: " + reason;
+    }
+
     private String buildQualityRetryPrompt(TripDto.GenerateRequest req, String reason) {
         return buildCostAwarePrompt(req) + String.format("""
 
             IMPORTANT RETRY INSTRUCTION:
             The previous itinerary was rejected because: %s
             Regenerate the itinerary from scratch.
+            Return exactly ONE JSON object with keys "itinerary" and "requestFulfillment". Never return a bare JSON array, and never use "days" or "schedule" instead of "itinerary".
             Use named, real places and restaurants in or near %s.
             Avoid placeholder wording such as "địa điểm nổi bật", "đặc sản địa phương", "khu trung tâm", "vùng ven", "nhà hàng địa phương", or "cà phê view đẹp" unless paired with a specific real name and location.
             Add a clear local transportation plan with TRANSPORT activities for getting around %s. Do not hide rental, taxi, Grab, walking, bicycle, or local transfer costs inside FOOD/CAFE/ATTRACTION notes.
@@ -193,6 +254,7 @@ public class AiService {
                     IMPORTANT RETRY INSTRUCTION:
                     The previous proposal was rejected because: %s
                     Fix that issue. Return a safer, more specific version of day %d only.
+                    Return exactly ONE JSON object with keys "day" and "requestFulfillment". Never return a bare JSON array.
                     The regenerated day should contain 4-6 activities. Never return more than 8 activities.
                     If the day has 4 or more FOOD/CAFE/ATTRACTION/ACTIVITY items, one of the activities MUST be a local TRANSPORT item.
                     Create a separate TRANSPORT activity with route/mode/cost instead of putting transport cost in an ATTRACTION, FOOD, CAFE, or ACTIVITY note.
@@ -331,40 +393,27 @@ public class AiService {
     private RegeneratedDayResult parseRegeneratedDayResult(String json, int dayNumber) {
         try {
             JsonNode root = objectMapper.readTree(cleanJson(json));
-            TripDto.DayResponse day;
-            TripDto.RequestFulfillment requestFulfillment = null;
-
-            if (root.isArray()) {
-                List<TripDto.DayResponse> days = parseItinerary(json);
-                day = requireSingleRegeneratedDay(days, dayNumber);
-            } else if (root.path("day").isObject()) {
-                day = parseDayNode(root.path("day"));
-                requestFulfillment = parseRequestFulfillment(root.path("requestFulfillment"));
-            } else if (root.path("activities").isArray()) {
-                day = parseDayNode(root);
-            } else {
-                throw new IllegalArgumentException("AI response is not a regenerated day JSON object");
+            if (root == null || !root.isObject()) {
+                throw new AiResponseFormatException("expected one JSON object with keys \"day\" and \"requestFulfillment\"");
             }
 
+            JsonNode dayNode = root.path("day");
+            if (!dayNode.isObject()) {
+                throw new AiResponseFormatException("missing required object key \"day\"");
+            }
+
+            TripDto.DayResponse day = parseDayNode(dayNode);
+            TripDto.RequestFulfillment requestFulfillment = parseRequiredRequestFulfillment(root.path("requestFulfillment"));
             if (day.getDay() != dayNumber) {
                 throw new RuntimeException("AI returned wrong day number: " + day.getDay());
             }
             return new RegeneratedDayResult(day, requestFulfillment);
+        } catch (AiResponseFormatException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse AI regenerated day JSON: " + e.getMessage()
                     + ". Raw length=" + (json != null ? json.length() : 0), e);
         }
-    }
-
-    private TripDto.DayResponse requireSingleRegeneratedDay(List<TripDto.DayResponse> days, int dayNumber) {
-        if (days.size() != 1) {
-            throw new RuntimeException("AI must return exactly one regenerated day");
-        }
-        TripDto.DayResponse day = days.get(0);
-        if (day.getDay() != dayNumber) {
-            throw new RuntimeException("AI returned wrong day number: " + day.getDay());
-        }
-        return day;
     }
 
     private TripDto.RequestFulfillment parseRequestFulfillment(JsonNode node) {
@@ -392,80 +441,11 @@ public class AiService {
         return fulfillment;
     }
 
-    private String buildLegacyPrompt(TripDto.GenerateRequest req) {
-        long budgetK = req.getBudgetPerPerson() / 1000;
-        return String.format("""
-            Bạn là chuyên gia du lịch Việt Nam. Hãy tạo lịch trình du lịch CHI TIẾT và THỰC TẾ.
-
-            THÔNG TIN CHUYẾN ĐI:
-            - Điểm xuất phát: %s
-            - Điểm đến: %s
-            - Ngày đi: %s
-            - Ngày về: %s
-            - Thời gian: %d ngày
-            - Số người: %d
-            - Ngân sách: %dk VND/người/ngày (người dùng nhập %dk VND, kiểu ngân sách %s)
-            - Phong cách: %s
-            - Nhóm: %s
-            - Phương tiện chính: %s
-            - Di chuyển đến điểm đến: %s
-            - Di chuyển trong chuyến đi: %s
-            - Điểm đến do AI chọn: %s
-            - Địa điểm muốn ghé: %s
-            - Điều cần tránh: %s
-            - Ghi chú: %s
-
-            YÊU CẦU:
-            1. Chỉ đề xuất địa điểm THỰC TẾ tồn tại tại %s
-            2. Ngày đầu và ngày cuối phải tính đến di chuyển từ/đến %s
-            3. Sắp xếp hoạt động theo địa lý để giảm di chuyển
-            4. Ước tính chi phí THỰC TẾ theo thị trường Việt Nam hiện tại
-            5. Thời gian hoạt động phù hợp (không nhồi nhét)
-            6. Bao gồm giờ mở cửa thực tế của từng địa điểm
-            7. Mỗi ngày 4-7 hoạt động
-            8. Không dùng câu chung chung như "ăn sáng đặc sản địa phương", "tham quan điểm nổi bật", "khám phá khu vực lân cận"
-            9. Mỗi hoạt động phải có tên địa điểm/quán cụ thể, món nên ăn hoặc việc nên làm cụ thể
-            10. Các ngày phải khác nhau rõ rệt, không lặp cùng chuỗi hoạt động
-            11. Với FOOD/CAFE, name phải gồm món hoặc quán cụ thể, note phải nói nên gọi món gì
-            12. Với ATTRACTION/ACTIVITY, name phải là địa điểm cụ thể, note phải nói trải nghiệm cụ thể tại đó
-            13. Trả về đúng %d ngày, không thiếu ngày, không thêm ngày
-
-            TRẢ LỜI DẠNG JSON THUẦN TÚY (không có markdown), schema:
-            [
-              {
-                "day": 1,
-                "title": "Ngày 1 – Tên chủ đề",
-                "summary": "Mô tả tóm tắt ngày",
-                "activities": [
-                  {
-                    "time": "08:00",
-                    "name": "Tên địa điểm",
-                    "type": "FOOD|CAFE|ATTRACTION|TRANSPORT|ACCOMMODATION",
-                    "location": "Địa chỉ cụ thể",
-                    "duration": "1 giờ",
-                    "estimatedCost": 50000,
-                    "note": "Gợi ý hữu ích",
-                    "rating": 4.5,
-                    "latitude": 11.9403,
-                    "longitude": 108.4583
-                  }
-                ]
-              }
-            ]
-            """,
-            req.getDeparture(), req.getDestination(),
-            req.getStartDate() != null ? req.getStartDate().toString() : "Chưa cung cấp",
-            req.getEndDate() != null ? req.getEndDate().toString() : "Chưa cung cấp",
-            req.getDays(), req.getTravelerCount() != null ? req.getTravelerCount() : 1,
-            budgetK / Math.max(1, req.getDays()), budgetK, req.getBudgetMode() != null ? req.getBudgetMode() : "PER_PERSON",
-            req.getStyle(), req.getGroupType(), req.getTransport(),
-            req.getOutboundTransport(), req.getLocalTransport(),
-            Boolean.TRUE.equals(req.getDestinationSuggested()) ? "Có" : "Không",
-            req.getMustVisit() != null && !req.getMustVisit().isBlank() ? req.getMustVisit() : "Không có",
-            req.getAvoid() != null && !req.getAvoid().isBlank() ? req.getAvoid() : "Không có",
-            req.getNotes() != null ? req.getNotes() : "Không có",
-            req.getDestination(), req.getDeparture(), req.getDays()
-        );
+    private TripDto.RequestFulfillment parseRequiredRequestFulfillment(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull() || !node.isObject()) {
+            throw new AiResponseFormatException("missing required object key \"requestFulfillment\"");
+        }
+        return parseRequestFulfillment(node);
     }
 
     private String buildCostAwarePrompt(TripDto.GenerateRequest req) {
@@ -754,44 +734,22 @@ public class AiService {
     private GeneratedItineraryResult parseGeneratedItineraryResult(String json) {
         try {
             JsonNode root = objectMapper.readTree(cleanJson(json));
-            if (root.isArray()) {
-                return new GeneratedItineraryResult(parseItinerary(json), null);
+            if (root == null || !root.isObject()) {
+                throw new AiResponseFormatException("expected one JSON object with keys \"itinerary\" and \"requestFulfillment\"");
             }
 
             JsonNode itineraryNode = root.path("itinerary");
-            if (itineraryNode.isMissingNode() || itineraryNode.isNull()) {
-                itineraryNode = root.path("schedule");
-            }
-            if (itineraryNode.isMissingNode() || itineraryNode.isNull()) {
-                itineraryNode = root.path("days");
-            }
             if (!itineraryNode.isArray()) {
-                throw new IllegalArgumentException("AI response is not an itinerary JSON object");
+                throw new AiResponseFormatException("missing required array key \"itinerary\"");
             }
 
             List<TripDto.DayResponse> days = new ArrayList<>();
             for (JsonNode dayNode : itineraryNode) {
                 days.add(parseDayNode(dayNode));
             }
-            return new GeneratedItineraryResult(days, parseRequestFulfillment(root.path("requestFulfillment")));
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse AI itinerary JSON: " + e.getMessage()
-                    + ". Raw length=" + (json != null ? json.length() : 0), e);
-        }
-    }
-
-    private List<TripDto.DayResponse> parseItinerary(String json) {
-        try {
-            JsonNode arr = objectMapper.readTree(cleanJson(json));
-            if (!arr.isArray()) {
-                throw new IllegalArgumentException("AI response is not a JSON array");
-            }
-
-            List<TripDto.DayResponse> result = new ArrayList<>();
-            for (JsonNode dayNode : arr) {
-                result.add(parseDayNode(dayNode));
-            }
-            return result;
+            return new GeneratedItineraryResult(days, parseRequiredRequestFulfillment(root.path("requestFulfillment")));
+        } catch (AiResponseFormatException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse AI itinerary JSON: " + e.getMessage()
                     + ". Raw length=" + (json != null ? json.length() : 0), e);

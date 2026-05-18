@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vivuplan.vivuplan_be.dto.TripDto;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class AiServiceTest {
 
@@ -33,6 +35,43 @@ class AiServiceTest {
         assertThat(quality.reason()).contains("intercity transport cost is missing");
     }
 
+    @Test
+    void generatedItineraryParserRejectsLegacyArrayResponse() {
+        AiService service = new AiService(new ObjectMapper());
+
+        assertThatThrownBy(() -> parseGeneratedItineraryResult(service, legacyArrayResponse()))
+                .hasMessageContaining("expected one JSON object")
+                .hasMessageContaining("requestFulfillment");
+    }
+
+    @Test
+    void regeneratedDayParserRejectsLegacyArrayResponse() {
+        AiService service = new AiService(new ObjectMapper());
+
+        assertThatThrownBy(() -> parseRegeneratedDayResult(service, legacyArrayResponse(), 1))
+                .hasMessageContaining("expected one JSON object")
+                .hasMessageContaining("requestFulfillment");
+    }
+
+    @Test
+    void generatedItineraryParserRequiresRequestFulfillment() {
+        AiService service = new AiService(new ObjectMapper());
+
+        assertThatThrownBy(() -> parseGeneratedItineraryResult(service, """
+                {
+                  "itinerary": [
+                    {
+                      "day": 1,
+                      "title": "Day 1",
+                      "summary": "Test",
+                      "activities": []
+                    }
+                  ]
+                }
+                """))
+                .hasMessageContaining("requestFulfillment");
+    }
+
     private QualityResult assessItineraryQuality(
             AiService service,
             List<TripDto.DayResponse> days,
@@ -46,6 +85,44 @@ class AiServiceTest {
         passed.setAccessible(true);
         reason.setAccessible(true);
         return new QualityResult((Boolean) passed.invoke(quality), (String) reason.invoke(quality));
+    }
+
+    private AiService.GeneratedItineraryResult parseGeneratedItineraryResult(
+            AiService service,
+            String json) throws Throwable {
+        Method method = AiService.class.getDeclaredMethod("parseGeneratedItineraryResult", String.class);
+        method.setAccessible(true);
+        try {
+            return (AiService.GeneratedItineraryResult) method.invoke(service, json);
+        } catch (InvocationTargetException e) {
+            throw e.getCause();
+        }
+    }
+
+    private AiService.RegeneratedDayResult parseRegeneratedDayResult(
+            AiService service,
+            String json,
+            int dayNumber) throws Throwable {
+        Method method = AiService.class.getDeclaredMethod("parseRegeneratedDayResult", String.class, int.class);
+        method.setAccessible(true);
+        try {
+            return (AiService.RegeneratedDayResult) method.invoke(service, json, dayNumber);
+        } catch (InvocationTargetException e) {
+            throw e.getCause();
+        }
+    }
+
+    private String legacyArrayResponse() {
+        return """
+                [
+                  {
+                    "day": 1,
+                    "title": "Day 1",
+                    "summary": "Test",
+                    "activities": []
+                  }
+                ]
+                """;
     }
 
     private TripDto.GenerateRequest generateRequest() {

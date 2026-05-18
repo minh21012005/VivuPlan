@@ -1477,10 +1477,6 @@ public class TripService {
         return Math.max(0, trip.getBudgetPerPerson()) * Math.max(1, trip.getTravelerCount());
     }
 
-    private String formatVnd(long value) {
-        return String.format(java.util.Locale.forLanguageTag("vi-VN"), "%,d VND", value);
-    }
-
     private long roundToNearest(long value, long unit) {
         if (unit <= 0)
             return value;
