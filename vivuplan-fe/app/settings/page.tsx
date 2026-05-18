@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -180,7 +178,6 @@ function PasswordModal({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const router = useRouter();
   const auth = useAuth();
   const { user, loading: authLoading, authorized } = useRequireAuth(
     (u) => u.provider === "GOOGLE"
@@ -229,7 +226,6 @@ export default function SettingsPage() {
   if (authLoading || !authorized || !user) return null;
 
   const isGoogle = user.provider === "GOOGLE";
-  const avatarLetter = user.name?.charAt(0).toUpperCase() ?? "?";
 
   return (
     <div className="settings-page">

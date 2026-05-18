@@ -1,6 +1,6 @@
 "use client";
 
-import React, { type FormEvent, useEffect, useMemo, useState } from "react";
+import React, { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import Navbar from "@/components/layout/Navbar";
@@ -17,10 +17,8 @@ import { useGeocode } from "@/lib/use-geocode";
 import { WeatherIcon } from "@/components/travel/WeatherIcon";
 import {
   interpretWeatherCode,
-  getPackingSuggestions,
   getRescheduleSuggestions,
   getActivityWeatherWarning,
-  type PackingSuggestion,
 } from "@/lib/weather-utils";
 
 import {
@@ -29,7 +27,6 @@ import {
   Calendar,
   Camera,
   CheckCircle2,
-  CheckCircle,
   Clock,
   ChevronDown,
   ChevronUp,
@@ -42,7 +39,6 @@ import {
   Navigation,
   Plus,
   RefreshCw,
-  Route,
   Save,
   Share2,
   Sparkles,
@@ -58,36 +54,14 @@ import {
   CloudFog,
 } from "lucide-react";
 
-const PACKING_ICON_MAP: Record<PackingSuggestion["icon"], React.ReactNode> = {
-  "jacket": <Thermometer size={16} />,
-  "scarf": <Thermometer size={16} />,
-  "sun-glasses": <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="15" r="4" /><circle cx="18" cy="15" r="4" /><path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2" /><path d="M2.5 13 5 7c.7-1.3 1.4-2 3-2" /><path d="M21.5 13 19 7c-.7-1.3-1.4-2-3-2" /></svg>,
-  "umbrella-heavy": <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 12a11.05 11.05 0 0 0-22 0zm-5 7a3 3 0 0 1-6 0v-7" /></svg>,
-  "umbrella": <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 12a11.05 11.05 0 0 0-22 0zm-5 7a3 3 0 0 1-6 0v-7" /></svg>,
-  "fog": <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h18M3 12h18M3 16h18" opacity="0.5" /></svg>,
-  "wind": <Wind size={16} />,
-  "check": <CheckCircle size={16} />,
-};
-
-const PACKING_ICON_COLORS: Record<PackingSuggestion["icon"], { bg: string; color: string }> = {
-  "jacket": { bg: "#dbeafe", color: "#1d4ed8" },
-  "scarf": { bg: "#e0f2fe", color: "#0369a1" },
-  "sun-glasses": { bg: "#fef9c3", color: "#a16207" },
-  "umbrella-heavy": { bg: "#dbeafe", color: "#1e40af" },
-  "umbrella": { bg: "#e0f2fe", color: "#0369a1" },
-  "fog": { bg: "#f1f5f9", color: "#64748b" },
-  "wind": { bg: "#f0fdf4", color: "#16a34a" },
-  "check": { bg: "#dcfce7", color: "#15803d" },
-};
-
 // ─── Lightweight toast system ────────────────────────────────────────────────
 type ToastItem = { id: number; message: string; type: "error" | "success" | "info" };
 
 function useToast() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
-  const counter = useState(0);
+  const counterRef = useRef(0);
   const show = (message: string, type: ToastItem["type"] = "info", durationMs = 5000) => {
-    const id = ++counter[0];
+    const id = ++counterRef.current;
     setToasts((prev) => [...prev, { id, message, type }]);
     window.setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), durationMs);
   };
@@ -395,7 +369,7 @@ export default function ItineraryPage() {
     );
     if (suggestions.length === 0) return "";
     return suggestions.map((s) => `${s.activityName}-${s.fromDay}-${s.toDay}`).join("|");
-  }, [trip?.schedule, trip?.startDate, forecast]);
+  }, [trip, forecast]);
 
   useEffect(() => {
     if (!trip?.id || !weatherSignature || typeof window === "undefined") {
@@ -428,13 +402,6 @@ export default function ItineraryPage() {
   const dayPlaceCount = dayActivities.filter((activity) => activity.type !== "TRANSPORT").length;
   const dayTimeRange = getDayTimeRange(dayActivities);
   const dayDirectionsUrl = buildDayDirectionsUrl(dayActivities, trip?.destination);
-  const routeStops = dayActivities
-    .filter((activity) => activity.location || activity.name)
-    .map((activity) => ({
-      id: activity.id ?? `${activity.time}-${activity.name}`,
-      label: activity.location || activity.name,
-      meta: `${activity.time} · ${typeConfig[activity.type]?.label ?? activity.type}`,
-    }));
   const budget = trip?.budget;
   const targetBudget =
     trip
@@ -782,7 +749,7 @@ export default function ItineraryPage() {
                       <Lightbulb size={12} />
                     </span>
                     <p style={{ margin: 0, fontSize: 13, color: "#1e40af", lineHeight: 1.5 }}>
-                      Cân nhắc chuyển <strong>"{s.activityName}"</strong> từ Ngày {s.fromDay} sang Ngày {s.toDay}: {s.reason}
+                      Cân nhắc chuyển <strong>&quot;{s.activityName}&quot;</strong> từ Ngày {s.fromDay} sang Ngày {s.toDay}: {s.reason}
                     </p>
                   </div>
                 ))}

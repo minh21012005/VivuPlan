@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MapPin, Eye, EyeOff, LogIn, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, LogIn, ArrowLeft } from "lucide-react";
 import { AuthVisualPanel } from "@/components/auth/AuthVisualPanel";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { authApi } from "@/lib/api";

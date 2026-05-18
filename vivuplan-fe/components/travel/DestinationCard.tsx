@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Clock, Star } from "lucide-react";
+import { ArrowRight, Clock } from "lucide-react";
 import { heroImages, type Destination } from "@/lib/travel-data";
 import { Badge } from "@/components/ui/Badge";
 import { DestinationWeatherBadge } from "@/components/travel/DestinationWeatherBadge";

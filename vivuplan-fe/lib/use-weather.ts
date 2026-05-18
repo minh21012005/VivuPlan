@@ -29,7 +29,7 @@ function getCachedWeather(key: string): DailyWeather[] | null {
       return cached.data;
     }
     localStorage.removeItem(CACHE_KEY_PREFIX + key);
-  } catch (e) {
+  } catch {
     // Ignore localStorage errors
   }
   return null;
@@ -42,7 +42,7 @@ function setCachedWeather(key: string, data: DailyWeather[]) {
       CACHE_KEY_PREFIX + key,
       JSON.stringify({ data, ts: Date.now() })
     );
-  } catch (e) {
+  } catch {
     // Ignore localStorage errors
   }
 }
@@ -69,8 +69,8 @@ async function fetchWeather(lat: number, lon: number, signal?: AbortSignal, retr
       precipitationProbability: json.daily.precipitation_probability_max[i] ?? 0,
       windspeedKmh: json.daily.windspeed_10m_max[i] ?? 0,
     }));
-  } catch (err: any) {
-    if (err.name === "AbortError") throw err;
+  } catch (err: unknown) {
+    if (err instanceof Error && err.name === "AbortError") throw err;
     if (retries > 0) {
       // Exponential-like backoff before retrying (1000ms, then 2000ms if needed)
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -109,7 +109,7 @@ export function useWeather(lat?: number, lon?: number) {
         setForecast(data);
       })
       .catch((err) => {
-        if (err.name === "AbortError") return;
+        if (err instanceof Error && err.name === "AbortError") return;
         // Silently fail — weather is enhancement, not core feature
       })
       .finally(() => setLoading(false));

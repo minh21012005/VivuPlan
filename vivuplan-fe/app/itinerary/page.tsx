@@ -10,7 +10,6 @@ import { copyTextToClipboard, getTripShareUrl } from "@/lib/share";
 import { getDestinationImage, heroImages, type Destination } from "@/lib/travel-data";
 import { useDestinations } from "@/lib/use-destinations";
 import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Clock, Eye, Plus, Share2, Sparkles, Trash2, Users, Wallet, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useRequireAuth } from "@/hooks/useRequireAuth"
 
 type TripTimingBadge = { label: string; tone: "green" | "blue" | "gray" };
@@ -26,14 +25,6 @@ function fmtDateRange(trip: TripResponse) {
   if (!trip.startDate || !trip.endDate) return null;
   return `${new Date(`${trip.startDate}T00:00:00`).toLocaleDateString("vi-VN")} - ${new Date(`${trip.endDate}T00:00:00`).toLocaleDateString("vi-VN")}`;
 }
-
-const styleLabel: Record<string, string> = {
-  ADVENTURE: "Phiêu lưu",
-  RELAXING: "Nghỉ dưỡng",
-  CULTURAL: "Văn hóa",
-  NIGHTLIFE: "Khám phá đêm",
-  FOODIE: "Ẩm thực",
-};
 
 const groupLabel: Record<string, string> = {
   SOLO: "Một mình",
@@ -56,7 +47,6 @@ function getTripTimingBadge(trip: TripResponse): TripTimingBadge {
 }
 
 export default function ItineraryLibraryPage() {
-  const router = useRouter();
   const { user: authUser, loading: authLoading } = useRequireAuth();
   const { destinations } = useDestinations();
   const [trips, setTrips] = useState<TripResponse[]>([]);

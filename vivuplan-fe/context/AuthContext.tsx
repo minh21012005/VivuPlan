@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
-import { authApi, type User } from "@/lib/api";
+import { authApi, type AuthResponse, type User } from "@/lib/api";
 
 interface AuthState {
   user: User | null;
@@ -12,8 +12,8 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
   isLoggedIn: boolean;
-  login: (email: string, password: string) => Promise<any>;
-  register: (name: string, email: string, password: string) => Promise<any>;
+  login: (email: string, password: string) => Promise<AuthResponse>;
+  register: (name: string, email: string, password: string) => Promise<AuthResponse>;
   logout: () => void;
   updateUser: (user: User) => void;
   syncFromStorage: () => void;

@@ -44,10 +44,6 @@ export default function ExplorePage() {
       });
   }, [destinations, region, search]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, region]);
-
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const page = Math.min(currentPage, totalPages);
 
@@ -117,7 +113,10 @@ export default function ExplorePage() {
               <input
                 className="input"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setCurrentPage(1);
+                }}
                 placeholder="Tìm Đà Lạt, biển, phố cổ..."
               />
             </div>
@@ -127,7 +126,10 @@ export default function ExplorePage() {
                 type="button"
                 size="sm"
                 variant={region === item ? "primary" : "secondary"}
-                onClick={() => setRegion(item)}
+                onClick={() => {
+                  setRegion(item);
+                  setCurrentPage(1);
+                }}
               >
                 {item}
               </Button>
