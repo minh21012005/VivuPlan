@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/Card";
 import { ItineraryLoadingState } from "@/components/travel/ItineraryLoadingState";
 import { ApiError, tripApi, type ActivityMutationRequest, type ActivityResponse, type RegenerateDayPreviewResponse, type RegenerateDayRequest, type TripResponse } from "@/lib/api";
 import { copyTextToClipboard, getTripShareUrl } from "@/lib/share";
-import { getDestinationImage } from "@/lib/travel-data";
+import { findDestinationByName, getDestinationImage } from "@/lib/travel-data";
 import { useDestinations } from "@/lib/use-destinations";
 import { useWeather } from "@/lib/use-weather";
 import { useGeocode } from "@/lib/use-geocode";
@@ -208,7 +208,7 @@ export default function ItineraryPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { user: authUser, loading: authLoading } = useRequireAuth();
-  const { destinations } = useDestinations();
+  const { destinations, loading: destinationsLoading } = useDestinations();
   const [trip, setTrip] = useState<TripResponse | null>(null);
   const [activeDay, setActiveDay] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -237,16 +237,15 @@ export default function ItineraryPage() {
   // Step 1: try to get coordinates from the known destinations list (DB-backed)
   const dbCoords = useMemo(() => {
     if (!trip) return null;
-    const match = destinations.find(
-      (d) => d.name.toLowerCase() === trip.destination.toLowerCase(),
-    );
+    const match = findDestinationByName(trip.destination, destinations);
     return match?.latitude != null && match?.longitude != null
       ? { lat: match.latitude, lon: match.longitude }
       : null;
   }, [trip, destinations]);
 
-  // Step 2: if not in DB, fall back to Nominatim geocoding
-  const geocodedCoords = useGeocode(dbCoords ? null : trip?.destination);
+  // Step 2: after DB destinations finish loading, fall back to Nominatim only for unknown places
+  const shouldGeocodeDestination = Boolean(trip?.destination && !destinationsLoading && !dbCoords);
+  const geocodedCoords = useGeocode(shouldGeocodeDestination ? trip?.destination : null);
 
   // Use DB coordinates first, then geocoded, then null (no weather)
   const destCoords = dbCoords ?? geocodedCoords;

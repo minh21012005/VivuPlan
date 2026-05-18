@@ -106,6 +106,24 @@ class AiServiceTest {
     }
 
     @Test
+    void generatedPromptAddsHardWeatherSafetyOverrideWhenEveryDayIsHighRainRisk() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDays(2);
+        req.setWeatherForecast("""
+                Day 1 (2026-05-19): Thunderstorm, 25-30°C, rain chance 95% → HIGH RAIN RISK – prefer indoor activities
+                Day 2 (2026-05-20): Rain, 24-29°C, rain chance 90% → HIGH RAIN RISK – prefer indoor activities
+                """);
+
+        String prompt = buildPrompt(service, req);
+
+        assertThat(prompt)
+                .contains("every trip day is HIGH RAIN RISK")
+                .contains("Do not schedule weather-dependent outdoor")
+                .contains("mark it NOT_APPLIED with reasonCode WEATHER_SAFETY");
+    }
+
+    @Test
     void itineraryQualityAllowsLightOneDayTripWithTwoActivities() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
@@ -286,6 +304,14 @@ class AiServiceTest {
                 String.class);
         method.setAccessible(true);
         return (String) method.invoke(service, req, reason);
+    }
+
+    private String buildPrompt(
+            AiService service,
+            TripDto.GenerateRequest req) throws Exception {
+        Method method = AiService.class.getDeclaredMethod("buildPrompt", TripDto.GenerateRequest.class);
+        method.setAccessible(true);
+        return (String) method.invoke(service, req);
     }
 
     private String buildDayRegenerationPrompt(
