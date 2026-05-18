@@ -132,22 +132,47 @@ function getRecommendedDayCount(value?: string) {
 }
 
 function getMinimumDailyBudget(destination?: Destination) {
-  const tags = destination?.tags.join(" ") ?? "";
+  const tags = normalizeVietnameseSearch(destination?.tags.join(" ") ?? "");
   const category = destination?.category ?? "";
-  let minimum = 550_000;
+  let minimum = 450_000;
 
-  if (/(island|cruise|resort|bay)/.test(tags) || ["ISLAND", "HERITAGE"].includes(category)) minimum = 800_000;
-  if (/(mountain|trekking|cave|national-park|adventure)/.test(tags)) minimum = Math.max(minimum, 650_000);
-  if (/(beach|coast)/.test(tags)) minimum = Math.max(minimum, 650_000);
+  if (category === "HERITAGE" || /(heritage|old-town|unesco|pho-co)/.test(tags)) minimum = Math.max(minimum, 550_000);
+  if (/(mountain|trekking|cave|national-park|adventure)/.test(tags)) minimum = Math.max(minimum, 550_000);
+  if (/(beach|coast)/.test(tags)) minimum = Math.max(minimum, 550_000);
+  if (category === "ISLAND" || /island/.test(tags)) minimum = Math.max(minimum, 650_000);
+  if (/(resort|cruise|bay)/.test(tags)) minimum = Math.max(minimum, 750_000);
   if (destination?.estimatedBudgetMin) {
     const estimateDaily = Math.round(destination.estimatedBudgetMin / getRecommendedDayCount(destination.recommendedDays));
-    minimum = Math.max(minimum, Math.round(estimateDaily * 0.8));
+    const dataBasedDaily = Math.round(estimateDaily * 0.65);
+    minimum = Math.max(minimum, Math.min(dataBasedDaily, Math.round(minimum * 1.2)));
   }
 
   return minimum;
 }
 
-function getBudgetValidationError({
+function getBudgetHardBlockError({
+  budgetPerPerson,
+  days,
+}: {
+  budgetPerPerson: number;
+  days: number;
+}) {
+  const absurdMaximum = Math.max(200_000_000, days * 50_000_000);
+  const unrealisticDailyMinimum = days >= 4 ? 350_000 : 300_000;
+  const unrealisticMinimum = Math.max(500_000, Math.round(unrealisticDailyMinimum * Math.max(1, days)));
+
+  if (days > 0 && budgetPerPerson < unrealisticMinimum) {
+    return `Ngân sách ${fmtBudget(budgetPerPerson)} / người quá thấp cho chuyến đi ${days} ngày. Vui lòng nhập tối thiểu khoảng ${fmtBudget(unrealisticMinimum)} / người để AI có đủ cơ sở lập lịch trình thực tế.`;
+  }
+
+  if (budgetPerPerson > absurdMaximum) {
+    return `Ngân sách ${fmtBudget(budgetPerPerson)} / người đang quá cao so với chuyến đi ${days} ngày. Vui lòng kiểm tra lại, có thể bạn đã nhập nhầm đơn vị.`;
+  }
+
+  return "";
+}
+
+function getBudgetAdvisory({
   budgetPerPerson,
   days,
   destination,
@@ -156,20 +181,15 @@ function getBudgetValidationError({
   days: number;
   destination?: Destination;
 }) {
+  if (budgetPerPerson <= 0 || days <= 0) return "";
+
   const longTripDiscount = days > 14 ? 0.75 : days > 7 ? 0.85 : 1;
-  const minimumTotal = Math.round(getMinimumDailyBudget(destination) * days * longTripDiscount);
-  const absurdMaximum = Math.max(200_000_000, days * 50_000_000);
+  const suggestedBudget = Math.round(getMinimumDailyBudget(destination) * days * longTripDiscount);
+  const warningThreshold = Math.round(suggestedBudget * 0.85);
+  if (budgetPerPerson >= warningThreshold) return "";
+
   const destinationLabel = destination ? ` cho ${destination.name}` : "";
-
-  if (budgetPerPerson < minimumTotal) {
-    return `Ngân sách ${fmtBudget(budgetPerPerson)} / người hơi thấp${destinationLabel} trong ${days} ngày. Bạn nên nhập khoảng từ ${fmtBudget(minimumTotal)} / người để AI lập lịch trình thực tế hơn.`;
-  }
-
-  if (budgetPerPerson > absurdMaximum) {
-    return `Ngân sách ${fmtBudget(budgetPerPerson)} / người đang quá cao so với chuyến đi ${days} ngày. Vui lòng kiểm tra lại, có thể bạn đã nhập nhầm đơn vị.`;
-  }
-
-  return "";
+  return `Ngân sách ${fmtBudget(budgetPerPerson)} / người khá thấp${destinationLabel} trong ${days} ngày. VivuPlan vẫn sẽ thử lập lịch trình tiết kiệm, ưu tiên hoạt động chi phí thấp và sẽ báo nếu ước tính thực tế vượt ngân sách.`;
 }
 
 function suggestDestination(form: { departure: string; budget: number; style: string; startDate: string; endDate: string }, destinations: Destination[]) {
@@ -258,6 +278,13 @@ function PlanContent() {
   const computedNights = computedDays > 0 ? Math.max(0, computedDays - 1) : 0;
   const budgetPerPerson =
     form.budgetMode === "total" && form.travelers > 0 ? Math.round(form.budget / form.travelers) : form.budget;
+  const budgetAdvisory = form.travelers > 0
+    ? getBudgetAdvisory({
+      budgetPerPerson,
+      days: computedDays,
+      destination,
+    })
+    : "";
   const todayInput = getTodayDateInput();
   const oneYearLaterInput = getOneYearLaterDateInput();
   const compatibleGroupOptions = getGroupOptions(form.travelers);
@@ -341,10 +368,9 @@ function PlanContent() {
       setError("Ngân sách sau khi chia theo số người cần tối thiểu 500.000₫ / người.");
       return;
     }
-    const budgetValidationError = getBudgetValidationError({
+    const budgetValidationError = getBudgetHardBlockError({
       budgetPerPerson,
       days: computedDays,
-      destination,
     });
     if (budgetValidationError) {
       setError(budgetValidationError);
@@ -372,6 +398,7 @@ function PlanContent() {
         form.travelers === 1 ? "Thành phần nhóm: Một mình" : form.group ? `Thành phần nhóm: ${optionLabel(groupOptions, form.group)}` : "",
         form.outboundTransport ? `Di chuyển đến điểm đến: ${optionLabel(outboundTransportOptions, form.outboundTransport)}` : "Di chuyển đến điểm đến: để AI đề xuất",
         form.localTransport ? `Di chuyển trong chuyến đi: ${optionLabel(localTransportOptions, form.localTransport)}` : "Di chuyển trong chuyến đi: để AI đề xuất",
+        budgetAdvisory ? `Lưu ý ngân sách: ${budgetAdvisory}` : "",
         form.mustVisit.trim() ? `Nơi muốn ghé: ${form.mustVisit.trim()}` : "",
         form.avoid.trim() ? `Điều muốn tránh: ${form.avoid.trim()}` : "",
         form.notes.trim(),
@@ -659,7 +686,9 @@ function PlanContent() {
                   </div>
                 )}
                 <p className="field-hint">
-                  {form.budget > 0 && form.travelers > 0
+                  {budgetAdvisory
+                    ? "AI sẽ ưu tiên phương án tiết kiệm và không ép chi phí xuống thấp hơn thực tế."
+                    : form.budget > 0 && form.travelers > 0
                     ? `AI sẽ lập lịch trình trong khoảng ${fmtBudget(budgetPerPerson)} / người.`
                     : "Số người giúp AI ước tính phòng, ăn uống và phương án di chuyển."}
                 </p>
@@ -751,6 +780,7 @@ function PlanContent() {
 
 
             {error && <div className="form-error">{error}</div>}
+            {!error && budgetAdvisory && <div className="form-warning">{budgetAdvisory}</div>}
 
             {generating && (
               <div className="planner-generation-status" role="status" aria-live="polite">

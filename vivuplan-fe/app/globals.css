@@ -1454,6 +1454,16 @@ textarea.input.textarea-compact {
   font-size: 14px;
 }
 
+.form-warning {
+  padding: 12px 14px;
+  border-radius: var(--r-lg);
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  color: #92400E;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 /* Trip library */
 .trip-library-page {
   min-height: 100vh;
