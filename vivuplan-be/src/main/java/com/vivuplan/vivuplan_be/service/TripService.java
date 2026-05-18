@@ -542,14 +542,14 @@ public class TripService {
         if (proposedDay.getActivities() == null || proposedDay.getActivities().size() < minActivities) {
             throw new IllegalArgumentException("Ngày được tạo lại cần ít nhất " + minActivities + " hoạt động");
         }
-        if (proposedDay.getActivities().size() > 14) {
+        if (ItineraryQualityPolicy.exceedsTotalItems(proposedDay.getActivities().size())) {
             throw new IllegalArgumentException("Ngày được tạo lại có quá nhiều hoạt động");
         }
 
         long nonLogisticsActivities = proposedDay.getActivities().stream()
                 .filter(activity -> !isLogisticsActivityType(normalizeText(activity.getType())))
                 .count();
-        if (nonLogisticsActivities > 9) {
+        if (ItineraryQualityPolicy.exceedsNonLogisticsItems(nonLogisticsActivities)) {
             throw new IllegalArgumentException("Ngày được tạo lại có quá nhiều điểm ăn/chơi/tham quan");
         }
 
@@ -578,7 +578,9 @@ public class TripService {
                             nullToBlank(activity.getNote())));
                     return isTripIntercityTransportActivity(type, combined, trip);
                 });
-        return edgeDay || hasIntercityTransport || isRelaxedPacing(trip) ? 2 : 3;
+        return edgeDay || hasIntercityTransport || isRelaxedPacing(trip)
+                ? ItineraryQualityPolicy.MIN_ACTIVITIES_LIGHT_DAY
+                : ItineraryQualityPolicy.MIN_ACTIVITIES_DEFAULT;
     }
 
     private boolean isLogisticsActivityType(String normalizedType) {

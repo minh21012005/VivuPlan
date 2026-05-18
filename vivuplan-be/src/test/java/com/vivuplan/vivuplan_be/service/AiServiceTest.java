@@ -80,7 +80,7 @@ class AiServiceTest {
         String prompt = buildQualityRetryPrompt(service, req, "missing explicit local transport");
 
         assertThat(prompt)
-                .contains("Never return more than 14 total items")
+                .contains("Never return more than " + ItineraryQualityPolicy.MAX_TOTAL_ITEMS_PER_DAY + " total items")
                 .contains("For close walkable places, a clear walking note with cost 0 is enough")
                 .doesNotContain("Add a clear local transportation plan with TRANSPORT activities for getting around");
     }
@@ -100,7 +100,7 @@ class AiServiceTest {
                 "missing explicit local transport");
 
         assertThat(prompt)
-                .contains("Never return more than 14 total items")
+                .contains("Never return more than " + ItineraryQualityPolicy.MAX_TOTAL_ITEMS_PER_DAY + " total items")
                 .contains("For close walkable places, a clear walking note with cost 0 is enough")
                 .contains("The previous proposal was rejected because: missing explicit local transport");
     }
@@ -130,7 +130,7 @@ class AiServiceTest {
 
         TripDto.DayResponse day = baseDay();
         List<TripDto.ActivityResponse> activities = new java.util.ArrayList<>();
-        for (int i = 0; i < 9; i++) {
+        for (int i = 0; i < ItineraryQualityPolicy.MAX_NON_LOGISTICS_ITEMS_PER_DAY; i++) {
             activities.add(activity(
                     String.format("%02d:00", 8 + i),
                     "Điểm trải nghiệm " + (i + 1),
@@ -157,7 +157,7 @@ class AiServiceTest {
 
         TripDto.DayResponse day = baseDay();
         List<TripDto.ActivityResponse> activities = new java.util.ArrayList<>();
-        for (int i = 0; i < 13; i++) {
+        for (int i = 0; i <= ItineraryQualityPolicy.MAX_NON_LOGISTICS_ITEMS_PER_DAY; i++) {
             activities.add(activity(
                     String.format("%02d:00", 7 + i),
                     "Lich trinh day dac " + (i + 1),
@@ -181,7 +181,7 @@ class AiServiceTest {
 
         TripDto.DayResponse day = baseDay();
         List<TripDto.ActivityResponse> activities = new java.util.ArrayList<>();
-        for (int i = 0; i < 9; i++) {
+        for (int i = 0; i < ItineraryQualityPolicy.MAX_NON_LOGISTICS_ITEMS_PER_DAY; i++) {
             activities.add(activity(
                     String.format("%02d:00", 7 + i),
                     "Trai nghiem Da Nang " + (i + 1),
@@ -212,7 +212,7 @@ class AiServiceTest {
 
         TripDto.DayResponse day = baseDay();
         List<TripDto.ActivityResponse> activities = new java.util.ArrayList<>();
-        for (int i = 0; i < 9; i++) {
+        for (int i = 0; i < ItineraryQualityPolicy.MAX_NON_LOGISTICS_ITEMS_PER_DAY; i++) {
             activities.add(activity(
                     String.format("%02d:00", 6 + i),
                     "Trai nghiem Da Nang " + (i + 1),
@@ -221,7 +221,10 @@ class AiServiceTest {
                     100_000L,
                     null));
         }
-        for (int i = 0; i < 6; i++) {
+        int logisticsItemsToExceedTotal = ItineraryQualityPolicy.MAX_TOTAL_ITEMS_PER_DAY
+                - ItineraryQualityPolicy.MAX_NON_LOGISTICS_ITEMS_PER_DAY
+                + 1;
+        for (int i = 0; i < logisticsItemsToExceedTotal; i++) {
             activities.add(activity(
                     String.format("%02d:30", 15 + i),
                     "Di chuyen chang ngan " + (i + 1),

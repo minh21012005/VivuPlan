@@ -217,22 +217,6 @@ public class AiService {
         return "response JSON contract was invalid: " + reason;
     }
 
-    private String vietnamPacingGuidance() {
-        return "Keep each day realistic for Vietnam: normal sightseeing days should have 5-8 display items; "
-                + "first/last travel days and relaxing/family days may have 3-6 items; "
-                + "dense but realistic city/food/adventure days may have 6-9 FOOD/CAFE/ATTRACTION/ACTIVITY items when distances are close and pacing is believable. "
-                + "Never return more than 14 total items in one day or more than 9 FOOD/CAFE/ATTRACTION/ACTIVITY items in one day, and do not pad the itinerary just to hit a count.";
-    }
-
-    private String localTransportGuidance(String destination) {
-        String place = destination == null || destination.isBlank() ? "the destination" : destination;
-        return String.format(
-                "Add separate TRANSPORT activities only for outbound/return travel, moving between distant clusters, or movement with meaningful cost inside %s. "
-                        + "For close walkable places, a clear walking note with cost 0 is enough. "
-                        + "Never hide rental, taxi, Grab, paid bicycle, or local transfer costs inside FOOD/CAFE/ATTRACTION notes.",
-                place);
-    }
-
     private String buildQualityRetryPrompt(TripDto.GenerateRequest req, String reason) {
         return buildCostAwarePrompt(req) + String.format("""
 
@@ -249,7 +233,10 @@ public class AiService {
             If the budget is tight, keep required transport realistic but reduce optional paid attractions, tours, premium meals, shopping, and accommodation comfort instead of exceeding budget.
             If realistic required costs make the budget impossible, return realistic costs anyway. Never understate costs to fit the budget.
             Do not repeat the same day structure across days.
-            """, reason, req.getDestination(), vietnamPacingGuidance(), localTransportGuidance(req.getDestination()));
+            """, reason,
+            req.getDestination(),
+            ItineraryQualityPolicy.vietnamPacingGuidance(),
+            ItineraryQualityPolicy.localTransportGuidance(req.getDestination()));
     }
 
     private String buildDayRegenerationPrompt(
@@ -276,7 +263,10 @@ public class AiService {
                     %s
                     Create a separate TRANSPORT activity with route/mode/cost instead of putting transport cost in an ATTRACTION, FOOD, CAFE, or ACTIVITY note.
                     Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
-                    """, retryReason, dayNumber, vietnamPacingGuidance(), localTransportGuidance(req.getDestination()));
+                    """, retryReason,
+                    dayNumber,
+                    ItineraryQualityPolicy.vietnamPacingGuidance(),
+                    ItineraryQualityPolicy.localTransportGuidance(req.getDestination()));
 
         return String.format("""
             You are a senior Vietnam travel planner. Regenerate ONE DAY of an existing itinerary.
@@ -399,9 +389,9 @@ public class AiService {
             intent != null && !intent.isBlank() ? intent : "REGENERATE",
             scheduleJson,
             dayNumber,
-            vietnamPacingGuidance(),
+            ItineraryQualityPolicy.vietnamPacingGuidance(),
             travelers,
-            localTransportGuidance(req.getDestination()),
+            ItineraryQualityPolicy.localTransportGuidance(req.getDestination()),
             dayNumber,
             dayNumber,
             retryBlock
@@ -607,9 +597,9 @@ public class AiService {
             req.getWeatherForecast() != null && !req.getWeatherForecast().isBlank() ? req.getWeatherForecast() : "none",
             travelers,
             req.getDestination(),
-            localTransportGuidance(req.getDestination()),
+            ItineraryQualityPolicy.localTransportGuidance(req.getDestination()),
             days,
-            vietnamPacingGuidance(),
+            ItineraryQualityPolicy.vietnamPacingGuidance(),
             req.getDestination()
         );
     }
@@ -845,7 +835,7 @@ public class AiService {
             if (day.getActivities() == null || day.getActivities().size() < minActivities) {
                 return QualityCheck.fail("day " + day.getDay() + " has fewer than " + minActivities + " activities");
             }
-            if (day.getActivities().size() > 14) {
+            if (ItineraryQualityPolicy.exceedsTotalItems(day.getActivities().size())) {
                 return QualityCheck.fail("day " + day.getDay() + " has too many activities");
             }
             int dayNonLogisticsActivities = 0;
@@ -882,7 +872,7 @@ public class AiService {
                     nonLogisticsActivities++;
                 }
             }
-            if (dayNonLogisticsActivities > 9) {
+            if (ItineraryQualityPolicy.exceedsNonLogisticsItems(dayNonLogisticsActivities)) {
                 return QualityCheck.fail("day " + day.getDay() + " has too many non-logistics activities");
             }
             dayFingerprints.add(fingerprint.toString());
@@ -920,7 +910,7 @@ public class AiService {
         if (day.getActivities() == null || day.getActivities().size() < minActivities) {
             return QualityCheck.fail("regenerated day has fewer than " + minActivities + " activities");
         }
-        if (day.getActivities().size() > 14) {
+        if (ItineraryQualityPolicy.exceedsTotalItems(day.getActivities().size())) {
             return QualityCheck.fail("regenerated day has too many activities");
         }
 
@@ -1002,7 +992,7 @@ public class AiService {
         if (genericActivities > Math.max(2, day.getActivities().size() / 2)) {
             return QualityCheck.fail("too many generic activities in regenerated day");
         }
-        if (nonLogisticsActivities > 9) {
+        if (ItineraryQualityPolicy.exceedsNonLogisticsItems(nonLogisticsActivities)) {
             return QualityCheck.fail("regenerated day has too many non-logistics activities");
         }
         if (requiresLocalTransportPlan(List.of(day), Math.max(1, req.getDays()), nonLogisticsActivities)
@@ -1263,7 +1253,9 @@ public class AiService {
                         nullToBlank(activity.getName()),
                         nullToBlank(activity.getLocation()),
                         nullToBlank(activity.getNote()))), req));
-        return edgeDay || hasIntercityTransport || isRelaxedPacing(req) ? 2 : 3;
+        return edgeDay || hasIntercityTransport || isRelaxedPacing(req)
+                ? ItineraryQualityPolicy.MIN_ACTIVITIES_LIGHT_DAY
+                : ItineraryQualityPolicy.MIN_ACTIVITIES_DEFAULT;
     }
 
     private boolean isRelaxedPacing(TripDto.GenerateRequest req) {
