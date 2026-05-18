@@ -13,14 +13,25 @@
     "description": "Di sản thiên nhiên thế giới, phù hợp tour tàu ngắm vịnh và hang động.",
     "openingHours": "Theo lịch tàu/tuyến tham quan",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "beach",
+      "boat",
+      "heritage"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Hang Sửng Sốt",
     "destination": "Hạ Long",
     "type": "ATTRACTION",
     "address": "Đảo Bồ Hòn, Vịnh Hạ Long, Quảng Ninh",
-    "priceLevel": "MID",
+    "priceLevel": "FREE",
     "estimatedCostMin": 0,
     "estimatedCostMax": 0,
     "rating": 4.6,
@@ -29,14 +40,23 @@
     "description": "Hang lớn và nổi tiếng trong vùng lõi Vịnh Hạ Long, thường nằm trong tuyến tàu.",
     "openingHours": "Theo lịch tàu/tuyến tham quan",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "beach"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Đảo Ti Tốp",
     "destination": "Hạ Long",
     "type": "ATTRACTION",
     "address": "Vịnh Hạ Long, Quảng Ninh",
-    "priceLevel": "MID",
+    "priceLevel": "FREE",
     "estimatedCostMin": 0,
     "estimatedCostMax": 0,
     "rating": 4.5,
@@ -45,14 +65,25 @@
     "description": "Đảo có bãi tắm và điểm leo ngắm toàn cảnh Vịnh Hạ Long.",
     "openingHours": "Theo lịch tàu/tuyến tham quan",
     "verified": true,
-    "source": "Visit Quang Ninh"
+    "source": "Visit Quang Ninh",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "beach",
+      "island",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Sun World Hạ Long",
     "destination": "Hạ Long",
     "type": "ACTIVITY",
     "address": "Bãi Cháy, Hạ Long, Quảng Ninh",
-    "priceLevel": "HIGH",
+    "priceLevel": "MID",
     "estimatedCostMin": 300000,
     "estimatedCostMax": 600000,
     "rating": 4.4,
@@ -61,7 +92,16 @@
     "description": "Tổ hợp công viên, cáp treo và trò chơi tại khu Bãi Cháy.",
     "openingHours": "Theo lịch vận hành Sun World",
     "verified": true,
-    "source": "Sun World"
+    "source": "Sun World",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "activity",
+      "mixed",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bãi Cháy",
@@ -77,12 +117,22 @@
     "description": "Khu du lịch biển, thuận tiện đi dạo, ăn uống và ngắm vịnh.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "beach",
+      "couple"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Chợ Hạ Long 1",
     "destination": "Hạ Long",
-    "type": "FOOD",
+    "type": "ATTRACTION",
     "address": "Bạch Đằng, Hạ Long, Quảng Ninh",
     "priceLevel": "LOW",
     "estimatedCostMin": 50000,
@@ -93,7 +143,16 @@
     "description": "Chợ trung tâm phù hợp ăn hải sản, mua đặc sản và trải nghiệm địa phương.",
     "openingHours": "Sáng - chiều",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "food"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Sun World Fansipan Legend",
@@ -109,7 +168,15 @@
     "description": "Cáp treo và quần thể tham quan lên đỉnh Fansipan, phụ thuộc nhiều vào thời tiết.",
     "openingHours": "Theo lịch vận hành Sun World",
     "verified": true,
-    "source": "Sun World"
+    "source": "Sun World",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "activity",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bản Cát Cát",
@@ -125,7 +192,15 @@
     "description": "Bản du lịch gần trung tâm Sa Pa, phù hợp đi bộ ngắn và chụp ảnh.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Sapa Tourism"
+    "source": "Sapa Tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Núi Hàm Rồng",
@@ -141,7 +216,17 @@
     "description": "Điểm ngắm thị trấn Sa Pa, vườn hoa và đường đi bộ ngay trung tâm.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "VNAT"
+    "source": "VNAT",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "mountain",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Nhà thờ đá Sa Pa",
@@ -157,7 +242,17 @@
     "description": "Biểu tượng trung tâm Sa Pa, thuận tiện kết hợp quảng trường và chợ đêm.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "VNAT"
+    "source": "VNAT",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "spiritual",
+      "food"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Bản Lao Chải",
@@ -173,7 +268,17 @@
     "description": "Bản trong thung lũng Mường Hoa, phù hợp trekking và trải nghiệm văn hóa.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "mountain",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bản Tả Van",
@@ -189,7 +294,15 @@
     "description": "Bản nghỉ homestay và đi bộ giữa ruộng bậc thang thung lũng Mường Hoa.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Cột cờ Lũng Cú",
@@ -205,7 +318,15 @@
     "description": "Điểm cực Bắc biểu tượng, thường kết hợp Đồng Văn trong cung Hà Giang.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "VNAT"
+    "source": "VNAT",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Phố cổ Đồng Văn",
@@ -221,7 +342,18 @@
     "description": "Khu phố cổ, chợ phiên và điểm nghỉ qua đêm phổ biến trên cao nguyên đá.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "VNAT"
+    "source": "VNAT",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "mountain",
+      "heritage",
+      "food"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Đèo Mã Pì Lèng",
@@ -237,14 +369,23 @@
     "description": "Cung đèo cảnh quan trọng điểm của cao nguyên đá Đồng Văn, cần di chuyển an toàn.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "VNAT"
+    "source": "VNAT",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "mountain"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Sông Nho Quế - Hẻm Tu Sản",
     "destination": "Hà Giang",
     "type": "ACTIVITY",
     "address": "Mèo Vạc, Hà Giang",
-    "priceLevel": "MID",
+    "priceLevel": "LOW",
     "estimatedCostMin": 120000,
     "estimatedCostMax": 200000,
     "rating": 4.7,
@@ -253,7 +394,16 @@
     "description": "Đi thuyền ngắm hẻm vực Tu Sản, cần kiểm tra mưa lũ và điều kiện vận hành.",
     "openingHours": "Ban ngày, theo thời tiết",
     "verified": true,
-    "source": "VNAT"
+    "source": "VNAT",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "boat"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Dinh thự họ Vương",
@@ -269,7 +419,16 @@
     "description": "Di tích kiến trúc lịch sử thường ghé trên đường Đồng Văn - Lũng Cú.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "VNAT"
+    "source": "VNAT",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "heritage"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Núi đôi Quản Bạ",
@@ -285,7 +444,17 @@
     "description": "Điểm ngắm cảnh ở cửa ngõ cao nguyên đá, phù hợp dừng chân trong cung loop.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "VNAT"
+    "source": "VNAT",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "mountain",
+      "couple"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Ngũ Hành Sơn",
@@ -301,7 +470,17 @@
     "description": "Cụm núi đá vôi, hang động và chùa, thường kết hợp Hội An hoặc làng đá Non Nước.",
     "openingHours": "07:00 - 17:30",
     "verified": true,
-    "source": "Danang Fantasticity"
+    "source": "Danang Fantasticity",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "mountain",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bảo tàng Điêu khắc Chăm Đà Nẵng",
@@ -317,7 +496,17 @@
     "description": "Bảo tàng trưng bày hiện vật điêu khắc Chăm, phù hợp ngày mưa.",
     "openingHours": "07:00 - 17:00",
     "verified": true,
-    "source": "Danang Fantasticity"
+    "source": "Danang Fantasticity",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "museum",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Chùa Linh Ứng Sơn Trà",
@@ -333,7 +522,16 @@
     "description": "Điểm tâm linh và ngắm biển trên bán đảo Sơn Trà.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "VNAT"
+    "source": "VNAT",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Sun World Bà Nà Hills",
@@ -349,7 +547,18 @@
     "description": "Khu du lịch núi, Cầu Vàng, làng Pháp và công viên giải trí; cần dành nửa ngày đến một ngày.",
     "openingHours": "Theo lịch vận hành Sun World",
     "verified": true,
-    "source": "Sun World"
+    "source": "Sun World",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "activity",
+      "mixed",
+      "mountain",
+      "spiritual",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Chợ Cồn",
@@ -365,7 +574,15 @@
     "description": "Chợ trung tâm nổi tiếng với món ăn vặt, đặc sản và trải nghiệm địa phương.",
     "openingHours": "Sáng - tối",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "food",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Mỳ Quảng Bà Mua",
@@ -381,7 +598,15 @@
     "description": "Quán mỳ Quảng phổ biến, phù hợp bữa trưa/bữa tối nhanh trong trung tâm.",
     "openingHours": "Sáng - tối",
     "verified": true,
-    "source": "Local listing"
+    "source": "Local listing",
+    "indoorOutdoor": "INDOOR",
+    "weatherSensitivity": "LOW",
+    "tags": [
+      "food",
+      "indoor"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Kỳ Co",
@@ -397,7 +622,16 @@
     "description": "Bãi biển nước xanh trong, thường kết hợp Eo Gió trong nửa ngày hoặc một ngày.",
     "openingHours": "Ban ngày, theo thời tiết biển",
     "verified": true,
-    "source": "VNAT"
+    "source": "VNAT",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "beach"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Eo Gió",
@@ -413,7 +647,15 @@
     "description": "Eo biển hình vòng cung với vách đá, cách trung tâm Quy Nhơn khoảng 25km.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "VNAT"
+    "source": "VNAT",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Tháp Đôi Quy Nhơn",
@@ -429,7 +671,15 @@
     "description": "Cụm tháp Chăm trong thành phố, thuận tiện ghé ngắn.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Ghềnh Ráng Tiên Sa",
@@ -445,7 +695,15 @@
     "description": "Khu thắng cảnh ven biển, mộ Hàn Mặc Tử và bãi đá trứng.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Chùa Thiên Hưng",
@@ -461,7 +719,16 @@
     "description": "Ngôi chùa nổi tiếng gần Quy Nhơn, phù hợp lịch trình văn hóa nhẹ.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Surf Bar Quy Nhơn",
@@ -477,7 +744,15 @@
     "description": "Cafe ven biển phù hợp buổi chiều/tối nhẹ nhàng.",
     "openingHours": "Chiều - tối",
     "verified": true,
-    "source": "Local listing"
+    "source": "Local listing",
+    "indoorOutdoor": "INDOOR",
+    "weatherSensitivity": "LOW",
+    "tags": [
+      "cafe",
+      "indoor"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Tháp Bà Ponagar",
@@ -493,7 +768,15 @@
     "description": "Quần thể tháp Chăm nổi tiếng trong thành phố Nha Trang.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Viện Hải dương học Nha Trang",
@@ -509,7 +792,17 @@
     "description": "Bảo tàng/sưu tập sinh vật biển, phù hợp gia đình và ngày mưa.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "museum",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "VinWonders Nha Trang",
@@ -525,7 +818,17 @@
     "description": "Công viên giải trí lớn trên đảo Hòn Tre, cần dành nửa ngày đến một ngày.",
     "openingHours": "Theo lịch vận hành VinWonders",
     "verified": true,
-    "source": "VinWonders"
+    "source": "VinWonders",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "activity",
+      "mixed",
+      "spiritual",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Chợ Đầm",
@@ -535,13 +838,21 @@
     "priceLevel": "LOW",
     "estimatedCostMin": 50000,
     "estimatedCostMax": 200000,
-    "rating": 4.0,
+    "rating": 4,
     "latitude": 12.2544,
     "longitude": 109.1909,
     "description": "Chợ trung tâm để ăn uống, mua đặc sản và trải nghiệm địa phương.",
     "openingHours": "Sáng - chiều",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "food",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Hòn Chồng",
@@ -557,7 +868,17 @@
     "description": "Cụm đá ven biển và điểm ngắm vịnh Nha Trang.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "beach",
+      "island"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Nhà thờ Núi Nha Trang",
@@ -573,7 +894,17 @@
     "description": "Nhà thờ đá cổ trên đồi nhỏ, thuận tiện ghé trong trung tâm.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "mountain",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Núi Langbiang",
@@ -589,7 +920,17 @@
     "description": "Điểm ngắm cao nguyên, trekking/xe jeep, phù hợp ngày thời tiết tốt.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "VNAT"
+    "source": "VNAT",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "mountain",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Thác Datanla",
@@ -605,14 +946,23 @@
     "description": "Thác và máng trượt/alpine coaster, cần kiểm tra mưa lớn trước khi đi.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "waterfall"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Hồ Tuyền Lâm",
     "destination": "Đà Lạt",
     "type": "ATTRACTION",
     "address": "Phường 4, Đà Lạt, Lâm Đồng",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 200000,
     "rating": 4.5,
@@ -621,7 +971,18 @@
     "description": "Hồ lớn gần Thiền viện Trúc Lâm, phù hợp đi dạo, cafe và chèo thuyền khi thời tiết tốt.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "boat",
+      "spiritual",
+      "couple"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Crazy House Đà Lạt",
@@ -637,7 +998,15 @@
     "description": "Công trình kiến trúc độc đáo, phù hợp ghé ngắn và ngày mưa nhẹ.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Official listing"
+    "source": "Official listing",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Ga Đà Lạt",
@@ -653,7 +1022,15 @@
     "description": "Nhà ga cổ, có tuyến tàu du lịch ngắn tới Trại Mát khi vận hành.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Chợ Đà Lạt",
@@ -669,14 +1046,22 @@
     "description": "Chợ trung tâm và chợ đêm, phù hợp ăn vặt và mua đặc sản.",
     "openingHours": "Sáng - tối",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "food",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bãi Sao",
     "destination": "Phú Quốc",
     "type": "ATTRACTION",
     "address": "An Thới, Phú Quốc, Kiên Giang",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 200000,
     "rating": 4.3,
@@ -685,7 +1070,17 @@
     "description": "Bãi biển cát trắng nổi tiếng phía nam đảo, phù hợp tắm biển khi thời tiết tốt.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "beach",
+      "island"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Sun World Hòn Thơm",
@@ -701,7 +1096,17 @@
     "description": "Cáp treo Hòn Thơm, công viên nước Aquatopia và khu vui chơi, phụ thuộc thời tiết biển.",
     "openingHours": "09:00 - 17:00",
     "verified": true,
-    "source": "Visit Phu Quoc"
+    "source": "Visit Phu Quoc",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "activity",
+      "outdoor",
+      "island",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "VinWonders Phú Quốc",
@@ -717,7 +1122,17 @@
     "description": "Công viên chủ đề lớn ở Bắc đảo, phù hợp gia đình và nhóm bạn.",
     "openingHours": "Theo lịch vận hành VinWonders",
     "verified": true,
-    "source": "VinWonders"
+    "source": "VinWonders",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "activity",
+      "mixed",
+      "island",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Grand World Phú Quốc",
@@ -733,7 +1148,16 @@
     "description": "Khu phố giải trí, show và ăn uống buổi tối ở Bắc đảo.",
     "openingHours": "Chiều - tối",
     "verified": true,
-    "source": "Vinpearl"
+    "source": "Vinpearl",
+    "indoorOutdoor": "INDOOR",
+    "weatherSensitivity": "LOW",
+    "tags": [
+      "nightlife",
+      "indoor",
+      "island"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Dinh Cậu",
@@ -749,14 +1173,24 @@
     "description": "Điểm tâm linh và ngắm hoàng hôn gần trung tâm Dương Đông.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "island",
+      "couple"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Chợ đêm Phú Quốc",
     "destination": "Phú Quốc",
     "type": "FOOD",
     "address": "Dương Đông, Phú Quốc, Kiên Giang",
-    "priceLevel": "LOW",
+    "priceLevel": "MID",
     "estimatedCostMin": 100000,
     "estimatedCostMax": 350000,
     "rating": 4.1,
@@ -765,7 +1199,16 @@
     "description": "Khu ăn uống và mua sắm buổi tối ở trung tâm Dương Đông.",
     "openingHours": "Chiều - tối",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "food",
+      "mixed",
+      "island"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bảo tàng Quảng Ninh",
@@ -781,7 +1224,18 @@
     "description": "Bảo tàng kiến trúc kính đen nổi bật, phù hợp ngày mưa hoặc lịch trình trong nhà.",
     "openingHours": "08:00 - 17:00",
     "verified": true,
-    "source": "Quang Ninh Tourism"
+    "source": "Quang Ninh Tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "museum",
+      "spiritual",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Đảo Tuần Châu",
@@ -797,14 +1251,24 @@
     "description": "Khu du lịch, bến tàu và hoạt động giải trí ven biển, phù hợp kết hợp trước hoặc sau tour vịnh.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "activity",
+      "outdoor",
+      "beach",
+      "island"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Làng chài Cửa Vạn",
     "destination": "Hạ Long",
     "type": "ATTRACTION",
     "address": "Vịnh Hạ Long, Quảng Ninh",
-    "priceLevel": "MID",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 200000,
     "rating": 4.4,
@@ -813,14 +1277,25 @@
     "description": "Làng chài nổi lâu đời trên vịnh, thường đi kèm tour tàu/kayak nên chi phí phụ thuộc tuyến tham quan.",
     "openingHours": "Theo lịch tàu/tuyến tham quan",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "beach",
+      "boat",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Hang Luồn",
     "destination": "Hạ Long",
     "type": "ACTIVITY",
     "address": "Đảo Bồ Hòn, Vịnh Hạ Long, Quảng Ninh",
-    "priceLevel": "MID",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 150000,
     "rating": 4.4,
@@ -829,7 +1304,18 @@
     "description": "Điểm chèo kayak/thuyền nan phổ biến trong tour vịnh, chỉ nên xếp khi thời tiết biển an toàn.",
     "openingHours": "Theo lịch tàu/tuyến tham quan",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "beach",
+      "boat",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Thác Bạc Sa Pa",
@@ -845,7 +1331,17 @@
     "description": "Thác nước gần đèo Ô Quy Hồ, phù hợp lịch trình nửa ngày khi đường khô ráo.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "mountain",
+      "waterfall"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Đèo Ô Quy Hồ",
@@ -861,7 +1357,16 @@
     "description": "Cung đèo ngắm núi nổi tiếng, phụ thuộc mạnh vào sương mù, mưa và an toàn giao thông.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "mountain"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Bản Tả Phìn",
@@ -877,7 +1382,15 @@
     "description": "Bản làng người Dao Đỏ, phù hợp trải nghiệm văn hóa, tắm lá thuốc và homestay.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Chợ Sa Pa",
@@ -893,7 +1406,15 @@
     "description": "Chợ trung tâm phù hợp ăn đồ nướng, thắng cố, mua đặc sản và ghép vào buổi tối.",
     "openingHours": "Sáng - tối",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "food",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Cao nguyên đá Đồng Văn",
@@ -909,7 +1430,17 @@
     "description": "Vùng công viên địa chất nổi tiếng, phù hợp route Hà Giang Loop nhiều ngày.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "UNESCO Global Geoparks"
+    "source": "UNESCO Global Geoparks",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "mountain",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Làng Lô Lô Chải",
@@ -925,7 +1456,15 @@
     "description": "Làng văn hóa dưới chân Cột cờ Lũng Cú, phù hợp ở homestay và trải nghiệm đời sống bản địa.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Ha Giang Tourism"
+    "source": "Ha Giang Tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Chợ phiên Mèo Vạc",
@@ -941,7 +1480,15 @@
     "description": "Chợ phiên vùng cao, phù hợp sáng Chủ nhật để ăn sáng, mua đặc sản và trải nghiệm văn hóa.",
     "openingHours": "Sáng Chủ nhật",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "food",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Ruộng bậc thang Hoàng Su Phì",
@@ -957,14 +1504,22 @@
     "description": "Khu ruộng bậc thang đẹp mùa lúa, cách xa Đồng Văn nên chỉ phù hợp lịch trình dài hoặc route riêng.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Bãi biển Mỹ Khê",
     "destination": "Đà Nẵng",
     "type": "ATTRACTION",
     "address": "Võ Nguyên Giáp, Sơn Trà, Đà Nẵng",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 200000,
     "rating": 4.6,
@@ -973,7 +1528,16 @@
     "description": "Bãi biển trung tâm, phù hợp tắm biển/dạo biển khi thời tiết tốt và biển an toàn.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Danang Fantasticity"
+    "source": "Danang Fantasticity",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "mixed",
+      "beach"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Cầu Rồng",
@@ -989,14 +1553,22 @@
     "description": "Biểu tượng trung tâm Đà Nẵng, có show phun lửa/nước cuối tuần vào buổi tối.",
     "openingHours": "Cả ngày; show thường vào tối cuối tuần",
     "verified": true,
-    "source": "Danang Fantasticity"
+    "source": "Danang Fantasticity",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Chợ đêm Sơn Trà",
     "destination": "Đà Nẵng",
     "type": "FOOD",
     "address": "Mai Hắc Đế, Sơn Trà, Đà Nẵng",
-    "priceLevel": "LOW",
+    "priceLevel": "MID",
     "estimatedCostMin": 80000,
     "estimatedCostMax": 300000,
     "rating": 4.1,
@@ -1005,7 +1577,15 @@
     "description": "Khu ăn vặt, hải sản và mua sắm buổi tối gần Cầu Rồng.",
     "openingHours": "Chiều - tối",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "food",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Asia Park Đà Nẵng",
@@ -1021,7 +1601,17 @@
     "description": "Công viên giải trí và Sun Wheel, phù hợp buổi chiều/tối cho nhóm bạn hoặc gia đình.",
     "openingHours": "Theo lịch vận hành",
     "verified": true,
-    "source": "Sun World"
+    "source": "Sun World",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "activity",
+      "mixed",
+      "food",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Hòn Khô",
@@ -1037,14 +1627,24 @@
     "description": "Đảo gần bờ phù hợp cano, tắm biển, lặn ngắm san hô khi biển êm.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "island",
+      "boat"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bãi Xép Quy Nhơn",
     "destination": "Quy Nhơn",
     "type": "ATTRACTION",
     "address": "Ghềnh Ráng, Quy Nhơn, Bình Định",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 200000,
     "rating": 4.4,
@@ -1053,7 +1653,17 @@
     "description": "Làng chài và bãi biển yên hơn trung tâm, phù hợp nghỉ nhẹ và ăn hải sản.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "beach",
+      "food"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Tháp Bánh Ít",
@@ -1069,7 +1679,15 @@
     "description": "Cụm tháp Chăm trên đồi, phù hợp lịch trình văn hóa và chụp ảnh nửa ngày.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Đầm Thị Nại",
@@ -1085,7 +1703,16 @@
     "description": "Đầm nước lớn gần trung tâm, phù hợp ngắm cảnh, chụp ảnh và kết hợp cầu Thị Nại.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "couple"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Chùa Long Sơn",
@@ -1101,14 +1728,23 @@
     "description": "Ngôi chùa nổi tiếng với tượng Phật trắng lớn, phù hợp lịch trình văn hóa trong thành phố.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Hòn Mun",
     "destination": "Nha Trang",
     "type": "ACTIVITY",
     "address": "Vịnh Nha Trang, Khánh Hòa",
-    "priceLevel": "MID",
+    "priceLevel": "HIGH",
     "estimatedCostMin": 250000,
     "estimatedCostMax": 800000,
     "rating": 4.3,
@@ -1117,14 +1753,25 @@
     "description": "Điểm lặn/ngắm san hô trong vịnh Nha Trang, chỉ nên xếp khi biển êm và thời tiết tốt.",
     "openingHours": "Theo lịch tour/tàu",
     "verified": true,
-    "source": "Khanh Hoa Tourism"
+    "source": "Khanh Hoa Tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "beach",
+      "island",
+      "boat"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bãi biển Nha Trang",
     "destination": "Nha Trang",
     "type": "ATTRACTION",
     "address": "Trần Phú, Nha Trang, Khánh Hòa",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 200000,
     "rating": 4.5,
@@ -1133,7 +1780,17 @@
     "description": "Bãi biển trung tâm, phù hợp đi dạo, tắm biển và ngắm bình minh khi thời tiết thuận lợi.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "mixed",
+      "beach",
+      "couple"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Suối khoáng nóng Tháp Bà",
@@ -1149,7 +1806,15 @@
     "description": "Tắm bùn và khoáng nóng, phù hợp ngày mưa nhẹ hoặc lịch trình thư giãn.",
     "openingHours": "Theo lịch vận hành",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "activity",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Thung lũng Tình Yêu",
@@ -1165,7 +1830,16 @@
     "description": "Khu du lịch cảnh quan, phù hợp cặp đôi/gia đình và lịch trình nhẹ.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Chùa Linh Phước",
@@ -1181,7 +1855,16 @@
     "description": "Chùa Ve Chai với kiến trúc khảm sành nổi bật, có thể kết hợp tuyến tàu Trại Mát.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Đường hầm Đất Sét",
@@ -1197,7 +1880,15 @@
     "description": "Khu tham quan mô hình đất sét gần hồ Tuyền Lâm, phù hợp lịch trình chụp ảnh.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Quảng trường Lâm Viên",
@@ -1213,14 +1904,22 @@
     "description": "Không gian trung tâm bên hồ Xuân Hương, phù hợp dạo tối và chụp ảnh biểu tượng hoa dã quỳ.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Bãi Rạch Vẹm",
     "destination": "Phú Quốc",
     "type": "ATTRACTION",
     "address": "Rạch Vẹm, Phú Quốc, Kiên Giang",
-    "priceLevel": "FREE",
+    "priceLevel": "MID",
     "estimatedCostMin": 0,
     "estimatedCostMax": 250000,
     "rating": 4.2,
@@ -1229,7 +1928,17 @@
     "description": "Bãi Sao Biển ở phía bắc đảo, phù hợp đi ban ngày mùa biển êm; cần nhắc bảo vệ sao biển.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "beach",
+      "island"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Làng chài Hàm Ninh",
@@ -1245,7 +1954,16 @@
     "description": "Làng chài lâu đời, nổi tiếng hải sản và ngắm bình minh phía đông đảo.",
     "openingHours": "Sáng - tối",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "INDOOR",
+    "weatherSensitivity": "LOW",
+    "tags": [
+      "food",
+      "indoor",
+      "island"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Vườn quốc gia Phú Quốc",
@@ -1261,7 +1979,19 @@
     "description": "Khu rừng bảo tồn phù hợp trekking nhẹ, đi xe máy khám phá và trải nghiệm thiên nhiên khi thời tiết khô ráo.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "island",
+      "mountain",
+      "family",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Nhà tù Phú Quốc",
@@ -1277,7 +2007,18 @@
     "description": "Di tích lịch sử ở Nam đảo, phù hợp lịch trình văn hóa và có thể ghép với Bãi Sao/Hộ Quốc.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "beach",
+      "island",
+      "heritage"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Hồ Hoàn Kiếm",
@@ -1293,7 +2034,16 @@
     "description": "Không gian biểu tượng trung tâm Hà Nội, phù hợp đi bộ, chụp ảnh và ghép với phố cổ.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "heritage"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Văn Miếu - Quốc Tử Giám",
@@ -1309,7 +2059,17 @@
     "description": "Di tích giáo dục và kiến trúc truyền thống, phù hợp lịch trình văn hóa trong nội đô.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "heritage",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Hoàng thành Thăng Long",
@@ -1325,7 +2085,16 @@
     "description": "Di sản thế giới UNESCO, phù hợp tham quan lịch sử và có nhiều khu ngoài trời.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "UNESCO"
+    "source": "UNESCO",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "heritage"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bảo tàng Dân tộc học Việt Nam",
@@ -1341,7 +2110,17 @@
     "description": "Bảo tàng lớn về văn hóa các dân tộc Việt Nam, phù hợp ngày mưa hoặc gia đình.",
     "openingHours": "Ban ngày; thường nghỉ thứ Hai",
     "verified": true,
-    "source": "Vietnam Museum of Ethnology"
+    "source": "Vietnam Museum of Ethnology",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "museum",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Chợ Đồng Xuân",
@@ -1357,7 +2136,16 @@
     "description": "Chợ lớn trong khu phố cổ, phù hợp ăn vặt, mua đồ và khám phá ẩm thực Hà Nội.",
     "openingHours": "Sáng - tối",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "food",
+      "mixed",
+      "heritage"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Vườn quốc gia Cát Bà",
@@ -1373,14 +2161,26 @@
     "description": "Khu rừng và trekking nổi bật trên đảo, nên tránh khi mưa lớn hoặc đường trơn.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "island",
+      "mountain",
+      "family",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Vịnh Lan Hạ",
     "destination": "Cát Bà",
     "type": "ACTIVITY",
     "address": "Cát Hải, Hải Phòng",
-    "priceLevel": "MID",
+    "priceLevel": "HIGH",
     "estimatedCostMin": 300000,
     "estimatedCostMax": 900000,
     "rating": 4.7,
@@ -1389,7 +2189,19 @@
     "description": "Vịnh biển đẹp cạnh Cát Bà, phù hợp tour tàu, kayak khi thời tiết biển an toàn.",
     "openingHours": "Theo lịch tàu/tour",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "beach",
+      "island",
+      "boat",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Pháo đài Thần Công",
@@ -1405,14 +2217,25 @@
     "description": "Điểm ngắm toàn cảnh thị trấn và vịnh, phù hợp hoàng hôn khi trời quang.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "beach",
+      "island",
+      "couple"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bãi Cát Cò",
     "destination": "Cát Bà",
     "type": "ATTRACTION",
     "address": "Thị trấn Cát Bà, Hải Phòng",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 200000,
     "rating": 4.2,
@@ -1421,7 +2244,17 @@
     "description": "Cụm bãi tắm gần trung tâm Cát Bà, phù hợp tắm biển khi thời tiết tốt.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "mixed",
+      "beach",
+      "island"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Làng chài Cái Bèo",
@@ -1437,7 +2270,17 @@
     "description": "Làng chài cổ trên biển, thường kết hợp tour thuyền ngắn từ trung tâm Cát Bà.",
     "openingHours": "Theo lịch tàu/tour",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "mixed",
+      "island",
+      "boat"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Tràng An",
@@ -1453,7 +2296,18 @@
     "description": "Di sản UNESCO với tuyến thuyền qua hang và núi đá vôi, phụ thuộc thời tiết nhưng thường vận hành ban ngày.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "UNESCO"
+    "source": "UNESCO",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "boat",
+      "mountain",
+      "heritage"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Tam Cốc - Bích Động",
@@ -1469,7 +2323,16 @@
     "description": "Tuyến thuyền và cảnh quan lúa nước, đẹp theo mùa nhưng nên tránh mưa lớn.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "boat"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Hang Múa",
@@ -1485,7 +2348,16 @@
     "description": "Điểm leo bậc đá ngắm toàn cảnh Tam Cốc, cần tránh lúc mưa/trơn.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Chùa Bái Đính",
@@ -1501,7 +2373,17 @@
     "description": "Quần thể chùa lớn, phù hợp lịch trình tâm linh và gia đình.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "spiritual",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Cố đô Hoa Lư",
@@ -1517,7 +2399,16 @@
     "description": "Di tích kinh đô xưa, phù hợp kết hợp Tràng An/Bái Đính trong ngày.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "heritage"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Đồi chè trái tim Mộc Châu",
@@ -1533,7 +2424,15 @@
     "description": "Đồi chè xanh nổi tiếng, phù hợp chụp ảnh buổi sáng khi trời khô ráo.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Thác Dải Yếm",
@@ -1549,7 +2448,16 @@
     "description": "Thác nước đẹp gần trung tâm Mộc Châu, nên tránh khi mưa lớn hoặc nước xiết.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "mixed",
+      "waterfall"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Rừng thông Bản Áng",
@@ -1565,7 +2473,15 @@
     "description": "Khu rừng thông, hồ nước và hoạt động nhẹ, phù hợp picnic hoặc đạp xe khi thời tiết đẹp.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Happy Land Mộc Châu",
@@ -1575,13 +2491,23 @@
     "priceLevel": "LOW",
     "estimatedCostMin": 60000,
     "estimatedCostMax": 100000,
-    "rating": 4.0,
+    "rating": 4,
     "latitude": 20.8218,
     "longitude": 104.6155,
     "description": "Khu vườn hoa và chụp ảnh, phù hợp lịch trình nhẹ cho cặp đôi/gia đình.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "food",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Cầu kính Bạch Long",
@@ -1597,7 +2523,15 @@
     "description": "Trải nghiệm cầu kính trong khu du lịch, cần cân nhắc budget và thời tiết.",
     "openingHours": "Theo lịch vận hành",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "activity",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Đèo Khau Phạ",
@@ -1613,7 +2547,16 @@
     "description": "Cung đèo ngắm ruộng bậc thang, nổi tiếng mùa lúa và bay dù lượn khi điều kiện an toàn.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "mountain"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Đồi Mâm Xôi",
@@ -1629,7 +2572,15 @@
     "description": "Điểm ngắm ruộng bậc thang biểu tượng, đẹp nhất mùa lúa chín/nước đổ.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Ruộng bậc thang La Pán Tẩn",
@@ -1645,7 +2596,18 @@
     "description": "Khu ruộng bậc thang được xếp hạng di tích quốc gia, phù hợp săn ảnh và trekking nhẹ.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "mountain",
+      "heritage",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Bản Lìm Mông",
@@ -1661,12 +2623,21 @@
     "description": "Bản vùng cao dưới đèo Khau Phạ, phù hợp trải nghiệm văn hóa và cảnh ruộng.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "mountain"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Tú Lệ",
     "destination": "Mù Cang Chải",
-    "type": "FOOD",
+    "type": "ATTRACTION",
     "address": "Tú Lệ, Văn Chấn, Yên Bái",
     "priceLevel": "LOW",
     "estimatedCostMin": 50000,
@@ -1677,7 +2648,15 @@
     "description": "Thung lũng nổi tiếng nếp Tú Lệ và suối khoáng, thường ghép trên đường vào Mù Cang Chải.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Thác Bản Giốc",
@@ -1693,7 +2672,16 @@
     "description": "Thác nước biên giới nổi tiếng, phù hợp đi ban ngày và nên cân nhắc mùa nước.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "waterfall"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Động Ngườm Ngao",
@@ -1709,7 +2697,15 @@
     "description": "Hang động đá vôi gần Bản Giốc, phù hợp thay thế khi trời mưa nhẹ.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Khu di tích Pác Bó",
@@ -1725,7 +2721,16 @@
     "description": "Di tích lịch sử với suối Lê Nin và hang Cốc Bó, phù hợp lịch trình văn hóa.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "heritage"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Núi Mắt Thần",
@@ -1741,7 +2746,16 @@
     "description": "Núi thủng độc đáo trong thung lũng, phù hợp picnic/chụp ảnh khi đường khô.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "mountain"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Chùa Phật Tích Trúc Lâm Bản Giốc",
@@ -1757,7 +2771,17 @@
     "description": "Chùa trên đồi gần thác Bản Giốc, phù hợp ngắm toàn cảnh khu vực.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "waterfall",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Hồ Ba Bể",
@@ -1773,14 +2797,24 @@
     "description": "Hồ nước ngọt lớn trong vườn quốc gia, phù hợp đi thuyền khi thời tiết ổn.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "boat",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Động Puông",
     "destination": "Ba Bể",
     "type": "ATTRACTION",
     "address": "Vườn quốc gia Ba Bể, Bắc Kạn",
-    "priceLevel": "MID",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 100000,
     "rating": 4.3,
@@ -1789,14 +2823,23 @@
     "description": "Hang động trên tuyến thuyền hồ Ba Bể, thường đi kèm tour thuyền.",
     "openingHours": "Theo lịch thuyền",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "boat"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Thác Đầu Đẳng",
     "destination": "Ba Bể",
     "type": "ATTRACTION",
     "address": "Vườn quốc gia Ba Bể, Bắc Kạn",
-    "priceLevel": "MID",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 100000,
     "rating": 4.2,
@@ -1805,14 +2848,23 @@
     "description": "Thác nước trên tuyến tham quan Ba Bể, cần tránh khi mưa lớn/nước xiết.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "waterfall"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bản Pác Ngòi",
     "destination": "Ba Bể",
     "type": "ACCOMMODATION",
     "address": "Nam Mẫu, Ba Bể, Bắc Kạn",
-    "priceLevel": "LOW",
+    "priceLevel": "MID",
     "estimatedCostMin": 150000,
     "estimatedCostMax": 400000,
     "rating": 4.2,
@@ -1821,14 +2873,22 @@
     "description": "Bản homestay người Tày ven hồ, phù hợp nghỉ đêm và ăn tối địa phương.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "INDOOR",
+    "weatherSensitivity": "LOW",
+    "tags": [
+      "accommodation",
+      "indoor"
+    ],
+    "aliases": [],
+    "costBasis": "PER_NIGHT"
   },
   {
     "name": "Ao Tiên Ba Bể",
     "destination": "Ba Bể",
     "type": "ATTRACTION",
     "address": "Vườn quốc gia Ba Bể, Bắc Kạn",
-    "priceLevel": "MID",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 100000,
     "rating": 4.1,
@@ -1837,7 +2897,16 @@
     "description": "Hồ nhỏ trong khu Ba Bể, thường ghép trong tuyến thuyền.",
     "openingHours": "Theo lịch thuyền",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "boat"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Chùa Đồng Yên Tử",
@@ -1853,7 +2922,16 @@
     "description": "Điểm cao nhất trong quần thể Yên Tử, cần sức khỏe tốt và nên tránh mưa/sương dày.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Quang Ninh Tourism"
+    "source": "Quang Ninh Tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Cáp treo Yên Tử",
@@ -1869,7 +2947,16 @@
     "description": "Phương án di chuyển tiết kiệm sức lên tuyến chùa, chi phí nên tính rõ trong lịch trình.",
     "openingHours": "Theo lịch vận hành",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "transport",
+      "mixed",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "PER_RIDE"
   },
   {
     "name": "Chùa Hoa Yên",
@@ -1885,7 +2972,16 @@
     "description": "Chùa trung tâm trong tuyến hành hương Yên Tử, phù hợp kết hợp cáp treo.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Quang Ninh Tourism"
+    "source": "Quang Ninh Tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Chùa Một Mái",
@@ -1901,7 +2997,17 @@
     "description": "Ngôi chùa nhỏ trên tuyến leo Yên Tử, phù hợp lịch trình tâm linh.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "spiritual",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Thiền viện Trúc Lâm Yên Tử",
@@ -1917,7 +3023,17 @@
     "description": "Không gian thiền và tâm linh dưới chân Yên Tử, phù hợp ngày nhẹ hoặc gia đình.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "spiritual",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Đại Nội Huế",
@@ -1933,7 +3049,15 @@
     "description": "Quần thể cung điện triều Nguyễn, phù hợp lịch trình văn hóa và cần ít nhất 2 giờ.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "UNESCO"
+    "source": "UNESCO",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Chùa Thiên Mụ",
@@ -1949,7 +3073,17 @@
     "description": "Ngôi chùa biểu tượng bên sông Hương, phù hợp ghép với thuyền sông Hương hoặc lăng tẩm.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "boat",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Chợ Đông Ba",
@@ -1965,7 +3099,15 @@
     "description": "Chợ trung tâm để ăn bún bò, bánh Huế, chè và mua đặc sản.",
     "openingHours": "Sáng - chiều",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "food",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Phố cổ Hội An",
@@ -1981,7 +3123,16 @@
     "description": "Di sản phố cổ, phù hợp đi bộ chiều tối và cần chú ý đông khách cuối tuần.",
     "openingHours": "Cả ngày; điểm tham quan theo giờ",
     "verified": true,
-    "source": "UNESCO"
+    "source": "UNESCO",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "heritage"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Rừng dừa Bảy Mẫu",
@@ -1997,7 +3148,16 @@
     "description": "Trải nghiệm thuyền thúng trong rừng dừa nước, nên tránh mưa lớn/gió mạnh.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Quang Nam Tourism"
+    "source": "Quang Nam Tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "boat"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Làng gốm Thanh Hà",
@@ -2013,14 +3173,23 @@
     "description": "Làng nghề gốm truyền thống, phù hợp lịch trình nhẹ và gia đình.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Thánh địa Mỹ Sơn",
     "destination": "Mỹ Sơn",
     "type": "ATTRACTION",
     "address": "Duy Phú, Duy Xuyên, Quảng Nam",
-    "priceLevel": "MID",
+    "priceLevel": "LOW",
     "estimatedCostMin": 150000,
     "estimatedCostMax": 200000,
     "rating": 4.5,
@@ -2029,14 +3198,24 @@
     "description": "Quần thể đền tháp Chăm UNESCO, phù hợp đi buổi sáng để tránh nắng.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "UNESCO"
+    "source": "UNESCO",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "heritage",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Nhà trưng bày Mỹ Sơn",
     "destination": "Mỹ Sơn",
     "type": "ATTRACTION",
     "address": "Khu di sản Mỹ Sơn, Quảng Nam",
-    "priceLevel": "LOW",
+    "priceLevel": "FREE",
     "estimatedCostMin": 0,
     "estimatedCostMax": 0,
     "rating": 4.2,
@@ -2045,14 +3224,23 @@
     "description": "Không gian giới thiệu lịch sử văn hóa Chăm trước khi vào khu tháp.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "My Son Sanctuary"
+    "source": "My Son Sanctuary",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "museum"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Múa Chăm Mỹ Sơn",
     "destination": "Mỹ Sơn",
     "type": "ACTIVITY",
     "address": "Khu di sản Mỹ Sơn, Quảng Nam",
-    "priceLevel": "LOW",
+    "priceLevel": "FREE",
     "estimatedCostMin": 0,
     "estimatedCostMax": 0,
     "rating": 4.2,
@@ -2061,7 +3249,16 @@
     "description": "Chương trình biểu diễn văn hóa Chăm theo khung giờ trong khu di sản.",
     "openingHours": "Theo lịch biểu diễn",
     "verified": true,
-    "source": "My Son Sanctuary"
+    "source": "My Son Sanctuary",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "activity",
+      "mixed",
+      "heritage"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Động Phong Nha",
@@ -2077,7 +3274,16 @@
     "description": "Tuyến thuyền vào hang nước nổi tiếng, cần kiểm tra điều kiện vận hành khi mưa lũ.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Phong Nha-Ke Bang National Park"
+    "source": "Phong Nha-Ke Bang National Park",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "boat"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Động Thiên Đường",
@@ -2093,7 +3299,15 @@
     "description": "Hang khô lớn, phù hợp ngày mưa nhẹ hơn các hoạt động sông suối.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Phong Nha-Ke Bang National Park"
+    "source": "Phong Nha-Ke Bang National Park",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Sông Chày - Hang Tối",
@@ -2109,7 +3323,17 @@
     "description": "Zipline, kayak và bùn khoáng; chỉ phù hợp khi thời tiết và mực nước an toàn.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Phong Nha-Ke Bang National Park"
+    "source": "Phong Nha-Ke Bang National Park",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "boat",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Gành Đá Đĩa",
@@ -2125,7 +3349,15 @@
     "description": "Danh thắng đá bazan độc đáo ven biển, phù hợp chụp ảnh khi trời khô.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Mũi Điện - Hải đăng Đại Lãnh",
@@ -2141,7 +3373,15 @@
     "description": "Điểm ngắm bình minh nổi tiếng, cần đi sớm và tránh ngày mưa/gió mạnh.",
     "openingHours": "Sáng - chiều",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Đầm Ô Loan",
@@ -2157,7 +3397,15 @@
     "description": "Đầm nước lợ nổi tiếng hải sản, phù hợp bữa trưa/tối trên tuyến phía bắc Tuy Hòa.",
     "openingHours": "Sáng - tối",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "INDOOR",
+    "weatherSensitivity": "LOW",
+    "tags": [
+      "food",
+      "indoor"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Thác Pa Sỹ",
@@ -2173,14 +3421,24 @@
     "description": "Thác nước trong rừng thông Măng Đen, nên tránh khi mưa lớn.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Kon Tum Tourism"
+    "source": "Kon Tum Tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "waterfall",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Hồ Đăk Ke",
     "destination": "Măng Đen",
     "type": "ATTRACTION",
     "address": "Măng Đen, Kon Plông, Kon Tum",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 100000,
     "rating": 4.2,
@@ -2189,7 +3447,17 @@
     "description": "Hồ trung tâm Măng Đen, phù hợp dạo nhẹ, cafe và ngắm cảnh.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "spiritual",
+      "couple"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Tượng Đức Mẹ Măng Đen",
@@ -2205,14 +3473,23 @@
     "description": "Điểm hành hương nổi tiếng, phù hợp lịch trình tâm linh nhẹ.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Bảo tàng Thế giới Cà phê",
     "destination": "Buôn Ma Thuột",
     "type": "ATTRACTION",
     "address": "Nguyễn Đình Chiểu, Buôn Ma Thuột, Đắk Lắk",
-    "priceLevel": "MID",
+    "priceLevel": "LOW",
     "estimatedCostMin": 75000,
     "estimatedCostMax": 150000,
     "rating": 4.5,
@@ -2221,7 +3498,17 @@
     "description": "Bảo tàng kiến trúc đẹp về văn hóa cà phê, phù hợp ngày mưa hoặc lịch trình city.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "World Coffee Museum"
+    "source": "World Coffee Museum",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "museum",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Thác Dray Nur",
@@ -2237,7 +3524,16 @@
     "description": "Thác nước lớn gần Buôn Ma Thuột, cần tránh mưa lớn/nước xiết.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Dak Lak Tourism"
+    "source": "Dak Lak Tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "waterfall"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Buôn Đôn",
@@ -2253,7 +3549,15 @@
     "description": "Khu văn hóa voi và nhà dài Tây Nguyên, phù hợp lịch trình văn hóa nửa ngày.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Dak Lak Tourism"
+    "source": "Dak Lak Tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Cổng Tò Vò",
@@ -2269,7 +3573,17 @@
     "description": "Cổng đá nham thạch nổi tiếng, phù hợp ngắm hoàng hôn khi trời đẹp.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "island",
+      "couple"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Đỉnh Thới Lới",
@@ -2285,14 +3599,24 @@
     "description": "Miệng núi lửa và điểm ngắm toàn đảo, phụ thuộc thời tiết/gió.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "island",
+      "mountain"
+    ],
+    "aliases": [],
+    "costBasis": "FREE"
   },
   {
     "name": "Hang Câu",
     "destination": "Lý Sơn",
     "type": "ATTRACTION",
     "address": "Đảo Lý Sơn, Quảng Ngãi",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 100000,
     "rating": 4.4,
@@ -2301,7 +3625,17 @@
     "description": "Vách đá và bãi biển dưới chân Thới Lới, chỉ nên tắm/chèo khi biển êm.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "beach",
+      "island"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Đồi cát bay Mũi Né",
@@ -2317,7 +3651,15 @@
     "description": "Đồi cát gần trung tâm Mũi Né, phù hợp sáng sớm/chiều mát và tránh mưa.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "activity",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Suối Tiên Mũi Né",
@@ -2333,14 +3675,22 @@
     "description": "Lối đi bộ dưới suối nông giữa vách cát đỏ, cần tránh mưa lớn.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bàu Trắng",
     "destination": "Mũi Né - Phan Thiết",
     "type": "ACTIVITY",
     "address": "Hòa Thắng, Bắc Bình, Bình Thuận",
-    "priceLevel": "MID",
+    "priceLevel": "HIGH",
     "estimatedCostMin": 100000,
     "estimatedCostMax": 800000,
     "rating": 4.4,
@@ -2349,7 +3699,16 @@
     "description": "Đồi cát trắng và hồ nước, thường có xe địa hình; cần tính rõ chi phí nếu sử dụng.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "activity",
+      "outdoor",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Vịnh Vĩnh Hy",
@@ -2365,7 +3724,16 @@
     "description": "Vịnh biển đẹp, phù hợp tàu đáy kính/lặn khi biển êm.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "activity",
+      "outdoor",
+      "beach"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Hang Rái",
@@ -2381,7 +3749,16 @@
     "description": "Bãi đá ven biển nổi tiếng gần Vĩnh Hy, đẹp lúc bình minh nhưng phụ thuộc sóng/gió.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "beach"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Tháp Po Klong Garai",
@@ -2397,7 +3774,15 @@
     "description": "Cụm tháp Chăm nổi bật, phù hợp lịch trình văn hóa trong thành phố.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Dinh Độc Lập",
@@ -2413,7 +3798,18 @@
     "description": "Di tích lịch sử trung tâm thành phố, phù hợp lịch trình văn hóa và ngày mưa.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "heritage"
+    ],
+    "aliases": [
+      "Hội trường Thống Nhất"
+    ],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bảo tàng Chứng tích Chiến tranh",
@@ -2429,14 +3825,26 @@
     "description": "Bảo tàng lịch sử quan trọng, phù hợp ghép với Dinh Độc Lập trong nửa ngày.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "museum",
+      "family"
+    ],
+    "aliases": [
+      "War Remnants Museum"
+    ],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Chợ Bến Thành",
     "destination": "TP. Hồ Chí Minh",
     "type": "FOOD",
     "address": "Lê Lợi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh",
-    "priceLevel": "LOW",
+    "priceLevel": "MID",
     "estimatedCostMin": 50000,
     "estimatedCostMax": 250000,
     "rating": 4.1,
@@ -2445,7 +3853,17 @@
     "description": "Chợ biểu tượng để ăn vặt, mua đặc sản và trải nghiệm trung tâm Sài Gòn.",
     "openingHours": "Sáng - tối",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "food",
+      "mixed"
+    ],
+    "aliases": [
+      "Ben Thanh Market"
+    ],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Chợ nổi Cái Răng",
@@ -2461,14 +3879,24 @@
     "description": "Chợ nổi nổi tiếng nhất Cần Thơ, nên đi sáng sớm và tính chi phí thuyền rõ ràng.",
     "openingHours": "04:30 - 08:00",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "mixed",
+      "boat",
+      "food"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bến Ninh Kiều",
     "destination": "Cần Thơ",
     "type": "ATTRACTION",
     "address": "Hai Bà Trưng, Ninh Kiều, Cần Thơ",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 150000,
     "rating": 4.3,
@@ -2477,7 +3905,16 @@
     "description": "Điểm dạo ven sông Hậu, phù hợp buổi chiều tối và tour thuyền ăn tối.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "boat"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Nhà cổ Bình Thủy",
@@ -2493,14 +3930,22 @@
     "description": "Nhà cổ hơn 100 năm, phù hợp lịch trình văn hóa nhẹ gần trung tâm.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Miếu Bà Chúa Xứ Núi Sam",
     "destination": "Châu Đốc - An Giang",
     "type": "ATTRACTION",
     "address": "Núi Sam, Châu Đốc, An Giang",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 100000,
     "rating": 4.5,
@@ -2509,7 +3954,17 @@
     "description": "Điểm hành hương nổi tiếng ở Núi Sam, thường đông vào mùa lễ hội.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "mountain",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Rừng tràm Trà Sư",
@@ -2525,7 +3980,16 @@
     "description": "Rừng tràm ngập nước, đẹp mùa nước nổi; cần kiểm tra thời tiết và giờ thuyền.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "boat"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Chợ Châu Đốc",
@@ -2541,7 +4005,15 @@
     "description": "Chợ địa phương nổi tiếng mắm, bún cá và đặc sản miền Tây.",
     "openingHours": "Sáng - chiều",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "food",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Thạch Động",
@@ -2557,7 +4029,15 @@
     "description": "Hang động đá vôi gắn với truyền thuyết Thạch Sanh, phù hợp ghé ngắn gần biên giới.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bãi Mũi Nai",
@@ -2573,14 +4053,24 @@
     "description": "Bãi biển gần trung tâm Hà Tiên, phù hợp đi chiều và ăn hải sản.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "beach",
+      "food"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Lăng Mạc Cửu",
     "destination": "Hà Tiên",
     "type": "ATTRACTION",
     "address": "Bình San, Hà Tiên, Kiên Giang",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 30000,
     "rating": 4.3,
@@ -2589,14 +4079,23 @@
     "description": "Di tích lịch sử gắn với vùng đất Hà Tiên, thuận tiện kết hợp trung tâm thành phố.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "heritage"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bãi Cây Mến",
     "destination": "Nam Du",
     "type": "ATTRACTION",
     "address": "Hòn Lớn, Nam Du, Kiên Giang",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 150000,
     "rating": 4.4,
@@ -2605,14 +4104,24 @@
     "description": "Bãi biển nổi tiếng nhất Nam Du, phù hợp tắm biển khi thời tiết và sóng an toàn.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "beach",
+      "island"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Hải đăng Nam Du",
     "destination": "Nam Du",
     "type": "ATTRACTION",
     "address": "Hòn Lớn, Nam Du, Kiên Giang",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 100000,
     "rating": 4.3,
@@ -2621,7 +4130,16 @@
     "description": "Điểm ngắm toàn cảnh quần đảo, đường lên dốc và nên đi khi trời khô.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "island"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Hòn Mấu",
@@ -2637,7 +4155,16 @@
     "description": "Đảo nhỏ thường nằm trong tour đảo Nam Du, cần kiểm tra lịch tàu và thời tiết biển.",
     "openingHours": "Theo lịch tàu/tour",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "activity",
+      "outdoor",
+      "island"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Nhà tù Côn Đảo",
@@ -2653,14 +4180,24 @@
     "description": "Di tích lịch sử quan trọng, phù hợp lịch trình văn hóa nửa ngày.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "island",
+      "heritage"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Nghĩa trang Hàng Dương",
     "destination": "Côn Đảo",
     "type": "ATTRACTION",
     "address": "Côn Sơn, Côn Đảo, Bà Rịa - Vũng Tàu",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 100000,
     "rating": 4.7,
@@ -2669,14 +4206,24 @@
     "description": "Điểm tưởng niệm linh thiêng, thường đi cùng cụm di tích Côn Đảo.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "island",
+      "heritage"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bãi Đầm Trầu",
     "destination": "Côn Đảo",
     "type": "ATTRACTION",
     "address": "Côn Đảo, Bà Rịa - Vũng Tàu",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 200000,
     "rating": 4.6,
@@ -2685,14 +4232,24 @@
     "description": "Bãi biển đẹp gần sân bay, phù hợp tắm biển khi sóng êm và trời đẹp.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "beach",
+      "island"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Tượng Chúa Kitô Vua",
     "destination": "Vũng Tàu",
     "type": "ATTRACTION",
     "address": "Núi Nhỏ, Vũng Tàu",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 50000,
     "rating": 4.5,
@@ -2701,14 +4258,24 @@
     "description": "Biểu tượng Vũng Tàu với đường leo nhiều bậc, nên đi sáng sớm hoặc chiều mát.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "spiritual",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bãi Sau",
     "destination": "Vũng Tàu",
     "type": "ATTRACTION",
     "address": "Thùy Vân, Vũng Tàu",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 200000,
     "rating": 4.2,
@@ -2717,14 +4284,24 @@
     "description": "Bãi biển dài, nhiều dịch vụ ăn uống và lưu trú, phù hợp gia đình.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "beach",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Hải đăng Vũng Tàu",
     "destination": "Vũng Tàu",
     "type": "ATTRACTION",
     "address": "Núi Nhỏ, Vũng Tàu",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 50000,
     "rating": 4.4,
@@ -2733,7 +4310,15 @@
     "description": "Điểm ngắm thành phố và biển, đường lên dốc nhưng gần trung tâm.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Núi Bà Đen",
@@ -2749,14 +4334,25 @@
     "description": "Nóc nhà Nam Bộ, có tuyến cáp treo; trekking chỉ nên chọn khi thời tiết an toàn.",
     "openingHours": "Theo lịch vận hành cáp treo",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "mixed",
+      "mountain",
+      "spiritual",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Tòa Thánh Cao Đài Tây Ninh",
     "destination": "Tây Ninh",
     "type": "ATTRACTION",
     "address": "Hòa Thành, Tây Ninh",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 50000,
     "rating": 4.5,
@@ -2765,14 +4361,24 @@
     "description": "Công trình tôn giáo đặc trưng của đạo Cao Đài, phù hợp ghép với Núi Bà Đen.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "mountain",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Hồ Dầu Tiếng",
     "destination": "Tây Ninh",
     "type": "ATTRACTION",
     "address": "Dương Minh Châu, Tây Ninh",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 200000,
     "rating": 4.3,
@@ -2781,7 +4387,15 @@
     "description": "Hồ nước lớn phù hợp picnic, cắm trại nhẹ; cần tránh mưa lớn và gió mạnh.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Cồn Phụng",
@@ -2797,7 +4411,16 @@
     "description": "Khu sinh thái xứ dừa với xuồng rạch, vườn trái cây và đờn ca tài tử.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "activity",
+      "mixed",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Sân chim Vàm Hồ",
@@ -2813,7 +4436,15 @@
     "description": "Điểm sinh thái rừng ngập mặn và chim nước, nên đi sáng hoặc chiều.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Làng hoa kiểng Cái Mơn",
@@ -2829,7 +4460,17 @@
     "description": "Vùng hoa kiểng và vườn cây trái nổi tiếng, đẹp nhất dịp cận Tết.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "food",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Vườn quốc gia Tràm Chim",
@@ -2845,7 +4486,17 @@
     "description": "Khu sinh thái đất ngập nước, phù hợp đi thuyền ngắm chim theo mùa.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "boat",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Làng hoa Sa Đéc",
@@ -2861,7 +4512,16 @@
     "description": "Làng hoa nổi tiếng miền Tây, phù hợp chụp ảnh và trải nghiệm vườn.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Nhà cổ Huỳnh Thủy Lê",
@@ -2877,7 +4537,15 @@
     "description": "Nhà cổ gắn với văn học và kiến trúc Đông - Tây, thuận tiện ghép cùng làng hoa.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Mũi Cà Mau",
@@ -2893,7 +4561,15 @@
     "description": "Điểm cực Nam Tổ quốc, cần tính thời gian di chuyển xa từ trung tâm Cà Mau.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Vườn quốc gia U Minh Hạ",
@@ -2909,7 +4585,16 @@
     "description": "Rừng tràm ngập nước, phù hợp trải nghiệm sinh thái và cần kiểm tra mùa nước.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "activity",
+      "outdoor",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Đầm Thị Tường",
@@ -2925,7 +4610,17 @@
     "description": "Đầm nước tự nhiên lớn ở miền Tây, phù hợp đi thuyền và ăn hải sản địa phương.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "boat",
+      "food"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Pù Luông",
@@ -2941,14 +4636,24 @@
     "description": "Khu bảo tồn thiên nhiên với ruộng bậc thang, bản làng và trekking nhẹ.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "mountain",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Biển Sầm Sơn",
     "destination": "Thanh Hóa",
     "type": "ATTRACTION",
     "address": "Sầm Sơn, Thanh Hóa",
-    "priceLevel": "FREE",
+    "priceLevel": "MID",
     "estimatedCostMin": 0,
     "estimatedCostMax": 250000,
     "rating": 4.1,
@@ -2957,7 +4662,16 @@
     "description": "Bãi biển phổ biến miền Bắc, đông vào mùa hè và cuối tuần.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "beach"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Thành Nhà Hồ",
@@ -2973,14 +4687,23 @@
     "description": "Di sản thế giới UNESCO, phù hợp lịch trình lịch sử và văn hóa.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "UNESCO"
+    "source": "UNESCO",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "heritage"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Cột cờ Phú Quý",
     "destination": "Đảo Phú Quý",
     "type": "ATTRACTION",
     "address": "Đảo Phú Quý, Bình Thuận",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 50000,
     "rating": 4.4,
@@ -2989,14 +4712,23 @@
     "description": "Điểm check-in nhìn ra biển, phù hợp ghép tuyến quanh đảo bằng xe máy.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "island"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Gành Hang",
     "destination": "Đảo Phú Quý",
     "type": "ATTRACTION",
     "address": "Đảo Phú Quý, Bình Thuận",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 100000,
     "rating": 4.5,
@@ -3005,14 +4737,23 @@
     "description": "Vách đá và hồ nước tự nhiên ven biển, cần tránh khi sóng lớn.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "island"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Vịnh Triều Dương",
     "destination": "Đảo Phú Quý",
     "type": "ATTRACTION",
     "address": "Đảo Phú Quý, Bình Thuận",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 150000,
     "rating": 4.3,
@@ -3021,14 +4762,24 @@
     "description": "Bãi tắm và picnic phổ biến trên đảo, phù hợp khi biển êm.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "beach",
+      "island"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Nhà thờ đá Tam Đảo",
     "destination": "Tam Đảo",
     "type": "ATTRACTION",
     "address": "Thị trấn Tam Đảo, Vĩnh Phúc",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 50000,
     "rating": 4.3,
@@ -3037,7 +4788,16 @@
     "description": "Công trình đá biểu tượng ngay trung tâm thị trấn, dễ ghé khi trời mưa nhẹ.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Thác Bạc Tam Đảo",
@@ -3053,7 +4813,16 @@
     "description": "Thác gần trung tâm, đường bậc xuống có thể trơn khi mưa.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "attraction",
+      "mixed",
+      "waterfall"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Cầu Mây Tam Đảo",
@@ -3069,14 +4838,23 @@
     "description": "Điểm ngắm cảnh và chụp ảnh, phụ thuộc sương mù và thời tiết.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "couple"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bản Lác",
     "destination": "Mai Châu",
     "type": "ACCOMMODATION",
     "address": "Chiềng Châu, Mai Châu, Hòa Bình",
-    "priceLevel": "LOW",
+    "priceLevel": "MID",
     "estimatedCostMin": 150000,
     "estimatedCostMax": 500000,
     "rating": 4.3,
@@ -3085,7 +4863,15 @@
     "description": "Bản homestay người Thái nổi tiếng, phù hợp nghỉ đêm và đạp xe quanh thung lũng.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "INDOOR",
+    "weatherSensitivity": "LOW",
+    "tags": [
+      "accommodation",
+      "indoor"
+    ],
+    "aliases": [],
+    "costBasis": "PER_NIGHT"
   },
   {
     "name": "Hang Chiều",
@@ -3101,14 +4887,24 @@
     "description": "Hang trên núi với nhiều bậc leo, nên đi khi trời khô và có giày bám tốt.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Local tourism"
+    "source": "Local tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "mountain",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Đèo Thung Khe",
     "destination": "Mai Châu",
     "type": "ATTRACTION",
     "address": "Quốc lộ 6, Mai Châu, Hòa Bình",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 100000,
     "rating": 4.3,
@@ -3117,7 +4913,16 @@
     "description": "Điểm dừng ngắm thung lũng Mai Châu, cần chú ý sương mù và an toàn đường đèo.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "mountain"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Biển Hồ T'Nưng",
@@ -3133,14 +4938,23 @@
     "description": "Hồ miệng núi lửa được xem là biểu tượng của Pleiku, đẹp vào sáng sớm.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "mountain"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Chùa Minh Thành",
     "destination": "Pleiku",
     "type": "ATTRACTION",
     "address": "348 Nguyễn Viết Xuân, Pleiku, Gia Lai",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 50000,
     "rating": 4.6,
@@ -3149,14 +4963,23 @@
     "description": "Ngôi chùa nổi bật trong thành phố, phù hợp lịch trình nhẹ và chụp ảnh kiến trúc.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "spiritual"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Núi lửa Chư Đăng Ya",
     "destination": "Pleiku",
     "type": "ATTRACTION",
     "address": "Chư Đăng Ya, Gia Lai",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 150000,
     "rating": 4.5,
@@ -3165,7 +4988,16 @@
     "description": "Miệng núi lửa cổ và mùa hoa dã quỳ nổi tiếng, đường đất có thể khó đi khi mưa.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel"
+    "source": "Vietnam Travel",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "outdoor",
+      "mountain"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Thác Dambri",
@@ -3181,14 +5013,23 @@
     "description": "Thác lớn gần Bảo Lộc, có khu du lịch và hoạt động ngoài trời; nên tránh mưa lớn.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "waterfall"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Tu viện Bát Nhã",
     "destination": "Bảo Lộc",
     "type": "ATTRACTION",
     "address": "Đamb'ri, Bảo Lộc, Lâm Đồng",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 50000,
     "rating": 4.5,
@@ -3197,14 +5038,22 @@
     "description": "Không gian thiền giữa đồi chè, phù hợp lịch trình chậm và nhẹ nhàng.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Nhan Dan"
+    "source": "Nhan Dan",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Chùa Linh Quy Pháp Ấn",
     "destination": "Bảo Lộc",
     "type": "ATTRACTION",
     "address": "Lộc Thành, Bảo Lâm, Lâm Đồng",
-    "priceLevel": "FREE",
+    "priceLevel": "LOW",
     "estimatedCostMin": 0,
     "estimatedCostMax": 100000,
     "rating": 4.4,
@@ -3213,7 +5062,17 @@
     "description": "Điểm săn mây và ngắm cảnh nổi tiếng gần Bảo Lộc, đường lên dốc và phụ thuộc thời tiết.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Nhan Dan"
+    "source": "Nhan Dan",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "spiritual",
+      "couple"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Vườn quốc gia Cát Tiên",
@@ -3229,7 +5088,18 @@
     "description": "Vườn quốc gia đa dạng sinh học, phù hợp trekking, đạp xe và xem thú đêm theo tour.",
     "openingHours": "Theo lịch vườn quốc gia",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "outdoor",
+      "mountain",
+      "family",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Bàu Sấu",
@@ -3245,7 +5115,19 @@
     "description": "Tuyến trekking đến vùng đất ngập nước Ramsar, cần sức khỏe và kiểm tra điều kiện mùa mưa.",
     "openingHours": "Ban ngày, theo hướng dẫn vườn",
     "verified": true,
-    "source": "UNESCO"
+    "source": "UNESCO",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "HIGH",
+    "tags": [
+      "activity",
+      "mixed",
+      "mountain",
+      "spiritual",
+      "family",
+      "adventure"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Đảo Tiên - Trung tâm cứu hộ linh trưởng",
@@ -3261,6 +5143,16 @@
     "description": "Trung tâm bảo tồn linh trưởng gần khu trung tâm vườn, thường cần đăng ký theo tour/khung giờ.",
     "openingHours": "Theo lịch tour",
     "verified": true,
-    "source": "Vietnam Tourism"
+    "source": "Vietnam Tourism",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
+    "tags": [
+      "attraction",
+      "mixed",
+      "island",
+      "family"
+    ],
+    "aliases": [],
+    "costBasis": "PER_PERSON"
   }
 ]

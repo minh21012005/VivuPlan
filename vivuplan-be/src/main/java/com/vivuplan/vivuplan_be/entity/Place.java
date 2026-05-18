@@ -5,7 +5,11 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.text.Normalizer;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 @Entity
 @Table(
@@ -27,6 +31,9 @@ public class Place {
 
     @Column(nullable = false, length = 220)
     private String name;
+
+    @Column(length = 240)
+    private String normalizedName;
 
     @Column(nullable = false, length = 160)
     private String destination;
@@ -68,6 +75,30 @@ public class Place {
     @Column(columnDefinition = "TEXT")
     private String openingHours;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private IndoorOutdoor indoorOutdoor;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private WeatherSensitivity weatherSensitivity;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private CostBasis costBasis;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "place_tags", joinColumns = @JoinColumn(name = "place_id"))
+    @Column(name = "tag", length = 80)
+    @Builder.Default
+    private List<String> tags = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "place_aliases", joinColumns = @JoinColumn(name = "place_id"))
+    @Column(name = "alias", length = 180)
+    @Builder.Default
+    private List<String> aliases = new ArrayList<>();
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean verified = false;
@@ -82,6 +113,12 @@ public class Place {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    @PrePersist
+    @PreUpdate
+    private void normalizeBeforeSave() {
+        normalizedName = normalize(name);
+    }
+
     public enum PlaceType {
         FOOD,
         CAFE,
@@ -90,5 +127,39 @@ public class Place {
         TRANSPORT,
         ACTIVITY,
         NIGHTLIFE
+    }
+
+    public enum IndoorOutdoor {
+        INDOOR,
+        OUTDOOR,
+        MIXED
+    }
+
+    public enum WeatherSensitivity {
+        LOW,
+        MEDIUM,
+        HIGH
+    }
+
+    public enum CostBasis {
+        PER_PERSON,
+        GROUP,
+        PER_NIGHT,
+        PER_RIDE,
+        FREE,
+        INCLUDED
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return "";
+        }
+        return Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replace("đ", "d")
+                .replace("Đ", "D")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", " ")
+                .trim();
     }
 }

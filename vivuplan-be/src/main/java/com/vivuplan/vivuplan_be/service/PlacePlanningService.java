@@ -29,6 +29,12 @@ public class PlacePlanningService {
     private static final int MAX_CONTEXT_PLACES = 30;
     private static final int REQUEST_MATCH_SCORE = 60;
     private static final int WEATHER_FRIENDLY_SCORE = 18;
+    private static final Map<String, List<String>> NEARBY_DESTINATIONS = Map.of(
+            "da nang", List.of("Hội An", "Mỹ Sơn"),
+            "hoi an", List.of("Đà Nẵng", "Mỹ Sơn"),
+            "my son", List.of("Hội An", "Đà Nẵng"),
+            "tp ho chi minh", List.of("Vũng Tàu", "Tây Ninh", "Bến Tre"),
+            "can tho", List.of("Châu Đốc - An Giang", "Đồng Tháp", "Bến Tre"));
 
     private final PlaceRepository placeRepository;
     private final DestinationRepository destinationRepository;
@@ -72,7 +78,7 @@ public class PlacePlanningService {
     }
 
     List<Place> selectPromptPlaces(TripDto.GenerateRequest req) {
-        List<Place> places = loadVerifiedPlacesForDestination(req.getDestination());
+        List<Place> places = loadCandidatePlacesForRequest(req);
         if (places.isEmpty()) {
             return List.of();
         }
@@ -91,7 +97,7 @@ public class PlacePlanningService {
 
     private List<Place> diversify(List<ScoredPlace> ranked, int limit) {
         List<Place> selected = new ArrayList<>();
-        Set<Long> selectedIds = new HashSet<>();
+        Set<String> selectedKeys = new HashSet<>();
         Map<Place.PlaceType, Integer> typeCounts = new EnumMap<>(Place.PlaceType.class);
 
         for (ScoredPlace scored : ranked) {
@@ -104,7 +110,7 @@ public class PlacePlanningService {
                 continue;
             }
             selected.add(place);
-            selectedIds.add(place.getId());
+            selectedKeys.add(placeKey(place));
             typeCounts.merge(place.getType(), 1, Integer::sum);
         }
 
@@ -114,7 +120,7 @@ public class PlacePlanningService {
                     break;
                 }
                 Place place = scored.place();
-                if (selectedIds.add(place.getId())) {
+                if (selectedKeys.add(placeKey(place))) {
                     selected.add(place);
                 }
             }
@@ -129,6 +135,9 @@ public class PlacePlanningService {
         }
         if (place.getRating() != null) {
             score += Math.round(place.getRating().floatValue() * 8);
+        }
+        if (!sameDestination(place.getDestination(), req.getDestination())) {
+            score -= 18;
         }
 
         score += scoreByStyle(place, normalizeText(req.getStyle()));
@@ -145,25 +154,27 @@ public class PlacePlanningService {
         }
         Place.PlaceType type = place.getType();
         String text = normalizedPlaceText(place);
+        String tags = normalizedTags(place);
         return switch (style) {
-            case "foodie" -> type == Place.PlaceType.FOOD || type == Place.PlaceType.CAFE ? 34 : 0;
-            case "cultural" -> type == Place.PlaceType.ATTRACTION && containsAny(text,
-                    "bao tang", "di tich", "chua", "den", "thap", "pho co", "lang nghe", "unesco") ? 32 : 8;
+            case "foodie" -> type == Place.PlaceType.FOOD || type == Place.PlaceType.CAFE || tags.contains("food") ? 34 : 0;
+            case "cultural" -> type == Place.PlaceType.ATTRACTION && (containsAny(text,
+                    "bao tang", "di tich", "chua", "den", "thap", "pho co", "lang nghe", "unesco") || containsAny(tags, "museum", "heritage", "spiritual")) ? 32 : 8;
             case "adventure" -> type == Place.PlaceType.ACTIVITY || containsAny(text,
-                    "trekking", "thuyen", "kayak", "zipline", "deo", "thac", "nui", "hang", "dao") ? 32 : 0;
+                    "trekking", "thuyen", "kayak", "zipline", "deo", "thac", "nui", "hang", "dao") || tags.contains("adventure") ? 32 : 0;
             case "nightlife" -> type == Place.PlaceType.NIGHTLIFE || containsAny(text, "dem", "bar", "pho di bo") ? 28 : 0;
             case "relaxing" -> type == Place.PlaceType.CAFE || containsAny(text,
-                    "bien", "ho", "spa", "dao", "vuon", "dao nhe", "di dao", "ngam canh") ? 22 : 0;
+                    "bien", "ho", "spa", "dao", "vuon", "dao nhe", "di dao", "ngam canh") || containsAny(tags, "couple", "beach", "island") ? 22 : 0;
             default -> 0;
         };
     }
 
     private int scoreByGroup(Place place, String groupType) {
         String text = normalizedPlaceText(place);
+        String tags = normalizedTags(place);
         Place.PlaceType type = place.getType();
         return switch (groupType) {
-            case "family" -> type == Place.PlaceType.ATTRACTION || containsAny(text, "bao tang", "cong vien", "cho", "vuon") ? 18 : 0;
-            case "couple" -> type == Place.PlaceType.CAFE || containsAny(text, "hoang hon", "bien", "view", "pho co", "ngam canh") ? 16 : 0;
+            case "family" -> type == Place.PlaceType.ATTRACTION || containsAny(text, "bao tang", "cong vien", "cho", "vuon") || tags.contains("family") ? 18 : 0;
+            case "couple" -> type == Place.PlaceType.CAFE || containsAny(text, "hoang hon", "bien", "view", "pho co", "ngam canh") || tags.contains("couple") ? 16 : 0;
             case "solo" -> type == Place.PlaceType.CAFE || type == Place.PlaceType.ATTRACTION ? 10 : 0;
             default -> 0;
         };
@@ -209,9 +220,18 @@ public class PlacePlanningService {
         if (weatherForecast == null || !normalizeText(weatherForecast).contains("high rain risk")) {
             return 0;
         }
+        if (place.getIndoorOutdoor() == Place.IndoorOutdoor.INDOOR
+                || place.getWeatherSensitivity() == Place.WeatherSensitivity.LOW
+                || place.getType() == Place.PlaceType.FOOD
+                || place.getType() == Place.PlaceType.CAFE) {
+            return WEATHER_FRIENDLY_SCORE;
+        }
+        if (place.getWeatherSensitivity() == Place.WeatherSensitivity.HIGH
+                || place.getIndoorOutdoor() == Place.IndoorOutdoor.OUTDOOR) {
+            return -WEATHER_FRIENDLY_SCORE;
+        }
         String text = normalizedPlaceText(place);
-        if (place.getType() == Place.PlaceType.FOOD || place.getType() == Place.PlaceType.CAFE
-                || containsAny(text, "bao tang", "cho", "trung tam", "nha co", "dinh", "chua", "nha tho")) {
+        if (containsAny(text, "bao tang", "cho", "trung tam", "nha co", "dinh", "chua", "nha tho")) {
             return WEATHER_FRIENDLY_SCORE;
         }
         if (containsAny(text, "bien", "thuyen", "dao", "sup", "kayak", "trekking", "deo", "thac", "nui")) {
@@ -245,17 +265,19 @@ public class PlacePlanningService {
         String coords = place.getLatitude() != null && place.getLongitude() != null
                 ? String.format(Locale.ROOT, "%.5f,%.5f", place.getLatitude(), place.getLongitude())
                 : "unknown";
-        return String.format(
-                Locale.ROOT,
-                "- %s | type=%s | address=%s | cost=%s | rating=%s | coords=%s | hours=%s | note=%s",
-                place.getName(),
-                place.getType(),
-                nullToBlank(place.getAddress()),
-                cost,
-                place.getRating() != null ? String.format(Locale.ROOT, "%.1f", place.getRating()) : "unknown",
-                coords,
-                nullToBlank(place.getOpeningHours()),
-                truncate(nullToBlank(place.getDescription()), 160));
+        List<String> parts = new ArrayList<>();
+        parts.add("- " + place.getName());
+        parts.add("type=" + place.getType());
+        parts.add("indoor=" + (place.getIndoorOutdoor() != null ? place.getIndoorOutdoor() : "unknown"));
+        parts.add("weather=" + (place.getWeatherSensitivity() != null ? place.getWeatherSensitivity() : "unknown"));
+        parts.add("cost=" + cost);
+        parts.add("costBasis=" + (place.getCostBasis() != null ? place.getCostBasis() : "unknown"));
+        parts.add("rating=" + (place.getRating() != null ? String.format(Locale.ROOT, "%.1f", place.getRating()) : "unknown"));
+        parts.add("coords=" + coords);
+        parts.add("address=" + nullToBlank(place.getAddress()));
+        parts.add("tags=" + compactList(place.getTags(), 6));
+        parts.add("note=" + truncate(nullToBlank(place.getDescription()), 160));
+        return String.join(" | ", parts);
     }
 
     private Optional<Place> findBestMatchingPlace(TripDto.ActivityResponse activity, List<Place> places) {
@@ -277,15 +299,17 @@ public class PlacePlanningService {
         Place best = null;
         int bestScore = 0;
         for (Place place : places) {
-            String placeName = normalizeText(place.getName());
+            List<String> placeNames = matchingNames(place);
             String placeAddress = normalizeText(place.getAddress());
             int score = 0;
-            if (!activityName.isBlank() && activityName.equals(placeName)) {
+            if (!activityName.isBlank() && placeNames.contains(activityName)) {
                 score += 100;
-            } else if (!activityName.isBlank() && (activityName.contains(placeName) || placeName.contains(activityName))) {
+            } else if (!activityName.isBlank() && placeNames.stream()
+                    .anyMatch(placeName -> activityName.contains(placeName) || placeName.contains(activityName))) {
                 score += 75;
             }
-            if (!activityLocation.isBlank() && (activityLocation.contains(placeName) || placeName.contains(activityLocation))) {
+            if (!activityLocation.isBlank() && placeNames.stream()
+                    .anyMatch(placeName -> activityLocation.contains(placeName) || placeName.contains(activityLocation))) {
                 score += 55;
             }
             if (!activityLocation.isBlank() && !placeAddress.isBlank()
@@ -350,6 +374,27 @@ public class PlacePlanningService {
         return places;
     }
 
+    private List<Place> loadCandidatePlacesForRequest(TripDto.GenerateRequest req) {
+        List<Place> candidates = new ArrayList<>(loadVerifiedPlacesForDestination(req.getDestination()));
+        if (shouldIncludeNearbyDestinations(req)) {
+            for (String nearbyDestination : NEARBY_DESTINATIONS.getOrDefault(normalizeText(req.getDestination()), List.of())) {
+                candidates.addAll(loadVerifiedPlacesForDestination(nearbyDestination));
+            }
+        }
+        Set<String> seen = new HashSet<>();
+        return candidates.stream()
+                .filter(place -> seen.add(placeKey(place)))
+                .toList();
+    }
+
+    private boolean shouldIncludeNearbyDestinations(TripDto.GenerateRequest req) {
+        if (req == null || req.getDestination() == null) {
+            return false;
+        }
+        return Math.max(1, req.getDays()) >= 3
+                && NEARBY_DESTINATIONS.containsKey(normalizeText(req.getDestination()));
+    }
+
     private String resolveCanonicalDestinationName(String destination) {
         if (destination == null || destination.isBlank()) {
             return "";
@@ -380,10 +425,40 @@ public class PlacePlanningService {
     private String normalizedPlaceText(Place place) {
         return normalizeText(String.join(" ",
                 nullToBlank(place.getName()),
+                nullToBlank(place.getNormalizedName()),
                 place.getType() != null ? place.getType().name() : "",
                 nullToBlank(place.getAddress()),
                 nullToBlank(place.getDescription()),
-                nullToBlank(place.getOpeningHours())));
+                nullToBlank(place.getOpeningHours()),
+                String.join(" ", place.getTags() == null ? List.of() : place.getTags()),
+                String.join(" ", place.getAliases() == null ? List.of() : place.getAliases())));
+    }
+
+    private String normalizedTags(Place place) {
+        return normalizeText(String.join(" ", place.getTags() == null ? List.of() : place.getTags()));
+    }
+
+    private List<String> matchingNames(Place place) {
+        List<String> names = new ArrayList<>();
+        names.add(normalizeText(place.getName()));
+        names.add(normalizeText(place.getNormalizedName()));
+        if (place.getAliases() != null) {
+            for (String alias : place.getAliases()) {
+                names.add(normalizeText(alias));
+            }
+        }
+        return names.stream().filter(name -> !name.isBlank()).distinct().toList();
+    }
+
+    private boolean sameDestination(String first, String second) {
+        return normalizeText(first).equals(normalizeText(second));
+    }
+
+    private String placeKey(Place place) {
+        if (place.getId() != null) {
+            return "id:" + place.getId();
+        }
+        return normalizeText(place.getDestination()) + "::" + normalizeText(place.getName());
     }
 
     private String extractUserNotes(String notes) {
@@ -439,6 +514,16 @@ public class PlacePlanningService {
 
     private String nullToBlank(String value) {
         return value == null ? "" : value;
+    }
+
+    private String compactList(List<String> values, int limit) {
+        if (values == null || values.isEmpty()) {
+            return "";
+        }
+        return values.stream()
+                .filter(value -> value != null && !value.isBlank())
+                .limit(limit)
+                .collect(Collectors.joining(","));
     }
 
     private String truncate(String value, int maxLength) {

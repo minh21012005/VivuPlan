@@ -19,6 +19,8 @@ import java.util.*;
 @Slf4j
 public class AiService {
 
+    private static final int PROMPT_TOKEN_WARN_THRESHOLD = 8_000;
+
     public record GeneratedItineraryResult(
             List<TripDto.DayResponse> days,
             TripDto.RequestFulfillment requestFulfillment) {
@@ -771,6 +773,11 @@ public class AiService {
             log.debug(
                     "Gemini response finishReason={}, textLength={}, promptTokens={}, outputTokens={}, totalTokens={}, maxOutputTokens={}",
                     finishReason, text.length(), promptTokens, outputTokens, totalTokens, maxOutputTokens);
+            if (promptTokens > PROMPT_TOKEN_WARN_THRESHOLD) {
+                log.warn(
+                        "Gemini prompt is getting large: promptTokens={}, warnThreshold={}, totalTokens={}, maxOutputTokens={}",
+                        promptTokens, PROMPT_TOKEN_WARN_THRESHOLD, totalTokens, maxOutputTokens);
+            }
             if ("MAX_TOKENS".equals(finishReason)) {
                 throw new RuntimeException(
                         "Gemini response was truncated by maxOutputTokens (" + maxOutputTokens + ")");

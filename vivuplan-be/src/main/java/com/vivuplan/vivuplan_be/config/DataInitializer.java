@@ -17,8 +17,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -140,8 +144,156 @@ public class DataInitializer implements CommandLineRunner {
         place.setImageUrl(seed.imageUrl());
         place.setDescription(seed.description());
         place.setOpeningHours(seed.openingHours());
+        place.setIndoorOutdoor(seed.indoorOutdoor() != null ? seed.indoorOutdoor() : inferIndoorOutdoor(seed));
+        place.setWeatherSensitivity(seed.weatherSensitivity() != null ? seed.weatherSensitivity() : inferWeatherSensitivity(seed));
+        place.setCostBasis(seed.costBasis() != null ? seed.costBasis() : inferCostBasis(seed));
+        place.setTags(new ArrayList<>(seed.tags() == null || seed.tags().isEmpty() ? inferTags(seed) : seed.tags()));
+        place.setAliases(new ArrayList<>(seed.aliases() == null ? inferAliases(seed) : seed.aliases()));
         place.setVerified(seed.verified() == null || seed.verified());
         place.setSource(seed.source());
+    }
+
+    private Place.IndoorOutdoor inferIndoorOutdoor(PlaceSeed seed) {
+        String text = seedText(seed);
+        if (seed.type() == Place.PlaceType.FOOD
+                || seed.type() == Place.PlaceType.CAFE
+                || seed.type() == Place.PlaceType.ACCOMMODATION
+                || seed.type() == Place.PlaceType.NIGHTLIFE) {
+            return containsAny(text, "cho", "pho di bo", "bai bien", "bai tam", "vinh", "vuon") ? Place.IndoorOutdoor.MIXED : Place.IndoorOutdoor.INDOOR;
+        }
+        if (containsAny(text, "bao tang", "nha co", "dinh", "nha tho", "chua", "den", "thap", "cho", "trung tam")) {
+            return Place.IndoorOutdoor.MIXED;
+        }
+        if (containsAny(text, "bai bien", "bai tam", "vinh", "hon", "thuyen", "kayak", "sup", "deo", "thac", "nui", "ho", "rung", "trekking", "hang", "doi cat", "cao nguyen")) {
+            return Place.IndoorOutdoor.OUTDOOR;
+        }
+        return Place.IndoorOutdoor.MIXED;
+    }
+
+    private Place.WeatherSensitivity inferWeatherSensitivity(PlaceSeed seed) {
+        String text = seedText(seed);
+        if (isMostlySpiritualOrHistorical(seed, text)) {
+            return inferIndoorOutdoor(seed) == Place.IndoorOutdoor.INDOOR
+                    ? Place.WeatherSensitivity.LOW
+                    : Place.WeatherSensitivity.MEDIUM;
+        }
+        if (containsAny(text,
+                "sup", "kayak", "cano", "ca no", "thuyen", "du thuyen", "tour tau", "tau cao toc",
+                "lan bien", "tam bien", "trekking", "thac", "leo nui", "zipline", "du luon", "nhay du")) {
+            return Place.WeatherSensitivity.HIGH;
+        }
+        Place.IndoorOutdoor indoorOutdoor = inferIndoorOutdoor(seed);
+        if (indoorOutdoor == Place.IndoorOutdoor.INDOOR) {
+            return Place.WeatherSensitivity.LOW;
+        }
+        return Place.WeatherSensitivity.MEDIUM;
+    }
+
+    private Place.CostBasis inferCostBasis(PlaceSeed seed) {
+        long maxCost = seed.estimatedCostMax() != null ? Math.max(0, seed.estimatedCostMax()) : 0;
+        if (maxCost == 0) {
+            return Place.CostBasis.FREE;
+        }
+        return switch (seed.type()) {
+            case ACCOMMODATION -> Place.CostBasis.PER_NIGHT;
+            case TRANSPORT -> Place.CostBasis.PER_RIDE;
+            case FOOD, CAFE, ATTRACTION, ACTIVITY, NIGHTLIFE -> Place.CostBasis.PER_PERSON;
+        };
+    }
+
+    private List<String> inferTags(PlaceSeed seed) {
+        Set<String> tags = new LinkedHashSet<>();
+        if (seed.type() != null) {
+            tags.add(seed.type().name().toLowerCase(Locale.ROOT));
+        }
+        Place.IndoorOutdoor indoorOutdoor = inferIndoorOutdoor(seed);
+        tags.add(indoorOutdoor.name().toLowerCase(Locale.ROOT));
+        String text = seedText(seed);
+        addTagIf(tags, text, "beach", "bai bien", "bai tam", "bai sao", "bai xep", "bai sau", "bai cat", "bai cay", "bai dam", "bai rach", "vinh");
+        if (isIslandPlace(seed, text)) {
+            tags.add("island");
+        }
+        addTagIf(tags, text, "boat", "thuyen", "du thuyen", "tour tau", "tau cao toc", "cano", "ca no", "kayak", "sup");
+        addTagIf(tags, text, "mountain", "nui", "deo", "cao nguyen", "trekking");
+        addTagIf(tags, text, "waterfall", "thac");
+        addTagIf(tags, text, "museum", "bao tang", "trung bay");
+        addTagIf(tags, text, "heritage", "unesco", "pho co", "di san", "di tich");
+        addTagIf(tags, text, "spiritual", "chua", "den", "mieu", "nha tho", "thien vien");
+        addTagIf(tags, text, "food", "cho", "am thuc", "hai san", "dac san", "mon");
+        addTagIf(tags, text, "family", "gia dinh", "bao tang", "cong vien", "vuon");
+        addTagIf(tags, text, "couple", "hoang hon", "ngam canh", "view", "di dao");
+        addTagIf(tags, text, "adventure", "zipline", "trekking", "kayak", "sup", "leo", "xe dia hinh");
+        return List.copyOf(tags);
+    }
+
+    private List<String> inferAliases(PlaceSeed seed) {
+        Set<String> aliases = new LinkedHashSet<>();
+        String name = seed.name() == null ? "" : seed.name();
+        String normalized = normalizeText(name);
+        if (normalized.contains("dinh doc lap")) {
+            aliases.add("Hội trường Thống Nhất");
+        }
+        if (normalized.contains("bao tang chung tich chien tranh")) {
+            aliases.add("War Remnants Museum");
+        }
+        if (normalized.contains("cho ben thanh")) {
+            aliases.add("Ben Thanh Market");
+        }
+        return List.copyOf(aliases);
+    }
+
+    private void addTagIf(Set<String> tags, String text, String tag, String... needles) {
+        if (containsAny(text, needles)) {
+            tags.add(tag);
+        }
+    }
+
+    private boolean isMostlySpiritualOrHistorical(PlaceSeed seed, String text) {
+        if (seed.type() == Place.PlaceType.ACTIVITY) {
+            return false;
+        }
+        return containsAny(text, "chua", "den", "mieu", "nha tho", "dinh", "di tich", "nha tu");
+    }
+
+    private boolean isIslandPlace(PlaceSeed seed, String text) {
+        String destination = seed.destination() == null ? "" : seed.destination().trim();
+        String normalizedName = normalizeText(seed.name()).replaceAll("[^a-z0-9]+", " ").trim();
+        return Set.of("Phú Quốc", "Cát Bà", "Lý Sơn", "Nam Du", "Côn Đảo", "Đảo Phú Quý").contains(destination)
+                || normalizedName.startsWith("dao ")
+                || normalizedName.startsWith("hon ");
+    }
+
+    private boolean containsAny(String text, String... needles) {
+        String haystack = " " + normalizeText(text).replaceAll("[^a-z0-9]+", " ").replaceAll("\\s+", " ").trim() + " ";
+        for (String needle : needles) {
+            String normalizedNeedle = normalizeText(needle)
+                    .replaceAll("[^a-z0-9]+", " ")
+                    .replaceAll("\\s+", " ")
+                    .trim();
+            if (!normalizedNeedle.isBlank() && haystack.contains(" " + normalizedNeedle + " ")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String seedText(PlaceSeed seed) {
+        return normalizeText(String.join(" ",
+                seed.name() == null ? "" : seed.name(),
+                seed.description() == null ? "" : seed.description(),
+                seed.openingHours() == null ? "" : seed.openingHours()));
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return "";
+        }
+        return Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replace("đ", "d")
+                .replace("Đ", "D")
+                .toLowerCase(Locale.ROOT)
+                .trim();
     }
 
     private record DestinationSeed(
@@ -186,6 +338,11 @@ public class DataInitializer implements CommandLineRunner {
             String imageUrl,
             String description,
             String openingHours,
+            Place.IndoorOutdoor indoorOutdoor,
+            Place.WeatherSensitivity weatherSensitivity,
+            List<String> tags,
+            List<String> aliases,
+            Place.CostBasis costBasis,
             Boolean verified,
             String source
     ) {}
