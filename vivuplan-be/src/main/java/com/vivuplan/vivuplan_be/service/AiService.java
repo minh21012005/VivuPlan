@@ -217,6 +217,22 @@ public class AiService {
         return "response JSON contract was invalid: " + reason;
     }
 
+    private String vietnamPacingGuidance() {
+        return "Keep each day realistic for Vietnam: normal sightseeing days should have 5-8 display items; "
+                + "first/last travel days and relaxing/family days may have 3-6 items; "
+                + "dense but realistic city/food/adventure days may have 6-9 FOOD/CAFE/ATTRACTION/ACTIVITY items when distances are close and pacing is believable. "
+                + "Never return more than 14 total items in one day or more than 9 FOOD/CAFE/ATTRACTION/ACTIVITY items in one day, and do not pad the itinerary just to hit a count.";
+    }
+
+    private String localTransportGuidance(String destination) {
+        String place = destination == null || destination.isBlank() ? "the destination" : destination;
+        return String.format(
+                "Add separate TRANSPORT activities only for outbound/return travel, moving between distant clusters, or movement with meaningful cost inside %s. "
+                        + "For close walkable places, a clear walking note with cost 0 is enough. "
+                        + "Never hide rental, taxi, Grab, paid bicycle, or local transfer costs inside FOOD/CAFE/ATTRACTION notes.",
+                place);
+    }
+
     private String buildQualityRetryPrompt(TripDto.GenerateRequest req, String reason) {
         return buildCostAwarePrompt(req) + String.format("""
 
@@ -226,13 +242,14 @@ public class AiService {
             Return exactly ONE JSON object with keys "itinerary" and "requestFulfillment". Never return a bare JSON array, and never use "days" or "schedule" instead of "itinerary".
             Use named, real places and restaurants in or near %s.
             Avoid placeholder wording such as "địa điểm nổi bật", "đặc sản địa phương", "khu trung tâm", "vùng ven", "nhà hàng địa phương", or "cà phê view đẹp" unless paired with a specific real name and location.
-            Add a clear local transportation plan with TRANSPORT activities for getting around %s. Do not hide rental, taxi, Grab, walking, bicycle, or local transfer costs inside FOOD/CAFE/ATTRACTION notes.
+            %s
+            %s
             Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
             Before returning, sum every activity.estimatedCost and keep the total at or below the total group budget unless the required outbound/return transport alone makes that impossible.
             If the budget is tight, keep required transport realistic but reduce optional paid attractions, tours, premium meals, shopping, and accommodation comfort instead of exceeding budget.
             If realistic required costs make the budget impossible, return realistic costs anyway. Never understate costs to fit the budget.
             Do not repeat the same day structure across days.
-            """, reason, req.getDestination(), req.getDestination());
+            """, reason, req.getDestination(), vietnamPacingGuidance(), localTransportGuidance(req.getDestination()));
     }
 
     private String buildDayRegenerationPrompt(
@@ -255,12 +272,11 @@ public class AiService {
                     The previous proposal was rejected because: %s
                     Fix that issue. Return a safer, more specific version of day %d only.
                     Return exactly ONE JSON object with keys "day" and "requestFulfillment". Never return a bare JSON array.
-                    The regenerated day should usually contain 5-8 display items. A first/last travel day or relaxing/family day may have 3-6 items. A dense but realistic city/food/adventure day may have 6-9 non-logistics items.
-                    Never return more than 14 total items, and never more than 9 FOOD/CAFE/ATTRACTION/ACTIVITY items.
-                    Add a separate local TRANSPORT item only when places are far apart or movement has meaningful cost; short walking transitions may be described in notes.
+                    %s
+                    %s
                     Create a separate TRANSPORT activity with route/mode/cost instead of putting transport cost in an ATTRACTION, FOOD, CAFE, or ACTIVITY note.
                     Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
-                    """, retryReason, dayNumber);
+                    """, retryReason, dayNumber, vietnamPacingGuidance(), localTransportGuidance(req.getDestination()));
 
         return String.format("""
             You are a senior Vietnam travel planner. Regenerate ONE DAY of an existing itinerary.
@@ -303,7 +319,7 @@ public class AiService {
             Rules:
             1. Return exactly ONE JSON object. Its "day" key MUST contain exactly ONE day object whose day value is %d.
             2. Do not change other days. Use them only as context to avoid duplicate places and impossible pacing.
-            3. Keep the regenerated day realistic for Vietnam: usually 5-8 display items; 3-6 items for first/last travel days or relaxing/family days; 6-9 non-logistics items only for dense but realistic city/food/adventure days. Never return more than 14 total items or more than 9 FOOD/CAFE/ATTRACTION/ACTIVITY items.
+            3. %s
             4. Keep times in HH:mm 24h format and avoid meaningful overlaps.
             5. estimatedCost MUST be total VND for the whole group of %d travelers.
             5a. Never set estimatedCost to 0 for paid intercity transport such as flights, trains, buses, private cars, airport transfers, vehicle rental pickup, lodging, tickets, tours, shows, or paid experiences.
@@ -311,7 +327,7 @@ public class AiService {
             5c. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
             6. Preserve user constraints: avoid banned items, respect must-visit where relevant, respect style/group.
             7. Treat Local transport as the user's preference, not an absolute law. Follow it when practical; if a different mode is safer or more realistic in Vietnam, explain briefly in a TRANSPORT note.
-            8. Add explicit TRANSPORT activities for moving between distant clusters or when movement has meaningful cost inside %s. For close walkable places, a clear walking note is enough. Do not hide rental/taxi/Grab costs inside non-TRANSPORT notes.
+            8. %s
             9. Use named, real places/restaurants/cafes. Avoid generic wording such as "địa phương", "điểm nổi bật", "khu trung tâm" unless paired with a specific real name.
             10. Treat the user's free-form request as the primary goal. Infer the requested change from natural language, for example seafood, cheaper, lighter pacing, fewer walks, more local food, more culture, better transport, or replacing a disliked place.
             11. If the user asks for food such as seafood, vegetarian food, coffee, local dishes, or a specific cuisine, adjust FOOD/CAFE activities while keeping the day practical.
@@ -383,8 +399,9 @@ public class AiService {
             intent != null && !intent.isBlank() ? intent : "REGENERATE",
             scheduleJson,
             dayNumber,
+            vietnamPacingGuidance(),
             travelers,
-            req.getDestination(),
+            localTransportGuidance(req.getDestination()),
             dayNumber,
             dayNumber,
             retryBlock
@@ -511,15 +528,14 @@ public class AiService {
             1. Make the local transportation plan explicit when places are far apart or movement has meaningful cost. Users must know how to move between places inside %s.
             2. If Local transport is MIXED or unclear, choose the most practical option for Vietnamese travelers and say it clearly: thuê xe máy, taxi/Grab, thuê ô tô, xe đạp, đi bộ, shuttle, or a combination.
             3. Treat Local transport as the user's preference, not an absolute law. Follow that selected mode when practical; if a different mode is safer or more realistic in Vietnam, explain why in the TRANSPORT note.
-            4. Add TRANSPORT activities for local movement between distant clusters, not only for the outbound/return trip. Examples: "Thuê xe máy tại thị trấn Mộc Châu", "Di chuyển khách sạn -> Thác Dải Yếm bằng xe máy", "Taxi/Grab từ nhà hàng về homestay".
+            4. %s
             5. Each local TRANSPORT activity must include mode, route or area, estimated duration, and group cost. Rental or taxi costs must be estimatedCost on TRANSPORT, never hidden inside FOOD/CAFE/ATTRACTION notes.
             6. If places are close enough to walk, a clear route note that says "Đi bộ khoảng X phút" with cost 0 is enough; a separate TRANSPORT activity is optional.
             7. Do not put all local transport detail into one unrelated dinner or attraction note.
 
             Itinerary quality rules:
             1. Return exactly %d days in the itinerary array.
-            2. Each normal sightseeing day should have 5-8 display items. First/last travel days and relaxing/family days may have 3-6 items if the pacing is realistic. Foodie/city/adventure days may have 6-9 FOOD/CAFE/ATTRACTION/ACTIVITY items when distances are close and the pacing is believable.
-            2a. Never return more than 14 total items in one day, and never more than 9 FOOD/CAFE/ATTRACTION/ACTIVITY items in one day. Do not pad the itinerary just to hit a count.
+            2. %s
             3. FOOD/CAFE activities must name a specific dish or restaurant/cafe.
             4. ATTRACTION/ACTIVITY activities must name a specific real place in or near %s.
             5. TRANSPORT activities must include outbound/return travel and local travel between distant clusters of places. Walking between nearby places can be documented in notes.
@@ -591,7 +607,9 @@ public class AiService {
             req.getWeatherForecast() != null && !req.getWeatherForecast().isBlank() ? req.getWeatherForecast() : "none",
             travelers,
             req.getDestination(),
+            localTransportGuidance(req.getDestination()),
             days,
+            vietnamPacingGuidance(),
             req.getDestination()
         );
     }

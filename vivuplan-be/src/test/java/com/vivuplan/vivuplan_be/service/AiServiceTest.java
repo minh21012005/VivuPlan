@@ -73,6 +73,39 @@ class AiServiceTest {
     }
 
     @Test
+    void qualityRetryPromptUsesSharedPacingAndSoftLocalTransportGuidance() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        String prompt = buildQualityRetryPrompt(service, req, "missing explicit local transport");
+
+        assertThat(prompt)
+                .contains("Never return more than 14 total items")
+                .contains("For close walkable places, a clear walking note with cost 0 is enough")
+                .doesNotContain("Add a clear local transportation plan with TRANSPORT activities for getting around");
+    }
+
+    @Test
+    void regenerationPromptUsesSharedPacingAndSoftLocalTransportGuidance() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        String prompt = buildDayRegenerationPrompt(
+                service,
+                req,
+                List.of(roundTripBundledDay()),
+                1,
+                "REGENERATE",
+                "thêm hoạt động nhẹ nhàng",
+                "missing explicit local transport");
+
+        assertThat(prompt)
+                .contains("Never return more than 14 total items")
+                .contains("For close walkable places, a clear walking note with cost 0 is enough")
+                .contains("The previous proposal was rejected because: missing explicit local transport");
+    }
+
+    @Test
     void itineraryQualityAllowsLightOneDayTripWithTwoActivities() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
@@ -238,6 +271,38 @@ class AiServiceTest {
         passed.setAccessible(true);
         reason.setAccessible(true);
         return new QualityResult((Boolean) passed.invoke(quality), (String) reason.invoke(quality));
+    }
+
+    private String buildQualityRetryPrompt(
+            AiService service,
+            TripDto.GenerateRequest req,
+            String reason) throws Exception {
+        Method method = AiService.class.getDeclaredMethod(
+                "buildQualityRetryPrompt",
+                TripDto.GenerateRequest.class,
+                String.class);
+        method.setAccessible(true);
+        return (String) method.invoke(service, req, reason);
+    }
+
+    private String buildDayRegenerationPrompt(
+            AiService service,
+            TripDto.GenerateRequest req,
+            List<TripDto.DayResponse> currentSchedule,
+            int dayNumber,
+            String intent,
+            String instruction,
+            String retryReason) throws Exception {
+        Method method = AiService.class.getDeclaredMethod(
+                "buildDayRegenerationPrompt",
+                TripDto.GenerateRequest.class,
+                List.class,
+                int.class,
+                String.class,
+                String.class,
+                String.class);
+        method.setAccessible(true);
+        return (String) method.invoke(service, req, currentSchedule, dayNumber, intent, instruction, retryReason);
     }
 
     private AiService.GeneratedItineraryResult parseGeneratedItineraryResult(
