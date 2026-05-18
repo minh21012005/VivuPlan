@@ -538,11 +538,19 @@ public class TripService {
         if (proposedDay.getTitle() == null || proposedDay.getTitle().isBlank()) {
             throw new IllegalArgumentException("Ngày được tạo lại thiếu tiêu đề");
         }
-        if (proposedDay.getActivities() == null || proposedDay.getActivities().size() < 4) {
-            throw new IllegalArgumentException("Ngày được tạo lại cần ít nhất 4 hoạt động");
+        int minActivities = minimumActivitiesForRegeneratedDay(trip, proposedDay);
+        if (proposedDay.getActivities() == null || proposedDay.getActivities().size() < minActivities) {
+            throw new IllegalArgumentException("Ngày được tạo lại cần ít nhất " + minActivities + " hoạt động");
         }
-        if (proposedDay.getActivities().size() > 8) {
+        if (proposedDay.getActivities().size() > 14) {
             throw new IllegalArgumentException("Ngày được tạo lại có quá nhiều hoạt động");
+        }
+
+        long nonLogisticsActivities = proposedDay.getActivities().stream()
+                .filter(activity -> !isLogisticsActivityType(normalizeText(activity.getType())))
+                .count();
+        if (nonLogisticsActivities > 9) {
+            throw new IllegalArgumentException("Ngày được tạo lại có quá nhiều điểm ăn/chơi/tham quan");
         }
 
         ItineraryDay tempDay = new ItineraryDay();
@@ -550,11 +558,46 @@ public class TripService {
         tempDay.setActivities(new ArrayList<>());
         for (TripDto.ActivityResponse activityResponse : proposedDay.getActivities()) {
             Activity activity = toActivity(activityResponse, tempDay);
-            validateNoTimeOverlap(tempDay, activity, null);
+            validateNoTimeOverlap(tempDay, activity, null, true);
             tempDay.getActivities().add(activity);
         }
         resequenceActivities(tempDay);
 
+    }
+
+    private int minimumActivitiesForRegeneratedDay(Trip trip, TripDto.DayResponse proposedDay) {
+        boolean edgeDay = proposedDay != null
+                && (proposedDay.getDay() <= 1 || proposedDay.getDay() >= Math.max(1, trip.getDays()));
+        boolean hasIntercityTransport = proposedDay != null
+                && proposedDay.getActivities() != null
+                && proposedDay.getActivities().stream().anyMatch(activity -> {
+                    String type = normalizeText(activity.getType());
+                    String combined = normalizeText(String.join(" ",
+                            nullToBlank(activity.getName()),
+                            nullToBlank(activity.getLocation()),
+                            nullToBlank(activity.getNote())));
+                    return isTripIntercityTransportActivity(type, combined, trip);
+                });
+        return edgeDay || hasIntercityTransport || isRelaxedPacing(trip) ? 2 : 3;
+    }
+
+    private boolean isLogisticsActivityType(String normalizedType) {
+        return normalizedType.equals("transport") || normalizedType.equals("accommodation");
+    }
+
+    private boolean isRelaxedPacing(Trip trip) {
+        String context = normalizeText(String.join(" ",
+                trip.getStyle() != null ? trip.getStyle().name() : "",
+                trip.getGroupType() != null ? trip.getGroupType().name() : "",
+                nullToBlank(trip.getNotes())));
+        return containsAny(context,
+                "relaxing",
+                "nghi duong",
+                "family",
+                "tre em",
+                "nguoi lon tuoi",
+                "nhe nhang",
+                "thu gian");
     }
 
     private TripDto.DayResponse mergeSelectedRegeneratedActivities(
@@ -1019,6 +1062,10 @@ public class TripService {
     }
 
     private void validateNoTimeOverlap(ItineraryDay day, Activity candidate, Long ignoreActivityId) {
+        validateNoTimeOverlap(day, candidate, ignoreActivityId, false);
+    }
+
+    private void validateNoTimeOverlap(ItineraryDay day, Activity candidate, Long ignoreActivityId, boolean relaxedForAiProposal) {
         LocalTime candidateStart = parseTime(candidate.getTime());
         LocalTime candidateEnd = candidateStart.plusMinutes(parseDurationMinutes(candidate.getDuration()));
         if (day.getActivities() == null)
@@ -1029,6 +1076,20 @@ public class TripService {
             LocalTime otherStart = parseTime(other.getTime());
             LocalTime otherEnd = otherStart.plusMinutes(parseDurationMinutes(other.getDuration()));
             if (candidateStart.isBefore(otherEnd) && otherStart.isBefore(candidateEnd)) {
+                if (relaxedForAiProposal) {
+                    if (candidate.getType() == Activity.ActivityType.TRANSPORT
+                            || other.getType() == Activity.ActivityType.TRANSPORT
+                            || candidate.getType() == Activity.ActivityType.ACCOMMODATION
+                            || other.getType() == Activity.ActivityType.ACCOMMODATION) {
+                        continue;
+                    }
+                    LocalTime overlapStart = candidateStart.isAfter(otherStart) ? candidateStart : otherStart;
+                    LocalTime overlapEnd = candidateEnd.isBefore(otherEnd) ? candidateEnd : otherEnd;
+                    long overlapMinutes = ChronoUnit.MINUTES.between(overlapStart, overlapEnd);
+                    if (overlapMinutes <= 30) {
+                        continue;
+                    }
+                }
                 throw new IllegalArgumentException("Thời gian hoạt động bị trùng với: " + other.getName());
             }
         }

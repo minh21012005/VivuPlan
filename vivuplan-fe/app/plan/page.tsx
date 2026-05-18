@@ -159,7 +159,8 @@ function getBudgetHardBlockError({
 }) {
   const absurdMaximum = Math.max(200_000_000, days * 50_000_000);
   const unrealisticDailyMinimum = days >= 4 ? 350_000 : 300_000;
-  const unrealisticMinimum = Math.max(500_000, Math.round(unrealisticDailyMinimum * Math.max(1, days)));
+  const absoluteMinimum = days <= 1 ? 300_000 : 500_000;
+  const unrealisticMinimum = Math.max(absoluteMinimum, Math.round(unrealisticDailyMinimum * Math.max(1, days)));
 
   if (days > 0 && budgetPerPerson < unrealisticMinimum) {
     return `Ngân sách ${fmtBudget(budgetPerPerson)} / người quá thấp cho chuyến đi ${days} ngày. Vui lòng nhập tối thiểu khoảng ${fmtBudget(unrealisticMinimum)} / người để AI có đủ cơ sở lập lịch trình thực tế.`;
@@ -352,8 +353,8 @@ function PlanContent() {
       setError("MVP hiện hỗ trợ lịch trình tối đa 30 ngày.");
       return;
     }
-    if (form.budget < 500_000) {
-      setError("Vui lòng nhập ngân sách tối thiểu 500.000₫.");
+    if (form.budget <= 0) {
+      setError("Vui lòng nhập ngân sách.");
       return;
     }
     if (form.travelers < 1) {
@@ -362,10 +363,6 @@ function PlanContent() {
     }
     if (form.travelers > 30) {
       setError("Số người tối đa hiện hỗ trợ là 30.");
-      return;
-    }
-    if (budgetPerPerson < 500_000) {
-      setError("Ngân sách sau khi chia theo số người cần tối thiểu 500.000₫ / người.");
       return;
     }
     const budgetValidationError = getBudgetHardBlockError({

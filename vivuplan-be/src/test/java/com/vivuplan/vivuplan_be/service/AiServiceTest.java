@@ -72,6 +72,139 @@ class AiServiceTest {
                 .hasMessageContaining("requestFulfillment");
     }
 
+    @Test
+    void itineraryQualityAllowsLightOneDayTripWithTwoActivities() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDays(1);
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Xe khách Hà Nội - Ninh Bình", "TRANSPORT",
+                        "Hà Nội -> Ninh Bình", 300_000L, "Vé xe khách cho cả nhóm."),
+                activity("11:00", "Ăn trưa dê núi tại Nhà hàng Đức Dê", "FOOD",
+                        "Ninh Bình", 250_000L, null)));
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).isTrue();
+    }
+
+    @Test
+    void regeneratedDayQualityAllowsDenseButReasonableCityDay() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        TripDto.DayResponse day = baseDay();
+        List<TripDto.ActivityResponse> activities = new java.util.ArrayList<>();
+        for (int i = 0; i < 9; i++) {
+            activities.add(activity(
+                    String.format("%02d:00", 8 + i),
+                    "Điểm trải nghiệm " + (i + 1),
+                    i % 3 == 0 ? "FOOD" : "ATTRACTION",
+                    "Khu trung tâm " + (i + 1),
+                    100_000L,
+                    null));
+        }
+        activities.add(activity("17:30", "Taxi ve khach san", "TRANSPORT",
+                "Cho Con -> Khach san My Khe", 120_000L, "Taxi/Grab ve khach san."));
+        activities.add(activity("18:30", "Nhan phong khach san", "ACCOMMODATION",
+                "Khach san khu vuc My Khe", 0, "Chi phi luu tru da tinh trong muc khac."));
+        day.setActivities(activities);
+
+        QualityResult quality = assessRegeneratedDayQuality(service, day, List.of(), req);
+
+        assertThat(quality.passed()).isTrue();
+    }
+
+    @Test
+    void itineraryQualityRejectsDayWithTooManyNonLogisticsActivities() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        TripDto.DayResponse day = baseDay();
+        List<TripDto.ActivityResponse> activities = new java.util.ArrayList<>();
+        for (int i = 0; i < 13; i++) {
+            activities.add(activity(
+                    String.format("%02d:00", 7 + i),
+                    "Lich trinh day dac " + (i + 1),
+                    i % 3 == 0 ? "FOOD" : "ATTRACTION",
+                    "Dia diem cu the " + (i + 1),
+                    100_000L,
+                    null));
+        }
+        day.setActivities(activities);
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).isFalse();
+        assertThat(quality.reason()).contains("too many non-logistics activities");
+    }
+
+    @Test
+    void itineraryQualityAllowsThirteenItemsWhenLogisticsKeepPacingReasonable() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        TripDto.DayResponse day = baseDay();
+        List<TripDto.ActivityResponse> activities = new java.util.ArrayList<>();
+        for (int i = 0; i < 9; i++) {
+            activities.add(activity(
+                    String.format("%02d:00", 7 + i),
+                    "Trai nghiem Da Nang " + (i + 1),
+                    i % 3 == 0 ? "FOOD" : "ATTRACTION",
+                    "Dia diem cu the Da Nang " + (i + 1),
+                    100_000L,
+                    null));
+        }
+        activities.add(activity("16:30", "Taxi My Khe ve Hai Chau", "TRANSPORT",
+                "My Khe -> Hai Chau", 120_000L, "Chi phi taxi/Grab cho ca nhom."));
+        activities.add(activity("17:30", "Nhan phong khach san My Khe", "ACCOMMODATION",
+                "Khach san khu vuc My Khe", 0, "Chi phi luu tru da tinh trong muc khac."));
+        activities.add(activity("18:30", "Di chuyen toi Cho dem Son Tra", "TRANSPORT",
+                "My Khe -> Cho dem Son Tra", 80_000L, "Taxi/Grab toi cho dem."));
+        activities.add(activity("21:30", "Taxi ve khach san", "TRANSPORT",
+                "Cho dem Son Tra -> Khach san My Khe", 80_000L, "Taxi/Grab ve khach san."));
+        day.setActivities(activities);
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).isTrue();
+    }
+
+    @Test
+    void itineraryQualityRejectsDayWithTooManyTotalItemsEvenWithLogistics() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        TripDto.DayResponse day = baseDay();
+        List<TripDto.ActivityResponse> activities = new java.util.ArrayList<>();
+        for (int i = 0; i < 9; i++) {
+            activities.add(activity(
+                    String.format("%02d:00", 6 + i),
+                    "Trai nghiem Da Nang " + (i + 1),
+                    i % 3 == 0 ? "FOOD" : "ATTRACTION",
+                    "Dia diem cu the Da Nang " + (i + 1),
+                    100_000L,
+                    null));
+        }
+        for (int i = 0; i < 6; i++) {
+            activities.add(activity(
+                    String.format("%02d:30", 15 + i),
+                    "Di chuyen chang ngan " + (i + 1),
+                    "TRANSPORT",
+                    "Tuyen noi do Da Nang " + (i + 1),
+                    50_000L,
+                    "Taxi/Grab noi do."));
+        }
+        day.setActivities(activities);
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).isFalse();
+        assertThat(quality.reason()).contains("too many activities");
+    }
+
     private QualityResult assessItineraryQuality(
             AiService service,
             List<TripDto.DayResponse> days,
@@ -79,6 +212,26 @@ class AiServiceTest {
         Method method = AiService.class.getDeclaredMethod("assessItineraryQuality", List.class, TripDto.GenerateRequest.class);
         method.setAccessible(true);
         Object quality = method.invoke(service, days, req);
+
+        Method passed = quality.getClass().getDeclaredMethod("passed");
+        Method reason = quality.getClass().getDeclaredMethod("reason");
+        passed.setAccessible(true);
+        reason.setAccessible(true);
+        return new QualityResult((Boolean) passed.invoke(quality), (String) reason.invoke(quality));
+    }
+
+    private QualityResult assessRegeneratedDayQuality(
+            AiService service,
+            TripDto.DayResponse day,
+            List<TripDto.DayResponse> currentSchedule,
+            TripDto.GenerateRequest req) throws Exception {
+        Method method = AiService.class.getDeclaredMethod(
+                "assessRegeneratedDayQuality",
+                TripDto.DayResponse.class,
+                List.class,
+                TripDto.GenerateRequest.class);
+        method.setAccessible(true);
+        Object quality = method.invoke(service, day, currentSchedule, req);
 
         Method passed = quality.getClass().getDeclaredMethod("passed");
         Method reason = quality.getClass().getDeclaredMethod("reason");

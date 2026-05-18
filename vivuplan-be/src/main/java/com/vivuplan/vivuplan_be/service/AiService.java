@@ -255,8 +255,9 @@ public class AiService {
                     The previous proposal was rejected because: %s
                     Fix that issue. Return a safer, more specific version of day %d only.
                     Return exactly ONE JSON object with keys "day" and "requestFulfillment". Never return a bare JSON array.
-                    The regenerated day should contain 4-6 activities. Never return more than 8 activities.
-                    If the day has 4 or more FOOD/CAFE/ATTRACTION/ACTIVITY items, one of the activities MUST be a local TRANSPORT item.
+                    The regenerated day should usually contain 5-8 display items. A first/last travel day or relaxing/family day may have 3-6 items. A dense but realistic city/food/adventure day may have 6-9 non-logistics items.
+                    Never return more than 14 total items, and never more than 9 FOOD/CAFE/ATTRACTION/ACTIVITY items.
+                    Add a separate local TRANSPORT item only when places are far apart or movement has meaningful cost; short walking transitions may be described in notes.
                     Create a separate TRANSPORT activity with route/mode/cost instead of putting transport cost in an ATTRACTION, FOOD, CAFE, or ACTIVITY note.
                     Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
                     """, retryReason, dayNumber);
@@ -302,15 +303,15 @@ public class AiService {
             Rules:
             1. Return exactly ONE JSON object. Its "day" key MUST contain exactly ONE day object whose day value is %d.
             2. Do not change other days. Use them only as context to avoid duplicate places and impossible pacing.
-            3. Keep 4-6 activities for the regenerated day. Never return more than 8 activities.
-            4. Keep times in HH:mm 24h format and avoid overlaps.
+            3. Keep the regenerated day realistic for Vietnam: usually 5-8 display items; 3-6 items for first/last travel days or relaxing/family days; 6-9 non-logistics items only for dense but realistic city/food/adventure days. Never return more than 14 total items or more than 9 FOOD/CAFE/ATTRACTION/ACTIVITY items.
+            4. Keep times in HH:mm 24h format and avoid meaningful overlaps.
             5. estimatedCost MUST be total VND for the whole group of %d travelers.
             5a. Never set estimatedCost to 0 for paid intercity transport such as flights, trains, buses, private cars, airport transfers, vehicle rental pickup, lodging, tickets, tours, shows, or paid experiences.
             5b. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
             5c. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
             6. Preserve user constraints: avoid banned items, respect must-visit where relevant, respect style/group.
-            7. If Local transport is not MIXED, local transport activities must follow that selected mode unless clearly impractical and explained.
-            8. Add explicit TRANSPORT activities for moving between clusters or inside %s. If the regenerated day has 4 or more FOOD/CAFE/ATTRACTION/ACTIVITY items, one activity MUST be local TRANSPORT. Do not hide rental/taxi/Grab/walking costs inside non-TRANSPORT notes.
+            7. Treat Local transport as the user's preference, not an absolute law. Follow it when practical; if a different mode is safer or more realistic in Vietnam, explain briefly in a TRANSPORT note.
+            8. Add explicit TRANSPORT activities for moving between distant clusters or when movement has meaningful cost inside %s. For close walkable places, a clear walking note is enough. Do not hide rental/taxi/Grab costs inside non-TRANSPORT notes.
             9. Use named, real places/restaurants/cafes. Avoid generic wording such as "địa phương", "điểm nổi bật", "khu trung tâm" unless paired with a specific real name.
             10. Treat the user's free-form request as the primary goal. Infer the requested change from natural language, for example seafood, cheaper, lighter pacing, fewer walks, more local food, more culture, better transport, or replacing a disliked place.
             11. If the user asks for food such as seafood, vegetarian food, coffee, local dishes, or a specific cuisine, adjust FOOD/CAFE activities while keeping the day practical.
@@ -507,20 +508,21 @@ public class AiService {
             16. Keep notes concise. Do not invent exact official prices when unsure; use "ước tính" or "khoảng".
 
             Local transportation rules:
-            1. Always make the local transportation plan explicit. Users must know how to move between places inside %s.
+            1. Make the local transportation plan explicit when places are far apart or movement has meaningful cost. Users must know how to move between places inside %s.
             2. If Local transport is MIXED or unclear, choose the most practical option for Vietnamese travelers and say it clearly: thuê xe máy, taxi/Grab, thuê ô tô, xe đạp, đi bộ, shuttle, or a combination.
-            3. If Local transport is MOTORBIKE, CAR, BUS, TRAIN, WALKING, or PLANE, follow that selected mode for local movement unless it is impractical; if you must deviate, explain why in the TRANSPORT note.
-            4. Add TRANSPORT activities for local movement, not only for the outbound/return trip. Examples: "Thuê xe máy tại thị trấn Mộc Châu", "Di chuyển khách sạn -> Thác Dải Yếm bằng xe máy", "Taxi/Grab từ nhà hàng về homestay".
+            3. Treat Local transport as the user's preference, not an absolute law. Follow that selected mode when practical; if a different mode is safer or more realistic in Vietnam, explain why in the TRANSPORT note.
+            4. Add TRANSPORT activities for local movement between distant clusters, not only for the outbound/return trip. Examples: "Thuê xe máy tại thị trấn Mộc Châu", "Di chuyển khách sạn -> Thác Dải Yếm bằng xe máy", "Taxi/Grab từ nhà hàng về homestay".
             5. Each local TRANSPORT activity must include mode, route or area, estimated duration, and group cost. Rental or taxi costs must be estimatedCost on TRANSPORT, never hidden inside FOOD/CAFE/ATTRACTION notes.
-            6. If places are close enough to walk, add a TRANSPORT activity or clear route note that says "Đi bộ khoảng X phút" with cost 0.
+            6. If places are close enough to walk, a clear route note that says "Đi bộ khoảng X phút" with cost 0 is enough; a separate TRANSPORT activity is optional.
             7. Do not put all local transport detail into one unrelated dinner or attraction note.
 
             Itinerary quality rules:
             1. Return exactly %d days in the itinerary array.
-            2. Each day must have 4-6 activities.
+            2. Each normal sightseeing day should have 5-8 display items. First/last travel days and relaxing/family days may have 3-6 items if the pacing is realistic. Foodie/city/adventure days may have 6-9 FOOD/CAFE/ATTRACTION/ACTIVITY items when distances are close and the pacing is believable.
+            2a. Never return more than 14 total items in one day, and never more than 9 FOOD/CAFE/ATTRACTION/ACTIVITY items in one day. Do not pad the itinerary just to hit a count.
             3. FOOD/CAFE activities must name a specific dish or restaurant/cafe.
             4. ATTRACTION/ACTIVITY activities must name a specific real place in or near %s.
-            5. TRANSPORT activities must include both outbound/return travel and local travel between clusters of places.
+            5. TRANSPORT activities must include outbound/return travel and local travel between distant clusters of places. Walking between nearby places can be documented in notes.
             6. Do not use generic names like "ăn sáng đặc sản địa phương", "tham quan điểm nổi bật", "khám phá khu vực lân cận", "nhà hàng địa phương", or "cà phê view đẹp".
             7. Days must be clearly different and should not repeat the same activity sequence.
 
@@ -800,6 +802,10 @@ public class AiService {
         return value == null || value.isBlank() ? null : value;
     }
 
+    private String nullToBlank(String value) {
+        return value == null ? "" : value;
+    }
+
     private QualityCheck assessItineraryQuality(List<TripDto.DayResponse> days, TripDto.GenerateRequest req) {
         int expectedDays = req.getDays();
         if (days == null) {
@@ -813,14 +819,18 @@ public class AiService {
         int genericActivities = 0;
         int totalActivities = 0;
         int localTransportActivities = 0;
-        int localTransportActivitiesMatchingSelection = 0;
         int nonLogisticsActivities = 0;
         String recoverableCostIssue = null;
         boolean bundledIntercityTransportCost = hasBundledIntercityTransportCost(days, req);
         for (TripDto.DayResponse day : days) {
-            if (day.getActivities() == null || day.getActivities().size() < 4) {
-                return QualityCheck.fail("day " + day.getDay() + " has fewer than 4 activities");
+            int minActivities = minimumActivitiesForDay(day, req);
+            if (day.getActivities() == null || day.getActivities().size() < minActivities) {
+                return QualityCheck.fail("day " + day.getDay() + " has fewer than " + minActivities + " activities");
             }
+            if (day.getActivities().size() > 14) {
+                return QualityCheck.fail("day " + day.getDay() + " has too many activities");
+            }
+            int dayNonLogisticsActivities = 0;
             StringBuilder fingerprint = new StringBuilder();
             for (TripDto.ActivityResponse act : day.getActivities()) {
                 totalActivities++;
@@ -848,13 +858,14 @@ public class AiService {
                 }
                 if (isLocalTransportActivity(type, name, location, note, req)) {
                     localTransportActivities++;
-                    if (matchesSelectedLocalTransport(name + " " + location + " " + note, req)) {
-                        localTransportActivitiesMatchingSelection++;
-                    }
                 }
-                if (!type.equals("transport") && !type.equals("accommodation")) {
+                if (!isLogisticsType(type)) {
+                    dayNonLogisticsActivities++;
                     nonLogisticsActivities++;
                 }
+            }
+            if (dayNonLogisticsActivities > 9) {
+                return QualityCheck.fail("day " + day.getDay() + " has too many non-logistics activities");
             }
             dayFingerprints.add(fingerprint.toString());
         }
@@ -868,14 +879,8 @@ public class AiService {
             return QualityCheck.fail("too many generic activities: " + genericActivities + "/" + totalActivities);
         }
 
-        if (requiresLocalTransportPlan(expectedDays, nonLogisticsActivities) && localTransportActivities == 0) {
+        if (requiresLocalTransportPlan(days, expectedDays, nonLogisticsActivities) && localTransportActivities == 0) {
             return QualityCheck.fail("missing explicit local transport plan inside " + req.getDestination());
-        }
-
-        if (requiresSelectedLocalTransport(req)
-                && localTransportActivities > 0
-                && localTransportActivitiesMatchingSelection == 0) {
-            return QualityCheck.fail("local transport plan does not follow selected mode " + req.getLocalTransport());
         }
 
         if (recoverableCostIssue != null) {
@@ -893,16 +898,16 @@ public class AiService {
         if (day == null) {
             return QualityCheck.fail("response has no day");
         }
-        if (day.getActivities() == null || day.getActivities().size() < 4) {
-            return QualityCheck.fail("regenerated day has fewer than 4 activities");
+        int minActivities = minimumActivitiesForDay(day, req);
+        if (day.getActivities() == null || day.getActivities().size() < minActivities) {
+            return QualityCheck.fail("regenerated day has fewer than " + minActivities + " activities");
         }
-        if (day.getActivities().size() > 15) {
+        if (day.getActivities().size() > 14) {
             return QualityCheck.fail("regenerated day has too many activities");
         }
 
         int genericActivities = 0;
         int localTransportActivities = 0;
-        int selectedLocalTransportMatches = 0;
         int nonLogisticsActivities = 0;
         String recoverableCostIssue = null;
         Set<String> seenTimes = new HashSet<>();
@@ -956,25 +961,22 @@ public class AiService {
             }
             if (isLocalTransportActivity(type, name, location, note, req)) {
                 localTransportActivities++;
-                if (matchesSelectedLocalTransport(combined, req)) {
-                    selectedLocalTransportMatches++;
-                }
             }
-            if (!type.equals("transport") && !type.equals("accommodation")) {
+            if (!isLogisticsType(type)) {
                 nonLogisticsActivities++;
             }
 
-            ranges.add(new TimeRange(act.getTime(), parseActivityDurationMinutes(act.getDuration())));
+            ranges.add(new TimeRange(act.getTime(), parseActivityDurationMinutes(act.getDuration()), type));
         }
 
         ranges.sort(Comparator.comparing(TimeRange::start));
         for (int i = 1; i < ranges.size(); i++) {
             // TRANSPORT activities are bookings/rentals that do not block a fixed time slot;
             // exclude them from strict overlap checking to avoid false positives.
-            String prevType = normalize(day.getActivities().get(i - 1).getType());
-            String currType = normalize(day.getActivities().get(i).getType());
-            if (prevType.equals("transport") || currType.equals("transport")) continue;
-            if (ranges.get(i).startsBefore(ranges.get(i - 1).end())) {
+            TimeRange previous = ranges.get(i - 1);
+            TimeRange current = ranges.get(i);
+            if (previous.isLogistics() || current.isLogistics()) continue;
+            if (current.overlapMinutes(previous) > 30) {
                 return QualityCheck.fail("activity times overlap");
             }
         }
@@ -982,13 +984,12 @@ public class AiService {
         if (genericActivities > Math.max(2, day.getActivities().size() / 2)) {
             return QualityCheck.fail("too many generic activities in regenerated day");
         }
-        if (nonLogisticsActivities >= 4 && localTransportActivities == 0) {
-            return QualityCheck.fail("missing explicit local transport in regenerated day");
+        if (nonLogisticsActivities > 9) {
+            return QualityCheck.fail("regenerated day has too many non-logistics activities");
         }
-        if (requiresSelectedLocalTransport(req)
-                && localTransportActivities > 0
-                && selectedLocalTransportMatches == 0) {
-            return QualityCheck.fail("local transport plan does not follow selected mode " + req.getLocalTransport());
+        if (requiresLocalTransportPlan(List.of(day), Math.max(1, req.getDays()), nonLogisticsActivities)
+                && localTransportActivities == 0) {
+            return QualityCheck.fail("missing explicit local transport in regenerated day");
         }
         if (hasTooManyDuplicatePlaces(day, currentSchedule)) {
             return QualityCheck.fail("regenerated day repeats too many places from other days");
@@ -1234,32 +1235,85 @@ public class AiService {
         return minutes > 0 ? minutes : 60;
     }
 
-    private boolean requiresLocalTransportPlan(int expectedDays, int nonLogisticsActivities) {
-        return expectedDays >= 2 && nonLogisticsActivities >= 4;
-    }
-
-    private boolean requiresSelectedLocalTransport(TripDto.GenerateRequest req) {
-        String selected = normalize(req.getLocalTransport());
-        return !selected.isBlank() && !selected.equals("mixed");
-    }
-
-    private boolean matchesSelectedLocalTransport(String normalizedText, TripDto.GenerateRequest req) {
-        String selected = normalize(req.getLocalTransport());
-        if (selected.isBlank() || selected.equals("mixed")) {
-            return true;
+    private int minimumActivitiesForDay(TripDto.DayResponse day, TripDto.GenerateRequest req) {
+        if (day == null) {
+            return 3;
         }
+        boolean edgeDay = day.getDay() <= 1 || day.getDay() >= Math.max(1, req.getDays());
+        boolean hasIntercityTransport = day.getActivities() != null && day.getActivities().stream()
+                .anyMatch(activity -> isOutboundOrReturnTransport(normalize(String.join(" ",
+                        nullToBlank(activity.getName()),
+                        nullToBlank(activity.getLocation()),
+                        nullToBlank(activity.getNote()))), req));
+        return edgeDay || hasIntercityTransport || isRelaxedPacing(req) ? 2 : 3;
+    }
 
-        List<String> terms = switch (selected) {
-            case "motorbike" -> List.of("xe may", "thue xe may");
-            case "car" -> List.of("o to", "oto", "taxi", "grab", "xe rieng", "xe dua don", "thue o to", "thue oto");
-            case "bus" -> List.of("xe bus", "xe buyt", "xe khach", "bus");
-            case "train" -> List.of("tau hoa", "tau");
-            case "walking" -> List.of("di bo", "walking");
-            case "plane" -> List.of("may bay", "bay", "san bay");
-            default -> List.of(selected);
-        };
+    private boolean isRelaxedPacing(TripDto.GenerateRequest req) {
+        String context = normalize(String.join(" ",
+                nullToBlank(req.getStyle()),
+                nullToBlank(req.getGroupType()),
+                nullToBlank(req.getNotes())));
+        return containsAny(context,
+                "relaxing",
+                "nghi duong",
+                "family",
+                "tre em",
+                "nguoi lon tuoi",
+                "nhe nhang",
+                "thu gian");
+    }
 
-        return terms.stream().anyMatch(normalizedText::contains);
+    private boolean isLogisticsType(String normalizedType) {
+        return normalizedType.equals("transport") || normalizedType.equals("accommodation");
+    }
+
+    private boolean requiresLocalTransportPlan(
+            List<TripDto.DayResponse> days,
+            int expectedDays,
+            int nonLogisticsActivities) {
+        return expectedDays >= 2
+                && nonLogisticsActivities >= 4
+                && hasDistantNonLogisticsPlaces(days);
+    }
+
+    private boolean hasDistantNonLogisticsPlaces(List<TripDto.DayResponse> days) {
+        for (TripDto.DayResponse day : days == null ? List.<TripDto.DayResponse>of() : days) {
+            if (day == null || day.getActivities() == null) {
+                continue;
+            }
+            List<TripDto.ActivityResponse> placeActivities = day.getActivities().stream()
+                    .filter(activity -> {
+                        String type = normalize(activity.getType());
+                        return !type.equals("transport") && !type.equals("accommodation");
+                    })
+                    .toList();
+            for (int i = 0; i < placeActivities.size(); i++) {
+                TripDto.ActivityResponse first = placeActivities.get(i);
+                if (first.getLatitude() == null || first.getLongitude() == null) {
+                    continue;
+                }
+                for (int j = i + 1; j < placeActivities.size(); j++) {
+                    TripDto.ActivityResponse second = placeActivities.get(j);
+                    if (second.getLatitude() == null || second.getLongitude() == null) {
+                        continue;
+                    }
+                    if (distanceKm(first.getLatitude(), first.getLongitude(), second.getLatitude(), second.getLongitude()) >= 2.0) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private double distanceKm(double lat1, double lon1, double lat2, double lon2) {
+        double earthRadiusKm = 6371.0;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
     private boolean isLocalTransportActivity(
@@ -1376,13 +1430,26 @@ public class AiService {
                 .trim();
     }
 
-    private record TimeRange(String start, int durationMinutes) {
+    private record TimeRange(String start, int durationMinutes, String type) {
         java.time.LocalTime end() {
             return java.time.LocalTime.parse(start).plusMinutes(Math.max(15, durationMinutes));
         }
 
-        boolean startsBefore(java.time.LocalTime otherEnd) {
-            return java.time.LocalTime.parse(start).isBefore(otherEnd);
+        boolean isLogistics() {
+            return "transport".equals(type) || "accommodation".equals(type);
+        }
+
+        long overlapMinutes(TimeRange other) {
+            java.time.LocalTime startTime = java.time.LocalTime.parse(start);
+            java.time.LocalTime endTime = end();
+            java.time.LocalTime otherStart = java.time.LocalTime.parse(other.start());
+            java.time.LocalTime otherEnd = other.end();
+            java.time.LocalTime overlapStart = startTime.isAfter(otherStart) ? startTime : otherStart;
+            java.time.LocalTime overlapEnd = endTime.isBefore(otherEnd) ? endTime : otherEnd;
+            if (!overlapStart.isBefore(overlapEnd)) {
+                return 0;
+            }
+            return java.time.Duration.between(overlapStart, overlapEnd).toMinutes();
         }
     }
 
