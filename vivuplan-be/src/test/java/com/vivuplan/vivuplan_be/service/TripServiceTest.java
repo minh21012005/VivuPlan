@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -89,6 +90,33 @@ class TripServiceTest {
     }
 
     @Test
+    void updateActivityClearsCostReviewWarningWhenUserProvidesCost() {
+        Trip trip = sampleTrip();
+        Activity activity = trip.getItineraryDays().get(0).getActivities().get(0);
+        activity.setEstimatedCost(0L);
+        activity.setNote("Chi phí cần kiểm tra: hoạt động này có thể phát sinh phí, nhưng AI chưa đưa ra mức ước tính đáng tin cậy.");
+        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TripDto.UpdateActivityRequest req = new TripDto.UpdateActivityRequest();
+        req.setTime("09:00");
+        req.setName("Hoạt động buổi sáng");
+        req.setType("ACTIVITY");
+        req.setLocation("Trung tâm");
+        req.setDuration("2 giờ");
+        req.setEstimatedCost(150_000L);
+        req.setNote(activity.getNote());
+
+        TripDto.TripResponse response = service.updateActivity(1L, 7L, 100L, req);
+
+        TripDto.ActivityResponse updatedActivity = response.getSchedule().get(0).getActivities().get(0);
+        assertThat(updatedActivity.getCostEstimateStatus()).isNull();
+        assertThat(updatedActivity.getNote()).isNull();
+        assertThat(response.getWarnings()).noneMatch(warning -> warning.contains("Cần kiểm tra"));
+    }
+
+    @Test
     void getTripReturnsPersistedAiWarnings() {
         Trip trip = sampleTrip();
         trip.setAiWarnings("Yêu cầu chèo sup chưa được áp dụng vì trời mưa.\nTổng chi phí có thể vượt ngân sách.");
@@ -99,8 +127,7 @@ class TripServiceTest {
 
         assertThat(response.getWarnings())
                 .containsExactly(
-                        "Yêu cầu chèo sup chưa được áp dụng vì trời mưa.",
-                        "Tổng chi phí có thể vượt ngân sách.");
+                        "Yêu cầu chèo sup chưa được áp dụng vì trời mưa.");
     }
 
     @Test
@@ -162,7 +189,7 @@ class TripServiceTest {
     }
 
     @Test
-    void generateAndSaveNormalizesRequiredTransportCosts() {
+    void generateAndSaveDoesNotWarnWhenAiReportsNoMeaningfulRequest() {
         User user = sampleUser();
         TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
         when(userRepository.findById(7L)).thenReturn(Optional.of(user));
@@ -173,6 +200,35 @@ class TripServiceTest {
         when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> {
             Trip saved = invocation.getArgument(0);
             saved.setId(1L);
+            return saved;
+        });
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class)))
+                .thenReturn(new AiService.GeneratedItineraryResult(
+                        List.of(proposedDayWithoutRequestedActivity()),
+                        noRequestFulfillment()));
+
+        TripDto.GenerateRequest req = generateRequest("", "Tạo lịch trình nhẹ nhàng, không cần thêm yêu cầu đặc biệt.");
+
+        TripDto.TripResponse response = service.generateAndSave(7L, req);
+
+        assertThat(response.getRequestFulfillment().getOverallStatus()).isEqualTo("NO_REQUEST");
+        assertThat(response.getWarnings()).isEmpty();
+    }
+
+    @Test
+    void generateAndSaveNormalizesRequiredTransportCosts() {
+        User user = sampleUser();
+        TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        mockRainForecast();
+        when(tripRepository.existsByShareCode(anyString())).thenReturn(false);
+        AtomicReference<Trip> savedTrip = new AtomicReference<>();
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> {
+            Trip saved = invocation.getArgument(0);
+            saved.setId(1L);
+            savedTrip.set(saved);
             return saved;
         });
         when(aiService.generateItinerary(any(TripDto.GenerateRequest.class)))
@@ -191,6 +247,7 @@ class TripServiceTest {
         assertThat(activities.get(1).getEstimatedCost()).isGreaterThanOrEqualTo(200_000L);
         assertThat(response.getBudget().getTransport()).isGreaterThanOrEqualTo(200_000L);
         assertThat(response.getWarnings()).anyMatch(warning -> warning.contains("Cần kiểm tra"));
+        assertThat(savedTrip.get().getAiWarnings()).isNull();
     }
 
     @Test
@@ -255,7 +312,7 @@ class TripServiceTest {
     }
 
     @Test
-    void generateAndSaveWarnsWhenPlanExceedsBudget() {
+    void generateAndSaveKeepsBudgetOverageInBudgetCardInsteadOfAiWarnings() {
         User user = sampleUser();
         TripService service = new TripService(tripRepository, userRepository, destinationRepository, aiService, weatherService);
         when(userRepository.findById(7L)).thenReturn(Optional.of(user));
@@ -279,7 +336,7 @@ class TripServiceTest {
         TripDto.TripResponse response = service.generateAndSave(7L, req);
 
         assertThat(response.getBudget().getTotal()).isGreaterThan(3_000_000L);
-        assertThat(response.getWarnings()).anyMatch(warning -> warning.contains("vượt ngân sách"));
+        assertThat(response.getWarnings()).noneMatch(warning -> warning.contains("vượt ngân sách"));
     }
 
     @Test
@@ -402,6 +459,7 @@ class TripServiceTest {
 
         assertThat(updated.getSchedule().get(0).getActivities()).hasSize(4);
         assertThat(updated.getBudget().getTotal()).isGreaterThan(trip.getBudgetPerPerson());
+        assertThat(updated.getWarnings()).noneMatch(warning -> warning.contains("ngân sách"));
     }
 
     private void mockRainForecast() {

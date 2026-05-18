@@ -38,6 +38,10 @@ public class TripService {
     private final Map<String, DayRegenerationProposal> dayRegenerationProposals = new ConcurrentHashMap<>();
     private static final int REGENERATION_PROPOSAL_TTL_MINUTES = 30;
     private static final String COST_REVIEW_STATUS = "NEEDS_REVIEW";
+    private static final long REGENERATION_COST_INCREASE_WARNING_MIN_DELTA = 200_000L;
+    private static final int MISSING_TRANSPORT_WARNING_MIN_ACTIVITIES = 4;
+    private static final int MISSING_TRANSPORT_WARNING_MIN_DISTINCT_LOCATIONS = 3;
+    private static final double MISSING_TRANSPORT_WARNING_DISTANCE_KM = 2.0;
     private static final String COST_REVIEW_MESSAGE =
             "Chi phí này cần được kiểm tra lại vì AI chưa đưa ra mức ước tính đáng tin cậy.";
     private static final String COST_REVIEW_NOTE =
@@ -156,18 +160,19 @@ public class TripService {
         trip.setItineraryDays(days);
 
         TripDto.BudgetBreakdown budget = calculateBudget(trip, aiSchedule);
-        List<String> warnings = buildGenerationWarnings(
-                trip,
-                aiSchedule,
-                budget,
+        String requestText = buildGenerationRequestText(req);
+        List<String> persistentWarnings = buildRequestFulfillmentWarnings(
                 requestFulfillment,
-                buildGenerationRequestText(req));
-        trip.setAiWarnings(serializeWarnings(warnings));
+                requestText,
+                "lịch trình vừa tạo");
+        List<String> warnings = buildGenerationWarnings(
+                aiSchedule,
+                persistentWarnings);
+        trip.setAiWarnings(serializeWarnings(persistentWarnings));
 
         trip = tripRepository.saveAndFlush(trip);
 
-        TripDto.TripResponse response = TripDto.TripResponse.from(trip);
-        response.setSchedule(mapDays(trip.getItineraryDays()));
+        TripDto.TripResponse response = toTripResponse(trip);
         response.setBudget(budget);
         response.setRequestFulfillment(requestFulfillment);
         response.setWarnings(warnings);
@@ -180,6 +185,7 @@ public class TripService {
                 .map(t -> {
                     TripDto.TripResponse r = TripDto.TripResponse.from(t);
                     r.setSchedule(mapDays(t.getItineraryDays()));
+                    r.setWarnings(filterPersistentWarnings(r.getWarnings()));
                     return r;
                 })
                 .collect(Collectors.toList());
@@ -199,10 +205,7 @@ public class TripService {
             tripRepository.save(trip);
         }
 
-        TripDto.TripResponse response = TripDto.TripResponse.from(trip);
-        response.setSchedule(mapDays(trip.getItineraryDays()));
-        response.setBudget(calculateBudget(trip, response.getSchedule()));
-        return response;
+        return toTripResponse(trip);
     }
 
     @Transactional
@@ -294,12 +297,15 @@ public class TripService {
 
         long oldBudget = sumDayCost(existingDay);
         long newBudget = sumDayCost(proposedDay);
+        List<String> persistentWarnings = buildRequestFulfillmentWarnings(
+                requestFulfillment,
+                instruction,
+                "preview này");
         List<String> warnings = buildRegenerationWarnings(
                 trip,
                 existingDay,
                 proposedDay,
-                requestFulfillment,
-                instruction);
+                persistentWarnings);
         String proposalId = UUID.randomUUID().toString();
         dayRegenerationProposals.put(proposalId, new DayRegenerationProposal(
                 proposalId,
@@ -310,6 +316,7 @@ public class TripService {
                 oldBudget,
                 newBudget,
                 warnings,
+                persistentWarnings,
                 LocalDateTime.now().plusMinutes(REGENERATION_PROPOSAL_TTL_MINUTES)));
 
         TripDto.RegenerateDayPreviewResponse response = new TripDto.RegenerateDayPreviewResponse();
@@ -361,7 +368,7 @@ public class TripService {
             }
         }
         resequenceActivities(day);
-        trip.setAiWarnings(serializeWarnings(mergeWarnings(parseWarnings(trip.getAiWarnings()), proposal.warnings())));
+        trip.setAiWarnings(serializeWarnings(mergeWarnings(parsePersistentWarnings(trip.getAiWarnings()), proposal.persistentWarnings())));
         trip = tripRepository.saveAndFlush(trip);
         dayRegenerationProposals.remove(req.getProposalId());
         return toTripResponse(trip);
@@ -369,7 +376,11 @@ public class TripService {
 
     public Page<TripDto.TripResponse> getPublicTrips(int page, int size) {
         return tripRepository.findByIsPublicTrueOrderByViewCountDesc(PageRequest.of(page, size))
-                .map(TripDto.TripResponse::from);
+                .map(trip -> {
+                    TripDto.TripResponse response = TripDto.TripResponse.from(trip);
+                    response.setWarnings(filterPersistentWarnings(response.getWarnings()));
+                    return response;
+                });
     }
 
     public TripDto.TripResponse getByShareCode(String code) {
@@ -377,10 +388,7 @@ public class TripService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch trình"));
         trip.setViewCount(trip.getViewCount() + 1);
         tripRepository.save(trip);
-        TripDto.TripResponse r = TripDto.TripResponse.from(trip);
-        r.setSchedule(mapDays(trip.getItineraryDays()));
-        r.setBudget(calculateBudget(trip, r.getSchedule()));
-        return r;
+        return toTripResponse(trip);
     }
 
     // ---- helpers ----
@@ -666,49 +674,25 @@ public class TripService {
     }
 
     private List<String> buildGenerationWarnings(
-            Trip trip,
             List<TripDto.DayResponse> schedule,
-            TripDto.BudgetBreakdown budget,
-            TripDto.RequestFulfillment requestFulfillment,
-            String requestText) {
+            List<String> persistentWarnings) {
         List<String> warnings = new ArrayList<>();
-        warnings.addAll(buildRequestFulfillmentWarnings(requestFulfillment, requestText, "lịch trình vừa tạo"));
+        warnings.addAll(persistentWarnings);
         warnings.addAll(buildCostReviewWarnings(schedule, "lịch trình vừa tạo"));
-        warnings.addAll(buildBudgetWarnings(trip, budget));
         return warnings;
-    }
-
-    private List<String> buildBudgetWarnings(Trip trip, TripDto.BudgetBreakdown budget) {
-        if (trip == null || budget == null) {
-            return List.of();
-        }
-        long budgetCeiling = resolveGroupBudget(trip);
-        if (budgetCeiling <= 0 || budget.getTotal() <= budgetCeiling) {
-            return List.of();
-        }
-
-        long overPercent = Math.round(((budget.getTotal() - budgetCeiling) / (double) budgetCeiling) * 100);
-        return List.of("Tổng chi phí ước tính "
-                + formatVnd(budget.getTotal())
-                + " có thể vượt ngân sách "
-                + formatVnd(budgetCeiling)
-                + " khoảng "
-                + overPercent
-                + "%. Hãy kiểm tra lại các chi phí lớn trước khi chốt lịch.");
     }
 
     private List<String> buildRegenerationWarnings(
             Trip trip,
             ItineraryDay oldDay,
             TripDto.DayResponse proposedDay,
-            TripDto.RequestFulfillment requestFulfillment,
-            String instruction) {
+            List<String> persistentWarnings) {
         List<String> warnings = new ArrayList<>();
-        warnings.addAll(buildRequestFulfillmentWarnings(requestFulfillment, instruction, "preview này"));
+        warnings.addAll(persistentWarnings);
         warnings.addAll(buildCostReviewWarnings(List.of(proposedDay), "preview này"));
         long oldBudget = sumDayCost(oldDay);
         long newBudget = sumDayCost(proposedDay);
-        if (oldBudget > 0 && newBudget > Math.round(oldBudget * 1.25)) {
+        if (shouldWarnSignificantCostIncrease(oldBudget, newBudget)) {
             warnings.add("Chi phí ngày mới cao hơn đáng kể so với ngày cũ.");
         }
         long proposedTripTotal = calculateBudgetWithReplacement(trip, proposedDay);
@@ -716,14 +700,81 @@ public class TripService {
         if (budgetCeiling > 0 && proposedTripTotal > budgetCeiling) {
             warnings.add("Tổng chi phí sau khi áp dụng có thể vượt ngân sách bạn đã nhập.");
         }
-        long transportCount = proposedDay.getActivities() == null ? 0
-                : proposedDay.getActivities().stream()
-                        .filter(activity -> "TRANSPORT".equalsIgnoreCase(activity.getType()))
-                        .count();
-        if (transportCount == 0) {
+        if (shouldWarnMissingTransport(proposedDay)) {
             warnings.add("Ngày mới chưa có chặng di chuyển riêng, hãy kiểm tra lại nếu các điểm ở xa nhau.");
         }
         return warnings;
+    }
+
+    private boolean shouldWarnSignificantCostIncrease(long oldBudget, long newBudget) {
+        long delta = newBudget - oldBudget;
+        return oldBudget > 0
+                && delta >= REGENERATION_COST_INCREASE_WARNING_MIN_DELTA
+                && newBudget > Math.round(oldBudget * 1.25);
+    }
+
+    private boolean shouldWarnMissingTransport(TripDto.DayResponse proposedDay) {
+        if (proposedDay == null || proposedDay.getActivities() == null || proposedDay.getActivities().isEmpty()) {
+            return false;
+        }
+
+        boolean hasTransport = proposedDay.getActivities().stream()
+                .anyMatch(activity -> "TRANSPORT".equalsIgnoreCase(activity.getType()));
+        if (hasTransport) {
+            return false;
+        }
+
+        List<TripDto.ActivityResponse> placeActivities = proposedDay.getActivities().stream()
+                .filter(activity -> activity.getType() == null
+                        || (!"ACCOMMODATION".equalsIgnoreCase(activity.getType())
+                                && !"TRANSPORT".equalsIgnoreCase(activity.getType())))
+                .toList();
+        if (placeActivities.size() < MISSING_TRANSPORT_WARNING_MIN_ACTIVITIES) {
+            return false;
+        }
+
+        if (hasDistantCoordinates(placeActivities)) {
+            return true;
+        }
+
+        long distinctLocations = placeActivities.stream()
+                .map(activity -> normalizeText(activity.getLocation()).replaceAll("\\s+", " ").trim())
+                .filter(location -> !location.isBlank())
+                .distinct()
+                .count();
+        return distinctLocations >= MISSING_TRANSPORT_WARNING_MIN_DISTINCT_LOCATIONS;
+    }
+
+    private boolean hasDistantCoordinates(List<TripDto.ActivityResponse> activities) {
+        for (int i = 0; i < activities.size(); i++) {
+            TripDto.ActivityResponse first = activities.get(i);
+            if (first.getLatitude() == null || first.getLongitude() == null) {
+                continue;
+            }
+            for (int j = i + 1; j < activities.size(); j++) {
+                TripDto.ActivityResponse second = activities.get(j);
+                if (second.getLatitude() == null || second.getLongitude() == null) {
+                    continue;
+                }
+                if (distanceKm(first.getLatitude(), first.getLongitude(), second.getLatitude(), second.getLongitude())
+                        >= MISSING_TRANSPORT_WARNING_DISTANCE_KM) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private double distanceKm(double firstLat, double firstLng, double secondLat, double secondLng) {
+        double earthRadiusKm = 6371.0;
+        double latDistance = Math.toRadians(secondLat - firstLat);
+        double lngDistance = Math.toRadians(secondLng - firstLng);
+        double firstLatRad = Math.toRadians(firstLat);
+        double secondLatRad = Math.toRadians(secondLat);
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(firstLatRad) * Math.cos(secondLatRad)
+                        * Math.sin(lngDistance / 2) * Math.sin(lngDistance / 2);
+        return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
     private List<String> buildCostReviewWarnings(List<TripDto.DayResponse> schedule, String contextLabel) {
@@ -759,6 +810,23 @@ public class TripService {
                 .map(String::trim)
                 .filter(warning -> !warning.isBlank())
                 .toList();
+    }
+
+    private List<String> parsePersistentWarnings(String rawWarnings) {
+        return filterPersistentWarnings(parseWarnings(rawWarnings));
+    }
+
+    private List<String> filterPersistentWarnings(List<String> warnings) {
+        if (warnings == null || warnings.isEmpty()) {
+            return List.of();
+        }
+        return warnings.stream()
+                .filter(this::isPersistentAiWarning)
+                .toList();
+    }
+
+    private boolean isPersistentAiWarning(String warning) {
+        return normalizeText(warning).replaceAll("\\s+", " ").trim().startsWith("yeu cau");
     }
 
     @SafeVarargs
@@ -800,7 +868,9 @@ public class TripService {
                 ? requestFulfillment.getItems()
                 : List.of();
         if (items.isEmpty()) {
-            return List.of(unverifiedRequestWarning(contextLabel));
+            return isUnfulfilledOverallStatus(requestFulfillment.getOverallStatus())
+                    ? List.of(unverifiedRequestWarning(contextLabel))
+                    : List.of();
         }
 
         List<String> warnings = new ArrayList<>();
@@ -837,8 +907,7 @@ public class TripService {
         return normalizedStatus.isBlank()
                 || "PARTIAL".equals(normalizedStatus)
                 || "NOT_FULFILLED".equals(normalizedStatus)
-                || "UNCLEAR".equals(normalizedStatus)
-                || "NO_REQUEST".equals(normalizedStatus);
+                || "UNCLEAR".equals(normalizedStatus);
     }
 
     private String normalizeFulfillmentToken(String value) {
@@ -879,6 +948,10 @@ public class TripService {
         TripDto.TripResponse response = TripDto.TripResponse.from(trip);
         response.setSchedule(mapDays(trip.getItineraryDays()));
         response.setBudget(calculateBudget(trip, response.getSchedule()));
+        List<String> persistentWarnings = filterPersistentWarnings(response.getWarnings());
+        response.setWarnings(mergeWarnings(
+                persistentWarnings,
+                buildCostReviewWarnings(response.getSchedule(), "lịch trình này")));
         return response;
     }
 
@@ -928,12 +1001,21 @@ public class TripService {
         activity.setLocation(req.getLocation());
         activity.setDuration(
                 req.getDuration() != null && !req.getDuration().isBlank() ? req.getDuration().trim() : "1 giờ");
-        activity.setEstimatedCost(req.getEstimatedCost() != null ? req.getEstimatedCost() : 0);
-        activity.setNote(req.getNote());
+        long estimatedCost = req.getEstimatedCost() != null ? req.getEstimatedCost() : 0;
+        activity.setEstimatedCost(estimatedCost);
+        activity.setNote(estimatedCost > 0 ? removeCostReviewNote(req.getNote()) : req.getNote());
         activity.setLatitude(req.getLatitude());
         activity.setLongitude(req.getLongitude());
         activity.setGooglePlaceId(req.getGooglePlaceId());
         activity.setSortOrder(req.getSortOrder() > 0 ? req.getSortOrder() : defaultSortOrder);
+    }
+
+    private String removeCostReviewNote(String note) {
+        if (note == null || note.isBlank()) {
+            return note;
+        }
+        String cleaned = note.replace(COST_REVIEW_NOTE, "").replaceAll("\\s{2,}", " ").trim();
+        return cleaned.isBlank() ? null : cleaned;
     }
 
     private void validateNoTimeOverlap(ItineraryDay day, Activity candidate, Long ignoreActivityId) {
@@ -1424,6 +1506,7 @@ public class TripService {
             long oldBudget,
             long newBudget,
             List<String> warnings,
+            List<String> persistentWarnings,
             LocalDateTime expiresAt) {
     }
 }
