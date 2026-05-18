@@ -691,8 +691,13 @@ public class AiService {
             JsonNode candidate = root.path("candidates").get(0);
             String finishReason = candidate.path("finishReason").asText("");
             String text = candidate.path("content").path("parts").get(0).path("text").asText();
-            log.debug("Gemini response finishReason={}, textLength={}, maxTokens={}",
-                    finishReason, text.length(), maxOutputTokens);
+            JsonNode usage = root.path("usageMetadata");
+            int promptTokens = usage.path("promptTokenCount").asInt(-1);
+            int outputTokens = usage.path("candidatesTokenCount").asInt(-1);
+            int totalTokens = usage.path("totalTokenCount").asInt(-1);
+            log.debug(
+                    "Gemini response finishReason={}, textLength={}, promptTokens={}, outputTokens={}, totalTokens={}, maxOutputTokens={}",
+                    finishReason, text.length(), promptTokens, outputTokens, totalTokens, maxOutputTokens);
             if ("MAX_TOKENS".equals(finishReason)) {
                 throw new RuntimeException("Gemini response was truncated by maxOutputTokens (" + maxOutputTokens + ")");
             }
