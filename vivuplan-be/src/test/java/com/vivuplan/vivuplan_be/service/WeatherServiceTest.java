@@ -132,6 +132,30 @@ class WeatherServiceTest {
         assertThat(weather.outdoorRiskLevel()).isEqualTo(2);
     }
 
+    @Test
+    void outdoorRiskTreatsLowProbabilityDryThunderstormSignalAsFlexible() {
+        WeatherService.DailyWeather weather = WeatherService.DailyWeather.builder()
+                .code(95)
+                .precipitationProbability(8)
+                .precipitationMm(0.0)
+                .windspeedKmh(21)
+                .build();
+
+        assertThat(weather.outdoorRiskLevel()).isEqualTo(1);
+    }
+
+    @Test
+    void outdoorRiskTreatsHailThunderstormAsSevereEvenWithLowRainAmount() {
+        WeatherService.DailyWeather weather = WeatherService.DailyWeather.builder()
+                .code(96)
+                .precipitationProbability(8)
+                .precipitationMm(0.0)
+                .windspeedKmh(21)
+                .build();
+
+        assertThat(weather.outdoorRiskLevel()).isEqualTo(2);
+    }
+
     @SuppressWarnings("unchecked")
     private List<WeatherService.DailyWeather> invokeParseDailyBlock(
             WeatherService service,

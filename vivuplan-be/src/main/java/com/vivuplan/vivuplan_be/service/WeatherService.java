@@ -110,11 +110,13 @@ public class WeatherService {
             double precipitationMm,
             int precipitationProbability,
             double windspeedKmh) {
-        if (code >= 95 && code <= 99)          return 2;
+        if (code >= 96 && code <= 99)          return 2;
+        if (code == 95 && (precipitationProbability >= 40 || precipitationMm >= 1 || windspeedKmh >= 35)) return 2;
         if (code == 65 || code == 67 || code == 82 || code == 86) return 2;
         if (precipitationMm >= 25)             return 2;
         if (windspeedKmh >= 50 && precipitationProbability >= 70) return 2;
         if (precipitationProbability >= 95 && precipitationMm >= 15) return 2;
+        if (code == 95)                        return 1;
         if ((code >= 51 && code <= 64) || (code >= 80 && code <= 81)) return 1;
         if (precipitationMm >= 1)              return 1;
         if (precipitationProbability >= 60)    return 1;
