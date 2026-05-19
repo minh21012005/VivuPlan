@@ -727,7 +727,7 @@ function PlanContent() {
             </div>
 
             <div className="field-group">
-              <label>Phong cách du lịch <span className="optional-label">tùy chọn</span></label>
+              <label>Phong cách chính <span className="optional-label">tùy chọn</span></label>
               <div className="option-grid option-grid-four">
                 {styleOptions.map(({ id, label, icon: Icon }) => (
                   <button

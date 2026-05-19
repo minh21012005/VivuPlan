@@ -27,6 +27,8 @@ public class PlacePlanningService {
 
     private static final int MIN_CONTEXT_PLACES = 10;
     private static final int MAX_CONTEXT_PLACES = 30;
+    private static final double MAX_NEARBY_CONTEXT_RATIO = 0.20;
+    private static final int REQUEST_CONTEXT_BOOST = 4;
     private static final int REQUEST_MATCH_SCORE = 60;
     private static final int WEATHER_FRIENDLY_SCORE = 18;
     private static final Map<String, List<String>> NEARBY_DESTINATIONS = Map.of(
@@ -78,31 +80,35 @@ public class PlacePlanningService {
     }
 
     List<Place> selectPromptPlaces(TripDto.GenerateRequest req) {
-        List<Place> places = loadCandidatePlacesForRequest(req);
-        if (places.isEmpty()) {
+        List<CandidatePlace> candidates = loadCandidatePlacesForRequest(req);
+        if (candidates.isEmpty()) {
             return List.of();
         }
 
         int limit = resolvePromptPlaceLimit(req);
-        List<ScoredPlace> ranked = places.stream()
-                .map(place -> new ScoredPlace(place, scorePlace(place, req)))
+        List<ScoredPlace> ranked = candidates.stream()
+                .map(candidate -> new ScoredPlace(candidate.place(), scorePlace(candidate.place(), req), candidate.nearby()))
                 .sorted(Comparator
                         .comparingInt(ScoredPlace::score).reversed()
                         .thenComparing(scored -> Optional.ofNullable(scored.place().getRating()).orElse(0.0), Comparator.reverseOrder())
                         .thenComparing(scored -> scored.place().getName(), String.CASE_INSENSITIVE_ORDER))
                 .toList();
 
-        return diversify(ranked, limit);
+        return diversify(ranked, limit, resolveNearbyLimit(limit));
     }
 
-    private List<Place> diversify(List<ScoredPlace> ranked, int limit) {
+    private List<Place> diversify(List<ScoredPlace> ranked, int limit, int nearbyLimit) {
         List<Place> selected = new ArrayList<>();
         Set<String> selectedKeys = new HashSet<>();
         Map<Place.PlaceType, Integer> typeCounts = new EnumMap<>(Place.PlaceType.class);
+        int selectedNearby = 0;
 
         for (ScoredPlace scored : ranked) {
             if (selected.size() >= limit) {
                 break;
+            }
+            if (scored.nearby() && selectedNearby >= nearbyLimit) {
+                continue;
             }
             Place place = scored.place();
             int sameTypeCount = typeCounts.getOrDefault(place.getType(), 0);
@@ -112,6 +118,9 @@ public class PlacePlanningService {
             selected.add(place);
             selectedKeys.add(placeKey(place));
             typeCounts.merge(place.getType(), 1, Integer::sum);
+            if (scored.nearby()) {
+                selectedNearby++;
+            }
         }
 
         if (selected.size() < Math.min(limit, ranked.size())) {
@@ -119,9 +128,15 @@ public class PlacePlanningService {
                 if (selected.size() >= limit) {
                     break;
                 }
+                if (scored.nearby() && selectedNearby >= nearbyLimit) {
+                    continue;
+                }
                 Place place = scored.place();
                 if (selectedKeys.add(placeKey(place))) {
                     selected.add(place);
+                    if (scored.nearby()) {
+                        selectedNearby++;
+                    }
                 }
             }
         }
@@ -161,7 +176,6 @@ public class PlacePlanningService {
                     "bao tang", "di tich", "chua", "den", "thap", "pho co", "lang nghe", "unesco") || containsAny(tags, "museum", "heritage", "spiritual")) ? 32 : 8;
             case "adventure" -> type == Place.PlaceType.ACTIVITY || containsAny(text,
                     "trekking", "thuyen", "kayak", "zipline", "deo", "thac", "nui", "hang", "dao") || tags.contains("adventure") ? 32 : 0;
-            case "nightlife" -> type == Place.PlaceType.NIGHTLIFE || containsAny(text, "dem", "bar", "pho di bo") ? 28 : 0;
             case "relaxing" -> type == Place.PlaceType.CAFE || containsAny(text,
                     "bien", "ho", "spa", "dao", "vuon", "dao nhe", "di dao", "ngam canh") || containsAny(tags, "couple", "beach", "island") ? 22 : 0;
             default -> 0;
@@ -242,8 +256,13 @@ public class PlacePlanningService {
 
     private int resolvePromptPlaceLimit(TripDto.GenerateRequest req) {
         int days = Math.max(1, req.getDays());
-        int base = days <= 1 ? 12 : days <= 2 ? 16 : days <= 4 ? 24 : 30;
-        return Math.max(MIN_CONTEXT_PLACES, Math.min(MAX_CONTEXT_PLACES, base));
+        int base = days <= 1 ? 14 : days <= 2 ? 20 : days <= 4 ? 26 : 30;
+        int boost = hasSpecificRequest(req) ? REQUEST_CONTEXT_BOOST : 0;
+        return Math.max(MIN_CONTEXT_PLACES, Math.min(MAX_CONTEXT_PLACES, base + boost));
+    }
+
+    private int resolveNearbyLimit(int promptPlaceLimit) {
+        return Math.max(0, (int) Math.floor(promptPlaceLimit * MAX_NEARBY_CONTEXT_RATIO));
     }
 
     private long resolvePerPersonPerDayBudget(TripDto.GenerateRequest req) {
@@ -374,16 +393,17 @@ public class PlacePlanningService {
         return places;
     }
 
-    private List<Place> loadCandidatePlacesForRequest(TripDto.GenerateRequest req) {
-        List<Place> candidates = new ArrayList<>(loadVerifiedPlacesForDestination(req.getDestination()));
+    private List<CandidatePlace> loadCandidatePlacesForRequest(TripDto.GenerateRequest req) {
+        List<CandidatePlace> candidates = new ArrayList<>();
+        loadVerifiedPlacesForDestination(req.getDestination()).forEach(place -> candidates.add(new CandidatePlace(place, false)));
         if (shouldIncludeNearbyDestinations(req)) {
             for (String nearbyDestination : NEARBY_DESTINATIONS.getOrDefault(normalizeText(req.getDestination()), List.of())) {
-                candidates.addAll(loadVerifiedPlacesForDestination(nearbyDestination));
+                loadVerifiedPlacesForDestination(nearbyDestination).forEach(place -> candidates.add(new CandidatePlace(place, true)));
             }
         }
         Set<String> seen = new HashSet<>();
         return candidates.stream()
-                .filter(place -> seen.add(placeKey(place)))
+                .filter(candidate -> seen.add(placeKey(candidate.place())))
                 .toList();
     }
 
@@ -413,6 +433,17 @@ public class PlacePlanningService {
             }
         }
         return tokens;
+    }
+
+    private boolean hasSpecificRequest(TripDto.GenerateRequest req) {
+        if (req == null) {
+            return false;
+        }
+        String requestText = normalizeText(String.join(" ",
+                nullToBlank(req.getMustVisit()),
+                nullToBlank(req.getAvoid()),
+                extractUserNotes(req.getNotes())));
+        return requestTokens(requestText).size() >= 2;
     }
 
     private boolean isWeakToken(String token) {
@@ -533,5 +564,7 @@ public class PlacePlanningService {
         return value.substring(0, Math.max(0, maxLength - 3)).trim() + "...";
     }
 
-    private record ScoredPlace(Place place, int score) {}
+    private record CandidatePlace(Place place, boolean nearby) {}
+
+    private record ScoredPlace(Place place, int score, boolean nearby) {}
 }

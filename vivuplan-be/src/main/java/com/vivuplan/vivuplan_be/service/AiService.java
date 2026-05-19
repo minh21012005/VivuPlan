@@ -348,11 +348,18 @@ public class AiService {
                         4. If forecast is "none", plan normally without weather constraints.
                         %s
 
+                        Style rules:
+                        1. Treat Style as the user's primary planning bias, not a hard restriction.
+                        2. Keep the day practical and balanced; include other activity types when they improve route, meals, rest, weather safety, or the user's explicit request.
+                        3. If Must visit, Avoid, Notes, weather, budget, or group needs conflict with Style, prioritize those more specific constraints.
                         Verified place rules:
-                        1. Prefer the verified place candidates when they fit this regenerated day, the user's request, route, weather, and budget.
-                        2. When using a verified place candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
-                        3. You may use other real places only when the verified candidates do not cover the user's request, but avoid generic unnamed places.
-                        4. Do not force every candidate into the day; choose only what makes the day practical.
+                        1. Treat verified place candidates as trusted suggestions, not an allowed-only list.
+                        2. Candidates are ordered by backend relevance. Consider higher-ranked candidates first, but do not blindly pick the top items when route, weather, pacing, budget, or the user's request makes another choice better.
+                        3. Prefer verified candidates when they fit this regenerated day, the user's request, route, weather, and budget.
+                        4. You may use other real places or valuable local activities outside the verified candidates when they improve the day, better satisfy the user's request, or fill a gap in the candidate list.
+                        5. When using a verified candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
+                        6. When using a non-candidate place or activity, it must still be a specific real place/activity with a concrete name and address/area. Avoid generic unnamed places.
+                        7. Do not force every candidate into the day; choose only what makes the day practical.
 
                         Regeneration task:
                         - Regenerate day number: %d
@@ -561,6 +568,11 @@ public class AiService {
                         6. If forecast is "none" or unavailable, plan normally without weather constraints.
                         %s
 
+                        Style rules:
+                        1. Treat Style as the user's primary planning bias, not a hard restriction.
+                        2. Keep the itinerary practical and balanced; include other activity types when they improve route, meals, rest, weather safety, or the user's explicit request.
+                        3. If Must visit, Avoid, Notes, weather, budget, or group needs conflict with Style, prioritize those more specific constraints.
+
                         Cost rules:
                         1. estimatedCost MUST be the estimated total VND for the whole group of %d travelers.
                         2. Treat the total group budget as an upper spending limit, not a target that must be fully spent.
@@ -580,10 +592,13 @@ public class AiService {
                         16. Keep notes concise. Do not invent exact official prices when unsure; use "ước tính" or "khoảng".
 
                         Verified place rules:
-                        1. Prefer the verified place candidates when they fit the user's constraints, route, weather, and budget.
-                        2. When using a verified place candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
-                        3. You may use other real places only when the verified candidates do not cover the user's request, but avoid generic unnamed places.
-                        4. Do not force every candidate into the trip; choose only what makes the itinerary practical.
+                        1. Treat verified place candidates as trusted suggestions, not an allowed-only list.
+                        2. Candidates are ordered by backend relevance. Consider higher-ranked candidates first, but do not blindly pick the top items when route, weather, pacing, budget, or the user's request makes another choice better.
+                        3. Prefer verified candidates when they fit the user's constraints, route, weather, and budget.
+                        4. You may use other real places or valuable local activities outside the verified candidates when they improve the itinerary, better satisfy the user's request, or fill a gap in the candidate list.
+                        5. When using a verified candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
+                        6. When using a non-candidate place or activity, it must still be a specific real place/activity with a concrete name and address/area. Avoid generic unnamed places.
+                        7. Do not force every candidate into the trip; choose only what makes the itinerary practical.
 
                         Local transportation rules:
                         1. Make the local transportation plan explicit when places are far apart or movement has meaningful cost. Users must know how to move between places inside %s.

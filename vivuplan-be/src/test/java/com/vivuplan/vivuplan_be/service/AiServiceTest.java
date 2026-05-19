@@ -106,6 +106,49 @@ class AiServiceTest {
     }
 
     @Test
+    void generatedPromptTreatsVerifiedPlacesAsTrustedSuggestionsNotAllowedOnlyList() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setVerifiedPlacesContext("- Bảo tàng Đà Nẵng | type=ATTRACTION | address=24 Trần Phú");
+
+        String prompt = buildPrompt(service, req);
+
+        assertThat(prompt)
+                .contains("Treat Style as the user's primary planning bias, not a hard restriction")
+                .contains("trusted suggestions, not an allowed-only list")
+                .contains("Candidates are ordered by backend relevance")
+                .contains("do not blindly pick the top items")
+                .contains("You may use other real places or valuable local activities outside the verified candidates")
+                .contains("specific real place/activity with a concrete name and address/area")
+                .doesNotContain("You may use other real places only when the verified candidates do not cover");
+    }
+
+    @Test
+    void regenerationPromptTreatsVerifiedPlacesAsTrustedSuggestionsNotAllowedOnlyList() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setVerifiedPlacesContext("- Bảo tàng Đà Nẵng | type=ATTRACTION | address=24 Trần Phú");
+
+        String prompt = buildDayRegenerationPrompt(
+                service,
+                req,
+                List.of(roundTripBundledDay()),
+                1,
+                "REGENERATE",
+                "thêm trải nghiệm địa phương hay",
+                null);
+
+        assertThat(prompt)
+                .contains("Treat Style as the user's primary planning bias, not a hard restriction")
+                .contains("trusted suggestions, not an allowed-only list")
+                .contains("Candidates are ordered by backend relevance")
+                .contains("do not blindly pick the top items")
+                .contains("You may use other real places or valuable local activities outside the verified candidates")
+                .contains("specific real place/activity with a concrete name and address/area")
+                .doesNotContain("You may use other real places only when the verified candidates do not cover");
+    }
+
+    @Test
     void generatedPromptAddsHardWeatherSafetyOverrideWhenEveryDayIsHighRainRisk() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();

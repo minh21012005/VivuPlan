@@ -131,7 +131,7 @@ public class Trip {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    public enum TravelStyle { ADVENTURE, RELAXING, CULTURAL, NIGHTLIFE, FOODIE }
+    public enum TravelStyle { ADVENTURE, RELAXING, CULTURAL, FOODIE }
     public enum GroupType   { SOLO, COUPLE, FRIENDS, FAMILY }
     public enum BudgetMode { PER_PERSON, TOTAL }
     public enum TransportMode { MOTORBIKE, CAR, BUS, PLANE, TRAIN, WALKING, MIXED }

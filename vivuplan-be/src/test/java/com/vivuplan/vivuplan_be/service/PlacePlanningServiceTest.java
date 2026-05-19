@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,58 +29,149 @@ class PlacePlanningServiceTest {
     @Test
     void selectPromptPlacesRanksUserRequestAndRainSafeOptions() {
         PlacePlanningService service = new PlacePlanningService(placeRepository, destinationRepository);
-        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase("Đà Nẵng", "da-nang"))
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
-        when(placeRepository.findByDestinationIgnoreCaseAndVerifiedTrueOrderByRatingDesc("Đà Nẵng"))
+        when(placeRepository.findByDestinationIgnoreCaseAndVerifiedTrueOrderByRatingDesc(anyString()))
                 .thenReturn(List.of(
-                        place(1L, "Chèo SUP Mỹ Khê", Place.PlaceType.ACTIVITY, 4.9, 300_000, "Hoạt động ngoài biển, phụ thuộc sóng gió"),
-                        place(2L, "Bảo tàng Đà Nẵng", Place.PlaceType.ATTRACTION, 4.4, 40_000, "Bảo tàng trong nhà phù hợp ngày mưa"),
-                        place(3L, "Chợ Cồn", Place.PlaceType.FOOD, 4.2, 150_000, "Chợ ẩm thực trong trung tâm"),
-                        place(4L, "Đèo Hải Vân", Place.PlaceType.ATTRACTION, 4.8, 0, "Cung đèo ngắm cảnh ngoài trời")));
+                        place(1L, "SUP My Khe", Place.PlaceType.ACTIVITY, 4.9, 300_000, "Outdoor sea activity depends on wind"),
+                        place(2L, "Da Nang Museum", Place.PlaceType.ATTRACTION, 4.4, 40_000, "Indoor museum for rainy days"),
+                        place(3L, "Con Market", Place.PlaceType.FOOD, 4.2, 150_000, "Central food market"),
+                        place(4L, "Hai Van Pass", Place.PlaceType.ATTRACTION, 4.8, 0, "Outdoor scenic mountain pass")));
 
         TripDto.GenerateRequest req = request();
-        req.setNotes("Tôi muốn bảo tàng và ăn đặc sản địa phương");
-        req.setWeatherForecast("Day 1 (2026-05-19): Thunderstorm, 24-29°C, rain chance 80% -> HIGH RAIN RISK");
+        req.setNotes("toi muon museum va food");
+        req.setWeatherForecast("Day 1 (2026-05-19): Thunderstorm, 24-29C, rain chance 80% -> HIGH RAIN RISK");
 
         List<Place> selected = service.selectPromptPlaces(req);
 
         assertThat(selected).extracting(Place::getName)
-                .containsSubsequence("Bảo tàng Đà Nẵng", "Chợ Cồn")
-                .doesNotContainSequence("Chèo SUP Mỹ Khê", "Bảo tàng Đà Nẵng");
+                .containsSubsequence("Con Market", "Da Nang Museum")
+                .doesNotContainSequence("SUP My Khe", "Da Nang Museum");
+    }
+
+    @Test
+    void selectPromptPlacesKeepsAllCandidatesWhenWithinAdaptiveLimit() {
+        PlacePlanningService service = new PlacePlanningService(placeRepository, destinationRepository);
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        List<Place> candidates = places("Da Nang POI ", 1, 12, "da nang");
+        when(placeRepository.findByDestinationIgnoreCaseAndVerifiedTrueOrderByRatingDesc(anyString()))
+                .thenReturn(candidates);
+
+        TripDto.GenerateRequest req = request();
+        req.setDays(1);
+
+        List<Place> selected = service.selectPromptPlaces(req);
+
+        assertThat(selected).hasSize(12);
+    }
+
+    @Test
+    void selectPromptPlacesCapsShortTripsToAvoidOverloadingPrompt() {
+        PlacePlanningService service = new PlacePlanningService(placeRepository, destinationRepository);
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        List<Place> candidates = places("Da Nang POI ", 1, 28, "da nang");
+        when(placeRepository.findByDestinationIgnoreCaseAndVerifiedTrueOrderByRatingDesc(anyString()))
+                .thenReturn(candidates);
+
+        TripDto.GenerateRequest req = request();
+        req.setDays(1);
+
+        List<Place> selected = service.selectPromptPlaces(req);
+
+        assertThat(selected).hasSize(14);
+    }
+
+    @Test
+    void selectPromptPlacesBoostsLimitWhenUserHasSpecificRequest() {
+        PlacePlanningService service = new PlacePlanningService(placeRepository, destinationRepository);
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        List<Place> candidates = places("Da Nang POI ", 1, 28, "da nang");
+        when(placeRepository.findByDestinationIgnoreCaseAndVerifiedTrueOrderByRatingDesc(anyString()))
+                .thenReturn(candidates);
+
+        TripDto.GenerateRequest req = request();
+        req.setDays(1);
+        req.setNotes("toi muon museum va seafood");
+
+        List<Place> selected = service.selectPromptPlaces(req);
+
+        assertThat(selected).hasSize(18);
+    }
+
+    @Test
+    void selectPromptPlacesCapsAndDiversifiesWhenCandidateListExceedsSafePromptLimit() {
+        PlacePlanningService service = new PlacePlanningService(placeRepository, destinationRepository);
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        List<Place> candidates = places("Da Nang POI ", 1, 35, "da nang");
+        when(placeRepository.findByDestinationIgnoreCaseAndVerifiedTrueOrderByRatingDesc(anyString()))
+                .thenReturn(candidates);
+
+        TripDto.GenerateRequest req = request();
+        req.setDays(5);
+
+        List<Place> selected = service.selectPromptPlaces(req);
+
+        assertThat(selected).hasSize(30);
+    }
+
+    @Test
+    void selectPromptPlacesCapsNearbyCandidatesToTwentyPercent() {
+        PlacePlanningService service = new PlacePlanningService(placeRepository, destinationRepository);
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        List<Place> mainPlaces = places("Da Nang Main POI ", 1, 24, "da nang");
+        List<Place> nearbyPlaces = places("Hoi An Nearby POI ", 101, 112, "Hoi An");
+        when(placeRepository.findByDestinationIgnoreCaseAndVerifiedTrueOrderByRatingDesc(anyString()))
+                .thenAnswer(invocation -> "da nang".equals(invocation.getArgument(0))
+                        ? mainPlaces
+                        : nearbyPlaces);
+
+        TripDto.GenerateRequest req = request();
+        req.setDestination("da nang");
+        req.setDays(4);
+
+        List<Place> selected = service.selectPromptPlaces(req);
+
+        assertThat(selected).hasSize(26);
+        assertThat(selected.stream().filter(place -> "Hoi An".equals(place.getDestination())).count()).isEqualTo(5);
     }
 
     @Test
     void enrichScheduleWithVerifiedPlacesAttachesMatchedPlaceData() {
         PlacePlanningService service = new PlacePlanningService(placeRepository, destinationRepository);
-        Place museum = place(44L, "Bảo tàng Đà Nẵng", Place.PlaceType.ATTRACTION, 4.5, 60_000, "Bảo tàng trung tâm");
+        Place museum = place(44L, "Da Nang Museum", Place.PlaceType.ATTRACTION, 4.5, 60_000, "Central museum");
         museum.setLatitude(16.0746);
         museum.setLongitude(108.2231);
-        museum.setAddress("24 Trần Phú, Hải Châu, Đà Nẵng");
-        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase("Đà Nẵng", "da-nang"))
+        museum.setAddress("24 Tran Phu, Da Nang");
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
-        when(placeRepository.findByDestinationIgnoreCaseAndVerifiedTrueOrderByRatingDesc("Đà Nẵng"))
+        when(placeRepository.findByDestinationIgnoreCaseAndVerifiedTrueOrderByRatingDesc(anyString()))
                 .thenReturn(List.of(museum));
 
         TripDto.ActivityResponse activity = new TripDto.ActivityResponse();
-        activity.setName("Khám phá Bảo tàng Đà Nẵng");
+        activity.setName("Explore Da Nang Museum");
         activity.setType("ATTRACTION");
         TripDto.DayResponse day = new TripDto.DayResponse();
         day.setDay(1);
         day.setActivities(List.of(activity));
 
-        service.enrichScheduleWithVerifiedPlaces(List.of(day), "Đà Nẵng");
+        service.enrichScheduleWithVerifiedPlaces(List.of(day), "da nang");
 
         assertThat(activity.getPlaceId()).isEqualTo(44L);
         assertThat(activity.getLatitude()).isEqualTo(16.0746);
         assertThat(activity.getLongitude()).isEqualTo(108.2231);
-        assertThat(activity.getLocation()).isEqualTo("24 Trần Phú, Hải Châu, Đà Nẵng");
+        assertThat(activity.getLocation()).isEqualTo("24 Tran Phu, Da Nang");
         assertThat(activity.getRating()).isEqualTo(4.5);
     }
 
     private TripDto.GenerateRequest request() {
         TripDto.GenerateRequest req = new TripDto.GenerateRequest();
-        req.setDestination("Đà Nẵng");
-        req.setDeparture("Hà Nội");
+        req.setDestination("da nang");
+        req.setDeparture("ha noi");
         req.setStartDate(LocalDate.now());
         req.setEndDate(LocalDate.now());
         req.setDays(1);
@@ -91,13 +183,29 @@ class PlacePlanningServiceTest {
         return req;
     }
 
+    private List<Place> places(String namePrefix, int startInclusive, int endInclusive, String destination) {
+        return java.util.stream.IntStream.rangeClosed(startInclusive, endInclusive)
+                .mapToObj(index -> {
+                    Place place = place(
+                            (long) index,
+                            namePrefix + index,
+                            index % 3 == 0 ? Place.PlaceType.FOOD : Place.PlaceType.ATTRACTION,
+                            4.0,
+                            100_000,
+                            "Useful itinerary candidate");
+                    place.setDestination(destination);
+                    return place;
+                })
+                .toList();
+    }
+
     private Place place(Long id, String name, Place.PlaceType type, double rating, long maxCost, String description) {
         return Place.builder()
                 .id(id)
                 .name(name)
-                .destination("Đà Nẵng")
+                .destination("da nang")
                 .type(type)
-                .address(name + ", Đà Nẵng")
+                .address(name + ", da nang")
                 .estimatedCostMin(0L)
                 .estimatedCostMax(maxCost)
                 .rating(rating)

@@ -137,7 +137,6 @@ const styleLabel: Record<string, string> = {
   ADVENTURE: "Phiêu lưu",
   RELAXING: "Nghỉ dưỡng",
   CULTURAL: "Văn hóa",
-  NIGHTLIFE: "Khám phá đêm",
   FOODIE: "Ẩm thực",
 };
 
