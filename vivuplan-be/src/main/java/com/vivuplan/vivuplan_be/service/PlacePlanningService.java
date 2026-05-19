@@ -31,7 +31,7 @@ public class PlacePlanningService {
     private static final int REQUEST_CONTEXT_BOOST = 4;
     private static final int REQUEST_MATCH_SCORE = 60;
     private static final int WEATHER_FRIENDLY_SCORE = 12;
-    private static final int WEATHER_FLEX_SCORE = 4;
+    private static final int WEATHER_FLEX_SCORE = 2;
     private static final Map<String, List<String>> NEARBY_DESTINATIONS = Map.of(
             "da nang", List.of("Hội An", "Mỹ Sơn"),
             "hoi an", List.of("Đà Nẵng", "Mỹ Sơn"),
@@ -240,20 +240,29 @@ public class PlacePlanningService {
         if (!severeWeather && !rainFlex) {
             return 0;
         }
-        int weatherFriendlyScore = severeWeather ? WEATHER_FRIENDLY_SCORE : WEATHER_FLEX_SCORE;
+        if (rainFlex && !severeWeather) {
+            if (isExtremeRainSensitiveActivity(place)) {
+                return -WEATHER_FLEX_SCORE;
+            }
+            if (place.getIndoorOutdoor() == Place.IndoorOutdoor.INDOOR
+                    || place.getWeatherSensitivity() == Place.WeatherSensitivity.LOW) {
+                return WEATHER_FLEX_SCORE;
+            }
+            return 0;
+        }
         if (place.getIndoorOutdoor() == Place.IndoorOutdoor.INDOOR
                 || place.getWeatherSensitivity() == Place.WeatherSensitivity.LOW
                 || place.getType() == Place.PlaceType.FOOD
                 || place.getType() == Place.PlaceType.CAFE) {
-            return weatherFriendlyScore;
+            return WEATHER_FRIENDLY_SCORE;
         }
-        if (isSafetySensitiveOutdoorPlace(place)) {
-            return severeWeather ? -WEATHER_FRIENDLY_SCORE : -WEATHER_FLEX_SCORE;
+        if (isSevereWeatherSensitivePlace(place)) {
+            return -WEATHER_FRIENDLY_SCORE;
         }
         String text = normalizedPlaceText(place);
         if (containsAny(text, "bao tang", "museum", "indoor", "cho", "market", "trung tam", "nha co", "dinh",
                 "chua", "nha tho")) {
-            return weatherFriendlyScore;
+            return WEATHER_FRIENDLY_SCORE;
         }
         if (severeWeather && place.getIndoorOutdoor() == Place.IndoorOutdoor.OUTDOOR) {
             return -WEATHER_FLEX_SCORE;
@@ -261,13 +270,20 @@ public class PlacePlanningService {
         return 0;
     }
 
-    private boolean isSafetySensitiveOutdoorPlace(Place place) {
+    private boolean isSevereWeatherSensitivePlace(Place place) {
         String text = normalizedPlaceText(place) + " " + normalizedTags(place);
         return place.getWeatherSensitivity() == Place.WeatherSensitivity.HIGH
                 || containsAny(text,
                         "sup", "kayak", "trekking", "leo nui", "zipline", "du luon",
                         "tam bien", "bien", "thuyen", "boat", "dao", "island",
                         "thac", "waterfall", "deo", "mountain pass");
+    }
+
+    private boolean isExtremeRainSensitiveActivity(Place place) {
+        String text = normalizedPlaceText(place) + " " + normalizedTags(place);
+        return containsAny(text,
+                "sup", "kayak", "trekking", "leo nui", "zipline", "du luon",
+                "lan bien", "tam bien", "thac", "waterfall", "deo", "mountain pass");
     }
 
     private int resolvePromptPlaceLimit(TripDto.GenerateRequest req) {

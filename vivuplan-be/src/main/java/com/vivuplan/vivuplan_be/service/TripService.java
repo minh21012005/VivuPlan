@@ -533,7 +533,7 @@ public class TripService {
 
             String risk = switch (dw.outdoorRiskLevel()) {
                 case 2 -> "SEVERE WEATHER RISK - avoid unsafe outdoor/water activities";
-                case 1 -> "RAIN FLEX - keep signature outdoor activities when practical; add indoor backup";
+                case 1 -> "RAIN FLEX - outdoor is still allowed; keep signature outdoor activities in the main plan when generally safe, and add indoor backup notes instead of replacing them";
                 default -> "Good weather - outdoor activities recommended";
             };
 

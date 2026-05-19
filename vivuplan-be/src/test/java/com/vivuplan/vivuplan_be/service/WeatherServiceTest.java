@@ -60,6 +60,30 @@ class WeatherServiceTest {
     }
 
     @Test
+    void outdoorRiskTreatsHighProbabilityTinyRainAsGoodWeather() {
+        WeatherService.DailyWeather weather = WeatherService.DailyWeather.builder()
+                .code(3)
+                .precipitationProbability(55)
+                .precipitationMm(0.4)
+                .windspeedKmh(10)
+                .build();
+
+        assertThat(weather.outdoorRiskLevel()).isZero();
+    }
+
+    @Test
+    void outdoorRiskTreatsNearCertainHeavyRainAsSevere() {
+        WeatherService.DailyWeather weather = WeatherService.DailyWeather.builder()
+                .code(61)
+                .precipitationProbability(96)
+                .precipitationMm(16.0)
+                .windspeedKmh(20)
+                .build();
+
+        assertThat(weather.outdoorRiskLevel()).isEqualTo(2);
+    }
+
+    @Test
     void outdoorRiskTreatsThunderstormAsSevere() {
         WeatherService.DailyWeather weather = WeatherService.DailyWeather.builder()
                 .code(95)

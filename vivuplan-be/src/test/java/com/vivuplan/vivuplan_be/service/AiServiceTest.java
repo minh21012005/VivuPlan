@@ -227,8 +227,9 @@ class AiServiceTest {
 
         assertThat(prompt)
                 .contains("RAIN FLEX")
-                .contains("not an indoor-only rule")
-                .contains("Keep destination-defining outdoor/scenic places when practical");
+                .contains("low-impact weather context")
+                .contains("not a reason to reduce outdoor diversity")
+                .contains("Keep destination-defining outdoor/scenic places in the main plan when generally safe");
     }
 
     @Test

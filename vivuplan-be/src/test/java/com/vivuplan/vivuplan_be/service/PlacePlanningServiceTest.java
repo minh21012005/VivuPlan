@@ -77,6 +77,31 @@ class PlacePlanningServiceTest {
     }
 
     @Test
+    void selectPromptPlacesKeepsSignatureScenicExperienceHighDuringRainFlex() {
+        PlacePlanningService service = new PlacePlanningService(placeRepository, destinationRepository);
+        Place scenic = place(11L, "Trang An Scenic Landscape Complex", Place.PlaceType.ACTIVITY, 5.0, 250_000,
+                "Signature boat and limestone landscape experience");
+        scenic.setTags(List.of("boat", "heritage", "nature"));
+        scenic.setIndoorOutdoor(Place.IndoorOutdoor.OUTDOOR);
+        scenic.setWeatherSensitivity(Place.WeatherSensitivity.HIGH);
+        Place indoor = place(12L, "Indoor Backup Gallery", Place.PlaceType.ATTRACTION, 4.0, 300_000,
+                "Indoor gallery backup option");
+        indoor.setIndoorOutdoor(Place.IndoorOutdoor.INDOOR);
+        indoor.setWeatherSensitivity(Place.WeatherSensitivity.LOW);
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        when(placeRepository.findByDestinationIgnoreCaseAndVerifiedTrueOrderByRatingDesc(anyString()))
+                .thenReturn(List.of(scenic, indoor));
+
+        TripDto.GenerateRequest req = request();
+        req.setWeatherForecast("Day 1 (2026-05-19): Rain, 25-30C, rain chance 75%, rain 4.0mm, wind 12km/h -> RAIN FLEX");
+
+        List<Place> selected = service.selectPromptPlaces(req);
+
+        assertThat(selected.indexOf(scenic)).isLessThan(selected.indexOf(indoor));
+    }
+
+    @Test
     void selectPromptPlacesKeepsAllCandidatesWhenWithinAdaptiveLimit() {
         PlacePlanningService service = new PlacePlanningService(placeRepository, destinationRepository);
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
