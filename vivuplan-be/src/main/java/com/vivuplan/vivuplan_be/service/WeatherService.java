@@ -72,12 +72,15 @@ public class WeatherService {
             return "Unknown";
         }
 
-        /** 0 = fine, 1 = light rain caution, 2 = high risk (heavy rain/storm) */
+        /** 0 = fine, 1 = flexible rain plan, 2 = severe weather safety risk */
         public int outdoorRiskLevel() {
-            if (code >= 80 && code <= 99)          return 2;
-            if (code >= 61 && code <= 79)          return 2;
-            if (code >= 51 && code <= 60)          return 1;
-            if (precipitationProbability >= 70)    return 2;
+            if (code >= 95 && code <= 99)          return 2;
+            if (code == 65 || code == 67 || code == 82 || code == 86) return 2;
+            if (precipitationMm >= 20)             return 2;
+            if (windspeedKmh >= 45 && precipitationProbability >= 60) return 2;
+            if (precipitationProbability >= 85 && precipitationMm >= 10) return 2;
+            if ((code >= 51 && code <= 64) || (code >= 80 && code <= 81)) return 1;
+            if (precipitationMm > 0)               return 1;
             if (precipitationProbability >= 40)    return 1;
             return 0;
         }

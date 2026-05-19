@@ -41,14 +41,11 @@ public class TripService {
     private final PlacePlanningService placePlanningService;
     private final Map<String, DayRegenerationProposal> dayRegenerationProposals = new ConcurrentHashMap<>();
     private static final int REGENERATION_PROPOSAL_TTL_MINUTES = 30;
-    private static final String COST_REVIEW_STATUS = "NEEDS_REVIEW";
     private static final long REGENERATION_COST_INCREASE_WARNING_MIN_DELTA = 200_000L;
     private static final int MISSING_TRANSPORT_WARNING_MIN_ACTIVITIES = 4;
     private static final int MISSING_TRANSPORT_WARNING_MIN_DISTINCT_LOCATIONS = 3;
     private static final double MISSING_TRANSPORT_WARNING_DISTANCE_KM = 2.0;
-    private static final String COST_REVIEW_MESSAGE =
-            "Chi phí này cần được kiểm tra lại vì AI chưa đưa ra mức ước tính đáng tin cậy.";
-    private static final String COST_REVIEW_NOTE =
+    private static final String LEGACY_COST_REVIEW_NOTE =
             "Chi phí cần kiểm tra: hoạt động này có thể phát sinh phí, nhưng AI chưa đưa ra mức ước tính đáng tin cậy.";
 
     @Transactional
@@ -522,7 +519,7 @@ public class TripService {
 
     /**
      * Produces a concise day-by-day weather summary for the AI prompt.
-     * Example line: "Day 1 (2025-06-10): Rain, 22–28°C, rain chance 75% – AVOID outdoor activities"
+     * Example line: "Day 1 (2025-06-10): Rain, 22-28C, rain chance 75%, rain 4.0mm, wind 18km/h -> RAIN FLEX ..."
      */
     private String formatWeatherForAi(List<WeatherService.DailyWeather> forecast, LocalDate start, LocalDate end) {
         if (forecast == null || forecast.isEmpty() || start == null || end == null) return "none";
@@ -535,18 +532,21 @@ public class TripService {
             if (date.isAfter(end)) break;
 
             String risk = switch (dw.outdoorRiskLevel()) {
-                case 2 -> "HIGH RAIN RISK – prefer indoor activities";
-                case 1 -> "LIGHT RAIN – mix indoor and outdoor";
-                default -> "Good weather – outdoor activities recommended";
+                case 2 -> "SEVERE WEATHER RISK - avoid unsafe outdoor/water activities";
+                case 1 -> "RAIN FLEX - keep signature outdoor activities when practical; add indoor backup";
+                default -> "Good weather - outdoor activities recommended";
             };
 
-            sb.append(String.format("Day %d (%s): %s, %.0f–%.0f°C, rain chance %d%% → %s%n",
+            sb.append(String.format(Locale.ROOT,
+                    "Day %d (%s): %s, %.0f-%.0fC, rain chance %d%%, rain %.1fmm, wind %.0fkm/h -> %s%n",
                     dayNum++,
                     dw.getDate(),
                     dw.toWeatherLabel(),
                     dw.getMinTemp(),
                     dw.getMaxTemp(),
                     dw.getPrecipitationProbability(),
+                    dw.getPrecipitationMm(),
+                    dw.getWindspeedKmh(),
                     risk));
         }
         return sb.length() > 0 ? sb.toString().trim() : "none";
@@ -909,7 +909,11 @@ public class TripService {
             String instruction,
             String contextLabel) {
         if (instruction == null || instruction.isBlank()) {
-            return List.of();
+            if (requestFulfillment == null
+                    || requestFulfillment.getItems() == null
+                    || requestFulfillment.getItems().isEmpty()) {
+                return List.of();
+            }
         }
         if (requestFulfillment == null) {
             return List.of(unverifiedRequestWarning(contextLabel));
@@ -938,7 +942,9 @@ public class TripService {
             if (message == null || message.isBlank()) {
                 String requestedText = item.getRequestedText() != null && !item.getRequestedText().isBlank()
                         ? item.getRequestedText().trim()
-                        : instruction.trim();
+                        : instruction != null && !instruction.isBlank()
+                                ? instruction.trim()
+                                : "Trải nghiệm nổi bật của điểm đến";
                 message = String.format(
                         "Yêu cầu \"%s\" chưa được phản ánh đầy đủ trong %s. Hãy kiểm tra lại trước khi sử dụng.",
                         requestedText,
@@ -1063,7 +1069,7 @@ public class TripService {
         if (note == null || note.isBlank()) {
             return note;
         }
-        String cleaned = note.replace(COST_REVIEW_NOTE, "").replaceAll("\\s{2,}", " ").trim();
+        String cleaned = note.replace(LEGACY_COST_REVIEW_NOTE, "").replaceAll("\\s{2,}", " ").trim();
         return cleaned.isBlank() ? null : cleaned;
     }
 
@@ -1254,9 +1260,6 @@ public class TripService {
                 if (normalizedCost > originalCost) {
                     activity.setNote(normalizeIncludedCostNote(activity.getNote()));
                 }
-                if (normalizedCost == 0 && isRequiredPaidActivityWithoutCost(activity, trip, bundledIntercityTransportCost)) {
-                    markCostNeedsReview(activity);
-                }
             }
         }
     }
@@ -1329,18 +1332,6 @@ public class TripService {
         return null;
     }
 
-    private boolean isRequiredPaidActivityWithoutCost(TripDto.ActivityResponse activity, Trip trip, boolean bundledIntercityTransportCost) {
-        String type = normalizeText(activity.getType());
-        String combined = normalizeText(String.join(" ",
-                nullToBlank(activity.getName()),
-                nullToBlank(activity.getLocation()),
-                nullToBlank(activity.getNote())));
-
-        return (isTripIntercityTransportActivity(type, combined, trip) && !bundledIntercityTransportCost)
-                || isVehicleRentalStartActivity(type, combined)
-                || mentionsExcludedRequiredCost(combined);
-    }
-
     private boolean hasBundledIntercityTransportCost(List<TripDto.DayResponse> schedule, Trip trip) {
         if (schedule == null || schedule.isEmpty()) {
             return false;
@@ -1410,22 +1401,6 @@ public class TripService {
             return mentionedCost * travelers;
         }
         return mentionedCost;
-    }
-
-    private void markCostNeedsReview(TripDto.ActivityResponse activity) {
-        activity.setCostEstimateStatus(COST_REVIEW_STATUS);
-        activity.setCostEstimateMessage(COST_REVIEW_MESSAGE);
-        activity.setNote(appendCostReviewNote(activity.getNote()));
-    }
-
-    private String appendCostReviewNote(String note) {
-        if (note != null && note.contains("Chi phí cần kiểm tra")) {
-            return note;
-        }
-        if (note == null || note.isBlank()) {
-            return COST_REVIEW_NOTE;
-        }
-        return note + " " + COST_REVIEW_NOTE;
     }
 
     private boolean mentionsExcludedRequiredCost(String normalizedText) {

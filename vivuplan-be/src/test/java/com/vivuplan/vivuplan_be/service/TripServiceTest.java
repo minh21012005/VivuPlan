@@ -105,7 +105,7 @@ class TripServiceTest {
     }
 
     @Test
-    void updateActivityClearsCostReviewWarningWhenUserProvidesCost() {
+    void updateActivityStripsLegacyCostReviewNoteWhenUserProvidesCost() {
         Trip trip = sampleTrip();
         Activity activity = trip.getItineraryDays().get(0).getActivities().get(0);
         activity.setEstimatedCost(0L);
@@ -308,11 +308,11 @@ class TripServiceTest {
 
         List<TripDto.ActivityResponse> activities = response.getSchedule().get(0).getActivities();
         assertThat(activities.get(0).getEstimatedCost()).isZero();
-        assertThat(activities.get(0).getCostEstimateStatus()).isEqualTo("NEEDS_REVIEW");
-        assertThat(activities.get(0).getCostEstimateMessage()).isNotBlank();
+        assertThat(activities.get(0).getCostEstimateStatus()).isNull();
+        assertThat(activities.get(0).getCostEstimateMessage()).isNull();
         assertThat(activities.get(1).getEstimatedCost()).isGreaterThanOrEqualTo(200_000L);
         assertThat(response.getBudget().getTransport()).isGreaterThanOrEqualTo(200_000L);
-        assertThat(response.getWarnings()).anyMatch(warning -> warning.contains("Cần kiểm tra"));
+        assertThat(response.getWarnings()).noneMatch(warning -> warning.contains("Cần kiểm tra"));
         assertThat(savedTrip.get().getAiWarnings()).isNull();
     }
 
@@ -487,11 +487,11 @@ class TripServiceTest {
 
         List<TripDto.ActivityResponse> activities = response.getDay().getActivities();
         assertThat(activities.get(0).getEstimatedCost()).isZero();
-        assertThat(activities.get(0).getCostEstimateStatus()).isEqualTo("NEEDS_REVIEW");
-        assertThat(activities.get(0).getCostEstimateMessage()).isNotBlank();
+        assertThat(activities.get(0).getCostEstimateStatus()).isNull();
+        assertThat(activities.get(0).getCostEstimateMessage()).isNull();
         assertThat(activities.get(1).getEstimatedCost()).isGreaterThanOrEqualTo(200_000L);
         assertThat(response.getNewBudget()).isGreaterThanOrEqualTo(200_000L);
-        assertThat(response.getWarnings()).anyMatch(warning -> warning.contains("Cần kiểm tra"));
+        assertThat(response.getWarnings()).noneMatch(warning -> warning.contains("Cần kiểm tra"));
     }
 
     @Test

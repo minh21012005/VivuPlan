@@ -45,8 +45,35 @@ class PlacePlanningServiceTest {
         List<Place> selected = service.selectPromptPlaces(req);
 
         assertThat(selected).extracting(Place::getName)
-                .containsSubsequence("Con Market", "Da Nang Museum")
-                .doesNotContainSequence("SUP My Khe", "Da Nang Museum");
+                .contains("Con Market", "Da Nang Museum");
+        assertThat(selected.indexOf(selected.stream()
+                .filter(place -> "SUP My Khe".equals(place.getName()))
+                .findFirst()
+                .orElseThrow()))
+                .isGreaterThan(selected.indexOf(selected.stream()
+                        .filter(place -> "Da Nang Museum".equals(place.getName()))
+                        .findFirst()
+                        .orElseThrow()));
+    }
+
+    @Test
+    void verifiedPlacesContextMarksHighRatedScenicAttractionsAsDestinationSignature() {
+        PlacePlanningService service = new PlacePlanningService(placeRepository, destinationRepository);
+        Place scenic = place(10L, "Trang An Scenic Landscape Complex", Place.PlaceType.ACTIVITY, 4.8, 250_000,
+                "Signature boat and limestone landscape experience");
+        scenic.setTags(List.of("boat", "heritage", "nature"));
+        scenic.setIndoorOutdoor(Place.IndoorOutdoor.OUTDOOR);
+        scenic.setWeatherSensitivity(Place.WeatherSensitivity.HIGH);
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        when(placeRepository.findByDestinationIgnoreCaseAndVerifiedTrueOrderByRatingDesc(anyString()))
+                .thenReturn(List.of(scenic));
+
+        String context = service.buildVerifiedPlacesContext(request());
+
+        assertThat(context)
+                .contains("Trang An Scenic Landscape Complex")
+                .contains("priority=destination-signature");
     }
 
     @Test

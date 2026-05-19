@@ -126,6 +126,7 @@ class AiServiceTest {
         assertThat(prompt)
                 .contains("Never return more than " + ItineraryQualityPolicy.MAX_TOTAL_ITEMS_PER_DAY + " total items")
                 .contains("For close walkable places, a clear walking note with cost 0 is enough")
+                .contains("signature/must-try experiences using your own Vietnam travel knowledge")
                 .doesNotContain("Add a clear local transportation plan with TRANSPORT activities for getting around");
     }
 
@@ -146,6 +147,7 @@ class AiServiceTest {
         assertThat(prompt)
                 .contains("Never return more than " + ItineraryQualityPolicy.MAX_TOTAL_ITEMS_PER_DAY + " total items")
                 .contains("For close walkable places, a clear walking note with cost 0 is enough")
+                .contains("Preserve or restore relevant destination-signature/must-try experiences")
                 .contains("The previous proposal was rejected because: missing explicit local transport");
     }
 
@@ -162,6 +164,9 @@ class AiServiceTest {
                 .contains("trusted suggestions, not an allowed-only list")
                 .contains("Candidates are ordered by backend relevance")
                 .contains("do not blindly pick the top items")
+                .contains("infer the destination's signature experiences and must-try categories")
+                .contains("even when they are NOT listed in the verified candidates")
+                .contains("return PARTIAL or NOT_FULFILLED with a requestFulfillment item even without a user-specific request")
                 .doesNotContain("You may use other real places only when the verified candidates do not cover");
     }
 
@@ -185,11 +190,14 @@ class AiServiceTest {
                 .contains("trusted suggestions, not an allowed-only list")
                 .contains("Candidates are ordered by backend relevance")
                 .contains("do not blindly pick the top items")
+                .contains("infer the destination's signature experiences and must-try categories")
+                .contains("even when they are NOT listed in the verified candidates")
+                .contains("return PARTIAL or NOT_FULFILLED with a requestFulfillment item even without a user-specific request")
                 .doesNotContain("You may use other real places only when the verified candidates do not cover");
     }
 
     @Test
-    void generatedPromptAddsHardWeatherSafetyOverrideWhenEveryDayIsHighRainRisk() throws Exception {
+    void generatedPromptAddsSafetyOverrideAndSignatureExplanationWhenEveryDayIsHighRisk() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
         req.setDays(2);
@@ -201,9 +209,26 @@ class AiServiceTest {
         String prompt = buildPrompt(service, req);
 
         assertThat(prompt)
-                .contains("every trip day is HIGH RAIN RISK")
-                .contains("Do not schedule weather-dependent outdoor")
-                .contains("mark it NOT_APPLIED with reasonCode WEATHER_SAFETY");
+                .contains("every trip day is SEVERE WEATHER RISK or legacy HIGH RAIN RISK")
+                .contains("unsafe weather-dependent outdoor")
+                .contains("priority=destination-signature")
+                .contains("reasonCode WEATHER_SAFETY");
+    }
+
+    @Test
+    void generatedPromptTreatsRainFlexAsFlexibleNotIndoorOnly() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setWeatherForecast("""
+                Day 1 (2026-05-19): Rain, 25-30C, rain chance 75%, rain 4.0mm, wind 12km/h -> RAIN FLEX - keep signature outdoor activities when practical; add indoor backup
+                """);
+
+        String prompt = buildPrompt(service, req);
+
+        assertThat(prompt)
+                .contains("RAIN FLEX")
+                .contains("not an indoor-only rule")
+                .contains("Keep destination-defining outdoor/scenic places when practical");
     }
 
     @Test

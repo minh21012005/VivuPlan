@@ -75,7 +75,7 @@ public class AiService {
             if (usedRetry) {
                 if (isRecoverableCostQualityIssue(quality.reason())) {
                     log.warn(
-                            "AI retry itinerary for {} still has a cost completeness issue: {}. Returning with cost review markers.",
+                            "AI retry itinerary for {} still has a cost completeness issue: {}. Returning itinerary.",
                             req.getDestination(), quality.reason());
                     return result;
                 }
@@ -98,7 +98,7 @@ public class AiService {
 
             if (isRecoverableCostQualityIssue(retryQuality.reason())) {
                 log.warn(
-                        "AI retry itinerary for {} still has a cost completeness issue: {}. Returning with cost review markers.",
+                        "AI retry itinerary for {} still has a cost completeness issue: {}. Returning itinerary.",
                         req.getDestination(), retryQuality.reason());
                 return retryResult;
             }
@@ -152,7 +152,7 @@ public class AiService {
             if (usedRetry) {
                 if (isRecoverableCostQualityIssue(quality.reason())) {
                     log.warn(
-                            "AI retry regenerated day {} for {} still has a cost completeness issue: {}. Returning with cost review markers.",
+                            "AI retry regenerated day {} for {} still has a cost completeness issue: {}. Returning itinerary.",
                             dayNumber, req.getDestination(), quality.reason());
                     return result;
                 }
@@ -176,7 +176,7 @@ public class AiService {
 
             if (isRecoverableCostQualityIssue(retryQuality.reason())) {
                 log.warn(
-                        "AI retry regenerated day {} for {} still has a cost completeness issue: {}. Returning with cost review markers.",
+                        "AI retry regenerated day {} for {} still has a cost completeness issue: {}. Returning itinerary.",
                         dayNumber, req.getDestination(), retryQuality.reason());
                 return retryResult;
             }
@@ -239,22 +239,27 @@ public class AiService {
             return "";
         }
 
-        long highRiskDays = dayLines.stream()
-                .filter(line -> line.toLowerCase(Locale.ROOT).contains("high rain risk"))
+        long severeRiskDays = dayLines.stream()
+                .filter(this::isSevereWeatherForecastLine)
                 .count();
-        if (highRiskDays == dayLines.size()) {
+        if (severeRiskDays == dayLines.size()) {
             return """
-                    7. Weather safety override: every trip day is HIGH RAIN RISK. Do not schedule weather-dependent outdoor, open-air adventure, water, beach, boat, paddling, trekking, paragliding, or similar safety-sensitive activities. If the user requested one, mark it NOT_APPLIED with reasonCode WEATHER_SAFETY and explain briefly in requestFulfillment.items[].userMessage.
+                    7. Weather safety override: every trip day is SEVERE WEATHER RISK or legacy HIGH RAIN RISK. Do not schedule unsafe weather-dependent outdoor, open-air adventure, water, beach, boat, paddling, trekking, paragliding, or similar safety-sensitive activities. If destination-signature scenic places would normally be expected but cannot be included safely, add a PARTIAL or NOT_APPLIED requestFulfillment item with reasonCode WEATHER_SAFETY and a brief Vietnamese userMessage.
                     """
                     .stripTrailing();
         }
-        if (highRiskDays > 0) {
+        if (severeRiskDays > 0) {
             return """
-                    7. Weather safety override: HIGH RAIN RISK is a hard safety constraint. Do not schedule weather-dependent outdoor, open-air adventure, water, beach, boat, paddling, trekking, paragliding, or similar safety-sensitive activities on HIGH RAIN RISK days; move them to a safer day only if one exists. If no safer day exists, mark the request NOT_APPLIED with reasonCode WEATHER_SAFETY.
+                    7. Weather safety override: SEVERE WEATHER RISK or legacy HIGH RAIN RISK is a hard safety constraint only for unsafe outdoor/water/adventure activities on those days. Move destination-signature outdoor/scenic places to safer days when possible. If no safer day exists, include only a safe short/covered version when realistic, or explain the omission/substitution in requestFulfillment with reasonCode WEATHER_SAFETY.
                     """
                     .stripTrailing();
         }
         return "";
+    }
+
+    private boolean isSevereWeatherForecastLine(String line) {
+        String normalized = line == null ? "" : line.toLowerCase(Locale.ROOT);
+        return normalized.contains("severe weather risk") || normalized.contains("high rain risk");
     }
 
     private String formatContractRetryReason(String reason) {
@@ -271,6 +276,7 @@ public class AiService {
                         Return exactly ONE JSON object with keys "itinerary" and "requestFulfillment". Never return a bare JSON array, and never use "days" or "schedule" instead of "itinerary".
                         Use named, real places and restaurants in or near %s.
                         Avoid ANY generic placeholder wording (e.g., "địa điểm nổi bật", "đặc sản địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "chợ địa phương", "địa điểm thuê xe"). Every place, restaurant, cafe, accommodation, or rental shop MUST be a specific real-world business with a concrete proper name.
+                        Preserve the destination's signature/must-try experiences using your own Vietnam travel knowledge, including specific real places not present in verified candidates. If severe weather, time, budget, safety, or route constraints make a normally expected signature experience unsuitable, explain the omission/substitution in requestFulfillment.
                         Anti-Bias Rule: Do not default to the same well-known corporate chains. Suggest diverse, logically located, and budget-appropriate places.
                         %s
                         %s
@@ -306,6 +312,7 @@ public class AiService {
                                 The previous proposal was rejected because: %s
                                 Fix that issue. Return a safer, more specific version of day %d only.
                                 Return exactly ONE JSON object with keys "day" and "requestFulfillment". Never return a bare JSON array.
+                                Preserve or restore relevant destination-signature/must-try experiences using your own Vietnam travel knowledge, including specific real places not present in verified candidates. If a normally expected signature experience is omitted or substituted for a real constraint, explain it in requestFulfillment.
                                 %s
                                 %s
                                 Create a separate TRANSPORT activity with route/mode/cost instead of putting transport cost in an ATTRACTION, FOOD, CAFE, or ACTIVITY note.
@@ -349,14 +356,28 @@ public class AiService {
                         4. If forecast is "none", plan normally without weather constraints.
                         %s
 
+                        Important weather interpretation update:
+                        - Treat RAIN FLEX or legacy LIGHT RAIN as a flexible-planning signal, not an indoor-only rule.
+                        - Keep destination-defining outdoor/scenic places when practical; use shorter time windows and indoor backup notes.
+                        - Treat SEVERE WEATHER RISK or legacy HIGH RAIN RISK as a hard safety constraint only for unsafe outdoor/water/adventure activities on the affected day.
+                        - If weather blocks or weakens a user request or a destination-signature experience, explain it in requestFulfillment.items[].userMessage with reasonCode WEATHER_SAFETY.
+
                         Style rules:
                         1. Treat Style as the user's primary planning bias, not a hard restriction.
                         2. Keep the day practical and balanced; include other activity types when they improve route, meals, rest, weather safety, or the user's explicit request.
                         3. If Must visit, Avoid, Notes, weather, budget, or group needs conflict with Style, prioritize those more specific constraints.
+
+                        Destination essence rules:
+                        1. Before choosing places, infer the destination's signature experiences and must-try categories from your own Vietnam travel knowledge, even when they are NOT listed in the verified candidates. Examples: iconic scenic areas, old towns, caves, boat routes, viewpoints, beaches/islands, cultural sites, night markets, food streets, local dishes, craft villages, or seasonal highlights.
+                        2. The verified candidates are helpful evidence, not the full universe. If a signature experience is missing from the candidate list, you may still include a specific real place/activity with a concrete name and realistic location.
+                        3. For this regenerated day, preserve or restore at least one relevant destination-signature experience when it fits the full trip, route, weather, budget, and pacing. Do not replace the destination's core appeal with only generic indoor cafes, malls, meals, or rest stops unless safety or constraints truly require it.
+                        4. If a normally expected signature experience is omitted, weakened, or moved away because of severe weather, time, budget, duplication with other days, group safety, or route constraints, add a PARTIAL or NOT_APPLIED requestFulfillment item explaining the reason in Vietnamese. Do this even when the user did not explicitly request that place.
+
                         Verified place rules:
                         1. Treat verified place candidates as trusted suggestions, not an allowed-only list.
                         2. Candidates are ordered by backend relevance. Consider higher-ranked candidates first, but do not blindly pick the top items when route, weather, pacing, budget, or the user's request makes another choice better.
                         3. Prefer verified candidates when they fit this regenerated day, the user's request, route, weather, and budget.
+                        3a. Candidates marked priority=destination-signature are core destination experiences. Preserve them when safe and practical; if weather makes them unsafe and there is no safer slot, explain the omission or substitution in requestFulfillment with reasonCode WEATHER_SAFETY.
                         4. CRITICAL: The candidate list is NOT exhaustive. It may lack specific accommodations, restaurants, cafes, rental shops, or niche local spots. For ANY category lacking suitable candidates, you MUST actively use your extensive internal knowledge to suggest specific, real, and named businesses/places that realistically match the user's budget, style, and daily route.
                         5. When using a verified candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
                         6. When using a non-candidate place or activity, it MUST be a specific, existing real-world place with a concrete proper name and address. Absolutely DO NOT use ANY generic or unnamed placeholders for ANY activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "chợ địa phương", "quán cà phê").
@@ -396,7 +417,7 @@ public class AiService {
                         19. If a requested item is fully reflected in the regenerated day, mark it FULFILLED with reasonCode APPLIED.
                         20. If a requested item is omitted, substituted, weakened, unsafe, too expensive, duplicated, or impossible under constraints, mark it PARTIAL or NOT_APPLIED and write a short Vietnamese userMessage explaining why.
                         21. Use reasonCode WEATHER_SAFETY when rain/storm/weather risk is the main reason. Other allowed reasonCode values: APPLIED, BUDGET, TIME_CONFLICT, DUPLICATE, CONSTRAINT, UNCLEAR, OTHER.
-                        22. If there is no meaningful request, set overallStatus to NO_REQUEST and items to [].
+                        22. If there is no meaningful user-specific request and no destination-signature omission/substitution needs explanation, set overallStatus to NO_REQUEST and items to []. If a signature experience is omitted or substituted for a real constraint, return PARTIAL or NOT_FULFILLED with a requestFulfillment item even without a user-specific request.
                         23. If you are unsure whether the request was satisfied, mark the item UNCLEAR and explain what the user should check.
 
                         JSON schema:
@@ -570,10 +591,23 @@ public class AiService {
                         6. If forecast is "none" or unavailable, plan normally without weather constraints.
                         %s
 
+                        Important weather interpretation update:
+                        - Treat RAIN FLEX or legacy LIGHT RAIN as a flexible-planning signal, not an indoor-only rule.
+                        - Keep destination-defining outdoor/scenic places when practical; use shorter time windows and indoor backup notes.
+                        - Treat SEVERE WEATHER RISK or legacy HIGH RAIN RISK as a hard safety constraint only for unsafe outdoor/water/adventure activities on the affected day.
+                        - If weather blocks all or most destination-signature scenic experiences, explain the omission/substitution in requestFulfillment.items[].userMessage with reasonCode WEATHER_SAFETY so the user knows the plan changed for safety, not because the system missed them.
+
                         Style rules:
                         1. Treat Style as the user's primary planning bias, not a hard restriction.
                         2. Keep the itinerary practical and balanced; include other activity types when they improve route, meals, rest, weather safety, or the user's explicit request.
                         3. If Must visit, Avoid, Notes, weather, budget, or group needs conflict with Style, prioritize those more specific constraints.
+
+                        Destination essence rules:
+                        1. Before building the itinerary, infer the destination's signature experiences and must-try categories from your own Vietnam travel knowledge, even when they are NOT listed in the verified candidates. Examples: iconic scenic areas, old towns, caves, boat routes, viewpoints, beaches/islands, cultural sites, night markets, food streets, local dishes, craft villages, or seasonal highlights.
+                        2. The verified candidates are helpful evidence, not the full universe. If a signature experience is missing from the candidate list, you may still include a specific real place/activity with a concrete name and realistic location.
+                        3. Across the full trip, include a representative set of destination-signature experiences when they fit duration, route, weather, budget, and group needs. For short trips, prioritize the most iconic 1-3 experiences instead of padding with generic indoor stops.
+                        4. Do not remove all famous outdoor/scenic/must-try experiences just because there is RAIN FLEX or normal rain chance. Prefer safer timing, shorter windows, backup notes, or moving them to a better day.
+                        5. If normally expected signature experiences are omitted, weakened, or substituted because of severe weather, time, budget, group safety, duplication, or route constraints, add PARTIAL or NOT_APPLIED requestFulfillment items explaining the reason in Vietnamese. Do this even when the user did not explicitly request those places, so the user knows the plan changed for a real reason.
 
                         Cost rules:
                         1. estimatedCost MUST be the estimated total VND for the whole group of %d travelers.
@@ -597,6 +631,7 @@ public class AiService {
                         1. Treat verified place candidates as trusted suggestions, not an allowed-only list.
                         2. Candidates are ordered by backend relevance. Consider higher-ranked candidates first, but do not blindly pick the top items when route, weather, pacing, budget, or the user's request makes another choice better.
                         3. Prefer verified candidates when they fit the user's constraints, route, weather, and budget.
+                        3a. Candidates marked priority=destination-signature are core destination experiences. Preserve them when safe and practical; if weather makes them unsafe and there is no safer slot, explain the omission or substitution in requestFulfillment with reasonCode WEATHER_SAFETY.
                         4. CRITICAL: The candidate list is NOT exhaustive. It may lack specific accommodations, restaurants, cafes, rental shops, or niche local spots. For ANY category lacking suitable candidates, you MUST actively use your extensive internal knowledge to suggest specific, real, and named businesses/places that realistically match the user's budget, style, and daily route.
                         5. When using a verified candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
                         6. When using a non-candidate place or activity, it MUST be a specific, existing real-world place with a concrete proper name and address. Absolutely DO NOT use ANY generic or unnamed placeholders for ANY activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "chợ địa phương", "quán cà phê").
@@ -627,7 +662,7 @@ public class AiService {
                         3. If a requested item is fully reflected in the itinerary, mark it FULFILLED with reasonCode APPLIED.
                         4. If a requested item is omitted, substituted, weakened, unsafe, too expensive, duplicated, or impossible under constraints, mark it PARTIAL or NOT_APPLIED and write a short Vietnamese userMessage explaining why.
                         5. Use reasonCode WEATHER_SAFETY when rain/storm/weather risk is the main reason. Other allowed reasonCode values: APPLIED, BUDGET, TIME_CONFLICT, DUPLICATE, CONSTRAINT, UNCLEAR, OTHER.
-                        6. If there is no meaningful user-specific request, set overallStatus to NO_REQUEST and items to [].
+                        6. If there is no meaningful user-specific request and no destination-signature omission/substitution needs explanation, set overallStatus to NO_REQUEST and items to []. If a signature experience is omitted or substituted for a real constraint, return PARTIAL or NOT_FULFILLED with a requestFulfillment item even without a user-specific request.
                         7. If you are unsure whether a request was satisfied, mark the item UNCLEAR and explain what the user should check.
                         8. Never mention the weather in itinerary day titles, summaries, activities, or notes. If weather blocks a user request, explain it only in requestFulfillment.items[].userMessage.
 

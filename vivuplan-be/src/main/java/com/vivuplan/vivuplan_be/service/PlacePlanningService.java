@@ -30,7 +30,8 @@ public class PlacePlanningService {
     private static final double MAX_NEARBY_CONTEXT_RATIO = 0.20;
     private static final int REQUEST_CONTEXT_BOOST = 4;
     private static final int REQUEST_MATCH_SCORE = 60;
-    private static final int WEATHER_FRIENDLY_SCORE = 18;
+    private static final int WEATHER_FRIENDLY_SCORE = 12;
+    private static final int WEATHER_FLEX_SCORE = 4;
     private static final Map<String, List<String>> NEARBY_DESTINATIONS = Map.of(
             "da nang", List.of("Hội An", "Mỹ Sơn"),
             "hoi an", List.of("Đà Nẵng", "Mỹ Sơn"),
@@ -231,27 +232,42 @@ public class PlacePlanningService {
     }
 
     private int scoreByWeather(Place place, String weatherForecast) {
-        if (weatherForecast == null || !normalizeText(weatherForecast).contains("high rain risk")) {
+        String normalizedForecast = normalizeText(weatherForecast);
+        boolean severeWeather = normalizedForecast.contains("severe weather risk")
+                || normalizedForecast.contains("high rain risk");
+        boolean rainFlex = normalizedForecast.contains("rain flex")
+                || normalizedForecast.contains("light rain");
+        if (!severeWeather && !rainFlex) {
             return 0;
         }
+        int weatherFriendlyScore = severeWeather ? WEATHER_FRIENDLY_SCORE : WEATHER_FLEX_SCORE;
         if (place.getIndoorOutdoor() == Place.IndoorOutdoor.INDOOR
                 || place.getWeatherSensitivity() == Place.WeatherSensitivity.LOW
                 || place.getType() == Place.PlaceType.FOOD
                 || place.getType() == Place.PlaceType.CAFE) {
-            return WEATHER_FRIENDLY_SCORE;
+            return weatherFriendlyScore;
         }
-        if (place.getWeatherSensitivity() == Place.WeatherSensitivity.HIGH
-                || place.getIndoorOutdoor() == Place.IndoorOutdoor.OUTDOOR) {
-            return -WEATHER_FRIENDLY_SCORE;
+        if (isSafetySensitiveOutdoorPlace(place)) {
+            return severeWeather ? -WEATHER_FRIENDLY_SCORE : -WEATHER_FLEX_SCORE;
         }
         String text = normalizedPlaceText(place);
-        if (containsAny(text, "bao tang", "cho", "trung tam", "nha co", "dinh", "chua", "nha tho")) {
-            return WEATHER_FRIENDLY_SCORE;
+        if (containsAny(text, "bao tang", "museum", "indoor", "cho", "market", "trung tam", "nha co", "dinh",
+                "chua", "nha tho")) {
+            return weatherFriendlyScore;
         }
-        if (containsAny(text, "bien", "thuyen", "dao", "sup", "kayak", "trekking", "deo", "thac", "nui")) {
-            return -WEATHER_FRIENDLY_SCORE;
+        if (severeWeather && place.getIndoorOutdoor() == Place.IndoorOutdoor.OUTDOOR) {
+            return -WEATHER_FLEX_SCORE;
         }
         return 0;
+    }
+
+    private boolean isSafetySensitiveOutdoorPlace(Place place) {
+        String text = normalizedPlaceText(place) + " " + normalizedTags(place);
+        return place.getWeatherSensitivity() == Place.WeatherSensitivity.HIGH
+                || containsAny(text,
+                        "sup", "kayak", "trekking", "leo nui", "zipline", "du luon",
+                        "tam bien", "bien", "thuyen", "boat", "dao", "island",
+                        "thac", "waterfall", "deo", "mountain pass");
     }
 
     private int resolvePromptPlaceLimit(TripDto.GenerateRequest req) {
@@ -292,6 +308,9 @@ public class PlacePlanningService {
         parts.add("cost=" + cost);
         parts.add("costBasis=" + (place.getCostBasis() != null ? place.getCostBasis() : "unknown"));
         parts.add("rating=" + (place.getRating() != null ? String.format(Locale.ROOT, "%.1f", place.getRating()) : "unknown"));
+        if (isDestinationSignatureCandidate(place)) {
+            parts.add("priority=destination-signature");
+        }
         parts.add("coords=" + coords);
         parts.add("address=" + nullToBlank(place.getAddress()));
         parts.add("tags=" + compactList(place.getTags(), 6));
@@ -300,6 +319,21 @@ public class PlacePlanningService {
             parts.add("costNote=" + truncate(place.getCostNote(), 140));
         }
         return String.join(" | ", parts);
+    }
+
+    private boolean isDestinationSignatureCandidate(Place place) {
+        if (place.getType() != Place.PlaceType.ATTRACTION && place.getType() != Place.PlaceType.ACTIVITY) {
+            return false;
+        }
+        double rating = place.getRating() != null ? place.getRating() : 0.0;
+        if (rating < 4.4) {
+            return false;
+        }
+        String text = normalizedPlaceText(place) + " " + normalizedTags(place);
+        return containsAny(text,
+                "heritage", "nature", "viewpoint", "boat", "cave", "hang", "nui",
+                "mountain", "lake", "dao", "island", "waterfall", "thac", "beach",
+                "unesco", "pho co", "old town", "spiritual");
     }
 
     private Optional<Place> findBestMatchingPlace(TripDto.ActivityResponse activity, List<Place> places) {

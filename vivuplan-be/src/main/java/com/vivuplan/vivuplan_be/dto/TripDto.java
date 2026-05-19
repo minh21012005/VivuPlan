@@ -149,11 +149,7 @@ public class TripDto {
             r.setLocation(a.getLocation());
             r.setDuration(a.getDuration());
             r.setEstimatedCost(a.getEstimatedCost() != null ? a.getEstimatedCost() : 0);
-            r.setNote(a.getNote());
-            if (a.getNote() != null && a.getNote().contains("Chi phí cần kiểm tra")) {
-                r.setCostEstimateStatus("NEEDS_REVIEW");
-                r.setCostEstimateMessage("Chi phí này cần được kiểm tra lại vì AI chưa đưa ra mức ước tính đáng tin cậy.");
-            }
+            r.setNote(stripLegacyCostReviewNote(a.getNote()));
             r.setRating(a.getRating() != null ? a.getRating() : 0);
             r.setLatitude(a.getLatitude());
             r.setLongitude(a.getLongitude());
@@ -161,6 +157,18 @@ public class TripDto {
             r.setGooglePlaceId(a.getGooglePlaceId());
             r.setSortOrder(a.getSortOrder());
             return r;
+        }
+
+        private static String stripLegacyCostReviewNote(String note) {
+            if (note == null || note.isBlank()) {
+                return note;
+            }
+            String cleaned = note.replace(
+                    "Chi phí cần kiểm tra: hoạt động này có thể phát sinh phí, nhưng AI chưa đưa ra mức ước tính đáng tin cậy.",
+                    "")
+                    .replaceAll("\\s{2,}", " ")
+                    .trim();
+            return cleaned.isBlank() ? null : cleaned;
         }
     }
 

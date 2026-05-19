@@ -47,6 +47,30 @@ class WeatherServiceTest {
         assertThat(forecast).isEmpty();
     }
 
+    @Test
+    void outdoorRiskTreatsModerateRainChanceAsFlexibleNotSevere() {
+        WeatherService.DailyWeather weather = WeatherService.DailyWeather.builder()
+                .code(63)
+                .precipitationProbability(80)
+                .precipitationMm(4.0)
+                .windspeedKmh(12)
+                .build();
+
+        assertThat(weather.outdoorRiskLevel()).isEqualTo(1);
+    }
+
+    @Test
+    void outdoorRiskTreatsThunderstormAsSevere() {
+        WeatherService.DailyWeather weather = WeatherService.DailyWeather.builder()
+                .code(95)
+                .precipitationProbability(75)
+                .precipitationMm(8.0)
+                .windspeedKmh(20)
+                .build();
+
+        assertThat(weather.outdoorRiskLevel()).isEqualTo(2);
+    }
+
     @SuppressWarnings("unchecked")
     private List<WeatherService.DailyWeather> invokeParseDailyBlock(
             WeatherService service,
