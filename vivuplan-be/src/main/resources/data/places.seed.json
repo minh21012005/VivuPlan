@@ -130,10 +130,10 @@
     "rating": 4.2,
     "latitude": 20.96,
     "longitude": 107.05,
-    "description": "Khu du lịch biển, thuận tiện đi dạo, ăn uống và ngắm vịnh.",
-    "openingHours": "Cả ngày",
+    "description": "Bãi tắm/khu du lịch biển ở Bãi Cháy, thuận tiện đi dạo, tắm biển, ăn uống và kết hợp Sun World.",
+    "openingHours": "Bãi tắm công cộng, không có khung giờ bán vé cố định; nên đi ban ngày/chiều và tránh thời tiết xấu",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Vivu Hạ Long",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -143,7 +143,10 @@
       "couple"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://vivuhalong.com/bai-bien-ha-long/",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Vào bãi biển miễn phí theo nguồn du lịch địa phương. Chi phí ăn uống, gửi xe, ghế/bạt hoặc dịch vụ thể thao biển nếu có được tính riêng."
   },
   {
     "name": "Chợ Hạ Long 1",
@@ -156,19 +159,22 @@
     "rating": 4.1,
     "latitude": 20.9506,
     "longitude": 107.0816,
-    "description": "Chợ trung tâm phù hợp ăn hải sản, mua đặc sản và trải nghiệm địa phương.",
-    "openingHours": "Sáng - chiều",
+    "description": "Chợ trung tâm phù hợp ăn hải sản, mua đặc sản như chả mực và trải nghiệm nhịp sống địa phương.",
+    "openingHours": "Sáng - chiều; khu hải sản tươi thường nhộn nhịp từ sáng sớm",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Cổng TTĐT Quảng Ninh",
     "indoorOutdoor": "MIXED",
-    "weatherSensitivity": "MEDIUM",
+    "weatherSensitivity": "LOW",
     "tags": [
       "attraction",
       "mixed",
       "food"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://www.quangninh.gov.vn/chuyen-de/tangtruong/Trang/ChiTietTinTuc.aspx?nid=94743",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Chợ không thu vé vào cửa; estimatedCost là khoản ăn uống/mua đặc sản tham khảo cho một người, phụ thuộc món và lượng mua."
   },
   {
     "name": "Sun World Fansipan Legend",
@@ -496,7 +502,10 @@
       "spiritual"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://danangfantasticity.com/en/cac-diem-du-lich-da-nang-2025/danh-thang-ngu-hanh-son",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Giá vé tham quan Thủy Sơn 40k/người lớn; thang máy 15k/lượt là dịch vụ tùy chọn. Estimate tính vé tham quan và một phần dịch vụ phụ."
   },
   {
     "name": "Bảo tàng Điêu khắc Chăm Đà Nẵng",
@@ -505,24 +514,28 @@
     "address": "02 đường 2/9, Hải Châu, Đà Nẵng",
     "priceLevel": "LOW",
     "estimatedCostMin": 60000,
-    "estimatedCostMax": 100000,
+    "estimatedCostMax": 60000,
     "rating": 4.4,
     "latitude": 16.0606,
     "longitude": 108.223,
     "description": "Bảo tàng trưng bày hiện vật điêu khắc Chăm, phù hợp ngày mưa.",
     "openingHours": "07:00 - 17:00",
     "verified": true,
-    "source": "Danang Fantasticity",
-    "indoorOutdoor": "MIXED",
-    "weatherSensitivity": "MEDIUM",
+    "source": "Vietnam Airlines Travel Guide",
+    "indoorOutdoor": "INDOOR",
+    "weatherSensitivity": "LOW",
     "tags": [
       "attraction",
-      "mixed",
+      "indoor",
       "museum",
+      "heritage",
       "family"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://www.vietnamairlines.com/vn/vi/useful-information/travel-guide/bao-tang-dieu-khac-cham-da-nang",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Giá vé tham quan phổ biến: người lớn 60k, học sinh/sinh viên 10k nếu đủ điều kiện. Estimate dùng mức 10k-60k/người."
   },
   {
     "name": "Chùa Linh Ứng Sơn Trà",
@@ -536,9 +549,9 @@
     "latitude": 16.1004,
     "longitude": 108.2775,
     "description": "Điểm tâm linh và ngắm biển trên bán đảo Sơn Trà.",
-    "openingHours": "Ban ngày",
+    "openingHours": "Cả tuần; nên đi ban ngày/sáng sớm để an toàn khi di chuyển bán đảo Sơn Trà",
     "verified": true,
-    "source": "VNAT",
+    "source": "Danang Fantasticity",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -547,7 +560,10 @@
       "spiritual"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://danangfantasticity.com/en/tin-tuc/chua-linh-ung",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn du lịch Đà Nẵng ghi nhận giá tham quan miễn phí. Chi phí gửi xe, công đức hoặc di chuyển lên bán đảo nếu có tính riêng."
   },
   {
     "name": "Sun World Bà Nà Hills",
@@ -555,13 +571,13 @@
     "type": "ACTIVITY",
     "address": "Thôn An Sơn, Hòa Ninh, Hòa Vang, Đà Nẵng",
     "priceLevel": "HIGH",
-    "estimatedCostMin": 900000,
+    "estimatedCostMin": 950000,
     "estimatedCostMax": 1300000,
     "rating": 4.4,
     "latitude": 15.995,
     "longitude": 107.996,
     "description": "Khu du lịch núi, Cầu Vàng, làng Pháp và công viên giải trí; cần dành nửa ngày đến một ngày.",
-    "openingHours": "Theo lịch vận hành Sun World",
+    "openingHours": "Theo lịch vận hành Sun World; nên kiểm tra trước ngày đi vì cáp treo/khu vui chơi có thể đổi lịch do vận hành hoặc thời tiết",
     "verified": true,
     "source": "Sun World",
     "indoorOutdoor": "MIXED",
@@ -574,7 +590,10 @@
       "family"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://banahills.sunworld.vn/tin-tuc/kham-pha-ham-ruou-debay-ba-na-di-san-kien-truc-phap-giua-long-nui-chua.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Vé cáp treo/khu du lịch cho khách ngoại tỉnh được Sun World công bố khoảng 950k người lớn, 750k trẻ em/người cao tuổi. Combo buffet, hầm rượu, dịch vụ riêng không nằm trong estimate cơ bản."
   },
   {
     "name": "Chợ Cồn",
@@ -588,17 +607,20 @@
     "latitude": 16.0678,
     "longitude": 108.215,
     "description": "Chợ trung tâm nổi tiếng với món ăn vặt, đặc sản và trải nghiệm địa phương.",
-    "openingHours": "Sáng - tối",
+    "openingHours": "Hàng ngày",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Danang Fantasticity",
     "indoorOutdoor": "MIXED",
-    "weatherSensitivity": "MEDIUM",
+    "weatherSensitivity": "LOW",
     "tags": [
       "food",
       "mixed"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://danangfantasticity.com/cho-con-da-nang",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Chợ không thu vé vào cửa. Estimate là chi phí ăn uống/mua đặc sản tham khảo cho một người, phụ thuộc món và lượng mua."
   },
   {
     "name": "Mỳ Quảng Bà Mua",
@@ -614,7 +636,7 @@
     "description": "Quán mỳ Quảng phổ biến, phù hợp bữa trưa/bữa tối nhanh trong trung tâm.",
     "openingHours": "Sáng - tối",
     "verified": true,
-    "source": "Local listing",
+    "source": "Mỳ Quảng Bà Mua",
     "indoorOutdoor": "INDOOR",
     "weatherSensitivity": "LOW",
     "tags": [
@@ -622,7 +644,10 @@
       "indoor"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://www.myquangbamuadng.com/",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn chính thức xác nhận thương hiệu/địa điểm. Estimate là chi phí bữa ăn tham khảo; giá món có thể thay đổi theo chi nhánh và thời điểm."
   },
   {
     "name": "Kỳ Co",
@@ -1232,42 +1257,45 @@
     "type": "ATTRACTION",
     "address": "Trần Quốc Nghiễn, Hồng Gai, Hạ Long, Quảng Ninh",
     "priceLevel": "LOW",
-    "estimatedCostMin": 40000,
-    "estimatedCostMax": 80000,
+    "estimatedCostMin": 10000,
+    "estimatedCostMax": 40000,
     "rating": 4.4,
     "latitude": 20.9516,
     "longitude": 107.0948,
-    "description": "Bảo tàng kiến trúc kính đen nổi bật, phù hợp ngày mưa hoặc lịch trình trong nhà.",
-    "openingHours": "08:00 - 17:00",
+    "description": "Bảo tàng - Thư viện Quảng Ninh lưu giữ lịch sử, văn hóa và hiện vật của tỉnh, rất phù hợp ngày mưa.",
+    "openingHours": "08:00-12:00 và 13:00-17:00",
     "verified": true,
-    "source": "Quang Ninh Tourism",
-    "indoorOutdoor": "MIXED",
-    "weatherSensitivity": "MEDIUM",
+    "source": "Bảo tàng - Thư viện Quảng Ninh",
+    "indoorOutdoor": "INDOOR",
+    "weatherSensitivity": "LOW",
     "tags": [
       "attraction",
-      "mixed",
+      "indoor",
       "museum",
-      "spiritual",
+      "heritage",
       "family"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://baotangthuvienquangninh.vn/vi",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Giá vé chính thức theo website bảo tàng: trẻ em/học sinh 10k, sinh viên/học viên 20k, người lớn 40k/lần/người."
   },
   {
     "name": "Đảo Tuần Châu",
     "destination": "Hạ Long",
-    "type": "ACTIVITY",
+    "type": "ATTRACTION",
     "address": "Tuần Châu, Hạ Long, Quảng Ninh",
-    "priceLevel": "MID",
+    "priceLevel": "FREE",
     "estimatedCostMin": 0,
-    "estimatedCostMax": 300000,
+    "estimatedCostMax": 0,
     "rating": 4.2,
     "latitude": 20.9218,
     "longitude": 106.9867,
-    "description": "Khu du lịch, bến tàu và hoạt động giải trí ven biển, phù hợp kết hợp trước hoặc sau tour vịnh.",
-    "openingHours": "Cả ngày",
+    "description": "Đảo du lịch có bãi tắm Tuần Châu, cảng du thuyền và nhiều dịch vụ giải trí ven biển.",
+    "openingHours": "Bãi tắm mở tự do; dịch vụ vui chơi/biểu diễn trên đảo có lịch riêng theo đơn vị vận hành",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Cổng TTĐT Quảng Ninh",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -1277,7 +1305,10 @@
       "island"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "FREE",
+    "sourceUrl": "https://quangninh.gov.vn/chuyen-de/diemden/Trang/ChiTietTinTuc.aspx?nid=85201",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Bãi tắm Tuần Châu mở tự do miễn phí. Các dịch vụ vui chơi, biểu diễn, phà, du thuyền, resort hoặc bay ngắm vịnh là chi phí riêng và không nằm trong estimate của POI này."
   },
   {
     "name": "Làng chài Cửa Vạn",
@@ -1547,7 +1578,7 @@
     "latitude": 16.0544,
     "longitude": 108.2474,
     "description": "Bãi biển trung tâm, phù hợp tắm biển/dạo biển khi thời tiết tốt và biển an toàn.",
-    "openingHours": "Cả ngày",
+    "openingHours": "Bãi biển công cộng; nên tắm trong khung giờ có cứu hộ và tránh biển động/mưa dông",
     "verified": true,
     "source": "Danang Fantasticity",
     "indoorOutdoor": "MIXED",
@@ -1555,10 +1586,14 @@
     "tags": [
       "attraction",
       "mixed",
-      "beach"
+      "beach",
+      "outdoor"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://danangfantasticity.com/ja/bien-vi/bien-my-khe",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Không dùng estimate như vé vào bãi. Khoảng 0-200k là chi phí tùy chọn như nước uống, ghế/bạt, gửi xe hoặc dịch vụ bãi biển nếu có."
   },
   {
     "name": "Cầu Rồng",
@@ -1579,34 +1614,43 @@
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
-      "mixed"
+      "mixed",
+      "viewpoint"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://danangfantasticity.com/en/tin-tuc/cau-rong-tiep-tuc-duoc-vinh-danh",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Tham quan/ngắm cầu miễn phí. Lịch phun lửa, phun nước có thể thay đổi theo sự kiện/lễ/tết nên cần kiểm tra thông báo du lịch Đà Nẵng gần ngày đi."
   },
   {
     "name": "Chợ đêm Sơn Trà",
     "destination": "Đà Nẵng",
     "type": "FOOD",
-    "address": "Mai Hắc Đế, Sơn Trà, Đà Nẵng",
+    "address": "Khu vực gần Cầu Rồng và Cầu Tình Yêu, Sơn Trà, Đà Nẵng",
     "priceLevel": "MID",
     "estimatedCostMin": 80000,
     "estimatedCostMax": 300000,
     "rating": 4.1,
     "latitude": 16.0644,
     "longitude": 108.2327,
-    "description": "Khu ăn vặt, hải sản và mua sắm buổi tối gần Cầu Rồng.",
-    "openingHours": "Chiều - tối",
+    "description": "Khu chợ đêm ẩm thực, mua sắm và giải trí gần Cầu Rồng, phù hợp kết hợp ngắm sông Hàn buổi tối.",
+    "openingHours": "Buổi tối; lịch hoạt động và quy mô gian hàng có thể thay đổi theo giai đoạn vận hành",
     "verified": true,
-    "source": "Local tourism",
+    "source": "VTV8",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "food",
-      "mixed"
+      "mixed",
+      "nightlife",
+      "family"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://vtv8.vtv.vn/cho-dem-son-tra-hut-hang-nghin-du-khach-moi-toi-thanh-diem-hen-soi-dong-ben-song-han-107260506212618915.htm",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn VTV8 ngày 07/05/2026 ghi nhận chợ đêm Sơn Trà đang hoạt động sôi động và đón khoảng 4.000-6.000 lượt khách mỗi tối. Estimate là chi phí ăn uống/mua sắm tham khảo; không phải vé vào cổng."
   },
   {
     "name": "Asia Park Đà Nẵng",
@@ -1620,7 +1664,7 @@
     "latitude": 16.0382,
     "longitude": 108.2266,
     "description": "Công viên giải trí và Sun Wheel, phù hợp buổi chiều/tối cho nhóm bạn hoặc gia đình.",
-    "openingHours": "Theo lịch vận hành",
+    "openingHours": "15:00-22:00 theo website Asia Park; lịch có thể thay đổi theo mùa/sự kiện",
     "verified": true,
     "source": "Sun World",
     "indoorOutdoor": "MIXED",
@@ -1632,7 +1676,10 @@
       "family"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://asiapark.sunworld.vn/page/17",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn chính thức xác nhận giờ mở cửa và địa điểm. Giá vé/vé trò chơi/combo có thể thay đổi theo chương trình; estimate là chi phí vui chơi tham khảo cho một người."
   },
   {
     "name": "Hòn Khô",
@@ -3136,24 +3183,28 @@
     "type": "ATTRACTION",
     "address": "Minh An, Hội An, Quảng Nam",
     "priceLevel": "LOW",
-    "estimatedCostMin": 120000,
-    "estimatedCostMax": 150000,
+    "estimatedCostMin": 80000,
+    "estimatedCostMax": 120000,
     "rating": 4.7,
     "latitude": 15.8776,
     "longitude": 108.3268,
     "description": "Di sản phố cổ, phù hợp đi bộ chiều tối và cần chú ý đông khách cuối tuần.",
     "openingHours": "Cả ngày; điểm tham quan theo giờ",
     "verified": true,
-    "source": "UNESCO",
+    "source": "Phố cổ Hội An - Di sản văn hóa thế giới",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
       "mixed",
-      "heritage"
+      "heritage",
+      "nightlife"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://www.hoianworldheritage.org.vn/vi/news/Du-lich-Hoi-An/cap-nhat-ve-tham-quan-khu-pho-co-hoi-an-hanh-trinh-cham-ve-nguyen-ban-3033.hwh",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Vé tham quan phố cổ hiện có mức 80k và 120k tùy gói. Vé dùng để tham quan cảnh quan chung và một số điểm di tích/chương trình văn hóa; ăn uống, thả hoa đăng, thuyền sông Hoài tính riêng."
   },
   {
     "name": "Rừng dừa Bảy Mẫu",
@@ -3161,13 +3212,13 @@
     "type": "ACTIVITY",
     "address": "Cẩm Thanh, Hội An, Quảng Nam",
     "priceLevel": "MID",
-    "estimatedCostMin": 150000,
-    "estimatedCostMax": 300000,
+    "estimatedCostMin": 30000,
+    "estimatedCostMax": 150000,
     "rating": 4.3,
     "latitude": 15.875,
     "longitude": 108.363,
     "description": "Trải nghiệm thuyền thúng trong rừng dừa nước, nên tránh mưa lớn/gió mạnh.",
-    "openingHours": "Ban ngày",
+    "openingHours": "Ban ngày; nên tránh mưa lớn, gió mạnh hoặc thời điểm nắng gắt",
     "verified": true,
     "source": "Quang Nam Tourism",
     "indoorOutdoor": "OUTDOOR",
@@ -3178,7 +3229,10 @@
       "boat"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://quangnamtourism.com.vn/rung-dua-bay-mau/",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Vé vào cổng khoảng 30k/người lớn. Vé thuyền thúng/combo có thể tính theo thúng hoặc theo 2 khách; estimate quy đổi khoảng 30k-150k/người tùy chọn dịch vụ."
   },
   {
     "name": "Làng gốm Thanh Hà",
@@ -3192,18 +3246,22 @@
     "latitude": 15.8852,
     "longitude": 108.3129,
     "description": "Làng nghề gốm truyền thống, phù hợp lịch trình nhẹ và gia đình.",
-    "openingHours": "Ban ngày",
+    "openingHours": "Ban ngày; nên kiểm tra giờ đón khách của khu làng nghề trước khi đi",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Phố cổ Hội An - Di sản văn hóa thế giới",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
       "mixed",
+      "heritage",
       "family"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://www.hoianworldheritage.org.vn/vi/news/Du-lich-Hoi-An/ve-lang-thanh-ha-ngam-nhung-nu-cuoi-don-hau-2685.hwh",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Vé làng nghề thường bao gồm tham quan một số điểm làng gốm/xem nghệ nhân làm gốm và trải nghiệm cơ bản. Estimate không bao gồm mua sản phẩm gốm, workshop riêng hoặc di chuyển."
   },
   {
     "name": "Thánh địa Mỹ Sơn",
