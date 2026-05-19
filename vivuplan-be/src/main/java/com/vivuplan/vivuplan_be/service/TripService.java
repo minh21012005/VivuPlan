@@ -167,7 +167,6 @@ public class TripService {
         trip.setItineraryDays(days);
 
         TripDto.BudgetBreakdown budget = calculateBudget(trip, aiSchedule);
-        TripDto.TripQualityInsights qualityInsights = buildQualityInsights(trip, aiSchedule, budget);
         String requestText = buildGenerationRequestText(req);
         List<String> persistentWarnings = buildRequestFulfillmentWarnings(
                 requestFulfillment,
@@ -182,7 +181,6 @@ public class TripService {
 
         TripDto.TripResponse response = toTripResponse(trip);
         response.setBudget(budget);
-        response.setQualityInsights(qualityInsights);
         response.setRequestFulfillment(requestFulfillment);
         response.setWarnings(warnings);
         return response;
@@ -746,10 +744,7 @@ public class TripService {
     private List<String> buildGenerationWarnings(
             List<TripDto.DayResponse> schedule,
             List<String> persistentWarnings) {
-        List<String> warnings = new ArrayList<>();
-        warnings.addAll(persistentWarnings);
-        warnings.addAll(buildCostReviewWarnings(schedule, "lịch trình vừa tạo"));
-        return warnings;
+        return new ArrayList<>(persistentWarnings);
     }
 
     private List<String> buildRegenerationWarnings(
@@ -759,7 +754,6 @@ public class TripService {
             List<String> persistentWarnings) {
         List<String> warnings = new ArrayList<>();
         warnings.addAll(persistentWarnings);
-        warnings.addAll(buildCostReviewWarnings(List.of(proposedDay), "preview này"));
         long oldBudget = sumDayCost(oldDay);
         long newBudget = sumDayCost(proposedDay);
         if (shouldWarnSignificantCostIncrease(oldBudget, newBudget)) {
@@ -847,20 +841,7 @@ public class TripService {
         return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
-    private List<String> buildCostReviewWarnings(List<TripDto.DayResponse> schedule, String contextLabel) {
-        if (schedule == null || schedule.isEmpty()) {
-            return List.of();
-        }
-        boolean hasCostReview = schedule.stream()
-                .filter(day -> day.getActivities() != null)
-                .flatMap(day -> day.getActivities().stream())
-                .anyMatch(activity -> COST_REVIEW_STATUS.equals(activity.getCostEstimateStatus()));
-        if (!hasCostReview) {
-            return List.of();
-        }
-        return List.of("Một số chi phí bắt buộc trong " + contextLabel
-                + " chưa có ước tính đáng tin cậy. Các mục này sẽ hiển thị là \"Cần kiểm tra\" để bạn rà soát trước khi chốt lịch.");
-    }
+
 
     private String serializeWarnings(List<String> warnings) {
         List<String> normalized = mergeWarnings(warnings);
@@ -1018,11 +999,8 @@ public class TripService {
         TripDto.TripResponse response = TripDto.TripResponse.from(trip);
         response.setSchedule(mapDays(trip.getItineraryDays()));
         response.setBudget(calculateBudget(trip, response.getSchedule()));
-        response.setQualityInsights(buildQualityInsights(trip, response.getSchedule(), response.getBudget()));
         List<String> persistentWarnings = filterPersistentWarnings(response.getWarnings());
-        response.setWarnings(mergeWarnings(
-                persistentWarnings,
-                buildCostReviewWarnings(response.getSchedule(), "lịch trình này")));
+        response.setWarnings(mergeWarnings(persistentWarnings));
         return response;
     }
 
@@ -1260,120 +1238,7 @@ public class TripService {
         return b;
     }
 
-    private TripDto.TripQualityInsights buildQualityInsights(
-            Trip trip,
-            List<TripDto.DayResponse> schedule,
-            TripDto.BudgetBreakdown budget) {
-        TripDto.TripQualityInsights insights = new TripDto.TripQualityInsights();
-        List<String> budgetWarnings = buildBudgetInsightWarnings(trip, schedule, budget);
-        List<String> routeWarnings = buildRouteInsightWarnings(schedule);
-        insights.setBudgetWarnings(budgetWarnings);
-        insights.setRouteWarnings(routeWarnings);
-        insights.setBudgetConfidence(resolveBudgetConfidence(trip, budget, budgetWarnings));
-        insights.setRouteSanity(routeWarnings.isEmpty() ? "GOOD" : "REVIEW");
-        return insights;
-    }
 
-    private List<String> buildBudgetInsightWarnings(
-            Trip trip,
-            List<TripDto.DayResponse> schedule,
-            TripDto.BudgetBreakdown budget) {
-        List<String> warnings = new ArrayList<>();
-        if (budget == null) {
-            return warnings;
-        }
-        long budgetCeiling = resolveGroupBudget(trip);
-        if (budgetCeiling > 0 && budget.getTotal() > Math.round(budgetCeiling * 1.05)) {
-            warnings.add("Ước tính hiện vượt ngân sách người dùng nhập. Cần kiểm tra lại chi phí bắt buộc và hoạt động trả phí.");
-        }
-        if (hasCostReviewItems(schedule)) {
-            warnings.add("Một số mục có chi phí bắt buộc nhưng AI chưa đưa ra ước tính đủ tin cậy.");
-        }
-        if (trip.getDays() != null && trip.getDays() > 1 && budget.getAccommodation() == 0) {
-            warnings.add("Chuyến đi qua đêm nhưng chưa thấy chi phí lưu trú rõ ràng trong lịch trình.");
-        }
-        if (hasDifferentDepartureAndDestination(trip) && budget.getTransport() == 0) {
-            warnings.add("Chưa thấy chi phí di chuyển chính rõ ràng giữa điểm xuất phát và điểm đến.");
-        }
-        if (budget.getTotal() == 0) {
-            warnings.add("Tổng chi phí đang bằng 0, không đủ cơ sở để đánh giá ngân sách.");
-        }
-        return warnings;
-    }
-
-    private String resolveBudgetConfidence(
-            Trip trip,
-            TripDto.BudgetBreakdown budget,
-            List<String> budgetWarnings) {
-        if (budget == null || budget.getTotal() <= 0) {
-            return "LOW";
-        }
-        long budgetCeiling = resolveGroupBudget(trip);
-        if (budgetCeiling > 0 && budget.getTotal() > Math.round(budgetCeiling * 1.05)) {
-            return "NEEDS_REVIEW";
-        }
-        if (budgetWarnings == null || budgetWarnings.isEmpty()) {
-            return "HIGH";
-        }
-        boolean importantGap = budgetWarnings.stream().anyMatch(warning ->
-                warning.contains("lưu trú") || warning.contains("di chuyển chính") || warning.contains("bằng 0"));
-        return importantGap ? "LOW" : "MEDIUM";
-    }
-
-    private boolean hasCostReviewItems(List<TripDto.DayResponse> schedule) {
-        return schedule != null && schedule.stream()
-                .filter(day -> day.getActivities() != null)
-                .flatMap(day -> day.getActivities().stream())
-                .anyMatch(activity -> COST_REVIEW_STATUS.equals(activity.getCostEstimateStatus())
-                        || (activity.getNote() != null && activity.getNote().contains("Chi phí cần kiểm tra")));
-    }
-
-    private boolean hasDifferentDepartureAndDestination(Trip trip) {
-        String departure = normalizeText(trip.getDeparture());
-        String destination = normalizeText(trip.getDestination());
-        return !departure.isBlank() && !destination.isBlank() && !departure.equals(destination);
-    }
-
-    private List<String> buildRouteInsightWarnings(List<TripDto.DayResponse> schedule) {
-        List<String> warnings = new ArrayList<>();
-        if (schedule == null) {
-            return warnings;
-        }
-        for (TripDto.DayResponse day : schedule) {
-            if (day.getActivities() == null) {
-                continue;
-            }
-            boolean hasTransport = day.getActivities().stream()
-                    .anyMatch(activity -> "TRANSPORT".equalsIgnoreCase(activity.getType()));
-            List<TripDto.ActivityResponse> places = day.getActivities().stream()
-                    .filter(activity -> activity.getLatitude() != null && activity.getLongitude() != null)
-                    .filter(activity -> activity.getType() == null
-                            || (!"TRANSPORT".equalsIgnoreCase(activity.getType())
-                                    && !"ACCOMMODATION".equalsIgnoreCase(activity.getType())))
-                    .toList();
-            if (places.size() < 2) {
-                continue;
-            }
-            double totalDistance = 0;
-            double maxSegment = 0;
-            for (int i = 1; i < places.size(); i++) {
-                TripDto.ActivityResponse previous = places.get(i - 1);
-                TripDto.ActivityResponse current = places.get(i);
-                double distance = distanceKm(previous.getLatitude(), previous.getLongitude(),
-                        current.getLatitude(), current.getLongitude());
-                totalDistance += distance;
-                maxSegment = Math.max(maxSegment, distance);
-            }
-            if (!hasTransport && maxSegment >= 12) {
-                warnings.add("Ngày " + day.getDay() + " có điểm cách nhau khoảng "
-                        + Math.round(maxSegment) + "km nhưng chưa thấy mục di chuyển rõ ràng.");
-            } else if (!hasTransport && totalDistance >= 25) {
-                warnings.add("Ngày " + day.getDay()
-                        + " có tổng quãng đường giữa các điểm khá dài nhưng chưa thấy kế hoạch di chuyển rõ ràng.");
-            }
-        }
-        return warnings;
-    }
 
     private void normalizeActivityCosts(List<TripDto.DayResponse> schedule, Trip trip) {
         if (schedule == null || schedule.isEmpty())

@@ -249,7 +249,6 @@ export interface TripResponse {
   viewCount: number;
   schedule?: DayResponse[];
   budget?: BudgetBreakdown;
-  qualityInsights?: TripQualityInsights;
   warnings?: string[];
   requestFulfillment?: RequestFulfillment;
   createdAt: string;
@@ -327,13 +326,6 @@ export interface BudgetBreakdown {
   accommodation: number;
   food: number;
   activities: number;
-}
-
-export interface TripQualityInsights {
-  budgetConfidence: "HIGH" | "MEDIUM" | "LOW" | "NEEDS_REVIEW";
-  routeSanity: "GOOD" | "REVIEW";
-  budgetWarnings: string[];
-  routeWarnings: string[];
 }
 
 export interface DestinationResponse {
