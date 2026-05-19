@@ -233,8 +233,74 @@ class TripServiceTest {
         assertThat(capturedRequest.get().getWeatherForecast())
                 .contains("Outdoor timing windows")
                 .contains("morning 06-11")
-                .contains("Best outdoor slot: morning 06-11")
-                .contains("schedule signature outdoor/scenic activities here");
+                .contains("Best daytime outdoor slot: morning 06-11")
+                .contains("schedule signature scenic/tour/viewpoint activities here");
+    }
+
+    @Test
+    void generateAndSavePrefersDaytimeOutdoorSlotOverSlightlyLowerRainEveningSlot() {
+        User user = sampleUser();
+        TripService service = service();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        when(weatherService.getForecastForDestination(anyString(), nullable(Double.class), nullable(Double.class)))
+                .thenReturn(List.of(WeatherService.DailyWeather.builder()
+                        .date(LocalDate.now().toString())
+                        .code(95)
+                        .minTemp(28)
+                        .maxTemp(35)
+                        .precipitationProbability(2)
+                        .precipitationMm(0.0)
+                        .windspeedKmh(21)
+                        .timeWindows(List.of(
+                                WeatherService.WeatherWindow.builder()
+                                        .label("morning")
+                                        .startHour(6)
+                                        .endHour(11)
+                                        .code(95)
+                                        .precipitationProbability(2)
+                                        .precipitationMm(0.0)
+                                        .windspeedKmh(14)
+                                        .build(),
+                                WeatherService.WeatherWindow.builder()
+                                        .label("afternoon")
+                                        .startHour(12)
+                                        .endHour(17)
+                                        .code(95)
+                                        .precipitationProbability(2)
+                                        .precipitationMm(0.0)
+                                        .windspeedKmh(21)
+                                        .build(),
+                                WeatherService.WeatherWindow.builder()
+                                        .label("evening")
+                                        .startHour(18)
+                                        .endHour(22)
+                                        .code(95)
+                                        .precipitationProbability(1)
+                                        .precipitationMm(0.0)
+                                        .windspeedKmh(20)
+                                        .build()))
+                        .build()));
+        when(placePlanningService.buildVerifiedPlacesContext(any(TripDto.GenerateRequest.class))).thenReturn("none");
+        when(tripRepository.existsByShareCode(anyString())).thenReturn(false);
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> {
+            Trip saved = invocation.getArgument(0);
+            saved.setId(1L);
+            return saved;
+        });
+        AtomicReference<TripDto.GenerateRequest> capturedRequest = new AtomicReference<>();
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class))).thenAnswer(invocation -> {
+            TripDto.GenerateRequest aiReq = invocation.getArgument(0);
+            capturedRequest.set(aiReq);
+            return new AiService.GeneratedItineraryResult(List.of(proposedDayWithoutRequestedActivity()), noRequestFulfillment());
+        });
+
+        service.generateAndSave(7L, generateRequest("", ""));
+
+        assertThat(capturedRequest.get().getWeatherForecast())
+                .contains("Best daytime outdoor slot: morning 06-11")
+                .doesNotContain("Best outdoor slot: evening 18-22");
     }
 
     @Test

@@ -581,22 +581,54 @@ public class TripService {
                     outdoorWindowRiskLabel(window.outdoorRiskLevel())));
         }
 
-        WeatherService.WeatherWindow bestWindow = windows.stream()
+        List<WeatherService.WeatherWindow> daytimeWindows = windows.stream()
+                .filter(this::isDaytimeOutdoorWindow)
+                .toList();
+        WeatherService.WeatherWindow bestDaytimeWindow = daytimeWindows.stream()
                 .min(Comparator
                         .comparingInt(WeatherService.WeatherWindow::outdoorRiskLevel)
                         .thenComparingInt(WeatherService.WeatherWindow::getPrecipitationProbability)
                         .thenComparingDouble(WeatherService.WeatherWindow::getPrecipitationMm))
                 .orElse(null);
-        if (bestWindow != null && bestWindow.outdoorRiskLevel() < 2) {
-            sb.append(". Best outdoor slot: ")
-                    .append(bestWindow.getLabel())
+        WeatherService.WeatherWindow bestEveningWindow = windows.stream()
+                .filter(this::isEveningOutdoorWindow)
+                .min(Comparator
+                        .comparingInt(WeatherService.WeatherWindow::outdoorRiskLevel)
+                        .thenComparingInt(WeatherService.WeatherWindow::getPrecipitationProbability)
+                        .thenComparingDouble(WeatherService.WeatherWindow::getPrecipitationMm))
+                .orElse(null);
+
+        if (bestDaytimeWindow != null && bestDaytimeWindow.outdoorRiskLevel() < 2) {
+            sb.append(". Best daytime outdoor slot: ")
+                    .append(bestDaytimeWindow.getLabel())
                     .append(" ")
-                    .append(String.format(Locale.ROOT, "%02d-%02d", bestWindow.getStartHour(), bestWindow.getEndHour()))
-                    .append("; schedule signature outdoor/scenic activities here when route and pacing fit");
+                    .append(String.format(Locale.ROOT, "%02d-%02d", bestDaytimeWindow.getStartHour(), bestDaytimeWindow.getEndHour()))
+                    .append("; schedule signature scenic/tour/viewpoint activities here when route and pacing fit");
+            if (bestEveningWindow != null && bestEveningWindow.outdoorRiskLevel() < bestDaytimeWindow.outdoorRiskLevel()) {
+                sb.append(". Evening ")
+                        .append(String.format(Locale.ROOT, "%02d-%02d", bestEveningWindow.getStartHour(), bestEveningWindow.getEndHour()))
+                        .append(" has lower rain risk but is better for light outdoor, night market, walking, cafe, or food plans, not daytime-only scenic tours");
+            }
+        } else if (bestEveningWindow != null && bestEveningWindow.outdoorRiskLevel() < 2) {
+            sb.append(". No suitable daytime scenic/tour slot. Best light outdoor evening slot: ")
+                    .append(bestEveningWindow.getLabel())
+                    .append(" ")
+                    .append(String.format(Locale.ROOT, "%02d-%02d", bestEveningWindow.getStartHour(), bestEveningWindow.getEndHour()))
+                    .append("; use it for light outdoor/night activities only, not daytime-only scenic tours");
         } else {
-            sb.append(". No clearly safe outdoor slot; keep only safe/covered outdoor activities or move signature outdoor experiences to another day");
+            sb.append(". No clearly safe daytime or evening outdoor slot; keep only safe/covered outdoor activities or move signature outdoor experiences to another day");
         }
         return sb.toString();
+    }
+
+    private boolean isDaytimeOutdoorWindow(WeatherService.WeatherWindow window) {
+        String label = window.getLabel() != null ? window.getLabel().toLowerCase(Locale.ROOT) : "";
+        return label.equals("morning") || label.equals("afternoon") || window.getEndHour() <= 17;
+    }
+
+    private boolean isEveningOutdoorWindow(WeatherService.WeatherWindow window) {
+        String label = window.getLabel() != null ? window.getLabel().toLowerCase(Locale.ROOT) : "";
+        return label.equals("evening") || window.getStartHour() >= 18;
     }
 
     private String outdoorWindowRiskLabel(int riskLevel) {

@@ -263,10 +263,11 @@ class AiServiceTest {
         assertThat(prompt)
                 .contains("RAIN FLEX")
                 .contains("Outdoor timing windows")
-                .contains("Best outdoor slot")
+                .contains("Best daytime outdoor slot")
+                .contains("Best light outdoor evening slot")
                 .contains("treat rain as potentially intermittent")
                 .contains("low-impact weather context")
-                .contains("schedule outdoor/scenic highlights into the least rainy part of the day")
+                .contains("schedule outdoor/scenic highlights into the least rainy practical daytime part of the day")
                 .contains("not a reason to reduce outdoor diversity")
                 .contains("Keep destination-defining outdoor/scenic places in the main plan when generally safe");
     }

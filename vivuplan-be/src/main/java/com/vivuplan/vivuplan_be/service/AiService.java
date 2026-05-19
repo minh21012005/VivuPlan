@@ -351,9 +351,9 @@ public class AiService {
                         - Verified place candidates for this destination: %s
 
                         Weather-aware planning rules:
-                        1. Each forecast line is "Day N (date): condition, temp, rain chance, rain mm, wind -> risk level", optionally followed by "Outdoor timing windows" and "Best outdoor slot".
+                        1. Each forecast line is "Day N (date): condition, temp, rain chance, rain mm, wind -> risk level", optionally followed by "Outdoor timing windows", "Best daytime outdoor slot", or "Best light outdoor evening slot".
                         2. For the day being regenerated, honor its risk level: "RAIN FLEX" means outdoor activities are still allowed with safer timing/backup notes; "SEVERE WEATHER RISK" means reduce only unsafe outdoor, water, or adventure activities; "Good weather" means outdoor preferred.
-                        2a. When Outdoor timing windows are present, treat rain as potentially intermittent. Put destination-signature outdoor/scenic activities in the Best outdoor slot or another LOW RAIN WINDOW/RAIN FLEX window instead of replacing them with indoor activities by default.
+                        2a. When Outdoor timing windows are present, treat rain as potentially intermittent. Put destination-signature outdoor/scenic/tour/viewpoint activities in the Best daytime outdoor slot or another daytime LOW RAIN WINDOW/RAIN FLEX window instead of replacing them with indoor activities by default. Use evening windows only for light outdoor, night market, walking, cafe, or food plans.
                         3. Never mention the weather in the regenerated day's title, summary, activities, or notes. Just naturally plan appropriate activities.
                            If weather or another constraint blocks the user's request, explain that in requestFulfillment.items[].userMessage.
                         4. If forecast is "none", plan normally without weather constraints.
@@ -361,7 +361,7 @@ public class AiService {
 
                         Important weather interpretation update:
                         - Treat RAIN FLEX or legacy LIGHT RAIN as low-impact weather context, not a reason to reduce outdoor diversity.
-                        - If hourly Outdoor timing windows are present, use them to schedule outdoor/scenic highlights into the least rainy part of the day.
+                        - If hourly Outdoor timing windows are present, use them to schedule outdoor/scenic highlights into the least rainy practical daytime part of the day.
                         - Keep destination-defining outdoor/scenic places in the main plan when generally safe; add backup notes instead of replacing them.
                         - Treat SEVERE WEATHER RISK or legacy HIGH RAIN RISK as a hard safety constraint only for unsafe outdoor/water/adventure activities on the affected day.
                         - If weather blocks or weakens a user request or a destination-signature experience, explain it in requestFulfillment.items[].userMessage with reasonCode WEATHER_SAFETY.
@@ -589,18 +589,18 @@ public class AiService {
                         - Verified place candidates for this destination: %s
 
                         Weather-aware planning rules:
-                        1. Read the Weather Forecast carefully. Each line is labeled "Day N (date): condition, temp, rain chance, rain mm, wind -> risk level", optionally followed by "Outdoor timing windows" and "Best outdoor slot".
+                        1. Read the Weather Forecast carefully. Each line is labeled "Day N (date): condition, temp, rain chance, rain mm, wind -> risk level", optionally followed by "Outdoor timing windows", "Best daytime outdoor slot", or "Best light outdoor evening slot".
                         2. For days labeled "RAIN FLEX": outdoor activities are still allowed. Keep signature scenic/outdoor experiences in the main plan when generally safe, choose better time windows, and add indoor backup notes instead of replacing them.
                         3. For days labeled "SEVERE WEATHER RISK" or legacy "HIGH RAIN RISK": reduce only unsafe outdoor, water, or adventure activities on the affected day. Prefer moving signature experiences to a safer day before omitting them.
                         4. For days labeled "Good weather": maximize outdoor, scenic, or active experiences.
-                        5. When Outdoor timing windows are present, treat rain as potentially intermittent. Put destination-signature outdoor/scenic activities in the Best outdoor slot or another LOW RAIN WINDOW/RAIN FLEX window instead of replacing them with indoor activities by default.
+                        5. When Outdoor timing windows are present, treat rain as potentially intermittent. Put destination-signature outdoor/scenic/tour/viewpoint activities in the Best daytime outdoor slot or another daytime LOW RAIN WINDOW/RAIN FLEX window instead of replacing them with indoor activities by default. Use evening windows only for light outdoor, night market, walking, cafe, or food plans.
                         6. Never mention the weather forecast to the user in the output text. Just naturally plan the right activities.
                         7. If forecast is "none" or unavailable, plan normally without weather constraints.
                         %s
 
                         Important weather interpretation update:
                         - Treat RAIN FLEX or legacy LIGHT RAIN as low-impact weather context, not a reason to reduce outdoor diversity.
-                        - If hourly Outdoor timing windows are present, use them to schedule outdoor/scenic highlights into the least rainy part of the day.
+                        - If hourly Outdoor timing windows are present, use them to schedule outdoor/scenic highlights into the least rainy practical daytime part of the day.
                         - Keep destination-defining outdoor/scenic places in the main plan when generally safe; add backup notes instead of replacing them.
                         - Treat SEVERE WEATHER RISK or legacy HIGH RAIN RISK as a hard safety constraint only for unsafe outdoor/water/adventure activities on the affected day.
                         - If weather blocks all or most destination-signature scenic experiences, explain the omission/substitution in requestFulfillment.items[].userMessage with reasonCode WEATHER_SAFETY so the user knows the plan changed for safety, not because the system missed them.
