@@ -367,4 +367,17 @@ export interface WeatherDayResponse {
   precipitationMm: number;
   precipitationProbability: number;
   windspeedKmh: number;
+  outdoorRiskLevel?: number;
+  timeWindows?: WeatherWindowResponse[];
+}
+
+export interface WeatherWindowResponse {
+  label: string;
+  startHour: number;
+  endHour: number;
+  code: number;
+  precipitationMm: number;
+  precipitationProbability: number;
+  windspeedKmh: number;
+  outdoorRiskLevel?: number;
 }

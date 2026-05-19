@@ -1,7 +1,7 @@
 "use client";
 
 import { useWeather } from "@/lib/use-weather";
-import { interpretWeatherCode } from "@/lib/weather-utils";
+import { interpretWeather } from "@/lib/weather-utils";
 import { WeatherIcon } from "@/components/travel/WeatherIcon";
 
 interface Props {
@@ -19,7 +19,7 @@ export function DestinationWeatherBadge({ lat, lon }: Props) {
   if (forecast.length === 0) return null;
 
   const today = forecast[0];
-  const condition = interpretWeatherCode(today.code);
+  const condition = interpretWeather(today);
   const avgTemp = Math.round((today.maxTemp + today.minTemp) / 2);
 
   return (

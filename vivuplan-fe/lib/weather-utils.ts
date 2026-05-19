@@ -8,6 +8,19 @@ export interface DailyWeather {
   precipitationMm: number;
   precipitationProbability: number; // 0-100
   windspeedKmh: number;
+  outdoorRiskLevel?: number; // 0 = low/good, 1 = rain flex, 2 = severe
+  timeWindows?: WeatherWindow[];
+}
+
+export interface WeatherWindow {
+  label: string;
+  startHour: number;
+  endHour: number;
+  code: number;
+  precipitationMm: number;
+  precipitationProbability: number;
+  windspeedKmh: number;
+  outdoorRiskLevel?: number;
 }
 
 export interface WeatherCondition {
@@ -24,12 +37,60 @@ export function interpretWeatherCode(code: number): WeatherCondition {
   if (code <= 3) return { label: "Có mây", severity: "mild", isRainy: false, isWindy: false, isFoggy: false, iconKey: "cloudy" };
   if (code <= 49) return { label: "Sương mù", severity: "mild", isRainy: false, isWindy: false, isFoggy: true, iconKey: "fog" };
   if (code <= 57) return { label: "Mưa phùn", severity: "mild", isRainy: true, isWindy: false, isFoggy: false, iconKey: "rain" };
-  if (code <= 65) return { label: code >= 63 ? "Mưa to" : "Mưa nhỏ", severity: code >= 63 ? "severe" : "moderate", isRainy: true, isWindy: false, isFoggy: false, iconKey: "rain" };
+  if (code <= 60) return { label: "Mưa nhỏ", severity: "moderate", isRainy: true, isWindy: false, isFoggy: false, iconKey: "rain" };
+  if (code <= 64) return { label: "Mưa vừa", severity: "moderate", isRainy: true, isWindy: false, isFoggy: false, iconKey: "rain" };
+  if (code <= 65) return { label: "Mưa to", severity: "severe", isRainy: true, isWindy: false, isFoggy: false, iconKey: "rain" };
   if (code <= 77) return { label: "Có tuyết", severity: "severe", isRainy: false, isWindy: false, isFoggy: false, iconKey: "snow" };
   if (code <= 82) return { label: code === 82 ? "Mưa rào lớn" : "Mưa rào", severity: code === 82 ? "severe" : "moderate", isRainy: true, isWindy: false, isFoggy: false, iconKey: "rain" };
   if (code <= 86) return { label: "Mưa tuyết", severity: "severe", isRainy: true, isWindy: false, isFoggy: false, iconKey: "snow" };
   if (code <= 99) return { label: "Giông bão", severity: "severe", isRainy: true, isWindy: true, isFoggy: false, iconKey: "storm" };
   return { label: "N/A", severity: "mild", isRainy: false, isWindy: false, isFoggy: false, iconKey: "unknown" };
+}
+
+export function getOutdoorRiskLevel(weather: DailyWeather): 0 | 1 | 2 {
+  if (typeof weather.outdoorRiskLevel === "number") {
+    return weather.outdoorRiskLevel >= 2 ? 2 : weather.outdoorRiskLevel >= 1 ? 1 : 0;
+  }
+
+  const { code, precipitationMm, precipitationProbability, windspeedKmh } = weather;
+  if (code >= 95 && code <= 99) return 2;
+  if (code === 65 || code === 67 || code === 82 || code === 86) return 2;
+  if (precipitationMm >= 25) return 2;
+  if (windspeedKmh >= 50 && precipitationProbability >= 70) return 2;
+  if (precipitationProbability >= 95 && precipitationMm >= 15) return 2;
+  if ((code >= 51 && code <= 64) || (code >= 80 && code <= 81)) return 1;
+  if (precipitationMm >= 1) return 1;
+  if (precipitationProbability >= 60) return 1;
+  return 0;
+}
+
+export function interpretWeather(weather: DailyWeather): WeatherCondition {
+  const base = interpretWeatherCode(weather.code);
+  const risk = getOutdoorRiskLevel(weather);
+
+  if (risk === 2) {
+    return {
+      ...base,
+      severity: "severe",
+      label: base.isRainy ? base.label : "Thời tiết khắc nghiệt",
+    };
+  }
+
+  if (risk === 1 && base.isRainy) {
+    return {
+      ...base,
+      severity: "moderate",
+    };
+  }
+
+  if (base.isRainy) {
+    return {
+      ...base,
+      severity: "mild",
+    };
+  }
+
+  return base;
 }
 
 // ─── Activity outdoor risk assessment ────────────────────────────────────────
@@ -68,7 +129,8 @@ export function getActivityWeatherWarning(
     return null;
   }
 
-  const condition = interpretWeatherCode(weather.code);
+  const condition = interpretWeather(weather);
+  const outdoorRisk = getOutdoorRiskLevel(weather);
   const isRisky = isOutdoorRiskyActivity(activityName, activityLocation);
   if (!isRisky) return null;
 
@@ -77,14 +139,14 @@ export function getActivityWeatherWarning(
   if (weather.windspeedKmh > 50 && (activityName.toLowerCase().includes("vịnh") || activityName.toLowerCase().includes("biển") || activityName.toLowerCase().includes("thuyền"))) {
     return { icon: "wind", message: `Gió mạnh (${weather.windspeedKmh.toFixed(0)} km/h) – Hoạt động ${actText} có thể bị hoãn. Kiểm tra lại với đơn vị vận hành.` };
   }
-  if (condition.severity === "severe" && condition.isRainy) {
-    return { icon: "rain", message: `Dự báo mưa lớn – Hoạt động ngoài trời ${actText} có thể bị ảnh hưởng, hãy chuẩn bị phương án thay thế.` };
+  if (outdoorRisk === 2 && condition.isRainy) {
+    return { icon: "rain", message: `Dự báo mưa lớn hoặc thời tiết xấu – Hoạt động ngoài trời ${actText} có thể bị ảnh hưởng, hãy kiểm tra điều kiện thực tế trước khi đi.` };
   }
   if (condition.isFoggy && (activityName.toLowerCase().includes("cáp treo") || activityName.toLowerCase().includes("leo"))) {
     return { icon: "fog", message: `Có sương mù – Hoạt động ${actText} có thể bị hạn chế tầm nhìn, hãy kiểm tra trước khi khởi hành.` };
   }
-  if (condition.severity === "moderate" && condition.isRainy && weather.precipitationProbability >= 40) {
-    return { icon: "rain", message: `Xác suất mưa ${weather.precipitationProbability}% – Nên mang áo mưa khi tham gia ${actText}.` };
+  if (outdoorRisk === 1 && condition.isRainy && (weather.precipitationProbability >= 60 || weather.precipitationMm >= 1)) {
+    return { icon: "rain", message: `Có thể có mưa trong ngày (${weather.precipitationProbability}%) – ${actText} vẫn có thể phù hợp, nên mang áo mưa và linh hoạt khung giờ.` };
   }
   return null;
 }
@@ -101,8 +163,8 @@ export function getPackingSuggestions(forecast: DailyWeather[]): PackingSuggesti
 
   const maxTemp = Math.max(...forecast.map((d) => d.maxTemp));
   const minTemp = Math.min(...forecast.map((d) => d.minTemp));
-  const hasRain = forecast.some((d) => d.precipitationProbability >= 40 || d.precipitationMm > 3);
-  const hasHeavyRain = forecast.some((d) => d.precipitationMm > 20 || interpretWeatherCode(d.code).severity === "severe");
+  const hasRain = forecast.some((d) => d.precipitationProbability >= 40 || d.precipitationMm > 1);
+  const hasHeavyRain = forecast.some((d) => getOutdoorRiskLevel(d) === 2);
   const hasFog = forecast.some((d) => d.code >= 45 && d.code <= 48);
   const hasStrongWind = forecast.some((d) => d.windspeedKmh > 35);
 
@@ -168,8 +230,8 @@ export function getRescheduleSuggestions(
     const forecastForDay = getForecastForDay(day.day);
     if (!forecastForDay) return;
 
-    const condition = interpretWeatherCode(forecastForDay.code);
-    if (condition.severity !== "severe" || !condition.isRainy) return;
+    const condition = interpretWeather(forecastForDay);
+    if (getOutdoorRiskLevel(forecastForDay) !== 2 || !condition.isRainy) return;
 
     // Find risky outdoor activities on this bad-weather day
     day.activities.forEach((act) => {
@@ -183,13 +245,12 @@ export function getRescheduleSuggestions(
         if (other.day === day.day) return false;
         const otherForecast = getForecastForDay(other.day);
         if (!otherForecast) return false;
-        const otherCondition = interpretWeatherCode(otherForecast.code);
-        return otherCondition.severity === "clear" || otherCondition.severity === "mild";
+        return getOutdoorRiskLevel(otherForecast) === 0;
       });
 
       if (betterDayEntry) {
         const betterDayForecast = getForecastForDay(betterDayEntry.day)!;
-        const betterCondition = interpretWeatherCode(betterDayForecast.code);
+        const betterCondition = interpretWeather(betterDayForecast);
         suggestions.push({
           fromDay: day.day,
           toDay: betterDayEntry.day,
@@ -202,5 +263,3 @@ export function getRescheduleSuggestions(
 
   return suggestions;
 }
-
-

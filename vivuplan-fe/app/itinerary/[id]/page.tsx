@@ -16,7 +16,7 @@ import { useWeather } from "@/lib/use-weather";
 import { useGeocode } from "@/lib/use-geocode";
 import { WeatherIcon } from "@/components/travel/WeatherIcon";
 import {
-  interpretWeatherCode,
+  interpretWeather,
   getRescheduleSuggestions,
   getActivityWeatherWarning,
 } from "@/lib/weather-utils";
@@ -764,7 +764,7 @@ export default function ItineraryPage() {
               <div style={{ display: "flex", gap: 8, overflowX: "auto", minWidth: 0 }} className="no-scrollbar">
                 {trip.schedule?.map((item, index) => {
                   const dw = getByDayIndex(item.day - 1, trip.startDate);
-                  const dc = dw ? interpretWeatherCode(dw.code) : null;
+                  const dc = dw ? interpretWeather(dw) : null;
                   return (
                     <button
                       key={item.day}
@@ -825,7 +825,7 @@ export default function ItineraryPage() {
                 {/* Feature 3 – Weather insight chip (always rendered for layout consistency) */}
                 {(() => {
                   const dw = getByDayIndex(activeDay, trip.startDate);
-                  const dc = dw ? interpretWeatherCode(dw.code) : null;
+                  const dc = dw ? interpretWeather(dw) : null;
                   return (
                     <div title={dw ? `Mưa ${dw.precipitationProbability}% · Gió ${dw.windspeedKmh.toFixed(0)} km/h` : "Chưa có dữ liệu thời tiết"}>
                       {dc ? <WeatherIcon iconKey={dc.iconKey} size={16} /> : <Thermometer size={16} />}

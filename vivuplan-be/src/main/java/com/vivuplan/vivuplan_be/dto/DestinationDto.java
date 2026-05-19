@@ -81,5 +81,20 @@ public class DestinationDto {
         private double precipitationMm;
         private int precipitationProbability;
         private double windspeedKmh;
+        private int outdoorRiskLevel;
+        private List<WeatherWindowResponse> timeWindows;
+    }
+
+    @Data
+    @Builder
+    public static class WeatherWindowResponse {
+        private String label;
+        private int startHour;
+        private int endHour;
+        private int code;
+        private double precipitationMm;
+        private int precipitationProbability;
+        private double windspeedKmh;
+        private int outdoorRiskLevel;
     }
 }
