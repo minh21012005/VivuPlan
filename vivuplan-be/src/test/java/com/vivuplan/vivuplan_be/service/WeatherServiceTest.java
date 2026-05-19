@@ -145,6 +145,30 @@ class WeatherServiceTest {
     }
 
     @Test
+    void outdoorRiskTreatsModerateProbabilityDryThunderstormSignalAsFlexible() {
+        WeatherService.DailyWeather weather = WeatherService.DailyWeather.builder()
+                .code(95)
+                .precipitationProbability(45)
+                .precipitationMm(0.0)
+                .windspeedKmh(21)
+                .build();
+
+        assertThat(weather.outdoorRiskLevel()).isEqualTo(1);
+    }
+
+    @Test
+    void outdoorRiskTreatsThunderstormWithLikelyRainAsSevere() {
+        WeatherService.DailyWeather weather = WeatherService.DailyWeather.builder()
+                .code(95)
+                .precipitationProbability(50)
+                .precipitationMm(1.0)
+                .windspeedKmh(21)
+                .build();
+
+        assertThat(weather.outdoorRiskLevel()).isEqualTo(2);
+    }
+
+    @Test
     void outdoorRiskTreatsHailThunderstormAsSevereEvenWithLowRainAmount() {
         WeatherService.DailyWeather weather = WeatherService.DailyWeather.builder()
                 .code(96)
