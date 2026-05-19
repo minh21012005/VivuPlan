@@ -77,6 +77,26 @@ class PlacePlanningServiceTest {
     }
 
     @Test
+    void verifiedPlacesContextMarksOldTownNightlifeAsDestinationSignature() {
+        PlacePlanningService service = new PlacePlanningService(placeRepository, destinationRepository);
+        Place oldTown = place(13L, "Pho co Hoa Lu", Place.PlaceType.ATTRACTION, 4.5, 150_000,
+                "Old town evening walking street with food and cultural nightlife");
+        oldTown.setTags(List.of("heritage", "nightlife", "walking"));
+        oldTown.setIndoorOutdoor(Place.IndoorOutdoor.MIXED);
+        oldTown.setWeatherSensitivity(Place.WeatherSensitivity.LOW);
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        when(placeRepository.findByDestinationIgnoreCaseAndVerifiedTrueOrderByRatingDesc(anyString()))
+                .thenReturn(List.of(oldTown));
+
+        String context = service.buildVerifiedPlacesContext(request());
+
+        assertThat(context)
+                .contains("Pho co Hoa Lu")
+                .contains("priority=destination-signature");
+    }
+
+    @Test
     void selectPromptPlacesKeepsSignatureScenicExperienceHighDuringRainFlex() {
         PlacePlanningService service = new PlacePlanningService(placeRepository, destinationRepository);
         Place scenic = place(11L, "Trang An Scenic Landscape Complex", Place.PlaceType.ACTIVITY, 5.0, 250_000,

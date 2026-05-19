@@ -269,6 +269,8 @@ class AiServiceTest {
                 .contains("low-impact weather context")
                 .contains("schedule outdoor/scenic highlights into the least rainy practical daytime part of the day")
                 .contains("not a reason to reduce outdoor diversity")
+                .contains("real destination-signature evening cultural areas")
+                .contains("Phố cổ Hoa Lư")
                 .contains("Keep destination-defining outdoor/scenic places in the main plan when generally safe");
     }
 

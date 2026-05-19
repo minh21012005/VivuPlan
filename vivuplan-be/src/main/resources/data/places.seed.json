@@ -5203,6 +5203,40 @@
     "costNote": "Không ghi nhận vé vào cửa; chi phí phát sinh là gửi xe/công đức nếu có."
   },
   {
+    "name": "Phố cổ Hoa Lư",
+    "destination": "Ninh Bình",
+    "type": "ATTRACTION",
+    "address": "Hồ Kỳ Lân, phường Tân Thành, thành phố Hoa Lư, Ninh Bình",
+    "priceLevel": "LOW",
+    "estimatedCostMin": 0,
+    "estimatedCostMax": 150000,
+    "rating": 4.5,
+    "latitude": 20.2586,
+    "longitude": 105.9744,
+    "description": "Không gian phố cổ và văn hóa về đêm ở trung tâm Hoa Lư, phù hợp dạo tối, chụp ảnh, xem đèn, ăn vặt và ghép sau bữa tối.",
+    "openingHours": "Chiều - tối; các hoạt động, gian hàng và sự kiện phụ thuộc lịch vận hành thực tế",
+    "verified": true,
+    "source": "Trung tâm Thông tin xúc tiến Du lịch Ninh Bình",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "LOW",
+    "tags": [
+      "attraction",
+      "mixed",
+      "heritage",
+      "nightlife",
+      "food"
+    ],
+    "aliases": [
+      "Phố cổ Ninh Bình",
+      "Phố cổ Hoa Lư Ninh Bình",
+      "Khu phố cổ Hoa Lư"
+    ],
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://dulichninhbinh.com.vn/printer/3478",
+    "verifiedAt": "2026-05-20",
+    "costNote": "Đi dạo, chụp ảnh không ghi nhận vé vào cửa bắt buộc trong nguồn du lịch địa phương. Estimate là ăn vặt, đồ uống, gửi xe, thuyền/hoa đăng hoặc dịch vụ sự kiện nếu sử dụng."
+  },
+  {
     "name": "Hang Rái",
     "destination": "Ninh Thuận",
     "type": "ATTRACTION",
