@@ -276,7 +276,7 @@ public class AiService {
                         Return exactly ONE JSON object with keys "itinerary" and "requestFulfillment". Never return a bare JSON array, and never use "days" or "schedule" instead of "itinerary".
                         Use named, real places and restaurants in or near %s.
                         Avoid ANY generic placeholder wording (e.g., "địa điểm nổi bật", "đặc sản địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "chợ địa phương", "địa điểm thuê xe"). Every place, restaurant, cafe, accommodation, or rental shop MUST be a specific real-world business with a concrete proper name.
-                        Preserve the destination's signature/must-try experiences using your own Vietnam travel knowledge, including specific real places not present in verified candidates. If severe weather, time, budget, safety, or route constraints make a normally expected signature experience unsuitable, explain the omission/substitution in requestFulfillment.
+                        Preserve the destination's signature/must-try experiences using your own Vietnam travel knowledge, including specific real places not present in verified candidates. If severe weather, time, budget, safety, or route constraints make a normally expected signature experience unsuitable, explain the omission/substitution in requestFulfillment. Keep these explanations concise and grouped by core experience category; mention 1-3 specific representative missed places/activities when helpful, but do not list every famous place that cannot fit.
                         Anti-Bias Rule: Do not default to the same well-known corporate chains. Suggest diverse, logically located, and budget-appropriate places.
                         %s
                         %s
@@ -312,7 +312,7 @@ public class AiService {
                                 The previous proposal was rejected because: %s
                                 Fix that issue. Return a safer, more specific version of day %d only.
                                 Return exactly ONE JSON object with keys "day" and "requestFulfillment". Never return a bare JSON array.
-                                Preserve or restore relevant destination-signature/must-try experiences using your own Vietnam travel knowledge, including specific real places not present in verified candidates. If a normally expected signature experience is omitted or substituted for a real constraint, explain it in requestFulfillment.
+                                Preserve or restore relevant destination-signature/must-try experiences using your own Vietnam travel knowledge, including specific real places not present in verified candidates. If a normally expected signature experience is omitted or substituted for a real constraint, explain it in requestFulfillment. Keep these explanations concise and grouped by core experience category; mention 1-3 specific representative missed places/activities when helpful, but do not list every famous place that cannot fit.
                                 %s
                                 %s
                                 Create a separate TRANSPORT activity with route/mode/cost instead of putting transport cost in an ATTRACTION, FOOD, CAFE, or ACTIVITY note.
@@ -372,6 +372,7 @@ public class AiService {
                         2. The verified candidates are helpful evidence, not the full universe. If a signature experience is missing from the candidate list, you may still include a specific real place/activity with a concrete name and realistic location.
                         3. For this regenerated day, preserve or restore at least one relevant destination-signature experience when it fits the full trip, route, weather, budget, and pacing. Do not replace the destination's core appeal with only generic indoor cafes, malls, meals, or rest stops unless safety or constraints truly require it.
                         4. If a normally expected signature experience is omitted, weakened, or moved away because of severe weather, time, budget, duplication with other days, group safety, or route constraints, add a PARTIAL or NOT_APPLIED requestFulfillment item explaining the reason in Vietnamese. Do this even when the user did not explicitly request that place.
+                        5. Keep destination-signature requestFulfillment concise: add at most 1-3 items, grouped by core experience category (for example boat/scenic landscape, viewpoint, beach/island, heritage/culture, local food), not one item per missed place. In each grouped item, mention 1-3 representative missed places/activities when helpful, for example "Tràng An, Tam Cốc, Hang Múa" for Ninh Bình, but do not list every famous place that cannot fit the itinerary.
 
                         Verified place rules:
                         1. Treat verified place candidates as trusted suggestions, not an allowed-only list.
@@ -417,7 +418,7 @@ public class AiService {
                         19. If a requested item is fully reflected in the regenerated day, mark it FULFILLED with reasonCode APPLIED.
                         20. If a requested item is omitted, substituted, weakened, unsafe, too expensive, duplicated, or impossible under constraints, mark it PARTIAL or NOT_APPLIED and write a short Vietnamese userMessage explaining why.
                         21. Use reasonCode WEATHER_SAFETY when rain/storm/weather risk is the main reason. Other allowed reasonCode values: APPLIED, BUDGET, TIME_CONFLICT, DUPLICATE, CONSTRAINT, UNCLEAR, OTHER.
-                        22. If there is no meaningful user-specific request and no destination-signature omission/substitution needs explanation, set overallStatus to NO_REQUEST and items to []. If a signature experience is omitted or substituted for a real constraint, return PARTIAL or NOT_FULFILLED with a requestFulfillment item even without a user-specific request.
+                        22. If there is no meaningful user-specific request and no destination-signature omission/substitution needs explanation, set overallStatus to NO_REQUEST and items to []. If a signature experience category is omitted or substituted for a real constraint, return PARTIAL or NOT_FULFILLED with a concise grouped requestFulfillment item even without a user-specific request.
                         23. If you are unsure whether the request was satisfied, mark the item UNCLEAR and explain what the user should check.
 
                         JSON schema:
@@ -608,6 +609,7 @@ public class AiService {
                         3. Across the full trip, include a representative set of destination-signature experiences when they fit duration, route, weather, budget, and group needs. For short trips, prioritize the most iconic 1-3 experiences instead of padding with generic indoor stops.
                         4. Do not reduce outdoor diversity just because there is RAIN FLEX or normal rain chance. Prefer safer timing, shorter windows, backup notes, or moving signature experiences to a better day.
                         5. If normally expected signature experiences are omitted, weakened, or substituted because of severe weather, time, budget, group safety, duplication, or route constraints, add PARTIAL or NOT_APPLIED requestFulfillment items explaining the reason in Vietnamese. Do this even when the user did not explicitly request those places, so the user knows the plan changed for a real reason.
+                        6. Keep destination-signature requestFulfillment concise: add at most 1-3 items, grouped by core experience category (for example boat/scenic landscape, viewpoint, beach/island, heritage/culture, local food), not one item per missed place. In each grouped item, mention 1-3 representative missed places/activities when helpful, for example "Tràng An, Tam Cốc, Hang Múa" for Ninh Bình, but do not list every famous place that cannot fit the itinerary.
 
                         Cost rules:
                         1. estimatedCost MUST be the estimated total VND for the whole group of %d travelers.
@@ -662,7 +664,7 @@ public class AiService {
                         3. If a requested item is fully reflected in the itinerary, mark it FULFILLED with reasonCode APPLIED.
                         4. If a requested item is omitted, substituted, weakened, unsafe, too expensive, duplicated, or impossible under constraints, mark it PARTIAL or NOT_APPLIED and write a short Vietnamese userMessage explaining why.
                         5. Use reasonCode WEATHER_SAFETY when rain/storm/weather risk is the main reason. Other allowed reasonCode values: APPLIED, BUDGET, TIME_CONFLICT, DUPLICATE, CONSTRAINT, UNCLEAR, OTHER.
-                        6. If there is no meaningful user-specific request and no destination-signature omission/substitution needs explanation, set overallStatus to NO_REQUEST and items to []. If a signature experience is omitted or substituted for a real constraint, return PARTIAL or NOT_FULFILLED with a requestFulfillment item even without a user-specific request.
+                        6. If there is no meaningful user-specific request and no destination-signature omission/substitution needs explanation, set overallStatus to NO_REQUEST and items to []. If a signature experience category is omitted or substituted for a real constraint, return PARTIAL or NOT_FULFILLED with a concise grouped requestFulfillment item even without a user-specific request.
                         7. If you are unsure whether a request was satisfied, mark the item UNCLEAR and explain what the user should check.
                         8. Never mention the weather in itinerary day titles, summaries, activities, or notes. If weather blocks a user request, explain it only in requestFulfillment.items[].userMessage.
 

@@ -166,7 +166,11 @@ class AiServiceTest {
                 .contains("do not blindly pick the top items")
                 .contains("infer the destination's signature experiences and must-try categories")
                 .contains("even when they are NOT listed in the verified candidates")
-                .contains("return PARTIAL or NOT_FULFILLED with a requestFulfillment item even without a user-specific request")
+                .contains("return PARTIAL or NOT_FULFILLED with a concise grouped requestFulfillment item even without a user-specific request")
+                .contains("add at most 1-3 items, grouped by core experience category")
+                .contains("mention 1-3 representative missed places/activities when helpful")
+                .contains("Tràng An, Tam Cốc, Hang Múa")
+                .contains("do not list every famous place that cannot fit the itinerary")
                 .doesNotContain("You may use other real places only when the verified candidates do not cover");
     }
 
@@ -192,7 +196,11 @@ class AiServiceTest {
                 .contains("do not blindly pick the top items")
                 .contains("infer the destination's signature experiences and must-try categories")
                 .contains("even when they are NOT listed in the verified candidates")
-                .contains("return PARTIAL or NOT_FULFILLED with a requestFulfillment item even without a user-specific request")
+                .contains("return PARTIAL or NOT_FULFILLED with a concise grouped requestFulfillment item even without a user-specific request")
+                .contains("add at most 1-3 items, grouped by core experience category")
+                .contains("mention 1-3 representative missed places/activities when helpful")
+                .contains("Tràng An, Tam Cốc, Hang Múa")
+                .contains("do not list every famous place that cannot fit the itinerary")
                 .doesNotContain("You may use other real places only when the verified candidates do not cover");
     }
 
