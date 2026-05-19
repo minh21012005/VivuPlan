@@ -18,13 +18,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PlaceSeedGovernanceTest {
 
     private static final Set<String> TAG_TAXONOMY = Set.of(
-            "accommodation", "activity", "adventure", "attraction", "beach", "boat", "cafe", "couple",
+            "accommodation", "activity", "adventure", "attraction", "beach", "boat", "cafe", "cave", "couple",
             "family", "food", "heritage", "indoor", "island", "mixed", "mountain", "museum",
-            "nightlife", "outdoor", "spiritual", "transport", "waterfall");
+            "nightlife", "outdoor", "spiritual", "theme-park", "transport", "viewpoint", "waterfall");
     private static final Set<String> ISLAND_DESTINATIONS = Set.of(
             "Phú Quốc", "Cát Bà", "Lý Sơn", "Nam Du", "Côn Đảo", "Đảo Phú Quý");
     private static final List<String> HIGH_WEATHER_SIGNALS = List.of(
-            "sup", "kayak", "cano", "ca no", "thuyen", "du thuyen", "tour tau", "tau cao toc",
+            "sup", "kayak", "cano", "ca no", "thuyen", "boat", "du thuyen", "tour tau", "tau cao toc",
+            "tau", "tuyen tau", "tuyen tham quan", "thoi tiet",
             "lan bien", "tam bien", "trekking", "thac", "leo nui", "zipline", "du luon", "nhay du");
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -69,8 +70,7 @@ class PlaceSeedGovernanceTest {
                     .as("known tag for " + name)
                     .isIn(TAG_TAXONOMY));
             assertThat(place.has("aliases") && place.path("aliases").isArray()).as("aliases array for " + name).isTrue();
-            assertThat(place.has("sourceUrl")).as("sourceUrl requires per-place verification for " + name).isFalse();
-            assertThat(place.has("verifiedAt")).as("verifiedAt requires per-place verification for " + name).isFalse();
+            assertOptionalVerificationFields(place, name);
 
             long minCost = place.path("estimatedCostMin").asLong(0);
             long maxCost = place.path("estimatedCostMax").asLong(minCost);
@@ -91,6 +91,12 @@ class PlaceSeedGovernanceTest {
             if ("FREE".equals(costBasis)) {
                 assertThat(maxCost).as("FREE costBasis must have zero max cost for " + name).isZero();
             }
+            if ("INCLUDED".equals(costBasis)) {
+                assertThat(place.path("costNote").asText(""))
+                        .as("INCLUDED costBasis needs explanation for " + name)
+                        .isNotBlank();
+            }
+            assertThatNaturalLanguageFieldsAreVietnamese(place, name);
 
             String indoorOutdoor = requiredText(place, "indoorOutdoor");
             String weatherSensitivity = requiredText(place, "weatherSensitivity");
@@ -126,6 +132,89 @@ class PlaceSeedGovernanceTest {
         if (!lowCoverage.isEmpty()) {
             System.out.println("Place seed coverage warning (<5 POIs): " + lowCoverage);
         }
+
+        assertSourceVerifiedPlace(places, "Hạ Long", "Vịnh Hạ Long",
+                "https://halongbay.com.vn/en/p/58-muc-phi-tham-quan-vinh-ha-long",
+                200_000L,
+                250_000L,
+                "PER_PERSON",
+                "HIGH");
+        assertSourceVerifiedPlace(places, "Hạ Long", "Hang Sửng Sốt",
+                "https://halongbay.com.vn/p/71-thoi-gian-don-tra-khach-ve-cang-ben",
+                0L,
+                0L,
+                "INCLUDED",
+                "HIGH");
+        assertSourceVerifiedPlace(places, "Hạ Long", "Sun World Hạ Long",
+                "https://sunworld.vn/vi/ha-long/check-in/bang-gia-sun-world-ha-long",
+                300_000L,
+                600_000L,
+                "PER_PERSON",
+                "MEDIUM");
+    }
+
+    private void assertOptionalVerificationFields(JsonNode place, String name) {
+        boolean hasSourceUrl = place.hasNonNull("sourceUrl") && !place.path("sourceUrl").asText().isBlank();
+        boolean hasVerifiedAt = place.hasNonNull("verifiedAt") && !place.path("verifiedAt").asText().isBlank();
+        assertThat(hasSourceUrl).as("sourceUrl and verifiedAt must be paired for " + name).isEqualTo(hasVerifiedAt);
+        if (hasSourceUrl) {
+            assertThat(place.path("sourceUrl").asText()).as("sourceUrl for " + name).startsWith("https://");
+            assertThat(place.path("verifiedAt").asText()).as("verifiedAt for " + name)
+                    .matches("\\d{4}-\\d{2}-\\d{2}");
+        }
+    }
+
+    private void assertThatNaturalLanguageFieldsAreVietnamese(JsonNode place, String name) {
+        List<String> fields = List.of("openingHours", "costNote");
+        List<String> englishFragments = List.of(
+                "daily visit",
+                "boat departure",
+                "depends on",
+                "subject to",
+                "operating hours",
+                "check ",
+                "official sightseeing",
+                "does not include",
+                "route stop",
+                "standalone attraction",
+                "optional ",
+                "may cost extra",
+                "per adult");
+        for (String field : fields) {
+            String value = place.path(field).asText("");
+            String normalized = normalizeText(value);
+            englishFragments.forEach(fragment -> assertThat(containsPhrase(normalized, fragment))
+                    .as(field + " should be Vietnamese for " + name + ": " + value)
+                    .isFalse());
+        }
+    }
+
+    private void assertSourceVerifiedPlace(
+            JsonNode places,
+            String destination,
+            String name,
+            String sourceUrl,
+            long minCost,
+            long maxCost,
+            String costBasis,
+            String weatherSensitivity) {
+        JsonNode place = findPlace(places, destination, name);
+        assertThat(place.path("sourceUrl").asText()).as("sourceUrl for " + name).isEqualTo(sourceUrl);
+        assertThat(place.path("verifiedAt").asText()).as("verifiedAt for " + name).isNotBlank();
+        assertThat(place.path("estimatedCostMin").asLong()).as("estimatedCostMin for " + name).isEqualTo(minCost);
+        assertThat(place.path("estimatedCostMax").asLong()).as("estimatedCostMax for " + name).isEqualTo(maxCost);
+        assertThat(place.path("costBasis").asText()).as("costBasis for " + name).isEqualTo(costBasis);
+        assertThat(place.path("weatherSensitivity").asText()).as("weatherSensitivity for " + name).isEqualTo(weatherSensitivity);
+        assertThat(place.path("costNote").asText()).as("costNote for " + name).isNotBlank();
+    }
+
+    private JsonNode findPlace(JsonNode places, String destination, String name) {
+        for (JsonNode place : places) {
+            if (destination.equals(place.path("destination").asText()) && name.equals(place.path("name").asText())) {
+                return place;
+            }
+        }
+        throw new AssertionError("Missing place " + destination + " / " + name);
     }
 
     private String requiredText(JsonNode node, String field) {
@@ -146,8 +235,18 @@ class PlaceSeedGovernanceTest {
         String text = normalizeText(String.join(" ",
                 place.path("name").asText(""),
                 place.path("description").asText(""),
-                place.path("openingHours").asText("")));
+                place.path("openingHours").asText(""),
+                place.path("costNote").asText(""),
+                tagsText(place)));
         return HIGH_WEATHER_SIGNALS.stream().anyMatch(signal -> containsPhrase(text, signal));
+    }
+
+    private String tagsText(JsonNode place) {
+        StringBuilder tags = new StringBuilder();
+        for (JsonNode tag : place.path("tags")) {
+            tags.append(' ').append(tag.asText(""));
+        }
+        return tags.toString();
     }
 
     private boolean containsPhrase(String normalizedText, String phrase) {
@@ -159,6 +258,8 @@ class PlaceSeedGovernanceTest {
             return "";
         }
         return Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replace("đ", "d")
+                .replace("Đ", "D")
                 .replaceAll("\\p{M}", "")
                 .replace("đ", "d")
                 .replace("Đ", "D")

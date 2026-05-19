@@ -75,6 +75,9 @@ public class Place {
     @Column(columnDefinition = "TEXT")
     private String openingHours;
 
+    @Column(columnDefinition = "TEXT")
+    private String costNote;
+
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
     private IndoorOutdoor indoorOutdoor;
@@ -105,6 +108,12 @@ public class Place {
 
     @Column(length = 120)
     private String source;
+
+    @Column(length = 500)
+    private String sourceUrl;
+
+    @Column(length = 20)
+    private String verifiedAt;
 
     @CreationTimestamp
     @Column(updatable = false)

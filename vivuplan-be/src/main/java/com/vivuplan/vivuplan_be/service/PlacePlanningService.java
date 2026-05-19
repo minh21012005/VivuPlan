@@ -296,6 +296,9 @@ public class PlacePlanningService {
         parts.add("address=" + nullToBlank(place.getAddress()));
         parts.add("tags=" + compactList(place.getTags(), 6));
         parts.add("note=" + truncate(nullToBlank(place.getDescription()), 160));
+        if (place.getCostNote() != null && !place.getCostNote().isBlank()) {
+            parts.add("costNote=" + truncate(place.getCostNote(), 140));
+        }
         return String.join(" | ", parts);
     }
 

@@ -4,27 +4,29 @@
     "destination": "Hạ Long",
     "type": "ATTRACTION",
     "address": "Vịnh Hạ Long, Quảng Ninh",
-    "priceLevel": "MID",
-    "estimatedCostMin": 250000,
-    "estimatedCostMax": 350000,
+    "priceLevel": "LOW",
+    "estimatedCostMin": 200000,
+    "estimatedCostMax": 250000,
     "rating": 4.7,
     "latitude": 20.9101,
     "longitude": 107.1839,
     "description": "Di sản thiên nhiên thế giới, phù hợp tour tàu ngắm vịnh và hang động.",
-    "openingHours": "Theo lịch tàu/tuyến tham quan",
+    "openingHours": "Tham quan trong ngày 06:30-18:30; giờ tàu rời/về cảng phụ thuộc mùa và tuyến tham quan",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Ban Quản lý Vịnh Hạ Long",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "HIGH",
     "tags": [
       "attraction",
       "outdoor",
-      "beach",
       "boat",
       "heritage"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://halongbay.com.vn/en/p/58-muc-phi-tham-quan-vinh-ha-long",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Chỉ là phí tham quan chính thức. Chưa bao gồm tàu, du thuyền, bữa ăn, kayak hoặc phí dịch vụ của đơn vị khai thác."
   },
   {
     "name": "Hang Sửng Sốt",
@@ -38,18 +40,23 @@
     "latitude": 20.844,
     "longitude": 107.093,
     "description": "Hang lớn và nổi tiếng trong vùng lõi Vịnh Hạ Long, thường nằm trong tuyến tàu.",
-    "openingHours": "Theo lịch tàu/tuyến tham quan",
+    "openingHours": "07:30-17:30 mùa hè; 07:30-17:00 mùa đông; phụ thuộc tuyến tàu hoạt động",
     "verified": true,
-    "source": "Vietnam Travel",
-    "indoorOutdoor": "OUTDOOR",
-    "weatherSensitivity": "MEDIUM",
+    "source": "Ban Quản lý Vịnh Hạ Long",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "HIGH",
     "tags": [
       "attraction",
-      "outdoor",
-      "beach"
+      "mixed",
+      "cave",
+      "boat",
+      "heritage"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "INCLUDED",
+    "sourceUrl": "https://halongbay.com.vn/p/71-thoi-gian-don-tra-khach-ve-cang-ben",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Điểm dừng đã nằm trong vé tuyến tham quan Vịnh Hạ Long; không phải điểm miễn phí độc lập."
   },
   {
     "name": "Đảo Ti Tốp",
@@ -63,20 +70,25 @@
     "latitude": 20.8596,
     "longitude": 107.0818,
     "description": "Đảo có bãi tắm và điểm leo ngắm toàn cảnh Vịnh Hạ Long.",
-    "openingHours": "Theo lịch tàu/tuyến tham quan",
+    "openingHours": "07:30-17:30 mùa hè; 07:30-17:00 mùa đông; phụ thuộc tuyến tàu hoạt động",
     "verified": true,
-    "source": "Visit Quang Ninh",
+    "source": "Ban Quản lý Vịnh Hạ Long",
     "indoorOutdoor": "OUTDOOR",
-    "weatherSensitivity": "MEDIUM",
+    "weatherSensitivity": "HIGH",
     "tags": [
       "attraction",
       "outdoor",
       "beach",
       "island",
+      "viewpoint",
+      "boat",
       "adventure"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "INCLUDED",
+    "sourceUrl": "https://halongbay.com.vn/p/71-thoi-gian-don-tra-khach-ve-cang-ben",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Điểm dừng đã nằm trong vé tuyến tham quan Vịnh Hạ Long; tắm biển/ngắm cảnh phụ thuộc tuyến tàu và thời tiết."
   },
   {
     "name": "Sun World Hạ Long",
@@ -90,7 +102,7 @@
     "latitude": 20.954,
     "longitude": 107.047,
     "description": "Tổ hợp công viên, cáp treo và trò chơi tại khu Bãi Cháy.",
-    "openingHours": "Theo lịch vận hành Sun World",
+    "openingHours": "Giờ vận hành thay đổi theo khu và theo mùa; cần kiểm tra lịch Sun World trước khi đi",
     "verified": true,
     "source": "Sun World",
     "indoorOutdoor": "MIXED",
@@ -98,10 +110,14 @@
     "tags": [
       "activity",
       "mixed",
-      "family"
+      "family",
+      "theme-park"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://sunworld.vn/vi/ha-long/check-in/bang-gia-sun-world-ha-long",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Bảng giá chính thức 2026: Dragon Park 300k, Typhoon Water Park 350k, cáp treo Nữ Hoàng 380k và một số combo khoảng tối đa 600k/người lớn."
   },
   {
     "name": "Bãi Cháy",
@@ -1268,54 +1284,59 @@
     "destination": "Hạ Long",
     "type": "ATTRACTION",
     "address": "Vịnh Hạ Long, Quảng Ninh",
-    "priceLevel": "LOW",
+    "priceLevel": "FREE",
     "estimatedCostMin": 0,
-    "estimatedCostMax": 200000,
+    "estimatedCostMax": 0,
     "rating": 4.4,
     "latitude": 20.8426,
     "longitude": 107.0624,
     "description": "Làng chài nổi lâu đời trên vịnh, thường đi kèm tour tàu/kayak nên chi phí phụ thuộc tuyến tham quan.",
-    "openingHours": "Theo lịch tàu/tuyến tham quan",
+    "openingHours": "Phụ thuộc tuyến tham quan Vịnh Hạ Long và lịch tàu",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Ban Quản lý Vịnh Hạ Long",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "HIGH",
     "tags": [
       "attraction",
       "outdoor",
-      "beach",
       "boat",
-      "adventure"
+      "heritage"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "INCLUDED",
+    "sourceUrl": "https://halongbay.com.vn/en/p/58-muc-phi-tham-quan-vinh-ha-long",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Trung tâm văn hóa nổi Cửa Vạn nằm trong các tuyến tham quan chính thức. Kayak/thuyền nan là dịch vụ tùy chọn và có thể tính phí riêng theo đơn vị khai thác."
   },
   {
     "name": "Hang Luồn",
     "destination": "Hạ Long",
     "type": "ACTIVITY",
     "address": "Đảo Bồ Hòn, Vịnh Hạ Long, Quảng Ninh",
-    "priceLevel": "LOW",
+    "priceLevel": "FREE",
     "estimatedCostMin": 0,
-    "estimatedCostMax": 150000,
+    "estimatedCostMax": 0,
     "rating": 4.4,
     "latitude": 20.8429,
     "longitude": 107.0842,
     "description": "Điểm chèo kayak/thuyền nan phổ biến trong tour vịnh, chỉ nên xếp khi thời tiết biển an toàn.",
-    "openingHours": "Theo lịch tàu/tuyến tham quan",
+    "openingHours": "07:30-17:30 mùa hè; 07:30-17:00 mùa đông; phụ thuộc tuyến tàu hoạt động",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Ban Quản lý Vịnh Hạ Long",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "HIGH",
     "tags": [
       "activity",
       "outdoor",
-      "beach",
       "boat",
+      "cave",
       "adventure"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "INCLUDED",
+    "sourceUrl": "https://halongbay.com.vn/p/71-thoi-gian-don-tra-khach-ve-cang-ben",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Điểm dừng đã nằm trong vé tuyến tham quan Vịnh Hạ Long. Kayak hoặc thuyền nan là dịch vụ tùy chọn và có thể tính phí riêng theo đơn vị khai thác."
   },
   {
     "name": "Thác Bạc Sa Pa",

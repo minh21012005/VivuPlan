@@ -144,6 +144,7 @@ public class DataInitializer implements CommandLineRunner {
         place.setImageUrl(seed.imageUrl());
         place.setDescription(seed.description());
         place.setOpeningHours(seed.openingHours());
+        place.setCostNote(seed.costNote());
         place.setIndoorOutdoor(seed.indoorOutdoor() != null ? seed.indoorOutdoor() : inferIndoorOutdoor(seed));
         place.setWeatherSensitivity(seed.weatherSensitivity() != null ? seed.weatherSensitivity() : inferWeatherSensitivity(seed));
         place.setCostBasis(seed.costBasis() != null ? seed.costBasis() : inferCostBasis(seed));
@@ -151,6 +152,8 @@ public class DataInitializer implements CommandLineRunner {
         place.setAliases(new ArrayList<>(seed.aliases() == null ? inferAliases(seed) : seed.aliases()));
         place.setVerified(seed.verified() == null || seed.verified());
         place.setSource(seed.source());
+        place.setSourceUrl(seed.sourceUrl());
+        place.setVerifiedAt(seed.verifiedAt());
     }
 
     private Place.IndoorOutdoor inferIndoorOutdoor(PlaceSeed seed) {
@@ -338,12 +341,15 @@ public class DataInitializer implements CommandLineRunner {
             String imageUrl,
             String description,
             String openingHours,
+            String costNote,
             Place.IndoorOutdoor indoorOutdoor,
             Place.WeatherSensitivity weatherSensitivity,
             List<String> tags,
             List<String> aliases,
             Place.CostBasis costBasis,
             Boolean verified,
-            String source
+            String source,
+            String sourceUrl,
+            String verifiedAt
     ) {}
 }
