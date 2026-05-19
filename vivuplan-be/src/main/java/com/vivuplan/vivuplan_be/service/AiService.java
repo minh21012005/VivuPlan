@@ -281,6 +281,7 @@ public class AiService {
                         %s
                         %s
                         Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
+                        If using a rented motorbike, car, or bicycle, include one TRANSPORT activity with the total rental fee for the covered period. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee.
                         Before returning, sum every activity.estimatedCost and keep the total at or below the total group budget unless the required outbound/return transport alone makes that impossible.
                         If the budget is tight, keep required transport realistic but reduce optional paid attractions, tours, premium meals, shopping, and accommodation comfort instead of exceeding budget.
                         If realistic required costs make the budget impossible, return realistic costs anyway. Never understate costs to fit the budget.
@@ -317,6 +318,7 @@ public class AiService {
                                 %s
                                 Create a separate TRANSPORT activity with route/mode/cost instead of putting transport cost in an ATTRACTION, FOOD, CAFE, or ACTIVITY note.
                                 Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
+                                If using a rented motorbike, car, or bicycle, include one TRANSPORT activity with the total rental fee for the covered period. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee.
                                 """,
                         retryReason,
                         dayNumber,
@@ -349,8 +351,9 @@ public class AiService {
                         - Verified place candidates for this destination: %s
 
                         Weather-aware planning rules:
-                        1. Each forecast line is "Day N (date): condition, temp, rain chance, rain mm, wind -> risk level".
+                        1. Each forecast line is "Day N (date): condition, temp, rain chance, rain mm, wind -> risk level", optionally followed by "Outdoor timing windows" and "Best outdoor slot".
                         2. For the day being regenerated, honor its risk level: "RAIN FLEX" means outdoor activities are still allowed with safer timing/backup notes; "SEVERE WEATHER RISK" means reduce only unsafe outdoor, water, or adventure activities; "Good weather" means outdoor preferred.
+                        2a. When Outdoor timing windows are present, treat rain as potentially intermittent. Put destination-signature outdoor/scenic activities in the Best outdoor slot or another LOW RAIN WINDOW/RAIN FLEX window instead of replacing them with indoor activities by default.
                         3. Never mention the weather in the regenerated day's title, summary, activities, or notes. Just naturally plan appropriate activities.
                            If weather or another constraint blocks the user's request, explain that in requestFulfillment.items[].userMessage.
                         4. If forecast is "none", plan normally without weather constraints.
@@ -358,6 +361,7 @@ public class AiService {
 
                         Important weather interpretation update:
                         - Treat RAIN FLEX or legacy LIGHT RAIN as low-impact weather context, not a reason to reduce outdoor diversity.
+                        - If hourly Outdoor timing windows are present, use them to schedule outdoor/scenic highlights into the least rainy part of the day.
                         - Keep destination-defining outdoor/scenic places in the main plan when generally safe; add backup notes instead of replacing them.
                         - Treat SEVERE WEATHER RISK or legacy HIGH RAIN RISK as a hard safety constraint only for unsafe outdoor/water/adventure activities on the affected day.
                         - If weather blocks or weakens a user request or a destination-signature experience, explain it in requestFulfillment.items[].userMessage with reasonCode WEATHER_SAFETY.
@@ -400,8 +404,9 @@ public class AiService {
                         4. Keep times in HH:mm 24h format and avoid meaningful overlaps.
                         5. estimatedCost MUST be total VND for the whole group of %d travelers.
                         5a. Never set estimatedCost to 0 for paid intercity transport such as flights, trains, buses, private cars, airport transfers, vehicle rental pickup, lodging, tickets, tours, shows, or paid experiences.
-                        5b. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
-                        5c. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
+                        5b. If using a rented motorbike, car, or bicycle, include one TRANSPORT activity with the total rental fee for the covered period. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee.
+                        5c. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
+                        5d. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
                         6. Preserve user constraints: avoid banned items, respect must-visit where relevant, respect style/group.
                         7. Treat Local transport as the user's preference, not an absolute law. Follow it when practical; if a different mode is safer or more realistic in Vietnam, explain briefly in a TRANSPORT note.
                         8. %s
@@ -584,16 +589,18 @@ public class AiService {
                         - Verified place candidates for this destination: %s
 
                         Weather-aware planning rules:
-                        1. Read the Weather Forecast carefully. Each line is labeled "Day N (date): condition, temp, rain chance, rain mm, wind -> risk level".
+                        1. Read the Weather Forecast carefully. Each line is labeled "Day N (date): condition, temp, rain chance, rain mm, wind -> risk level", optionally followed by "Outdoor timing windows" and "Best outdoor slot".
                         2. For days labeled "RAIN FLEX": outdoor activities are still allowed. Keep signature scenic/outdoor experiences in the main plan when generally safe, choose better time windows, and add indoor backup notes instead of replacing them.
                         3. For days labeled "SEVERE WEATHER RISK" or legacy "HIGH RAIN RISK": reduce only unsafe outdoor, water, or adventure activities on the affected day. Prefer moving signature experiences to a safer day before omitting them.
                         4. For days labeled "Good weather": maximize outdoor, scenic, or active experiences.
-                        5. Never mention the weather forecast to the user in the output text. Just naturally plan the right activities.
-                        6. If forecast is "none" or unavailable, plan normally without weather constraints.
+                        5. When Outdoor timing windows are present, treat rain as potentially intermittent. Put destination-signature outdoor/scenic activities in the Best outdoor slot or another LOW RAIN WINDOW/RAIN FLEX window instead of replacing them with indoor activities by default.
+                        6. Never mention the weather forecast to the user in the output text. Just naturally plan the right activities.
+                        7. If forecast is "none" or unavailable, plan normally without weather constraints.
                         %s
 
                         Important weather interpretation update:
                         - Treat RAIN FLEX or legacy LIGHT RAIN as low-impact weather context, not a reason to reduce outdoor diversity.
+                        - If hourly Outdoor timing windows are present, use them to schedule outdoor/scenic highlights into the least rainy part of the day.
                         - Keep destination-defining outdoor/scenic places in the main plan when generally safe; add backup notes instead of replacing them.
                         - Treat SEVERE WEATHER RISK or legacy HIGH RAIN RISK as a hard safety constraint only for unsafe outdoor/water/adventure activities on the affected day.
                         - If weather blocks all or most destination-signature scenic experiences, explain the omission/substitution in requestFulfillment.items[].userMessage with reasonCode WEATHER_SAFETY so the user knows the plan changed for safety, not because the system missed them.
@@ -620,6 +627,7 @@ public class AiService {
                         6. For fixed-price items such as cable car, theme park, show, museum, paid tour, boat tour, or entrance ticket, use a realistic recent public-market estimate and mention the unit basis in note, for example "khoảng 850k/người".
                         7. For accommodation, include a clear ACCOMMODATION activity with total lodging cost for all nights and all travelers. Do not use the accommodation type for a taxi/check-in only.
                         8. Never set estimatedCost to 0 for paid intercity transport such as flights, trains, buses, private cars, airport transfers, vehicle rental pickup, lodging, tickets, tours, shows, or paid experiences.
+                        8a. If using a rented motorbike, car, or bicycle, include one TRANSPORT activity with the total rental fee for the covered period. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee.
                         9. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
                         10. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
                         11. If the budget cannot support all expensive attractions, choose fewer paid activities instead of exceeding budget.
@@ -976,6 +984,7 @@ public class AiService {
         int nonLogisticsActivities = 0;
         String recoverableCostIssue = null;
         boolean bundledIntercityTransportCost = hasBundledIntercityTransportCost(days, req);
+        Set<String> paidVehicleRentalKinds = paidVehicleRentalKinds(days);
         for (TripDto.DayResponse day : days) {
             int minActivities = minimumActivitiesForDay(day, req);
             if (day.getActivities() == null || day.getActivities().size() < minActivities) {
@@ -1002,7 +1011,7 @@ public class AiService {
                     return QualityCheck.fail("activity has negative cost: " + act.getName());
                 }
                 String costIssue = requiredActivityCostIssue(act, req, type, name, location, note,
-                        bundledIntercityTransportCost);
+                        bundledIntercityTransportCost, paidVehicleRentalKinds);
                 if (costIssue != null) {
                     if (isRecoverableCostQualityIssue(costIssue)) {
                         recoverableCostIssue = recoverableCostIssue == null ? costIssue : recoverableCostIssue;
@@ -1070,6 +1079,7 @@ public class AiService {
             scheduleForCostContext.addAll(currentSchedule);
         }
         boolean bundledIntercityTransportCost = hasBundledIntercityTransportCost(scheduleForCostContext, req);
+        Set<String> paidVehicleRentalKinds = paidVehicleRentalKinds(scheduleForCostContext);
         String avoid = normalize(String.join("\n",
                 req.getAvoid() != null ? req.getAvoid() : "",
                 extractNegativeInstruction(req.getNotes())));
@@ -1097,7 +1107,7 @@ public class AiService {
                 return QualityCheck.fail("activity has negative cost: " + act.getName());
             }
             String costIssue = requiredActivityCostIssue(act, req, type, name, location, note,
-                    bundledIntercityTransportCost);
+                    bundledIntercityTransportCost, paidVehicleRentalKinds);
             if (costIssue != null) {
                 if (isRecoverableCostQualityIssue(costIssue)) {
                     recoverableCostIssue = recoverableCostIssue == null ? costIssue : recoverableCostIssue;
@@ -1159,7 +1169,8 @@ public class AiService {
             String normalizedName,
             String normalizedLocation,
             String normalizedNote,
-            boolean bundledIntercityTransportCost) {
+            boolean bundledIntercityTransportCost,
+            Set<String> paidVehicleRentalKinds) {
         String combined = String.join(" ", normalizedName, normalizedLocation, normalizedNote);
         long cost = Math.max(0, act.getEstimatedCost());
 
@@ -1169,7 +1180,8 @@ public class AiService {
             }
         }
         if (isVehicleRentalStartActivity(normalizedType, combined)) {
-            if (cost == 0) {
+            String rentalKind = vehicleRentalKind(combined);
+            if (cost == 0 && !paidVehicleRentalKinds.contains(rentalKind)) {
                 return "vehicle rental cost is missing: " + act.getName();
             }
         }
@@ -1209,6 +1221,33 @@ public class AiService {
         return false;
     }
 
+    private Set<String> paidVehicleRentalKinds(List<TripDto.DayResponse> days) {
+        Set<String> paidKinds = new HashSet<>();
+        if (days == null || days.isEmpty()) {
+            return paidKinds;
+        }
+        for (TripDto.DayResponse day : days) {
+            if (day == null || day.getActivities() == null) {
+                continue;
+            }
+            for (TripDto.ActivityResponse activity : day.getActivities()) {
+                String type = normalize(activity.getType());
+                long cost = Math.max(0, activity.getEstimatedCost());
+                if (!type.equals("transport") || cost == 0) {
+                    continue;
+                }
+                String combined = normalize(String.join(" ",
+                        activity.getName() != null ? activity.getName() : "",
+                        activity.getLocation() != null ? activity.getLocation() : "",
+                        activity.getNote() != null ? activity.getNote() : ""));
+                if (isVehicleRentalStartActivity(type, combined)) {
+                    paidKinds.add(vehicleRentalKind(combined));
+                }
+            }
+        }
+        return paidKinds;
+    }
+
     private boolean mentionsBundledIntercityTransportCost(String normalizedText) {
         return containsAny(normalizedText,
                 "khu hoi",
@@ -1246,6 +1285,19 @@ public class AiService {
                 "nhan oto",
                 "lay o to",
                 "lay oto");
+    }
+
+    private String vehicleRentalKind(String normalizedText) {
+        if (containsAny(normalizedText, "xe may", "motorbike", "scooter")) {
+            return "motorbike";
+        }
+        if (containsAny(normalizedText, "xe dap", "bike", "bicycle")) {
+            return "bicycle";
+        }
+        if (containsAny(normalizedText, "o to", "oto", "car")) {
+            return "car";
+        }
+        return "vehicle";
     }
 
     private boolean isVehicleRentalReturnActivity(String normalizedText) {

@@ -179,6 +179,65 @@ class TripServiceTest {
     }
 
     @Test
+    void generateAndSavePassesHourlyOutdoorWindowsToAi() {
+        User user = sampleUser();
+        TripService service = service();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        when(weatherService.getForecastForDestination(anyString(), nullable(Double.class), nullable(Double.class)))
+                .thenReturn(List.of(WeatherService.DailyWeather.builder()
+                        .date(LocalDate.now().toString())
+                        .code(63)
+                        .minTemp(22)
+                        .maxTemp(28)
+                        .precipitationProbability(80)
+                        .precipitationMm(4.0)
+                        .windspeedKmh(12)
+                        .timeWindows(List.of(
+                                WeatherService.WeatherWindow.builder()
+                                        .label("morning")
+                                        .startHour(6)
+                                        .endHour(11)
+                                        .code(1)
+                                        .precipitationProbability(20)
+                                        .precipitationMm(0.1)
+                                        .windspeedKmh(8)
+                                        .build(),
+                                WeatherService.WeatherWindow.builder()
+                                        .label("afternoon")
+                                        .startHour(12)
+                                        .endHour(17)
+                                        .code(63)
+                                        .precipitationProbability(75)
+                                        .precipitationMm(3.0)
+                                        .windspeedKmh(12)
+                                        .build()))
+                        .build()));
+        when(placePlanningService.buildVerifiedPlacesContext(any(TripDto.GenerateRequest.class))).thenReturn("none");
+        when(tripRepository.existsByShareCode(anyString())).thenReturn(false);
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> {
+            Trip saved = invocation.getArgument(0);
+            saved.setId(1L);
+            return saved;
+        });
+        AtomicReference<TripDto.GenerateRequest> capturedRequest = new AtomicReference<>();
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class))).thenAnswer(invocation -> {
+            TripDto.GenerateRequest aiReq = invocation.getArgument(0);
+            capturedRequest.set(aiReq);
+            return new AiService.GeneratedItineraryResult(List.of(proposedDayWithoutRequestedActivity()), noRequestFulfillment());
+        });
+
+        service.generateAndSave(7L, generateRequest("", ""));
+
+        assertThat(capturedRequest.get().getWeatherForecast())
+                .contains("Outdoor timing windows")
+                .contains("morning 06-11")
+                .contains("Best outdoor slot: morning 06-11")
+                .contains("schedule signature outdoor/scenic activities here");
+    }
+
+    @Test
     void generateAndSaveWarnsWhenAiDoesNotReturnRequestFulfillmentReport() {
         User user = sampleUser();
         TripService service = service();

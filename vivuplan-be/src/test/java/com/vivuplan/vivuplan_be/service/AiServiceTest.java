@@ -59,6 +59,29 @@ class AiServiceTest {
     }
 
     @Test
+    void itineraryQualityAllowsZeroCostVehiclePickupWhenRentalWasAlreadyCountedElsewhere() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Thue xe may 3 ngay tai Tam Coc", "TRANSPORT",
+                        "Tam Coc, Ninh Binh", 450_000L,
+                        "Tong phi thue xe may 3 ngay cho ca nhom."),
+                activity("08:30", "Nhan xe may thue va di chuyen ve homestay", "TRANSPORT",
+                        "Tam Coc, Ninh Binh", 0,
+                        "Phi thue xe may da duoc tinh o hoat dong thue xe luc 08:00."),
+                activity("09:30", "Tham quan Hang Mua", "ATTRACTION",
+                        "Khe Dau Ha, Ninh Binh", 200_000L, null),
+                activity("12:00", "An trua tai Nha hang Duc De", "FOOD",
+                        "Ninh Binh", 250_000L, null)));
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).isTrue();
+    }
+
+    @Test
     void itineraryQualityStillFlagsZeroCostVehiclePickup() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
@@ -126,6 +149,8 @@ class AiServiceTest {
         assertThat(prompt)
                 .contains("Never return more than " + ItineraryQualityPolicy.MAX_TOTAL_ITEMS_PER_DAY + " total items")
                 .contains("For close walkable places, a clear walking note with cost 0 is enough")
+                .contains("If a rented vehicle is used across multiple activities or days")
+                .contains("Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee")
                 .contains("signature/must-try experiences using your own Vietnam travel knowledge")
                 .doesNotContain("Add a clear local transportation plan with TRANSPORT activities for getting around");
     }
@@ -147,6 +172,8 @@ class AiServiceTest {
         assertThat(prompt)
                 .contains("Never return more than " + ItineraryQualityPolicy.MAX_TOTAL_ITEMS_PER_DAY + " total items")
                 .contains("For close walkable places, a clear walking note with cost 0 is enough")
+                .contains("If a rented vehicle is used across multiple activities or days")
+                .contains("Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee")
                 .contains("Preserve or restore relevant destination-signature/must-try experiences")
                 .contains("The previous proposal was rejected because: missing explicit local transport");
     }
@@ -235,7 +262,11 @@ class AiServiceTest {
 
         assertThat(prompt)
                 .contains("RAIN FLEX")
+                .contains("Outdoor timing windows")
+                .contains("Best outdoor slot")
+                .contains("treat rain as potentially intermittent")
                 .contains("low-impact weather context")
+                .contains("schedule outdoor/scenic highlights into the least rainy part of the day")
                 .contains("not a reason to reduce outdoor diversity")
                 .contains("Keep destination-defining outdoor/scenic places in the main plan when generally safe");
     }

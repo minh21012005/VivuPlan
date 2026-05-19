@@ -19,6 +19,7 @@ import java.time.LocalTime;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -548,8 +549,62 @@ public class TripService {
                     dw.getPrecipitationMm(),
                     dw.getWindspeedKmh(),
                     risk));
+            String windowSummary = formatOutdoorTimingWindows(dw);
+            if (!windowSummary.isBlank()) {
+                sb.append("  ").append(windowSummary).append(System.lineSeparator());
+            }
         }
         return sb.length() > 0 ? sb.toString().trim() : "none";
+    }
+
+    private String formatOutdoorTimingWindows(WeatherService.DailyWeather dayWeather) {
+        List<WeatherService.WeatherWindow> windows = dayWeather.getTimeWindows();
+        if (windows == null || windows.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder("Outdoor timing windows: ");
+        for (int i = 0; i < windows.size(); i++) {
+            WeatherService.WeatherWindow window = windows.get(i);
+            if (i > 0) {
+                sb.append("; ");
+            }
+            sb.append(String.format(Locale.ROOT,
+                    "%s %02d-%02d: %s, rain chance %d%%, rain %.1fmm, wind %.0fkm/h -> %s",
+                    window.getLabel(),
+                    window.getStartHour(),
+                    window.getEndHour(),
+                    window.toWeatherLabel(),
+                    window.getPrecipitationProbability(),
+                    window.getPrecipitationMm(),
+                    window.getWindspeedKmh(),
+                    outdoorWindowRiskLabel(window.outdoorRiskLevel())));
+        }
+
+        WeatherService.WeatherWindow bestWindow = windows.stream()
+                .min(Comparator
+                        .comparingInt(WeatherService.WeatherWindow::outdoorRiskLevel)
+                        .thenComparingInt(WeatherService.WeatherWindow::getPrecipitationProbability)
+                        .thenComparingDouble(WeatherService.WeatherWindow::getPrecipitationMm))
+                .orElse(null);
+        if (bestWindow != null && bestWindow.outdoorRiskLevel() < 2) {
+            sb.append(". Best outdoor slot: ")
+                    .append(bestWindow.getLabel())
+                    .append(" ")
+                    .append(String.format(Locale.ROOT, "%02d-%02d", bestWindow.getStartHour(), bestWindow.getEndHour()))
+                    .append("; schedule signature outdoor/scenic activities here when route and pacing fit");
+        } else {
+            sb.append(". No clearly safe outdoor slot; keep only safe/covered outdoor activities or move signature outdoor experiences to another day");
+        }
+        return sb.toString();
+    }
+
+    private String outdoorWindowRiskLabel(int riskLevel) {
+        return switch (riskLevel) {
+            case 2 -> "SEVERE WEATHER RISK";
+            case 1 -> "RAIN FLEX";
+            default -> "LOW RAIN WINDOW";
+        };
     }
 
     private void validateRegeneratedDayProposal(Trip trip, TripDto.DayResponse proposedDay) {

@@ -12,6 +12,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -56,34 +57,68 @@ public class WeatherService {
         private double precipitationMm;
         private int    precipitationProbability;
         private double windspeedKmh;
+        @Builder.Default
+        private List<WeatherWindow> timeWindows = List.of();
 
         /** Human-readable WMO weather label for AI prompts. */
         public String toWeatherLabel() {
-            if (code == 0)            return "Clear sky";
-            if (code <= 2)            return "Partly cloudy";
-            if (code == 3)            return "Overcast";
-            if (code <= 49)           return "Fog/mist";
-            if (code <= 59)           return "Drizzle";
-            if (code <= 69)           return "Rain";
-            if (code <= 79)           return "Snow/sleet";
-            if (code <= 82)           return "Rain showers";
-            if (code <= 86)           return "Snow showers";
-            if (code <= 99)           return "Thunderstorm";
-            return "Unknown";
+            return weatherLabel(code);
         }
 
         /** 0 = fine, 1 = flexible rain plan, 2 = severe weather safety risk */
         public int outdoorRiskLevel() {
-            if (code >= 95 && code <= 99)          return 2;
-            if (code == 65 || code == 67 || code == 82 || code == 86) return 2;
-            if (precipitationMm >= 25)             return 2;
-            if (windspeedKmh >= 50 && precipitationProbability >= 70) return 2;
-            if (precipitationProbability >= 95 && precipitationMm >= 15) return 2;
-            if ((code >= 51 && code <= 64) || (code >= 80 && code <= 81)) return 1;
-            if (precipitationMm >= 1)              return 1;
-            if (precipitationProbability >= 60)    return 1;
-            return 0;
+            return resolveOutdoorRiskLevel(code, precipitationMm, precipitationProbability, windspeedKmh);
         }
+    }
+
+    @Data
+    @Builder
+    public static class WeatherWindow {
+        private String label;
+        private int startHour;
+        private int endHour;
+        private int code;
+        private double precipitationMm;
+        private int precipitationProbability;
+        private double windspeedKmh;
+
+        public String toWeatherLabel() {
+            return weatherLabel(code);
+        }
+
+        public int outdoorRiskLevel() {
+            return resolveOutdoorRiskLevel(code, precipitationMm, precipitationProbability, windspeedKmh);
+        }
+    }
+
+    private static String weatherLabel(int code) {
+        if (code == 0)            return "Clear sky";
+        if (code <= 2)            return "Partly cloudy";
+        if (code == 3)            return "Overcast";
+        if (code <= 49)           return "Fog/mist";
+        if (code <= 59)           return "Drizzle";
+        if (code <= 69)           return "Rain";
+        if (code <= 79)           return "Snow/sleet";
+        if (code <= 82)           return "Rain showers";
+        if (code <= 86)           return "Snow showers";
+        if (code <= 99)           return "Thunderstorm";
+        return "Unknown";
+    }
+
+    private static int resolveOutdoorRiskLevel(
+            int code,
+            double precipitationMm,
+            int precipitationProbability,
+            double windspeedKmh) {
+        if (code >= 95 && code <= 99)          return 2;
+        if (code == 65 || code == 67 || code == 82 || code == 86) return 2;
+        if (precipitationMm >= 25)             return 2;
+        if (windspeedKmh >= 50 && precipitationProbability >= 70) return 2;
+        if (precipitationProbability >= 95 && precipitationMm >= 15) return 2;
+        if ((code >= 51 && code <= 64) || (code >= 80 && code <= 81)) return 1;
+        if (precipitationMm >= 1)              return 1;
+        if (precipitationProbability >= 60)    return 1;
+        return 0;
     }
 
     // ─── Weather Forecast ────────────────────────────────────────────────────
@@ -106,6 +141,7 @@ public class WeatherService {
                 .queryParam("latitude",  String.format("%.4f", lat))
                 .queryParam("longitude", String.format("%.4f", lon))
                 .queryParam("daily", "weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max,precipitation_probability_max")
+                .queryParam("hourly", "weathercode,precipitation,precipitation_probability,windspeed_10m")
                 .queryParam("timezone", "Asia/Ho_Chi_Minh")
                 .queryParam("forecast_days", 16)
                 .build()
@@ -210,6 +246,7 @@ public class WeatherService {
         List<Number> precipitationSums = (List<Number>) daily.get("precipitation_sum");
         List<Number> windSpeeds = (List<Number>) daily.get("windspeed_10m_max");
         List<Number> rainProbs = (List<Number>) daily.get("precipitation_probability_max");
+        Map<String, List<WeatherWindow>> windowsByDate = parseHourlyWindows(response);
 
         if (times == null || times.isEmpty()) {
             return List.of();
@@ -233,9 +270,139 @@ public class WeatherService {
                     .precipitationMm(getDouble(precipitationSums, i, 0))
                     .precipitationProbability(getInt(rainProbs, i, 0))
                     .windspeedKmh(getDouble(windSpeeds, i, 0))
+                    .timeWindows(windowsByDate.getOrDefault(date, List.of()))
                     .build());
         }
         return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, List<WeatherWindow>> parseHourlyWindows(Map<String, Object> response) {
+        Object hourlyObject = response.get("hourly");
+        if (!(hourlyObject instanceof Map<?, ?>)) {
+            return Map.of();
+        }
+        Map<String, Object> hourly = (Map<String, Object>) hourlyObject;
+        List<String> times = (List<String>) hourly.get("time");
+        if (times == null || times.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Number> codes = (List<Number>) hourly.get("weathercode");
+        List<Number> precipitation = (List<Number>) hourly.get("precipitation");
+        List<Number> rainProbs = (List<Number>) hourly.get("precipitation_probability");
+        List<Number> windSpeeds = (List<Number>) hourly.get("windspeed_10m");
+        Map<String, WindowAccumulator[]> grouped = new HashMap<>();
+
+        for (int i = 0; i < times.size(); i++) {
+            String time = getString(times, i);
+            if (time == null || time.length() < 13) {
+                continue;
+            }
+            int hour = parseHour(time);
+            int windowIndex = windowIndex(hour);
+            if (windowIndex < 0) {
+                continue;
+            }
+            String date = time.substring(0, 10);
+            WindowAccumulator[] accumulators = grouped.computeIfAbsent(date, ignored -> new WindowAccumulator[] {
+                    new WindowAccumulator("morning", 6, 11),
+                    new WindowAccumulator("afternoon", 12, 17),
+                    new WindowAccumulator("evening", 18, 22)
+            });
+            accumulators[windowIndex].add(
+                    getInt(codes, i, 0),
+                    getDouble(precipitation, i, 0),
+                    getInt(rainProbs, i, 0),
+                    getDouble(windSpeeds, i, 0));
+        }
+
+        Map<String, List<WeatherWindow>> result = new HashMap<>();
+        for (Map.Entry<String, WindowAccumulator[]> entry : grouped.entrySet()) {
+            List<WeatherWindow> windows = new ArrayList<>();
+            for (WindowAccumulator accumulator : entry.getValue()) {
+                if (accumulator.hasData()) {
+                    windows.add(accumulator.toWindow());
+                }
+            }
+            if (!windows.isEmpty()) {
+                result.put(entry.getKey(), windows);
+            }
+        }
+        return result;
+    }
+
+    private int parseHour(String time) {
+        try {
+            return Integer.parseInt(time.substring(11, 13));
+        } catch (RuntimeException e) {
+            return -1;
+        }
+    }
+
+    private int windowIndex(int hour) {
+        if (hour >= 6 && hour <= 11) {
+            return 0;
+        }
+        if (hour >= 12 && hour <= 17) {
+            return 1;
+        }
+        if (hour >= 18 && hour <= 22) {
+            return 2;
+        }
+        return -1;
+    }
+
+    private static int weatherCodeRank(int code) {
+        if (code >= 95 && code <= 99) return 5;
+        if (code == 65 || code == 67 || code == 82 || code == 86) return 4;
+        if ((code >= 61 && code <= 64) || (code >= 80 && code <= 81)) return 3;
+        if (code >= 51 && code <= 60) return 2;
+        if (code >= 1 && code <= 49) return 1;
+        return 0;
+    }
+
+    private static class WindowAccumulator {
+        private final String label;
+        private final int startHour;
+        private final int endHour;
+        private int samples;
+        private int code;
+        private double precipitationMm;
+        private int precipitationProbability;
+        private double windspeedKmh;
+
+        private WindowAccumulator(String label, int startHour, int endHour) {
+            this.label = label;
+            this.startHour = startHour;
+            this.endHour = endHour;
+        }
+
+        private void add(int code, double precipitationMm, int precipitationProbability, double windspeedKmh) {
+            samples++;
+            if (weatherCodeRank(code) > weatherCodeRank(this.code)) {
+                this.code = code;
+            }
+            this.precipitationMm += Math.max(0, precipitationMm);
+            this.precipitationProbability = Math.max(this.precipitationProbability, precipitationProbability);
+            this.windspeedKmh = Math.max(this.windspeedKmh, windspeedKmh);
+        }
+
+        private boolean hasData() {
+            return samples > 0;
+        }
+
+        private WeatherWindow toWindow() {
+            return WeatherWindow.builder()
+                    .label(label)
+                    .startHour(startHour)
+                    .endHour(endHour)
+                    .code(code)
+                    .precipitationMm(precipitationMm)
+                    .precipitationProbability(precipitationProbability)
+                    .windspeedKmh(windspeedKmh)
+                    .build();
+        }
     }
 
     private String getString(List<String> values, int index) {

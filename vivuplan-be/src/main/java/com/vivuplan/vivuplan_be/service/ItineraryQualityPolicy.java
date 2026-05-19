@@ -37,7 +37,8 @@ final class ItineraryQualityPolicy {
         return String.format(
                 "Add separate TRANSPORT activities only for outbound/return travel, moving between distant clusters, or movement with meaningful cost inside %s. "
                         + "For close walkable places, a clear walking note with cost 0 is enough. "
-                        + "Never hide rental, taxi, Grab, paid bicycle, or local transfer costs inside FOOD/CAFE/ATTRACTION notes.",
+                        + "Never hide rental, taxi, Grab, paid bicycle, or local transfer costs inside FOOD/CAFE/ATTRACTION notes. "
+                        + "If a rented vehicle is used across multiple activities or days, put the total rental fee in one TRANSPORT activity and make later pickup/return notes reference that counted fee.",
                 place);
     }
 

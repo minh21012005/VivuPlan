@@ -48,6 +48,43 @@ class WeatherServiceTest {
     }
 
     @Test
+    void parseDailyBlockBuildsHourlyOutdoorWindowsWhenAvailable() throws Exception {
+        WeatherService service = new WeatherService();
+        Map<String, Object> daily = new HashMap<>();
+        daily.put("time", List.of("2026-05-18"));
+        daily.put("weathercode", List.of(63));
+        daily.put("temperature_2m_max", List.of(31.0));
+        daily.put("temperature_2m_min", List.of(25.0));
+        daily.put("precipitation_sum", List.of(4.0));
+        daily.put("windspeed_10m_max", List.of(12.0));
+        daily.put("precipitation_probability_max", List.of(80));
+        Map<String, Object> hourly = new HashMap<>();
+        hourly.put("time", List.of(
+                "2026-05-18T06:00",
+                "2026-05-18T09:00",
+                "2026-05-18T13:00",
+                "2026-05-18T19:00"));
+        hourly.put("weathercode", List.of(1, 61, 80, 0));
+        hourly.put("precipitation", List.of(0.0, 0.4, 2.0, 0.0));
+        hourly.put("precipitation_probability", List.of(15, 35, 75, 20));
+        hourly.put("windspeed_10m", List.of(8.0, 12.0, 10.0, 5.0));
+
+        List<WeatherService.DailyWeather> forecast = invokeParseDailyBlock(service,
+                Map.of("daily", daily, "hourly", hourly));
+
+        assertThat(forecast).hasSize(1);
+        assertThat(forecast.get(0).getTimeWindows()).hasSize(3);
+        assertThat(forecast.get(0).getTimeWindows())
+                .extracting(WeatherService.WeatherWindow::getLabel)
+                .containsExactly("morning", "afternoon", "evening");
+        WeatherService.WeatherWindow afternoon = forecast.get(0).getTimeWindows().get(1);
+        assertThat(afternoon.getPrecipitationProbability()).isEqualTo(75);
+        assertThat(afternoon.getPrecipitationMm()).isEqualTo(2.0);
+        assertThat(afternoon.outdoorRiskLevel()).isEqualTo(1);
+        assertThat(forecast.get(0).getTimeWindows().get(2).outdoorRiskLevel()).isZero();
+    }
+
+    @Test
     void outdoorRiskTreatsModerateRainChanceAsFlexibleNotSevere() {
         WeatherService.DailyWeather weather = WeatherService.DailyWeather.builder()
                 .code(63)
