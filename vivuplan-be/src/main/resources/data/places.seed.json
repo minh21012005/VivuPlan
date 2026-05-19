@@ -135,7 +135,7 @@
     "verified": true,
     "source": "Vivu Hạ Long",
     "indoorOutdoor": "OUTDOOR",
-    "weatherSensitivity": "MEDIUM",
+    "weatherSensitivity": "HIGH",
     "tags": [
       "attraction",
       "outdoor",
@@ -182,23 +182,29 @@
     "type": "ACTIVITY",
     "address": "Fansipan, Sa Pa, Lào Cai",
     "priceLevel": "HIGH",
-    "estimatedCostMin": 800000,
+    "estimatedCostMin": 850000,
     "estimatedCostMax": 1200000,
     "rating": 4.6,
     "latitude": 22.3033,
     "longitude": 103.7757,
-    "description": "Cáp treo và quần thể tham quan lên đỉnh Fansipan, phụ thuộc nhiều vào thời tiết.",
-    "openingHours": "Theo lịch vận hành Sun World",
+    "description": "Cáp treo, quần thể tâm linh và khu tham quan lên đỉnh Fansipan; hoạt động leo núi/ngắm cảnh phụ thuộc nhiều vào mây mù, mưa gió và lịch vận hành.",
+    "openingHours": "Theo lịch vận hành Sun World; cần kiểm tra lịch cáp treo và điều kiện thời tiết trước ngày đi",
     "verified": true,
     "source": "Sun World",
     "indoorOutdoor": "MIXED",
-    "weatherSensitivity": "MEDIUM",
+    "weatherSensitivity": "HIGH",
     "tags": [
       "activity",
-      "mixed"
+      "mixed",
+      "mountain",
+      "spiritual",
+      "family"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://sunworld.vn/fansipan/cam-nang-du-lich/kinh-nghiem-di-cap-treo-fansipan-day-du-va-chi-tiet",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn Sun World cập nhật 2026 khuyến nghị kiểm tra giá tại trang bán vé chính thức. Estimate phản ánh vé cáp treo/khu tham quan cơ bản và một số combo phổ biến; buffet, tàu hỏa leo núi, WOW Pass hoặc dịch vụ riêng có thể tính thêm."
   },
   {
     "name": "Bản Cát Cát",
@@ -211,18 +217,23 @@
     "rating": 4.2,
     "latitude": 22.3291,
     "longitude": 103.8291,
-    "description": "Bản du lịch gần trung tâm Sa Pa, phù hợp đi bộ ngắn và chụp ảnh.",
-    "openingHours": "Ban ngày",
+    "description": "Bản du lịch gần trung tâm Sa Pa, phù hợp đi bộ ngắn, thác Tiên Sa, tìm hiểu văn hóa H'Mông và chụp ảnh.",
+    "openingHours": "Ban ngày; một số nguồn du lịch cập nhật khung giờ khoảng 06:00-20:00",
     "verified": true,
-    "source": "Sapa Tourism",
+    "source": "Visit Sa Pa",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
-      "mixed"
+      "mixed",
+      "heritage",
+      "waterfall"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://visitsapa.com.vn/vi/ban-cat-cat",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Giá vé bản Cát Cát được các nguồn du lịch 2025-2026 ghi nhận thay đổi theo thời điểm/gói dịch vụ. Estimate 70k-150k/người; thuê trang phục, xe ôm/xe điện, ăn uống tính riêng."
   },
   {
     "name": "Núi Hàm Rồng",
@@ -231,14 +242,14 @@
     "address": "Trung tâm thị xã Sa Pa, Lào Cai",
     "priceLevel": "LOW",
     "estimatedCostMin": 70000,
-    "estimatedCostMax": 100000,
+    "estimatedCostMax": 70000,
     "rating": 4.2,
     "latitude": 22.3364,
     "longitude": 103.8436,
-    "description": "Điểm ngắm thị trấn Sa Pa, vườn hoa và đường đi bộ ngay trung tâm.",
-    "openingHours": "Ban ngày",
+    "description": "Điểm ngắm thị trấn Sa Pa, vườn hoa và đường đi bộ ngay trung tâm; phù hợp khi trời khô ráo và ít sương.",
+    "openingHours": "Ban ngày; nên tránh lúc mưa hoặc sương dày",
     "verified": true,
-    "source": "VNAT",
+    "source": "Visit Sa Pa",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -248,7 +259,10 @@
       "family"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://visitsapa.com.vn/vi/nui-ham-rong-sapa",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Estimate dùng mức vé người lớn khoảng 70k/người theo các nguồn du lịch Sa Pa cập nhật; trẻ em có thể thấp hơn, dịch vụ gửi xe/ăn uống tính riêng."
   },
   {
     "name": "Nhà thờ đá Sa Pa",
@@ -261,20 +275,23 @@
     "rating": 4.3,
     "latitude": 22.3351,
     "longitude": 103.8422,
-    "description": "Biểu tượng trung tâm Sa Pa, thuận tiện kết hợp quảng trường và chợ đêm.",
-    "openingHours": "Cả ngày",
+    "description": "Biểu tượng trung tâm Sa Pa, thuận tiện kết hợp quảng trường, chợ đêm và khu trung tâm.",
+    "openingHours": "Không gian bên ngoài có thể tham quan cả ngày; giờ lễ/không gian bên trong phụ thuộc hoạt động nhà thờ",
     "verified": true,
-    "source": "VNAT",
+    "source": "Visit Sa Pa",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
       "mixed",
       "spiritual",
-      "food"
+      "heritage"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://visitsapa.com.vn/vi/nha-tho-da-sapa",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Tham quan không gian bên ngoài miễn phí. Nếu vào bên trong trong giờ lễ/sinh hoạt tôn giáo cần giữ trật tự; gửi xe, mua đồ ăn/đồ lưu niệm tính riêng."
   },
   {
     "name": "Bản Lao Chải",
@@ -283,14 +300,14 @@
     "address": "Lao Chải, Sa Pa, Lào Cai",
     "priceLevel": "LOW",
     "estimatedCostMin": 75000,
-    "estimatedCostMax": 150000,
+    "estimatedCostMax": 75000,
     "rating": 4.5,
     "latitude": 22.3037,
     "longitude": 103.889,
-    "description": "Bản trong thung lũng Mường Hoa, phù hợp trekking và trải nghiệm văn hóa.",
-    "openingHours": "Ban ngày",
+    "description": "Bản trong thung lũng Mường Hoa, phù hợp trekking, ngắm ruộng bậc thang và trải nghiệm văn hóa.",
+    "openingHours": "Ban ngày; trekking nên tránh mưa lớn, sạt lở và đường trơn",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Visit Sa Pa",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "HIGH",
     "tags": [
@@ -300,7 +317,10 @@
       "adventure"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://visitsapa.com.vn/vi/ban-lao-chai",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Estimate phản ánh vé/tham quan bản Mường Hoa ở mức phổ biến. Trekking có hướng dẫn viên, xe ôm, thuê trang phục, ăn uống hoặc homestay tính riêng."
   },
   {
     "name": "Bản Tả Van",
@@ -309,22 +329,27 @@
     "address": "Tả Van, Sa Pa, Lào Cai",
     "priceLevel": "LOW",
     "estimatedCostMin": 75000,
-    "estimatedCostMax": 150000,
+    "estimatedCostMax": 75000,
     "rating": 4.5,
     "latitude": 22.302,
     "longitude": 103.8997,
-    "description": "Bản nghỉ homestay và đi bộ giữa ruộng bậc thang thung lũng Mường Hoa.",
-    "openingHours": "Ban ngày",
+    "description": "Bản nghỉ homestay và đi bộ giữa ruộng bậc thang thung lũng Mường Hoa; phù hợp trekking nhẹ khi thời tiết ổn.",
+    "openingHours": "Ban ngày; trekking nên tránh mưa lớn, sạt lở và đường trơn",
     "verified": true,
-    "source": "Local tourism",
-    "indoorOutdoor": "MIXED",
-    "weatherSensitivity": "MEDIUM",
+    "source": "Visit Sa Pa",
+    "indoorOutdoor": "OUTDOOR",
+    "weatherSensitivity": "HIGH",
     "tags": [
       "attraction",
-      "mixed"
+      "outdoor",
+      "mountain",
+      "adventure"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://visitsapa.com.vn/vi/ban-ta-van",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Estimate phản ánh vé/tham quan bản Mường Hoa ở mức phổ biến. Homestay, trekking có hướng dẫn viên, xe ôm, thuê trang phục hoặc ăn uống tính riêng."
   },
   {
     "name": "Cột cờ Lũng Cú",
@@ -337,18 +362,23 @@
     "rating": 4.6,
     "latitude": 23.3635,
     "longitude": 105.3147,
-    "description": "Điểm cực Bắc biểu tượng, thường kết hợp Đồng Văn trong cung Hà Giang.",
-    "openingHours": "Ban ngày",
+    "description": "Điểm cực Bắc biểu tượng trên đỉnh núi Rồng, thường kết hợp Đồng Văn và làng Lô Lô Chải trong cung Hà Giang.",
+    "openingHours": "Ban ngày; nên tránh mưa lớn, sương dày hoặc gió mạnh trên khu vực bậc thang lên cột cờ",
     "verified": true,
-    "source": "VNAT",
+    "source": "Tuyên giáo Hà Giang",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
-      "mixed"
+      "mixed",
+      "heritage",
+      "mountain"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://tuyengiao.hagiang.gov.vn/thong-tin-chuyen-de/du-lich/lung-cu-net-ve-thieng-lieng-noi-dia-dau-cuc-bac.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn chính thức xác nhận giá trị điểm đến và vị trí biểu tượng. Estimate là vé/tham quan tham khảo theo mức phổ biến tại điểm; phí xe điện, gửi xe, thuê trang phục hoặc mua đồ lưu niệm tính riêng."
   },
   {
     "name": "Phố cổ Đồng Văn",
@@ -361,10 +391,10 @@
     "rating": 4.3,
     "latitude": 23.2782,
     "longitude": 105.3612,
-    "description": "Khu phố cổ, chợ phiên và điểm nghỉ qua đêm phổ biến trên cao nguyên đá.",
-    "openingHours": "Cả ngày",
+    "description": "Khu phố cổ có kiến trúc giao thoa bản địa và Hoa Nam, thuận tiện kết hợp chợ phiên, chợ đêm và nghỉ qua đêm trên cao nguyên đá.",
+    "openingHours": "Không gian phố cổ có thể đi dạo cả ngày; chợ phiên/chợ đêm hoạt động theo lịch địa phương",
     "verified": true,
-    "source": "VNAT",
+    "source": "Tuyên giáo Hà Giang",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -375,7 +405,10 @@
       "food"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://tuyengiao.hagiang.gov.vn/thong-tin-chuyen-de/du-lich/di-tich-kien-truc-nghe-thuat-pho-co-dong-van.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Đi dạo không gian phố cổ không thu vé. Chi phí phát sinh là ăn uống, cà phê, mua sắm, lưu trú hoặc gửi xe theo từng điểm dịch vụ."
   },
   {
     "name": "Đèo Mã Pì Lèng",
@@ -388,19 +421,22 @@
     "rating": 4.8,
     "latitude": 23.2507,
     "longitude": 105.4057,
-    "description": "Cung đèo cảnh quan trọng điểm của cao nguyên đá Đồng Văn, cần di chuyển an toàn.",
-    "openingHours": "Ban ngày",
+    "description": "Cung đèo cảnh quan trọng điểm của cao nguyên đá Đồng Văn, có vực sâu và đường núi nên phụ thuộc mạnh vào thời tiết, sương mù và an toàn giao thông.",
+    "openingHours": "Ban ngày; không nên đi khi mưa lớn, sương mù dày, gió mạnh hoặc đường trơn",
     "verified": true,
-    "source": "VNAT",
+    "source": "Tuyên giáo Hà Giang",
     "indoorOutdoor": "OUTDOOR",
-    "weatherSensitivity": "MEDIUM",
+    "weatherSensitivity": "HIGH",
     "tags": [
       "attraction",
       "outdoor",
       "mountain"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://tuyengiao.hagiang.gov.vn/thong-tin-chuyen-de/khoa-giao-van-hoa-van-nghe/danh-lam-thang-canh-ma-pi-leng.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Đèo không thu vé tham quan. Chi phí thực tế là thuê xe/xe ôm, xăng xe, đồ uống ở điểm dừng hoặc vé khu ngắm cảnh tư nhân nếu ghé."
   },
   {
     "name": "Sông Nho Quế - Hẻm Tu Sản",
@@ -413,10 +449,10 @@
     "rating": 4.7,
     "latitude": 23.2576,
     "longitude": 105.423,
-    "description": "Đi thuyền ngắm hẻm vực Tu Sản, cần kiểm tra mưa lũ và điều kiện vận hành.",
-    "openingHours": "Ban ngày, theo thời tiết",
+    "description": "Đi thuyền ngắm sông Nho Quế và hẻm vực Tu Sản; hoạt động phụ thuộc thời tiết, mực nước và điều kiện vận hành an toàn.",
+    "openingHours": "Ban ngày; theo lịch thuyền và điều kiện thời tiết tại bến",
     "verified": true,
-    "source": "VNAT",
+    "source": "Tuyên giáo Hà Giang",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "HIGH",
     "tags": [
@@ -425,7 +461,10 @@
       "boat"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://tuyengiao.hagiang.gov.vn/thong-tin-chuyen-de/khoa-giao-van-hoa-van-nghe/song-nho-que-nang-tho-tren-mien-da-xam.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn chính thức cập nhật năm 2025 xác nhận dịch vụ thuyền du lịch trên lòng hồ Nho Quế 1. Estimate là vé thuyền tham khảo theo mức phổ biến; xe trung chuyển, ăn uống và dịch vụ riêng có thể tính thêm."
   },
   {
     "name": "Dinh thự họ Vương",
@@ -438,10 +477,10 @@
     "rating": 4.4,
     "latitude": 23.2567,
     "longitude": 105.2544,
-    "description": "Di tích kiến trúc lịch sử thường ghé trên đường Đồng Văn - Lũng Cú.",
-    "openingHours": "Ban ngày",
+    "description": "Di tích kiến trúc lịch sử ở Sà Phìn, thường ghé trên đường Đồng Văn - Lũng Cú để tìm hiểu lịch sử và kiến trúc nhà Vương.",
+    "openingHours": "Ban ngày; giờ mở cửa có thể thay đổi theo đơn vị quản lý điểm di tích",
     "verified": true,
-    "source": "VNAT",
+    "source": "Tuyên giáo Hà Giang",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -450,7 +489,10 @@
       "heritage"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://tuyengiao.hagiang.gov.vn/tuyen-giao-co-so/di-tich-nha-vuong-diem-den-hap-dan-ve-lich-su-va-kien-truc.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn chính thức xác nhận giá trị di tích. Estimate là vé tham quan tham khảo theo mức phổ biến; thuyết minh, gửi xe hoặc mua đồ lưu niệm tính riêng."
   },
   {
     "name": "Núi đôi Quản Bạ",
@@ -463,10 +505,10 @@
     "rating": 4.4,
     "latitude": 23.0659,
     "longitude": 104.9865,
-    "description": "Điểm ngắm cảnh ở cửa ngõ cao nguyên đá, phù hợp dừng chân trong cung loop.",
-    "openingHours": "Ban ngày",
+    "description": "Điểm ngắm cảnh ở cửa ngõ cao nguyên đá, thường kết hợp Cổng trời Quản Bạ và dừng chân trên cung Hà Giang.",
+    "openingHours": "Ban ngày; nên đi khi trời quang để nhìn rõ thung lũng Tam Sơn",
     "verified": true,
-    "source": "VNAT",
+    "source": "Cục Du lịch Quốc gia Việt Nam",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -476,7 +518,10 @@
       "couple"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://vietnamtourism.vn/index.php/tourism/items/1720",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Điểm ngắm cảnh tự nhiên không có vé cố định trong nguồn chính thức. Chi phí phát sinh thường là gửi xe, đồ uống ở điểm dừng hoặc dịch vụ chụp ảnh/điểm ngắm cảnh tư nhân nếu ghé."
   },
   {
     "name": "Ngũ Hành Sơn",
@@ -1376,14 +1421,14 @@
     "address": "Quốc lộ 4D, Sa Pa, Lào Cai",
     "priceLevel": "LOW",
     "estimatedCostMin": 20000,
-    "estimatedCostMax": 50000,
+    "estimatedCostMax": 20000,
     "rating": 4.2,
     "latitude": 22.3613,
     "longitude": 103.7712,
-    "description": "Thác nước gần đèo Ô Quy Hồ, phù hợp lịch trình nửa ngày khi đường khô ráo.",
-    "openingHours": "Ban ngày",
+    "description": "Thác nước gần đèo Ô Quy Hồ, phù hợp lịch trình nửa ngày khi đường khô ráo; nên tránh mưa lớn vì đường trơn và nước mạnh.",
+    "openingHours": "Ban ngày; nên đi khi trời khô ráo",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Visit Sa Pa",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "HIGH",
     "tags": [
@@ -1393,7 +1438,10 @@
       "waterfall"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://visitsapa.com.vn/vi/thac-bac-sapa",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Estimate dùng mức vé tham quan phổ biến khoảng 20k/người. Gửi xe, ăn uống hoặc thuê xe/xe ôm tới thác tính riêng."
   },
   {
     "name": "Đèo Ô Quy Hồ",
@@ -1406,10 +1454,10 @@
     "rating": 4.6,
     "latitude": 22.3538,
     "longitude": 103.7572,
-    "description": "Cung đèo ngắm núi nổi tiếng, phụ thuộc mạnh vào sương mù, mưa và an toàn giao thông.",
-    "openingHours": "Ban ngày",
+    "description": "Cung đèo ngắm núi nổi tiếng, phụ thuộc mạnh vào sương mù, mưa, gió và an toàn giao thông.",
+    "openingHours": "Ban ngày; không nên đi khi sương mù dày, mưa lớn hoặc gió mạnh",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Visit Sa Pa",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -1418,7 +1466,10 @@
       "mountain"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://visitsapa.com.vn/vi/deo-o-quy-ho",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Đèo không thu vé tham quan. Chi phí phát sinh thường là thuê xe/xe ôm, gửi xe, đồ uống ở điểm dừng hoặc vé các khu chụp ảnh tư nhân nếu ghé."
   },
   {
     "name": "Bản Tả Phìn",
@@ -1431,18 +1482,22 @@
     "rating": 4.3,
     "latitude": 22.3696,
     "longitude": 103.8424,
-    "description": "Bản làng người Dao Đỏ, phù hợp trải nghiệm văn hóa, tắm lá thuốc và homestay.",
-    "openingHours": "Ban ngày",
+    "description": "Bản làng người Dao Đỏ, phù hợp trải nghiệm văn hóa, hang động, tắm lá thuốc và homestay.",
+    "openingHours": "Ban ngày; dịch vụ tắm lá thuốc/homestay có giờ riêng theo từng hộ kinh doanh",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Visit Sa Pa",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
-      "mixed"
+      "mixed",
+      "heritage"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://visitsapa.com.vn/vi/ban-ta-phin",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Estimate gồm vé/tham quan cơ bản và một phần trải nghiệm phổ biến. Tắm lá thuốc, homestay, hướng dẫn viên, ăn uống hoặc mua thổ cẩm tính riêng theo từng hộ/dịch vụ."
   },
   {
     "name": "Chợ Sa Pa",
@@ -1456,17 +1511,20 @@
     "latitude": 22.3371,
     "longitude": 103.8428,
     "description": "Chợ trung tâm phù hợp ăn đồ nướng, thắng cố, mua đặc sản và ghép vào buổi tối.",
-    "openingHours": "Sáng - tối",
+    "openingHours": "Sáng - tối; một số hàng quán/đồ nướng hoạt động mạnh hơn vào chiều tối",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Visit Sa Pa",
     "indoorOutdoor": "MIXED",
-    "weatherSensitivity": "MEDIUM",
+    "weatherSensitivity": "LOW",
     "tags": [
       "food",
       "mixed"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://visitsapa.com.vn/vi/cho-sapa",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Chợ không thu vé vào cửa. Estimate là chi phí ăn uống/mua đặc sản tham khảo cho một người, phụ thuộc món và lượng mua."
   },
   {
     "name": "Cao nguyên đá Đồng Văn",
@@ -1479,8 +1537,8 @@
     "rating": 4.7,
     "latitude": 23.255,
     "longitude": 105.25,
-    "description": "Vùng công viên địa chất nổi tiếng, phù hợp route Hà Giang Loop nhiều ngày.",
-    "openingHours": "Cả ngày",
+    "description": "Vùng công viên địa chất toàn cầu UNESCO, phù hợp cung Hà Giang nhiều ngày qua Quản Bạ, Yên Minh, Đồng Văn và Mèo Vạc.",
+    "openingHours": "Không gian cảnh quan mở cả ngày; từng điểm tham quan bên trong có giờ riêng",
     "verified": true,
     "source": "UNESCO Global Geoparks",
     "indoorOutdoor": "OUTDOOR",
@@ -1492,7 +1550,10 @@
       "family"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://www.unesco.org/en/iggp/dong-van-karst-plateau-unesco-global-geopark",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Không có vé chung cho toàn vùng công viên địa chất. Chi phí phát sinh phụ thuộc từng điểm dừng, thuê xe, xăng xe, lưu trú, ăn uống hoặc vé tham quan riêng."
   },
   {
     "name": "Làng Lô Lô Chải",
@@ -1505,18 +1566,23 @@
     "rating": 4.5,
     "latitude": 23.3626,
     "longitude": 105.313,
-    "description": "Làng văn hóa dưới chân Cột cờ Lũng Cú, phù hợp ở homestay và trải nghiệm đời sống bản địa.",
-    "openingHours": "Cả ngày",
+    "description": "Làng văn hóa dưới chân Cột cờ Lũng Cú, phù hợp đi bộ nhẹ, ghé cà phê, ở homestay và trải nghiệm đời sống bản địa.",
+    "openingHours": "Không gian làng có thể tham quan ban ngày; homestay/cà phê có giờ riêng theo từng hộ kinh doanh",
     "verified": true,
-    "source": "Ha Giang Tourism",
+    "source": "Tuyên giáo Hà Giang",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
-      "mixed"
+      "mixed",
+      "heritage",
+      "cafe"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://tuyengiao.hagiang.gov.vn/thong-tin-chuyen-de/bao-chi-tw-voi-ha-giang/ve-dep-cuoi-xuan-tai-lang-lo-lo-chai-vung-dia-dau-cuc-bac.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Không ghi nhận vé vào làng cố định trong nguồn chính thức. Estimate là chi phí cà phê, ăn uống, gửi xe hoặc mua đồ lưu niệm; homestay tính riêng theo từng hộ."
   },
   {
     "name": "Chợ phiên Mèo Vạc",
@@ -1529,10 +1595,10 @@
     "rating": 4.3,
     "latitude": 23.1646,
     "longitude": 105.4093,
-    "description": "Chợ phiên vùng cao, phù hợp sáng Chủ nhật để ăn sáng, mua đặc sản và trải nghiệm văn hóa.",
-    "openingHours": "Sáng Chủ nhật",
+    "description": "Chợ phiên vùng cao quy mô lớn trên Cao nguyên đá Đồng Văn, phù hợp sáng Chủ nhật để ăn sáng, mua đặc sản và trải nghiệm văn hóa.",
+    "openingHours": "Sáng Chủ nhật hằng tuần; nên đi sớm vì chợ đông từ sáng",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Tuyên giáo Hà Giang",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -1540,7 +1606,10 @@
       "mixed"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://tuyengiao.hagiang.gov.vn/thong-tin-chuyen-de/du-lich/sac-mau-cho-phien-vung-cao-ngay-tet.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Chợ phiên không thu vé vào cửa. Estimate là chi phí ăn uống, mua đặc sản hoặc hàng thủ công tham khảo cho một người."
   },
   {
     "name": "Ruộng bậc thang Hoàng Su Phì",
@@ -1553,18 +1622,23 @@
     "rating": 4.7,
     "latitude": 22.7548,
     "longitude": 104.6838,
-    "description": "Khu ruộng bậc thang đẹp mùa lúa, cách xa Đồng Văn nên chỉ phù hợp lịch trình dài hoặc route riêng.",
-    "openingHours": "Cả ngày",
+    "description": "Danh thắng ruộng bậc thang phía tây Hà Giang, đẹp nhất mùa nước đổ và mùa lúa chín; cách xa Đồng Văn nên phù hợp lịch trình dài hoặc cung riêng.",
+    "openingHours": "Không gian cảnh quan mở cả ngày; nên đi ban ngày và tránh mưa lớn hoặc đường trơn",
     "verified": true,
-    "source": "Vietnam Travel",
-    "indoorOutdoor": "MIXED",
+    "source": "Tuyên giáo Hà Giang",
+    "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
-      "mixed"
+      "outdoor",
+      "mountain",
+      "heritage"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://tuyengiao.hagiang.gov.vn/tuyen-giao-co-so/gia-tri-ruong-bac-thang-cua-huyen-hoang-su-phi.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Không có vé chung cho toàn vùng ruộng bậc thang. Chi phí phát sinh là thuê xe, xăng xe, ăn uống, lưu trú homestay hoặc phí tại từng điểm/dịch vụ địa phương nếu có."
   },
   {
     "name": "Bãi biển Mỹ Khê",
@@ -3633,7 +3707,8 @@
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
-      "mixed"
+      "mixed",
+      "heritage"
     ],
     "aliases": [],
     "costBasis": "PER_PERSON"
