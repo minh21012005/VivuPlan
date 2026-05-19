@@ -270,7 +270,8 @@ public class AiService {
                         Regenerate the itinerary from scratch.
                         Return exactly ONE JSON object with keys "itinerary" and "requestFulfillment". Never return a bare JSON array, and never use "days" or "schedule" instead of "itinerary".
                         Use named, real places and restaurants in or near %s.
-                        Avoid ANY generic placeholder wording (e.g., "địa điểm nổi bật", "đặc sản địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "chợ địa phương", "địa điểm thuê xe"). Every place, restaurant, cafe, accommodation, or rental shop MUST be a specific real-world business with a concrete proper name (e.g., "Khách sạn Mường Thanh", "Hải Sản Bé Mặn").
+                        Avoid ANY generic placeholder wording (e.g., "địa điểm nổi bật", "đặc sản địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "chợ địa phương", "địa điểm thuê xe"). Every place, restaurant, cafe, accommodation, or rental shop MUST be a specific real-world business with a concrete proper name.
+                        Anti-Bias Rule: Do not default to the same well-known corporate chains. Suggest diverse, logically located, and budget-appropriate places.
                         %s
                         %s
                         Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
@@ -356,10 +357,11 @@ public class AiService {
                         1. Treat verified place candidates as trusted suggestions, not an allowed-only list.
                         2. Candidates are ordered by backend relevance. Consider higher-ranked candidates first, but do not blindly pick the top items when route, weather, pacing, budget, or the user's request makes another choice better.
                         3. Prefer verified candidates when they fit this regenerated day, the user's request, route, weather, and budget.
-                        4. CRITICAL: The candidate list is NOT exhaustive. It may lack specific accommodations, restaurants, cafes, rental shops, or niche local spots. For ANY category lacking suitable candidates, you MUST actively use your extensive internal knowledge to suggest specific, real, and named businesses/places (e.g., "Khách sạn Mường Thanh", "Quán Mì Quảng Bà Mua", "Thuê xe máy Cửa Đại").
+                        4. CRITICAL: The candidate list is NOT exhaustive. It may lack specific accommodations, restaurants, cafes, rental shops, or niche local spots. For ANY category lacking suitable candidates, you MUST actively use your extensive internal knowledge to suggest specific, real, and named businesses/places that realistically match the user's budget, style, and daily route.
                         5. When using a verified candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
-                        6. When using a non-candidate place or activity, it MUST be a specific, existing real-world place with a concrete proper name and address. Absolutely DO NOT use ANY generic or unnamed placeholders for ANY activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "chợ địa phương", "quán cà phê"). If you don't have a candidate, confidently recommend a real place with a specific brand/name from your own knowledge.
-                        7. Do not force every candidate into the day; choose only what makes the day practical.
+                        6. When using a non-candidate place or activity, it MUST be a specific, existing real-world place with a concrete proper name and address. Absolutely DO NOT use ANY generic or unnamed placeholders for ANY activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "chợ địa phương", "quán cà phê").
+                        7. Anti-Bias Rule: Do NOT lazily reuse the same default chains or luxury brands. Actively suggest diverse, budget-appropriate, logically located, and context-relevant local businesses.
+                        8. Do not force every candidate into the day; choose only what makes the day practical.
 
                         Regeneration task:
                         - Regenerate day number: %d
@@ -595,10 +597,11 @@ public class AiService {
                         1. Treat verified place candidates as trusted suggestions, not an allowed-only list.
                         2. Candidates are ordered by backend relevance. Consider higher-ranked candidates first, but do not blindly pick the top items when route, weather, pacing, budget, or the user's request makes another choice better.
                         3. Prefer verified candidates when they fit the user's constraints, route, weather, and budget.
-                        4. CRITICAL: The candidate list is NOT exhaustive. It may lack specific accommodations, restaurants, cafes, rental shops, or niche local spots. For ANY category lacking suitable candidates, you MUST actively use your extensive internal knowledge to suggest specific, real, and named businesses/places (e.g., "Khách sạn Mường Thanh", "Quán Mì Quảng Bà Mua", "Thuê xe máy Cửa Đại").
+                        4. CRITICAL: The candidate list is NOT exhaustive. It may lack specific accommodations, restaurants, cafes, rental shops, or niche local spots. For ANY category lacking suitable candidates, you MUST actively use your extensive internal knowledge to suggest specific, real, and named businesses/places that realistically match the user's budget, style, and daily route.
                         5. When using a verified candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
-                        6. When using a non-candidate place or activity, it MUST be a specific, existing real-world place with a concrete proper name and address. Absolutely DO NOT use ANY generic or unnamed placeholders for ANY activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "chợ địa phương", "quán cà phê"). If you don't have a candidate, confidently recommend a real place with a specific brand/name from your own knowledge.
-                        7. Do not force every candidate into the trip; choose only what makes the itinerary practical.
+                        6. When using a non-candidate place or activity, it MUST be a specific, existing real-world place with a concrete proper name and address. Absolutely DO NOT use ANY generic or unnamed placeholders for ANY activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "chợ địa phương", "quán cà phê").
+                        7. Anti-Bias Rule: Do NOT lazily reuse the same default chains or luxury brands. Actively suggest diverse, budget-appropriate, logically located, and context-relevant local businesses.
+                        8. Do not force every candidate into the trip; choose only what makes the itinerary practical.
 
                         Local transportation rules:
                         1. Make the local transportation plan explicit when places are far apart or movement has meaningful cost. Users must know how to move between places inside %s.
@@ -1470,6 +1473,14 @@ public class AiService {
                 || combined.contains("ve khach san");
     }
 
+    private boolean containsLocalTransportMode(String normalizedText) {
+        List<String> localTransportTerms = List.of(
+                "thue xe may", "xe may", "taxi", "grab", "thue xe o to", "thue o to", "thue oto", 
+                "o to rieng", "oto rieng", "xe rieng", "co tai xe", "xe hop dong", "xe dua don", 
+                "xe dien", "xe dap", "di bo", "xe buyt", "xe bus", "shuttle");
+        return localTransportTerms.stream().anyMatch(normalizedText::contains);
+    }
+
     private boolean isOutboundOrReturnTransport(String normalizedText, TripDto.GenerateRequest req) {
         String departure = normalize(req.getDeparture());
         String destination = normalize(req.getDestination());
@@ -1482,46 +1493,33 @@ public class AiService {
 
     private boolean isLocalTransportCostHiddenInNonTransport(String normalizedType, String normalizedName,
             String normalizedNote) {
-        if (normalizedType.equals("transport")) {
+        if (normalizedType.equals("transport") || normalizedType.equals("accommodation")) {
             return false;
         }
 
         String combined = normalizedName + " " + normalizedNote;
-        // Use more specific cost signals to avoid false-positives from common
-        // Vietnamese words:
-        // - "gia" collides with "gia dinh", "gia lai", place names containing "Gia".
-        // - "dong" collides with directional/geographical words ("dong bac", "song
-        // dong").
-        // - "ngay" collides with "ngay mai", "ngay dau", etc.
-        // Only flag when a clearly monetary signal is present alongside a transport
-        // mode.
-        return containsLocalTransportMode(combined)
-                && (combined.contains("chi phi") || combined.contains("vnd")
-                        || combined.contains("k/nguoi") || combined.contains("k/xe")
-                        || combined.contains("/ngay") || combined.contains("thue phi")
-                        || java.util.regex.Pattern.compile("\\d+[\\s]*k").matcher(combined).find());
-    }
 
-    private boolean containsLocalTransportMode(String normalizedText) {
-        List<String> localTransportTerms = List.of(
-                "thue xe may",
-                "xe may",
-                "taxi",
-                "grab",
-                "thue xe o to",
-                "thue o to",
-                "thue oto",
-                "o to rieng",
-                "oto rieng",
-                "xe rieng",
-                "co tai xe",
-                "xe hop dong",
-                "xe dua don",
-                "xe dien",
-                "xe dap",
-                "di bo",
-                "shuttle");
-        return localTransportTerms.stream().anyMatch(normalizedText::contains);
+        // Do not flag if the note is just about parking
+        if (combined.contains("giu xe") || combined.contains("gui xe") || combined.contains("do xe") || combined.contains("bai xe")) {
+            return false;
+        }
+
+        // Catch explicit phrasing: "tiền taxi", "chi phí di chuyển", etc.
+        boolean hasExplicitPhrasing = combined.contains("gia thue xe")
+                || combined.contains("phi thue xe")
+                || combined.contains("chi phi thue xe")
+                || combined.contains("tien xe")
+                || combined.contains("tien taxi")
+                || combined.contains("tien grab")
+                || combined.contains("chi phi di chuyen")
+                || combined.contains("phi di chuyen");
+
+        // Catch explicit proximity: e.g., "taxi khoang 50k", "thue xe 150k/ngay"
+        boolean hasProximityCost = java.util.regex.Pattern
+                .compile("(thue xe|taxi|grab|xe khach|xe buyt|xe bus|shuttle).{0,20}(\\d+[\\s]*(k|vnd)|/ngay|/luot|/chuyen)")
+                .matcher(combined).find();
+
+        return hasExplicitPhrasing || hasProximityCost;
     }
 
     private boolean isGenericActivity(String normalizedName, String normalizedLocation, String normalizedType) {
