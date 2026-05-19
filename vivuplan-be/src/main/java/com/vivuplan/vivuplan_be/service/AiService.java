@@ -956,6 +956,11 @@ public class AiService {
                 String type = normalize(act.getType());
                 String note = normalize(act.getNote());
                 fingerprint.append(name).append("|");
+                
+                if (!isValidType(type)) {
+                    return QualityCheck.fail("activity has invalid type: " + type + " for " + act.getName());
+                }
+                
                 if (act.getEstimatedCost() < 0) {
                     return QualityCheck.fail("activity has negative cost: " + act.getName());
                 }
@@ -970,10 +975,6 @@ public class AiService {
                 }
                 if (isGenericActivity(name, location, type)) {
                     genericActivities++;
-                }
-                if (isLocalTransportCostHiddenInNonTransport(type, name, note)) {
-                    return QualityCheck
-                            .fail("local transport cost is hidden in non-transport activity: " + act.getName());
                 }
                 if (isLocalTransportActivity(type, name, location, note, req)) {
                     localTransportActivities++;
@@ -1046,6 +1047,9 @@ public class AiService {
             if (name.isBlank()) {
                 return QualityCheck.fail("activity has no name");
             }
+            if (!isValidType(type)) {
+                return QualityCheck.fail("activity has invalid type: " + type + " for " + act.getName());
+            }
             if (!isValidTime(act.getTime())) {
                 return QualityCheck.fail("activity has invalid time: " + act.getTime());
             }
@@ -1070,9 +1074,6 @@ public class AiService {
             if (isGenericActivity(name, location, type)) {
                 genericActivities++;
             }
-            if (isLocalTransportCostHiddenInNonTransport(type, name, note)) {
-                return QualityCheck.fail("local transport cost is hidden in non-transport activity: " + act.getName());
-            }
             if (isLocalTransportActivity(type, name, location, note, req)) {
                 localTransportActivities++;
             }
@@ -1085,7 +1086,8 @@ public class AiService {
 
         ranges.sort(Comparator.comparing(TimeRange::start));
         for (int i = 1; i < ranges.size(); i++) {
-            // TRANSPORT activities are bookings/rentals that do not block a fixed time slot;
+            // TRANSPORT activities are bookings/rentals that do not block a fixed time
+            // slot;
             // exclude them from strict overlap checking to avoid false positives.
             TimeRange previous = ranges.get(i - 1);
             TimeRange current = ranges.get(i);
@@ -1239,7 +1241,7 @@ public class AiService {
         // "bo" removed: too short, collides with common Vietnamese words/place names
         // (bờ biển, bổ sung, etc.)
         List<String> negativeMarkers = List.of("khong muon", "khong thich", "tranh", "dung", "khong can", "loai bo",
-                "khong lay");
+                "khong lay", "han che", "di ung", "kieng");
         Set<String> terms = new LinkedHashSet<>();
         for (String clause : normalized.split("[,;\\.\\n]+")) {
             String trimmedClause = clause.trim();
@@ -1321,6 +1323,12 @@ public class AiService {
         return time != null && time.matches("([01]\\d|2[0-3]):[0-5]\\d");
     }
 
+    private boolean isValidType(String type) {
+        if (type == null) return false;
+        return type.equals("food") || type.equals("cafe") || type.equals("attraction") 
+                || type.equals("transport") || type.equals("accommodation") || type.equals("activity");
+    }
+
     private int parseActivityDurationMinutes(String duration) {
         if (duration == null || duration.isBlank())
             return 60;
@@ -1378,8 +1386,6 @@ public class AiService {
         return normalizedType.equals("transport") || normalizedType.equals("accommodation");
     }
 
-
-
     private double distanceKm(double lat1, double lon1, double lat2, double lon2) {
         double earthRadiusKm = 6371.0;
         double dLat = Math.toRadians(lat2 - lat1);
@@ -1415,8 +1421,8 @@ public class AiService {
 
     private boolean containsLocalTransportMode(String normalizedText) {
         List<String> localTransportTerms = List.of(
-                "thue xe may", "xe may", "taxi", "grab", "thue xe o to", "thue o to", "thue oto", 
-                "o to rieng", "oto rieng", "xe rieng", "co tai xe", "xe hop dong", "xe dua don", 
+                "thue xe may", "xe may", "taxi", "grab", "thue xe o to", "thue o to", "thue oto",
+                "o to rieng", "oto rieng", "xe rieng", "co tai xe", "xe hop dong", "xe dua don",
                 "xe dien", "xe dap", "di bo", "xe buyt", "xe bus", "shuttle");
         return localTransportTerms.stream().anyMatch(normalizedText::contains);
     }
@@ -1431,111 +1437,41 @@ public class AiService {
         return normalizedText.contains(departure) && normalizedText.contains(destination);
     }
 
-    private boolean isLocalTransportCostHiddenInNonTransport(String normalizedType, String normalizedName,
-            String normalizedNote) {
-        if (normalizedType.equals("transport") || normalizedType.equals("accommodation")) {
-            return false;
-        }
-
-        String combined = normalizedName + " " + normalizedNote;
-
-        // Do not flag if the note is just about parking
-        if (combined.contains("giu xe") || combined.contains("gui xe") || combined.contains("do xe") || combined.contains("bai xe")) {
-            return false;
-        }
-
-        // Catch explicit phrasing: "tiền taxi", "chi phí di chuyển", etc.
-        boolean hasExplicitPhrasing = combined.contains("gia thue xe")
-                || combined.contains("phi thue xe")
-                || combined.contains("chi phi thue xe")
-                || combined.contains("tien xe")
-                || combined.contains("tien taxi")
-                || combined.contains("tien grab")
-                || combined.contains("chi phi di chuyen")
-                || combined.contains("phi di chuyen");
-
-        // Catch explicit proximity: e.g., "taxi khoang 50k", "thue xe 150k/ngay"
-        boolean hasProximityCost = java.util.regex.Pattern
-                .compile("(thue xe|taxi|grab|xe khach|xe buyt|xe bus|shuttle).{0,20}(\\d+[\\s]*(k|vnd)|/ngay|/luot|/chuyen)")
-                .matcher(combined).find();
-
-        return hasExplicitPhrasing || hasProximityCost;
-    }
-
     private boolean isGenericActivity(String normalizedName, String normalizedLocation, String normalizedType) {
-        List<String> genericTerms = List.of(
-                "an sang dac san",
-                "an trua dac san",
-                "an toi dac san",
-                "an trua tai dia phuong",
-                "an toi tai dia phuong",
-                "an sang tai dia phuong",
-                "dac san dia phuong",
-                "diem noi bat",
-                "khu vuc lan can",
-                "nha hang dia phuong",
-                "quan dia phuong",
-                "ca phe view dep",
-                "cum diem bieu tuong",
-                "khu tham quan chinh",
-                "trai nghiem van hoa",
-                "trai nghiem thien nhien",
-                "dia diem thue xe",
-                "an toi o khach san",
-                "an sang tai khach san",
-                "thue homestay");
-                
-        boolean containsGenericTerm = genericTerms.stream().anyMatch(normalizedName::contains);
-
-        boolean weakLocation = normalizedLocation.isBlank()
-                || normalizedLocation.equals("khu trung tam")
-                || normalizedLocation.equals("khu dem")
-                || normalizedLocation.contains("khu trung tam")
-                || normalizedLocation.contains("khu tham quan chinh")
-                || normalizedLocation.contains("khu vuc vung ven")
-                || normalizedLocation.contains("khu view dep")
-                || normalizedLocation.contains("khu an toi")
-                || normalizedLocation.length() < 6;
-
         boolean transportOrAccommodation = normalizedType.equals("transport") || normalizedType.equals("accommodation");
         if (transportOrAccommodation) {
             return false;
         }
 
-        if (containsGenericTerm) {
-            return true;
-        }
-
-        // Advanced heuristic: remove common generic filler words and check if anything meaningful is left
+        // Advanced heuristic: remove common generic filler words and check if anything
+        // meaningful is left
         String cleanedName = normalizedName;
         String[] prefixesToRemove = {
-            "an sang", "an trua", "an toi", "an", "uong", "thuong thuc", "trai nghiem", 
-            "tham quan", "kham pha", "check in", "mua sam", "dao", "nghi ngoi", "tu do", 
-            "thue xe may", "thue o to", "thue xe", "di chuyen"
+                "an sang", "an trua", "an toi", "an", "uong", "thuong thuc", "trai nghiem",
+                "tham quan", "kham pha", "check in", "mua sam", "dao", "nghi ngoi", "tu do",
+                "thue xe may", "thue o to", "thue xe", "di chuyen"
         };
         for (String prefix : prefixesToRemove) {
             cleanedName = cleanedName.replaceAll("\\b" + prefix + "\\b", "");
         }
-        
+
         String[] genericNouns = {
-            "tai dia phuong", "dac san", "dia phuong", "hai san", "nha hang", "quan an", "quan", 
-            "khach san", "homestay", "resort", "bai bien", "cho", "ca phe", "cafe", 
-            "trung tam", "vung ven", "noi bat", "chinh", "van hoa", "thien nhien", 
-            "banh mi", "bun bo hue", "bun bo", "pho", "com", "bua", "dem", "view dep", 
-            "quanh", "gan", "o", "tai", "cua hang", "sieu thi", "khu vuc", "diem",
-            "thue", "xe may", "o to", "oto", "xe dap", "xe dien", "xe"
+                "tai dia phuong", "dac san", "dia phuong", "hai san", "nha hang", "quan an", "quan",
+                "khach san", "homestay", "resort", "bai bien", "cho", "ca phe", "cafe",
+                "trung tam", "vung ven", "noi bat", "chinh", "van hoa", "thien nhien",
+                "banh mi", "bun bo hue", "bun bo", "pho", "com", "bua", "dem", "view dep",
+                "quanh", "gan", "o", "tai", "cua hang", "sieu thi", "khu vuc", "diem",
+                "thue", "xe may", "o to", "oto", "xe dap", "xe dien", "xe"
         };
         for (String noun : genericNouns) {
             cleanedName = cleanedName.replaceAll("\\b" + noun + "\\b", " ");
         }
-        
+
         cleanedName = cleanedName.replaceAll("\\s+", "").trim();
-        
+
         // If 1 or 0 non-space characters remain after removing filler words, it's a completely generic name
         // (Allows very short specific names like "Vy", "Bo", "Oc" of length >= 2 to pass)
-        boolean isHeuristicGeneric = cleanedName.length() <= 1;
-
-        return isHeuristicGeneric || (weakLocation && normalizedName.split(" ").length <= 3);
+        return cleanedName.length() <= 1;
     }
 
     private String normalize(String value) {

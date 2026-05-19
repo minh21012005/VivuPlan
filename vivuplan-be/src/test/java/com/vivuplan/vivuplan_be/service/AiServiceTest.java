@@ -118,8 +118,6 @@ class AiServiceTest {
                 .contains("trusted suggestions, not an allowed-only list")
                 .contains("Candidates are ordered by backend relevance")
                 .contains("do not blindly pick the top items")
-                .contains("You may use other real places or valuable local activities outside the verified candidates")
-                .contains("specific real place/activity with a concrete name and address/area")
                 .doesNotContain("You may use other real places only when the verified candidates do not cover");
     }
 
@@ -143,8 +141,6 @@ class AiServiceTest {
                 .contains("trusted suggestions, not an allowed-only list")
                 .contains("Candidates are ordered by backend relevance")
                 .contains("do not blindly pick the top items")
-                .contains("You may use other real places or valuable local activities outside the verified candidates")
-                .contains("specific real place/activity with a concrete name and address/area")
                 .doesNotContain("You may use other real places only when the verified candidates do not cover");
     }
 
@@ -191,12 +187,34 @@ class AiServiceTest {
 
         TripDto.DayResponse day = baseDay();
         List<TripDto.ActivityResponse> activities = new java.util.ArrayList<>();
+        String[] names = {
+                "Mì Quảng Bà Mua",
+                "Bảo tàng Đà Nẵng",
+                "Cộng Cà Phê Bạch Đằng",
+                "Chợ Hàn",
+                "Nhà hàng Bếp Cuốn Đà Nẵng",
+                "Bảo tàng Điêu khắc Chăm Đà Nẵng",
+                "Cầu Rồng",
+                "Hải sản Bé Mặn",
+                "Chợ đêm Sơn Trà"
+        };
+        String[] locations = {
+                "231 Trần Phú, Hải Châu, Đà Nẵng",
+                "24 Trần Phú, Hải Châu, Đà Nẵng",
+                "96-98 Bạch Đằng, Hải Châu, Đà Nẵng",
+                "119 Trần Phú, Hải Châu, Đà Nẵng",
+                "54 Nguyễn Văn Thoại, Ngũ Hành Sơn, Đà Nẵng",
+                "02 đường 2/9, Hải Châu, Đà Nẵng",
+                "Đường Nguyễn Văn Linh, Hải Châu, Đà Nẵng",
+                "Lô 14 Hoàng Sa, Sơn Trà, Đà Nẵng",
+                "Mai Hắc Đế, Sơn Trà, Đà Nẵng"
+        };
         for (int i = 0; i < ItineraryQualityPolicy.MAX_NON_LOGISTICS_ITEMS_PER_DAY; i++) {
             activities.add(activity(
                     String.format("%02d:00", 8 + i),
-                    "Điểm trải nghiệm " + (i + 1),
+                    names[i],
                     i % 3 == 0 ? "FOOD" : "ATTRACTION",
-                    "Khu trung tâm " + (i + 1),
+                    locations[i],
                     100_000L,
                     null));
         }

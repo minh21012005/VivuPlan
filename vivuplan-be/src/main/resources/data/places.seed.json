@@ -473,7 +473,7 @@
     "address": "Sà Phìn, Đồng Văn, Hà Giang",
     "priceLevel": "LOW",
     "estimatedCostMin": 25000,
-    "estimatedCostMax": 50000,
+    "estimatedCostMax": 25000,
     "rating": 4.4,
     "latitude": 23.2567,
     "longitude": 105.2544,
@@ -973,7 +973,10 @@
       "mixed"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://nhatrang-travel.com/diem-den/dich-vu/mua-sam/-cho-dam-nha-trang.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Chợ Đầm không có vé vào cửa trong nguồn du lịch Khánh Hòa. Estimate là chi phí ăn uống/mua đặc sản tham khảo cho một người, phụ thuộc món và lượng mua."
   },
   {
     "name": "Hòn Chồng",
@@ -1039,7 +1042,7 @@
     "type": "ACTIVITY",
     "address": "Lạc Dương, Lâm Đồng",
     "priceLevel": "MID",
-    "estimatedCostMin": 100000,
+    "estimatedCostMin": 150000,
     "estimatedCostMax": 250000,
     "rating": 4.3,
     "latitude": 12.0496,
@@ -1945,7 +1948,7 @@
     "type": "ACTIVITY",
     "address": "Vịnh Nha Trang, Khánh Hòa",
     "priceLevel": "HIGH",
-    "estimatedCostMin": 250000,
+    "estimatedCostMin": 300000,
     "estimatedCostMax": 800000,
     "rating": 4.3,
     "latitude": 12.165,
@@ -1964,7 +1967,10 @@
       "boat"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://nhatrang-travel.com/diem-den/diem-tham-quan/diem-tham-quan/hon-mun-cung-dien-bien-dong.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn du lịch Khánh Hòa xác nhận Hòn Mun là khu bảo tồn biển và điểm trải nghiệm đảo. Estimate là chi phí tour/tàu/lặn ngắm san hô tham khảo; phụ phí bảo tồn, thiết bị lặn, ăn uống hoặc dịch vụ riêng có thể tính thêm."
   },
   {
     "name": "Bãi biển Nha Trang",
@@ -1990,13 +1996,16 @@
       "couple"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://nhatrang-travel.com/gioi-thieu/don-vi-hanh-chinh/gioi-thieu-tong-quan-nha-trang.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Bãi biển trung tâm là không gian công cộng, không có vé vào cửa trong nguồn du lịch Khánh Hòa. Estimate là chi phí thuê ghế/dù, gửi đồ, đồ uống hoặc dịch vụ biển tùy chọn."
   },
   {
     "name": "Suối khoáng nóng Tháp Bà",
     "destination": "Nha Trang",
     "type": "ACTIVITY",
-    "address": "15 Ngọc Sơn, Nha Trang, Khánh Hòa",
+    "address": "438 Ngô Đến, Ngọc Hiệp, Nha Trang, Khánh Hòa",
     "priceLevel": "MID",
     "estimatedCostMin": 150000,
     "estimatedCostMax": 500000,
@@ -2004,61 +2013,66 @@
     "latitude": 12.2729,
     "longitude": 109.1765,
     "description": "Tắm bùn và khoáng nóng, phù hợp ngày mưa nhẹ hoặc lịch trình thư giãn.",
-    "openingHours": "Theo lịch vận hành",
+    "openingHours": "Theo lịch vận hành khu tắm bùn/khoáng nóng; nên kiểm tra trực tiếp trước khi đi",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Cổng thông tin Du lịch Khánh Hòa",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "activity",
-      "mixed"
+      "mixed",
+      "family"
     ],
     "aliases": [],
     "costBasis": "PER_PERSON",
-    "sourceUrl": "https://nhatrang-travel.com/diem-den/dich-vu/mua-sam/-cho-dam-nha-trang.html",
+    "sourceUrl": "https://nhatrang-travel.com/diem-den/dich-vu/spa-tam-bun/tam-bun/tam-bun-thap-ba.html",
     "verifiedAt": "2026-05-19",
-    "costNote": "Chợ Đầm không có vé vào cửa trong nguồn du lịch Khánh Hòa. Estimate là chi phí ăn uống/mua đặc sản tham khảo cho một người, phụ thuộc món và lượng mua."
+    "costNote": "Nguồn du lịch Khánh Hòa xác nhận dịch vụ tắm bùn và khoáng nóng Tháp Bà. Estimate là chi phí gói tắm bùn/khoáng nóng tham khảo; hồ riêng, massage, ăn uống, khăn/đồ bơi hoặc xe đưa đón có thể tính riêng."
   },
   {
     "name": "Thung lũng Tình Yêu",
     "destination": "Đà Lạt",
     "type": "ATTRACTION",
-    "address": "Mai Anh Đào, Đà Lạt, Lâm Đồng",
+    "address": "Số 7 Mai Anh Đào, Đà Lạt, Lâm Đồng",
     "priceLevel": "MID",
     "estimatedCostMin": 250000,
-    "estimatedCostMax": 350000,
+    "estimatedCostMax": 250000,
     "rating": 4.1,
     "latitude": 11.9783,
     "longitude": 108.4495,
-    "description": "Khu du lịch cảnh quan, phù hợp cặp đôi/gia đình và lịch trình nhẹ.",
-    "openingHours": "Ban ngày",
+    "description": "Khu du lịch cảnh quan ở hồ Đa Thiện, có hoạt động dạo cảnh, xe điện, ca-nô/pedalo và chụp ảnh.",
+    "openingHours": "07:00 - 17:00 theo cổng du lịch Đà Lạt",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Cổng thông tin Du lịch Đà Lạt",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
       "mixed",
-      "family"
+      "family",
+      "couple"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://dalat.vn/vi/thunglungtinhyeu",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Cổng thông tin Du lịch Đà Lạt ghi giá 250k/người và giờ mở cửa 07:00-17:00. Estimate dùng vé tham quan cơ bản; cầu kính, buffet, xe điện, ca-nô/pedalo, cưỡi ngựa hoặc dịch vụ riêng có thể tính thêm."
   },
   {
     "name": "Chùa Linh Phước",
     "destination": "Đà Lạt",
     "type": "ATTRACTION",
-    "address": "Trại Mát, Đà Lạt, Lâm Đồng",
+    "address": "120 Tự Phước, Trại Mát, Đà Lạt, Lâm Đồng",
     "priceLevel": "FREE",
     "estimatedCostMin": 0,
     "estimatedCostMax": 0,
     "rating": 4.6,
     "latitude": 11.9445,
     "longitude": 108.5133,
-    "description": "Chùa Ve Chai với kiến trúc khảm sành nổi bật, có thể kết hợp tuyến tàu Trại Mát.",
-    "openingHours": "Ban ngày",
+    "description": "Chùa Ve Chai ở Trại Mát, nổi bật với kiến trúc khảm sành, sứ và thủy tinh.",
+    "openingHours": "Ban ngày; cần tôn trọng không gian sinh hoạt tôn giáo",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Cổng thông tin Du lịch Đà Lạt",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -2067,23 +2081,26 @@
       "spiritual"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://dalat.vn/vi/chualinhphuoc",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn du lịch Đà Lạt xác nhận thông tin điểm đến và địa chỉ. Không ghi nhận vé vào cửa; gửi xe, công đức hoặc mua đồ lưu niệm nếu có là chi phí tùy chọn."
   },
   {
     "name": "Đường hầm Đất Sét",
     "destination": "Đà Lạt",
     "type": "ATTRACTION",
-    "address": "Khu du lịch hồ Tuyền Lâm, Đà Lạt, Lâm Đồng",
+    "address": "Đường Hoa Hồng, Khu du lịch Hồ Tuyền Lâm, Đà Lạt, Lâm Đồng",
     "priceLevel": "LOW",
-    "estimatedCostMin": 90000,
-    "estimatedCostMax": 150000,
+    "estimatedCostMin": 30000,
+    "estimatedCostMax": 60000,
     "rating": 4.2,
     "latitude": 11.884,
     "longitude": 108.4101,
-    "description": "Khu tham quan mô hình đất sét gần hồ Tuyền Lâm, phù hợp lịch trình chụp ảnh.",
-    "openingHours": "Ban ngày",
+    "description": "Đường hầm điêu khắc/Làng đất sét, tái hiện lịch sử và biểu tượng Đà Lạt bằng chất liệu đất sét không nung.",
+    "openingHours": "06:00 - 18:00 theo cổng du lịch Đà Lạt",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Cổng thông tin Du lịch Đà Lạt",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -2091,7 +2108,10 @@
       "outdoor"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://dalat.vn/vi/duonghamdieukhacdl",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Cổng thông tin Du lịch Đà Lạt ghi giá 30k-60k/người và giờ mở cửa 06:00-18:00. Estimate dùng mức vé tham quan này; thuê trang phục, chụp ảnh dịch vụ, ăn uống hoặc di chuyển tính riêng."
   },
   {
     "name": "Quảng trường Lâm Viên",
@@ -2107,7 +2127,7 @@
     "description": "Không gian trung tâm bên hồ Xuân Hương, phù hợp dạo tối và chụp ảnh biểu tượng hoa dã quỳ.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Cổng thông tin Du lịch Đà Lạt",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -2115,7 +2135,10 @@
       "mixed"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://dalat.vn/vi/quangtruonglamvien",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Quảng trường là không gian công cộng, không có vé vào cửa. Chi phí phát sinh thường là gửi xe, ăn vặt, đồ uống, trò chơi hoặc sự kiện riêng nếu có."
   },
   {
     "name": "Bãi Rạch Vẹm",
@@ -2131,7 +2154,7 @@
     "description": "Bãi Sao Biển ở phía bắc đảo, phù hợp đi ban ngày mùa biển êm; cần nhắc bảo vệ sao biển.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Cổng thông tin Du lịch Phú Quốc",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -2141,7 +2164,10 @@
       "island"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://phuquoc.kiengiang.gov.vn/trang/TinTuc/38/2165/Net-dep-bien-Rach-Vem.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn địa phương xác nhận Rạch Vẹm là điểm biển/làng chài nổi bật. Không có vé tham quan cố định; estimate là chi phí ăn uống, gửi xe, thuê ghế/dịch vụ biển hoặc di chuyển cục bộ tùy chọn."
   },
   {
     "name": "Làng chài Hàm Ninh",
@@ -2154,19 +2180,22 @@
     "rating": 4.1,
     "latitude": 10.184,
     "longitude": 104.049,
-    "description": "Làng chài lâu đời, nổi tiếng hải sản và ngắm bình minh phía đông đảo.",
-    "openingHours": "Sáng - tối",
+    "description": "Làng chài ven biển lâu đời, nổi tiếng hải sản và ngắm bình minh phía đông đảo.",
+    "openingHours": "Sáng - tối; nên tránh mưa lớn hoặc biển động nếu đi dạo ven bờ",
     "verified": true,
-    "source": "Vietnam Travel",
-    "indoorOutdoor": "INDOOR",
-    "weatherSensitivity": "LOW",
+    "source": "Cổng thông tin Du lịch Phú Quốc",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
     "tags": [
       "food",
-      "indoor",
+      "mixed",
       "island"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://phuquoc.kiengiang.gov.vn/trang/TinTuc/38/1045/Lang-chai-Ham-Ninh.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn địa phương xác nhận Hàm Ninh là làng chài và điểm ăn hải sản. Estimate là chi phí bữa hải sản/người; giá thay đổi theo món, mùa, nhà hàng và lượng gọi."
   },
   {
     "name": "Vườn quốc gia Phú Quốc",
@@ -2180,9 +2209,9 @@
     "latitude": 10.302,
     "longitude": 104.024,
     "description": "Khu rừng bảo tồn phù hợp trekking nhẹ, đi xe máy khám phá và trải nghiệm thiên nhiên khi thời tiết khô ráo.",
-    "openingHours": "Ban ngày",
+    "openingHours": "Ban ngày; tránh trekking khi mưa lớn, đường trơn hoặc cảnh báo thời tiết xấu",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Cổng thông tin Du lịch Phú Quốc",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "HIGH",
     "tags": [
@@ -2194,7 +2223,10 @@
       "adventure"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://phuquoc.kiengiang.gov.vn/trang/TinTuc/38/1046/Vuon-quoc-gia-Phu-Quoc.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn địa phương xác nhận Vườn quốc gia Phú Quốc là điểm thiên nhiên/rừng bảo tồn. Estimate là chi phí gửi xe, hướng dẫn, nước uống hoặc dịch vụ tham quan phụ trợ; nếu chỉ đi qua tuyến công cộng có thể thấp hơn."
   },
   {
     "name": "Nhà tù Phú Quốc",
@@ -2208,20 +2240,22 @@
     "latitude": 10.0349,
     "longitude": 104.0066,
     "description": "Di tích lịch sử ở Nam đảo, phù hợp lịch trình văn hóa và có thể ghép với Bãi Sao/Hộ Quốc.",
-    "openingHours": "Ban ngày",
+    "openingHours": "Ban ngày; nên kiểm tra giờ mở cửa thực tế trước khi đi dịp lễ",
     "verified": true,
-    "source": "Vietnam Travel",
-    "indoorOutdoor": "OUTDOOR",
+    "source": "Cổng thông tin Du lịch Phú Quốc",
+    "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
-      "outdoor",
-      "beach",
+      "mixed",
       "island",
       "heritage"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://phuquoc.kiengiang.gov.vn/trang/TinTuc/38/1044/Di-tich-Nha-tu-Phu-Quoc.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn địa phương xác nhận đây là di tích lịch sử. Không ghi nhận vé vào cửa trong seed; chi phí phát sinh thường là gửi xe, thuê thuyết minh hoặc di chuyển."
   },
   {
     "name": "Hồ Hoàn Kiếm",
@@ -2237,7 +2271,7 @@
     "description": "Không gian biểu tượng trung tâm Hà Nội, phù hợp đi bộ, chụp ảnh và ghép với phố cổ.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Cục Du lịch Quốc gia Việt Nam",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -2246,7 +2280,10 @@
       "heritage"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://vietnamtourism.vn/index.php/tourism/items/383/29",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn Cục Du lịch Quốc gia Việt Nam xác nhận Hồ Hoàn Kiếm là thắng cảnh công cộng ở quận Hoàn Kiếm. Không có vé vào khu vực hồ; nếu vào Đền Ngọc Sơn, gửi xe, uống nước hoặc đi xe điện/xích lô thì tính riêng."
   },
   {
     "name": "Văn Miếu - Quốc Tử Giám",
@@ -2254,15 +2291,15 @@
     "type": "ATTRACTION",
     "address": "58 Quốc Tử Giám, Đống Đa, Hà Nội",
     "priceLevel": "LOW",
-    "estimatedCostMin": 30000,
+    "estimatedCostMin": 35000,
     "estimatedCostMax": 70000,
     "rating": 4.6,
     "latitude": 21.0274,
     "longitude": 105.8357,
     "description": "Di tích giáo dục và kiến trúc truyền thống, phù hợp lịch trình văn hóa trong nội đô.",
-    "openingHours": "Ban ngày",
+    "openingHours": "08:00 - 17:00 theo website chính thức Văn Miếu - Quốc Tử Giám",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Văn Miếu - Quốc Tử Giám",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -2272,7 +2309,10 @@
       "spiritual"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://vanmieu.gov.vn/vi/",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Website chính thức xác nhận địa chỉ và giờ mở cửa 08:00-17:00. Ước tính dùng mức vé tham quan phổ biến 35k-70k/người tùy đối tượng; thuyết minh, tour đêm hoặc dịch vụ sự kiện tính riêng."
   },
   {
     "name": "Hoàng thành Thăng Long",
@@ -2280,15 +2320,15 @@
     "type": "ATTRACTION",
     "address": "19C Hoàng Diệu, Ba Đình, Hà Nội",
     "priceLevel": "LOW",
-    "estimatedCostMin": 30000,
-    "estimatedCostMax": 70000,
+    "estimatedCostMin": 50000,
+    "estimatedCostMax": 100000,
     "rating": 4.5,
     "latitude": 21.0356,
     "longitude": 105.8403,
     "description": "Di sản thế giới UNESCO, phù hợp tham quan lịch sử và có nhiều khu ngoài trời.",
-    "openingHours": "Ban ngày",
+    "openingHours": "08:00 - 17:00 tất cả các ngày theo website chính thức",
     "verified": true,
-    "source": "UNESCO",
+    "source": "Hoàng thành Thăng Long",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -2297,7 +2337,10 @@
       "heritage"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://hoangthanhthanglong.vn/thong-bao-thau-doi-gia-ve-tham-quan-hoang-thanh-thang-long/",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Website chính thức công bố giá vé tham quan đổi lên 100k/người từ 01/01/2025, có nhóm miễn/giảm theo quy định. Ước tính dùng mức 50k-100k/người; tour đêm, sự kiện hoặc hướng dẫn riêng tính riêng."
   },
   {
     "name": "Bảo tàng Dân tộc học Việt Nam",
@@ -2310,8 +2353,8 @@
     "rating": 4.5,
     "latitude": 21.0404,
     "longitude": 105.7984,
-    "description": "Bảo tàng lớn về văn hóa các dân tộc Việt Nam, phù hợp ngày mưa hoặc gia đình.",
-    "openingHours": "Ban ngày; thường nghỉ thứ Hai",
+    "description": "Bảo tàng lớn về văn hóa các dân tộc Việt Nam, phù hợp ngày mưa hoặc gia đình; có khu trưng bày trong nhà và ngoài trời.",
+    "openingHours": "08:30 - 17:30, thường nghỉ thứ Hai và dịp Tết Nguyên đán",
     "verified": true,
     "source": "Vietnam Museum of Ethnology",
     "indoorOutdoor": "MIXED",
@@ -2323,7 +2366,10 @@
       "family"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://vinwonders.com/vi/wonderpedia/news/bao-tang-dan-toc-hoc-viet-nam/",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn tham khảo uy tín ghi giờ mở cửa 08:30-17:30, nghỉ thứ Hai/Tết và vé phổ biến 40k/người, có mức ưu đãi 10k-15k. Ước tính dùng 40k-80k để gồm vé cơ bản và một phần dịch vụ phụ như thuyết minh/gửi xe nếu có."
   },
   {
     "name": "Chợ Đồng Xuân",
@@ -2339,7 +2385,7 @@
     "description": "Chợ lớn trong khu phố cổ, phù hợp ăn vặt, mua đồ và khám phá ẩm thực Hà Nội.",
     "openingHours": "Sáng - tối",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Cục Du lịch Quốc gia Việt Nam",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -2348,7 +2394,10 @@
       "heritage"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://vietnamtourism.vn/index.php/tourism/items/513/27",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn Cục Du lịch Quốc gia Việt Nam xác nhận Chợ Đồng Xuân là điểm chợ/mua sắm và có chợ đêm gắn với tuyến phố đi bộ. Không có vé vào chợ; ước tính là chi phí ăn uống, mua đặc sản/quà hoặc gửi xe tùy nhu cầu."
   },
   {
     "name": "Vườn quốc gia Cát Bà",
@@ -2356,15 +2405,15 @@
     "type": "ACTIVITY",
     "address": "Cát Bà, Hải Phòng",
     "priceLevel": "LOW",
-    "estimatedCostMin": 80000,
+    "estimatedCostMin": 40000,
     "estimatedCostMax": 150000,
     "rating": 4.4,
     "latitude": 20.795,
     "longitude": 106.999,
-    "description": "Khu rừng và trekking nổi bật trên đảo, nên tránh khi mưa lớn hoặc đường trơn.",
-    "openingHours": "Ban ngày",
+    "description": "Vườn quốc gia có hệ sinh thái rừng và biển, phù hợp trekking/ngắm thiên nhiên; nên tránh khi mưa lớn hoặc đường trơn.",
+    "openingHours": "Ban ngày; nên kiểm tra lịch tuyến trekking với ban quản lý trước khi đi",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Vườn quốc gia Cát Bà",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "HIGH",
     "tags": [
@@ -2376,7 +2425,10 @@
       "adventure"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://catba.net.vn/kham-pha-vuon-quoc-gia-cat-ba/",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn Vườn quốc gia Cát Bà ghi vé tham quan 40k/trẻ em và 80k/người lớn. Estimate giữ biên cao hơn để bao gồm xe ôm/xe điện nội đảo, gửi xe, nước uống hoặc hướng dẫn viên nếu phát sinh."
   },
   {
     "name": "Vịnh Lan Hạ",
@@ -2389,10 +2441,10 @@
     "rating": 4.7,
     "latitude": 20.7308,
     "longitude": 107.039,
-    "description": "Vịnh biển đẹp cạnh Cát Bà, phù hợp tour tàu, kayak khi thời tiết biển an toàn.",
+    "description": "Vịnh biển trong quần đảo Cát Bà, phù hợp tour tàu, kayak khi thời tiết biển an toàn.",
     "openingHours": "Theo lịch tàu/tour",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Trung tâm Dịch vụ sự nghiệp công Đặc khu Cát Hải",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "HIGH",
     "tags": [
@@ -2404,7 +2456,10 @@
       "adventure"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://catba.com.vn/tuyen-diem-tham-quan-tren-cac-vinh-thuoc-quan-dao-cat-ba/p-2.htm",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn du lịch Cát Bà xác nhận Vịnh Lan Hạ là tuyến/điểm tham quan bằng tàu, có các bãi và làng chài trên vịnh. Estimate là chi phí tour/tàu/kayak tham khảo theo người; vé tham quan, tàu riêng, ăn trưa, kayak hoặc phụ thu cao điểm có thể thay đổi theo nhà cung cấp."
   },
   {
     "name": "Pháo đài Thần Công",
@@ -2417,10 +2472,10 @@
     "rating": 4.3,
     "latitude": 20.7248,
     "longitude": 107.0484,
-    "description": "Điểm ngắm toàn cảnh thị trấn và vịnh, phù hợp hoàng hôn khi trời quang.",
-    "openingHours": "Ban ngày",
+    "description": "Di tích lịch sử kiêm điểm ngắm toàn cảnh thị trấn Cát Bà và vịnh, phù hợp hoàng hôn khi trời quang.",
+    "openingHours": "08:00 - 17:00 theo Cục Du lịch Quốc gia Việt Nam",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Cục Du lịch Quốc gia Việt Nam",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -2431,7 +2486,10 @@
       "couple"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://vietnamtourism.vn/index.php/tourism/items/2951/4",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Cục Du lịch Quốc gia Việt Nam ghi vé vào cửa 50k/người lớn, 20k/trẻ em, xe điện 50k/lượt lên xuống và phí đài quan sát 5k/lượt. Estimate 50k-100k/người để gồm vé cơ bản và một phần dịch vụ phụ."
   },
   {
     "name": "Bãi Cát Cò",
@@ -2444,10 +2502,10 @@
     "rating": 4.2,
     "latitude": 20.7203,
     "longitude": 107.0519,
-    "description": "Cụm bãi tắm gần trung tâm Cát Bà, phù hợp tắm biển khi thời tiết tốt.",
-    "openingHours": "Ban ngày",
+    "description": "Cụm bãi tắm Cát Cò 1, 2, 3 gần trung tâm Cát Bà, phù hợp tắm biển khi thời tiết tốt.",
+    "openingHours": "Ban ngày; nên tuân thủ biển cảnh báo và lực lượng cứu hộ tại bãi tắm",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Trung tâm Dịch vụ sự nghiệp công Đặc khu Cát Hải",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "HIGH",
     "tags": [
@@ -2457,7 +2515,10 @@
       "island"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://catba.com.vn/su-hap-dan-cua-cac-bai-tam-tai-khu-du-lich-cat-ba-cat-co-1-cat-co-2-cat-co-3.htm",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn du lịch Cát Bà xác nhận cụm bãi tắm Cát Cò là bãi tắm nổi tiếng. Không ghi nhận vé vào bãi trong nguồn; estimate là chi phí thuê ghế/dù, gửi đồ, tắm tráng, đồ uống hoặc dịch vụ biển tùy chọn."
   },
   {
     "name": "Làng chài Cái Bèo",
@@ -2470,10 +2531,10 @@
     "rating": 4.2,
     "latitude": 20.7213,
     "longitude": 107.0555,
-    "description": "Làng chài cổ trên biển, thường kết hợp tour thuyền ngắn từ trung tâm Cát Bà.",
+    "description": "Làng chài nổi cổ trên biển, thường kết hợp tour thuyền từ bến Cái Bèo và trải nghiệm đời sống ngư dân.",
     "openingHours": "Theo lịch tàu/tour",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Trung tâm Dịch vụ sự nghiệp công Đặc khu Cát Hải",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "HIGH",
     "tags": [
@@ -2483,7 +2544,10 @@
       "boat"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://catba.com.vn/lang-chai-cai-beo.htm",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn du lịch Cát Bà xác nhận Cái Bèo là làng chài nổi cổ và có trải nghiệm thuê thuyền tham quan. Estimate là chi phí thuyền/tour ngắn/người; ăn hải sản trên bè, tàu riêng hoặc dịch vụ câu cá tính riêng."
   },
   {
     "name": "Tràng An",
@@ -2491,15 +2555,15 @@
     "type": "ACTIVITY",
     "address": "Tràng An, Ninh Bình",
     "priceLevel": "MID",
-    "estimatedCostMin": 250000,
+    "estimatedCostMin": 300000,
     "estimatedCostMax": 350000,
     "rating": 4.8,
     "latitude": 20.2524,
     "longitude": 105.9188,
-    "description": "Di sản UNESCO với tuyến thuyền qua hang và núi đá vôi, phụ thuộc thời tiết nhưng thường vận hành ban ngày.",
-    "openingHours": "Ban ngày",
+    "description": "Khu du lịch sinh thái trong Quần thể danh thắng Tràng An, nổi bật với tuyến thuyền qua hang động và núi đá vôi.",
+    "openingHours": "Ban ngày; lịch đò phụ thuộc vận hành khu du lịch và thời tiết",
     "verified": true,
-    "source": "UNESCO",
+    "source": "Trung tâm Thông tin xúc tiến Du lịch Ninh Bình",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "HIGH",
     "tags": [
@@ -2510,7 +2574,10 @@
       "heritage"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://dulichninhbinh.com.vn/printer/3525",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Bảng giá vé các khu, điểm du lịch Ninh Bình năm 2026 ghi vé Tràng An gồm đò và danh lam: người trên 1,3m 300k/người, trẻ 1-1,3m và người cao tuổi 150k, trẻ dưới 1m miễn phí; hướng dẫn viên 300k/tour nếu dùng."
   },
   {
     "name": "Tam Cốc - Bích Động",
@@ -2518,15 +2585,15 @@
     "type": "ACTIVITY",
     "address": "Hoa Lư, Ninh Bình",
     "priceLevel": "MID",
-    "estimatedCostMin": 200000,
+    "estimatedCostMin": 250000,
     "estimatedCostMax": 350000,
     "rating": 4.5,
     "latitude": 20.2153,
     "longitude": 105.9369,
-    "description": "Tuyến thuyền và cảnh quan lúa nước, đẹp theo mùa nhưng nên tránh mưa lớn.",
-    "openingHours": "Ban ngày",
+    "description": "Tuyến tham quan Tam Cốc - Đền Thái Vi - Động Tiên - chùa Bích Động, nổi bật với thuyền trên sông Ngô Đồng.",
+    "openingHours": "Ban ngày; lịch thuyền/xe điện phụ thuộc vận hành khu du lịch",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Trung tâm Thông tin xúc tiến Du lịch Ninh Bình",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "HIGH",
     "tags": [
@@ -2535,7 +2602,10 @@
       "boat"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://dulichninhbinh.com.vn/printer/3525",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Bảng giá vé Ninh Bình năm 2026 ghi vé tuyến Tam Cốc - Đền Thái Vi - Động Tiên - chùa Bích Động: người lớn 250k không gồm xe điện, 350k gồm xe điện; trẻ 1-1,3m 120k-190k."
   },
   {
     "name": "Hang Múa",
@@ -2543,15 +2613,15 @@
     "type": "ATTRACTION",
     "address": "Khê Đầu Hạ, Hoa Lư, Ninh Bình",
     "priceLevel": "LOW",
-    "estimatedCostMin": 100000,
+    "estimatedCostMin": 150000,
     "estimatedCostMax": 150000,
     "rating": 4.5,
     "latitude": 20.2297,
     "longitude": 105.9344,
-    "description": "Điểm leo bậc đá ngắm toàn cảnh Tam Cốc, cần tránh lúc mưa/trơn.",
-    "openingHours": "Ban ngày",
+    "description": "Điểm leo núi ngắm toàn cảnh Tam Cốc, cần tránh mưa lớn, đường trơn và nắng gắt.",
+    "openingHours": "Ban ngày; nên đi sáng sớm hoặc chiều muộn để tránh nắng",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Trung tâm Thông tin xúc tiến Du lịch Ninh Bình",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -2560,7 +2630,10 @@
       "adventure"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://dulichninhbinh.com.vn/printer/3525",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Bảng giá vé Ninh Bình năm 2026 ghi Hang Múa: vé tham quan 150k/người trên 1m, trẻ dưới 1m miễn phí. Gửi xe, nước uống, thuê trang phục/chụp ảnh dịch vụ nếu có tính riêng."
   },
   {
     "name": "Chùa Bái Đính",
@@ -2568,15 +2641,15 @@
     "type": "ATTRACTION",
     "address": "Gia Sinh, Gia Viễn, Ninh Bình",
     "priceLevel": "LOW",
-    "estimatedCostMin": 60000,
-    "estimatedCostMax": 200000,
+    "estimatedCostMin": 150000,
+    "estimatedCostMax": 300000,
     "rating": 4.5,
     "latitude": 20.2765,
     "longitude": 105.8644,
-    "description": "Quần thể chùa lớn, phù hợp lịch trình tâm linh và gia đình.",
-    "openingHours": "Ban ngày",
+    "description": "Quần thể chùa lớn trong vùng Tràng An, phù hợp lịch trình tâm linh và văn hóa.",
+    "openingHours": "Ban ngày; dịch vụ xe điện/trung chuyển theo lịch vận hành khu du lịch",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Trung tâm Thông tin xúc tiến Du lịch Ninh Bình",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -2586,7 +2659,10 @@
       "family"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://dulichninhbinh.com.vn/printer/3525",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Bảng giá vé Ninh Bình năm 2026 ghi Chùa Bái Đính: xe điện khứ hồi người lớn 150k/người từ 15/02/2026; gói xe điện trung chuyển gồm các điểm, vé Bảo Tháp, ngâm chân là 300k/người lớn. Hướng dẫn viên và xe điện VIP tính riêng."
   },
   {
     "name": "Cố đô Hoa Lư",
@@ -2595,14 +2671,14 @@
     "address": "Trường Yên, Hoa Lư, Ninh Bình",
     "priceLevel": "LOW",
     "estimatedCostMin": 20000,
-    "estimatedCostMax": 50000,
+    "estimatedCostMax": 20000,
     "rating": 4.3,
     "latitude": 20.2841,
     "longitude": 105.9072,
-    "description": "Di tích kinh đô xưa, phù hợp kết hợp Tràng An/Bái Đính trong ngày.",
+    "description": "Khu di tích Cố đô Hoa Lư gắn với triều Đinh - Tiền Lê, phù hợp ghép Tràng An/Bái Đính trong ngày.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Trung tâm Thông tin xúc tiến Du lịch Ninh Bình",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -2611,7 +2687,10 @@
       "heritage"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://dulichninhbinh.com.vn/printer/3525",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Bảng giá vé Ninh Bình năm 2026 ghi Khu di tích Cố đô Hoa Lư: người lớn 20k/người, trẻ 6-15 tuổi 10k, người cao tuổi/người tàn tật 10k. Gửi xe hoặc thuyết minh nếu có tính riêng."
   },
   {
     "name": "Đồi chè trái tim Mộc Châu",
@@ -2867,15 +2946,15 @@
     "type": "ATTRACTION",
     "address": "Đàm Thủy, Trùng Khánh, Cao Bằng",
     "priceLevel": "LOW",
-    "estimatedCostMin": 45000,
-    "estimatedCostMax": 100000,
+    "estimatedCostMin": 40000,
+    "estimatedCostMax": 90000,
     "rating": 4.8,
     "latitude": 22.8536,
     "longitude": 106.7248,
-    "description": "Thác nước biên giới nổi tiếng, phù hợp đi ban ngày và nên cân nhắc mùa nước.",
-    "openingHours": "Ban ngày",
+    "description": "Thác nước biên giới nổi tiếng trên sông Quây Sơn, phù hợp đi ban ngày và nên cân nhắc mùa nước, mưa lớn hoặc cảnh báo thời tiết.",
+    "openingHours": "07:00 - 18:00 theo Cổng thông tin du lịch Cao Bằng",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Cổng thông tin du lịch Cao Bằng",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "HIGH",
     "tags": [
@@ -2884,7 +2963,10 @@
       "waterfall"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://caobangtourism.vn/vi/bangioccbg/",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Cổng thông tin du lịch Cao Bằng ghi vé tham quan Thác Bản Giốc 40k/người và giờ mở cửa 07:00-18:00. Estimate max cộng thêm chi phí bè/thuyền ngắm thác hoặc gửi xe nếu du khách chọn dùng."
   },
   {
     "name": "Động Ngườm Ngao",
@@ -2892,23 +2974,27 @@
     "type": "ATTRACTION",
     "address": "Đàm Thủy, Trùng Khánh, Cao Bằng",
     "priceLevel": "LOW",
-    "estimatedCostMin": 45000,
-    "estimatedCostMax": 100000,
+    "estimatedCostMin": 40000,
+    "estimatedCostMax": 195000,
     "rating": 4.5,
     "latitude": 22.8556,
     "longitude": 106.7096,
-    "description": "Hang động đá vôi gần Bản Giốc, phù hợp thay thế khi trời mưa nhẹ.",
-    "openingHours": "Ban ngày",
+    "description": "Hang động đá vôi gần Bản Giốc, phù hợp thay thế khi trời mưa nhẹ; tuyến dài cần tuân thủ hướng dẫn và trang bị bảo hộ.",
+    "openingHours": "Mở cửa tất cả các ngày trong tuần theo Cổng thông tin du lịch Cao Bằng",
     "verified": true,
-    "source": "Vietnam Travel",
-    "indoorOutdoor": "OUTDOOR",
+    "source": "Cổng thông tin du lịch Cao Bằng",
+    "indoorOutdoor": "INDOOR",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
-      "outdoor"
+      "indoor",
+      "cave"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://caobangtourism.vn/iv/detailnews/?id=news_2439&t=me-cung-da-nguom-ngao",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn du lịch Cao Bằng ghi tuyến 01 người lớn 40k chưa gồm bảo hiểm 5k; tuyến 02 toàn tuyến gồm hướng dẫn viên, bảo hộ và bảo hiểm là 195k/người lớn. Estimate dùng biên 40k-195k theo tuyến tham quan."
   },
   {
     "name": "Khu di tích Pác Bó",
@@ -2916,15 +3002,15 @@
     "type": "ATTRACTION",
     "address": "Trường Hà, Hà Quảng, Cao Bằng",
     "priceLevel": "LOW",
-    "estimatedCostMin": 25000,
-    "estimatedCostMax": 70000,
+    "estimatedCostMin": 10000,
+    "estimatedCostMax": 40000,
     "rating": 4.5,
     "latitude": 22.999,
     "longitude": 106.0607,
-    "description": "Di tích lịch sử với suối Lê Nin và hang Cốc Bó, phù hợp lịch trình văn hóa.",
-    "openingHours": "Ban ngày",
+    "description": "Di tích lịch sử với suối Lê Nin, núi Các Mác và hang Cốc Bó, phù hợp lịch trình văn hóa.",
+    "openingHours": "08:00 - 23:00 theo Cổng thông tin du lịch Cao Bằng",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Cổng thông tin du lịch Cao Bằng",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -2933,23 +3019,26 @@
       "heritage"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://caobangtourism.vn/vi/khudlpacpocbg/",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Cổng thông tin du lịch Cao Bằng ghi giá Pác Bó 10k-20k và giờ mở cửa 08:00-23:00. Estimate max 40k để gồm vé cơ bản và xe điện nội khu nếu du khách chọn dùng."
   },
   {
     "name": "Núi Mắt Thần",
     "destination": "Cao Bằng",
     "type": "ATTRACTION",
-    "address": "Trà Lĩnh, Cao Bằng",
+    "address": "Cao Chương, Trùng Khánh, Cao Bằng",
     "priceLevel": "FREE",
     "estimatedCostMin": 0,
     "estimatedCostMax": 0,
     "rating": 4.6,
     "latitude": 22.7805,
     "longitude": 106.308,
-    "description": "Núi thủng độc đáo trong thung lũng, phù hợp picnic/chụp ảnh khi đường khô.",
-    "openingHours": "Ban ngày",
+    "description": "Núi thủng Phja Piót trong thung lũng hồ Thang Hen, phù hợp picnic/chụp ảnh khi đường khô.",
+    "openingHours": "07:00 - 18:00 theo Cổng thông tin du lịch Cao Bằng",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Cổng thông tin du lịch Cao Bằng",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -2958,7 +3047,10 @@
       "mountain"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://caobangtourism.vn/iv/matthannuicbg",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Cổng thông tin du lịch Cao Bằng ghi Mắt Thần Núi miễn phí và mở cửa 07:00-18:00. Chi phí phát sinh nếu có thường là gửi xe, ăn uống, thuê xe hoặc dịch vụ địa phương."
   },
   {
     "name": "Chùa Phật Tích Trúc Lâm Bản Giốc",
@@ -2971,10 +3063,10 @@
     "rating": 4.4,
     "latitude": 22.8507,
     "longitude": 106.7159,
-    "description": "Chùa trên đồi gần thác Bản Giốc, phù hợp ngắm toàn cảnh khu vực.",
-    "openingHours": "Ban ngày",
+    "description": "Chùa trên núi Phia Nhằm gần thác Bản Giốc, phù hợp hành hương và ngắm toàn cảnh khu vực.",
+    "openingHours": "Ban ngày; cần tôn trọng không gian sinh hoạt tôn giáo",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Cổng thông tin du lịch Cao Bằng",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -2984,7 +3076,10 @@
       "spiritual"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://caobangtourism.vn/zh/detailnews/?id=news_797&t=chua-phat-tich-truc-lam-ban-gioc-chon-linh-tu-thieng-lieng-noi-nui-rung-bien-cuong-to-quoc",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn du lịch Cao Bằng xác nhận chùa nằm gần thác Bản Giốc, là điểm tâm linh/hành hương. Không ghi nhận vé vào cửa; gửi xe, công đức, nước uống hoặc di chuyển tính riêng nếu có."
   },
   {
     "name": "Hồ Ba Bể",
@@ -2997,10 +3092,10 @@
     "rating": 4.6,
     "latitude": 22.4097,
     "longitude": 105.6177,
-    "description": "Hồ nước ngọt lớn trong vườn quốc gia, phù hợp đi thuyền khi thời tiết ổn.",
-    "openingHours": "Ban ngày",
+    "description": "Hồ nước ngọt lớn trong Vườn quốc gia Ba Bể, trải nghiệm thuyền, cảnh quan núi đá vôi và bản làng ven hồ.",
+    "openingHours": "Ban ngày; lịch thuyền phụ thuộc vận hành địa phương và thời tiết",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Cục Du lịch Quốc gia Việt Nam",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "HIGH",
     "tags": [
@@ -3010,7 +3105,10 @@
       "family"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://vietnamtourism.vn/index.php/tourism/items/1421",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn Cục Du lịch Quốc gia Việt Nam xác nhận Hồ Ba Bể là hồ nước ngọt đặc biệt và điểm trung tâm của Vườn quốc gia Ba Bể. Estimate là chi phí thuyền/tour hồ/người; giá thay đổi theo bến, tuyến, ghép đoàn hay thuê thuyền riêng."
   },
   {
     "name": "Động Puông",
@@ -3023,19 +3121,23 @@
     "rating": 4.3,
     "latitude": 22.442,
     "longitude": 105.64,
-    "description": "Hang động trên tuyến thuyền hồ Ba Bể, thường đi kèm tour thuyền.",
+    "description": "Hang động trên sông Năng thuộc tuyến thuyền hồ Ba Bể, thường đi kèm tour thuyền.",
     "openingHours": "Theo lịch thuyền",
     "verified": true,
-    "source": "Vietnam Travel",
-    "indoorOutdoor": "OUTDOOR",
+    "source": "Cục Du lịch Quốc gia Việt Nam",
+    "indoorOutdoor": "MIXED",
     "weatherSensitivity": "HIGH",
     "tags": [
       "attraction",
-      "outdoor",
+      "mixed",
+      "cave",
       "boat"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://vietnamtourism.vn/index.php/tourism/items/1424",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn Cục Du lịch Quốc gia Việt Nam xác nhận Động Puông nằm trên dòng sông Năng và thường thuộc tuyến tham quan Ba Bể. Seed để 0-100k vì chi phí thường nằm trong tour/thuyền hồ; nếu tách riêng theo bến/tuyến có thể thay đổi."
   },
   {
     "name": "Thác Đầu Đẳng",
@@ -3048,10 +3150,10 @@
     "rating": 4.2,
     "latitude": 22.431,
     "longitude": 105.653,
-    "description": "Thác nước trên tuyến tham quan Ba Bể, cần tránh khi mưa lớn/nước xiết.",
+    "description": "Thác nước trên dòng sông Năng thuộc tuyến tham quan Ba Bể, cần tránh khi mưa lớn hoặc nước xiết.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Cục Du lịch Quốc gia Việt Nam",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "HIGH",
     "tags": [
@@ -3060,7 +3162,10 @@
       "waterfall"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://vietnamtourism.vn/index.php/tourism/items/1429",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn Cục Du lịch Quốc gia Việt Nam xác nhận Thác Đầu Đẳng nằm trên sông Năng và là điểm tham quan trong vùng Ba Bể. Seed để 0-100k vì chi phí thường đi cùng tuyến thuyền/hồ; dịch vụ ăn uống, hướng dẫn hoặc thuyền riêng tính riêng."
   },
   {
     "name": "Bản Pác Ngòi",
@@ -3073,18 +3178,23 @@
     "rating": 4.2,
     "latitude": 22.3925,
     "longitude": 105.622,
-    "description": "Bản homestay người Tày ven hồ, phù hợp nghỉ đêm và ăn tối địa phương.",
+    "description": "Bản du lịch cộng đồng người Tày ven hồ Ba Bể, phù hợp nghỉ homestay, ăn tối địa phương và trải nghiệm văn hóa.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Local tourism",
-    "indoorOutdoor": "INDOOR",
+    "source": "Chuyên trang Du lịch nông thôn - Cục Du lịch Quốc gia Việt Nam",
+    "indoorOutdoor": "MIXED",
     "weatherSensitivity": "LOW",
     "tags": [
       "accommodation",
-      "indoor"
+      "mixed",
+      "heritage",
+      "food"
     ],
     "aliases": [],
-    "costBasis": "PER_NIGHT"
+    "costBasis": "PER_NIGHT",
+    "sourceUrl": "https://nongthon.vietnamtourism.gov.vn/pac-ngoi-ngoi-lang-tho-mong-va-binh-yen-ben-ho-ba-be-bac-kan/",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn thuộc hệ Cục Du lịch Quốc gia Việt Nam xác nhận Pác Ngòi là bản du lịch cộng đồng/homestay của người Tày. Estimate là chi phí lưu trú homestay/đêm; bữa ăn, biểu diễn văn nghệ, thuyền hoặc trải nghiệm địa phương tính riêng theo từng hộ."
   },
   {
     "name": "Ao Tiên Ba Bể",
@@ -3097,10 +3207,10 @@
     "rating": 4.1,
     "latitude": 22.414,
     "longitude": 105.624,
-    "description": "Hồ nhỏ trong khu Ba Bể, thường ghép trong tuyến thuyền.",
+    "description": "Ao Tiên là điểm cảnh quan trong Vườn quốc gia Ba Bể, thường ghép trong tuyến thuyền/hồ cùng Động Puông và Thác Đầu Đẳng.",
     "openingHours": "Theo lịch thuyền",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Cục Du lịch Quốc gia Việt Nam",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "HIGH",
     "tags": [
@@ -3109,7 +3219,10 @@
       "boat"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://vietnamtourism.vn/index.php/tourism/items/1422",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn Cục Du lịch Quốc gia Việt Nam xác nhận Vườn quốc gia Ba Bể có các thắng cảnh như động Puông, thác Đầu Đẳng, ao Tiên. Seed để 0-100k vì chi phí thường nằm trong tuyến thuyền/hồ; nếu tách riêng theo tour hoặc thuê thuyền riêng có thể thay đổi."
   },
   {
     "name": "Chùa Đồng Yên Tử",
@@ -3245,14 +3358,14 @@
     "address": "Phú Hậu, Huế, Thừa Thiên Huế",
     "priceLevel": "MID",
     "estimatedCostMin": 200000,
-    "estimatedCostMax": 250000,
+    "estimatedCostMax": 200000,
     "rating": 4.6,
     "latitude": 16.4691,
     "longitude": 107.5779,
-    "description": "Quần thể cung điện triều Nguyễn, phù hợp lịch trình văn hóa và cần ít nhất 2 giờ.",
+    "description": "Quần thể cung điện triều Nguyễn trong Quần thể di tích Cố đô Huế, phù hợp lịch trình văn hóa và cần ít nhất 2 giờ.",
     "openingHours": "Ban ngày",
     "verified": true,
-    "source": "UNESCO",
+    "source": "HĐND Thành phố Huế",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -3260,7 +3373,10 @@
       "mixed"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://hue.gov.vn/Portals/0/Uploads/VBPL/Nam2026/Thang1/000.00.00.K57-55-2025-NQ-HDND-2025-PL1.pdf",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nghị quyết 55/2025/NQ-HĐND Thành phố Huế có hiệu lực từ 04/01/2026 quy định phí Đại Nội Huế: người lớn 200k/người/lượt, trẻ em 7-12 tuổi 40k. Vé tuyến gộp, thuyết minh hoặc dịch vụ trải nghiệm tính riêng."
   },
   {
     "name": "Chùa Thiên Mụ",
@@ -3273,10 +3389,10 @@
     "rating": 4.5,
     "latitude": 16.4538,
     "longitude": 107.5449,
-    "description": "Ngôi chùa biểu tượng bên sông Hương, phù hợp ghép với thuyền sông Hương hoặc lăng tẩm.",
-    "openingHours": "Ban ngày",
+    "description": "Ngôi chùa biểu tượng trên đồi Hà Khê bên sông Hương, phù hợp ghép với thuyền sông Hương hoặc lăng tẩm.",
+    "openingHours": "Ban ngày; cần tôn trọng không gian sinh hoạt tôn giáo",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Cục Du lịch Quốc gia Việt Nam",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -3286,7 +3402,10 @@
       "spiritual"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://vietnamtourism.vn/index.php/tourism/items/466",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn Cục Du lịch Quốc gia Việt Nam xác nhận vị trí và giá trị điểm đến Chùa Thiên Mụ. Không ghi nhận vé vào cửa; gửi xe, công đức, thuyền sông Hương hoặc hướng dẫn viên nếu dùng tính riêng."
   },
   {
     "name": "Chợ Đông Ba",
@@ -3299,10 +3418,10 @@
     "rating": 4.1,
     "latitude": 16.4713,
     "longitude": 107.5882,
-    "description": "Chợ trung tâm để ăn bún bò, bánh Huế, chè và mua đặc sản.",
-    "openingHours": "Sáng - chiều",
+    "description": "Chợ trung tâm và biểu tượng văn hóa Huế, phù hợp ăn bún bò, bánh Huế, chè và mua đặc sản.",
+    "openingHours": "Sáng - chiều; một số hoạt động chợ đêm/sạp ăn vận hành theo thực tế từng thời điểm",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Visit Hue",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -3310,7 +3429,10 @@
       "mixed"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://visithue.vn/cho-dong-ba-diem-den-hap-dan-cua-xu-hue/?pid=MjMzODF8Y3NkbGRs0",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn Visit Hue xác nhận Chợ Đông Ba là chợ trung tâm lớn, điểm đến văn hóa/ẩm thực của Huế. Không có vé vào chợ; estimate là chi phí ăn uống, mua đặc sản/quà hoặc gửi xe tùy nhu cầu."
   },
   {
     "name": "Phố cổ Hội An",
@@ -3347,7 +3469,7 @@
     "type": "ACTIVITY",
     "address": "Cẩm Thanh, Hội An, Quảng Nam",
     "priceLevel": "MID",
-    "estimatedCostMin": 30000,
+    "estimatedCostMin": 35000,
     "estimatedCostMax": 150000,
     "rating": 4.3,
     "latitude": 15.875,
@@ -3619,10 +3741,7 @@
       "indoor"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON",
-    "sourceUrl": "https://nhatrang-travel.com/diem-den/diem-tham-quan/diem-tham-quan/hon-mun-cung-dien-bien-dong.html",
-    "verifiedAt": "2026-05-19",
-    "costNote": "Nguồn du lịch Khánh Hòa xác nhận Hòn Mun là khu bảo tồn biển và điểm trải nghiệm đảo. Estimate là chi phí tour/tàu/lặn ngắm san hô tham khảo; phụ phí bảo tồn, thiết bị lặn, ăn uống hoặc dịch vụ riêng có thể tính thêm."
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Thác Pa Sỹ",
@@ -3775,10 +3894,7 @@
       "heritage"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON",
-    "sourceUrl": "https://nhatrang-travel.com/gioi-thieu/don-vi-hanh-chinh/gioi-thieu-tong-quan-nha-trang.html",
-    "verifiedAt": "2026-05-19",
-    "costNote": "Bãi biển trung tâm là không gian công cộng, không có vé vào cửa trong nguồn du lịch Khánh Hòa. Estimate là chi phí thuê ghế/dù, gửi đồ, đồ uống hoặc dịch vụ biển tùy chọn."
+    "costBasis": "PER_PERSON"
   },
   {
     "name": "Cổng Tò Vò",
@@ -4009,17 +4125,17 @@
     "name": "Dinh Độc Lập",
     "destination": "TP. Hồ Chí Minh",
     "type": "ATTRACTION",
-    "address": "135 Nam Kỳ Khởi Nghĩa, Quận 1, TP. Hồ Chí Minh",
+    "address": "135 Nam Kỳ Khởi Nghĩa, Phường Bến Thành, TP. Hồ Chí Minh",
     "priceLevel": "LOW",
     "estimatedCostMin": 40000,
-    "estimatedCostMax": 65000,
+    "estimatedCostMax": 105000,
     "rating": 4.4,
     "latitude": 10.777,
     "longitude": 106.695,
     "description": "Di tích lịch sử trung tâm thành phố, phù hợp lịch trình văn hóa và ngày mưa.",
-    "openingHours": "Ban ngày",
+    "openingHours": "07:00 - 18:00 theo website chính thức Dinh Độc Lập",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Di tích lịch sử Dinh Độc Lập",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -4030,23 +4146,26 @@
     "aliases": [
       "Hội trường Thống Nhất"
     ],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://dinhdoclap.gov.vn/gio-tham-quan-va-gia-ve-moi-nhat-ap-dung-tu-01-8-2025-2/",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Website chính thức ghi giờ tham quan 07:00-18:00 và giá vé từ 01/01/2026: 40k vé giới hạn, 80k vé toàn bộ cho người lớn, xe điện 25k/lượt/người. Estimate 40k-105k/người để gồm vé cơ bản và tùy chọn xe điện."
   },
   {
     "name": "Bảo tàng Chứng tích Chiến tranh",
     "destination": "TP. Hồ Chí Minh",
     "type": "ATTRACTION",
-    "address": "28 Võ Văn Tần, Quận 3, TP. Hồ Chí Minh",
+    "address": "28 Võ Văn Tần, Phường Xuân Hòa, TP. Hồ Chí Minh",
     "priceLevel": "LOW",
     "estimatedCostMin": 40000,
-    "estimatedCostMax": 65000,
+    "estimatedCostMax": 80000,
     "rating": 4.5,
     "latitude": 10.7795,
     "longitude": 106.692,
     "description": "Bảo tàng lịch sử quan trọng, phù hợp ghép với Dinh Độc Lập trong nửa ngày.",
-    "openingHours": "Ban ngày",
+    "openingHours": "07:30 - 17:30 hằng ngày; quầy vé đóng lúc 17:00",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Báo Sài Gòn Giải Phóng",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -4058,7 +4177,10 @@
     "aliases": [
       "War Remnants Museum"
     ],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://www.sggp.org.vn/bao-tang-chung-tich-chien-tranh-van-hanh-he-thong-ban-ve-truc-tuyen-post838106.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Báo SGGP ngày 10/02/2026 dẫn thông tin tham quan: vé 40k/người/lượt, miễn phí trẻ dưới 6 tuổi, giảm 50% cho học sinh/sinh viên, giờ mở cửa 07:30-17:30. Estimate 40k-80k/người để gồm vé và chi phí phụ như gửi xe/thuyết minh nếu có."
   },
   {
     "name": "Chợ Bến Thành",
@@ -4072,9 +4194,9 @@
     "latitude": 10.7725,
     "longitude": 106.698,
     "description": "Chợ biểu tượng để ăn vặt, mua đặc sản và trải nghiệm trung tâm Sài Gòn.",
-    "openingHours": "Sáng - tối",
+    "openingHours": "Sáng - tối; chợ đêm bắt đầu khoảng 19:00 theo visithcmc.vn",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Trung tâm Xúc tiến Du lịch TP. Hồ Chí Minh",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -4084,7 +4206,10 @@
     "aliases": [
       "Ben Thanh Market"
     ],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://www.visithcmc.vn/vi/tin-tuc/kham-pha-cho-ben-thanh-diem-den-khong-the-bo-qua-o-tp-ho-chi-minh",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn du lịch TP.HCM xác nhận Chợ Bến Thành là điểm mua sắm/ẩm thực biểu tượng và có chợ đêm. Không có vé vào chợ; estimate là chi phí ăn uống, mua đặc sản/quà hoặc gửi xe tùy nhu cầu."
   },
   {
     "name": "Chợ nổi Cái Răng",
