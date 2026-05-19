@@ -998,10 +998,6 @@ public class AiService {
             return QualityCheck.fail("too many generic activities: " + genericActivities + "/" + totalActivities);
         }
 
-        if (requiresLocalTransportPlan(days, expectedDays, nonLogisticsActivities) && localTransportActivities == 0) {
-            return QualityCheck.fail("missing explicit local transport plan inside " + req.getDestination());
-        }
-
         if (recoverableCostIssue != null) {
             return QualityCheck.fail(recoverableCostIssue);
         }
@@ -1089,8 +1085,7 @@ public class AiService {
 
         ranges.sort(Comparator.comparing(TimeRange::start));
         for (int i = 1; i < ranges.size(); i++) {
-            // TRANSPORT activities are bookings/rentals that do not block a fixed time
-            // slot;
+            // TRANSPORT activities are bookings/rentals that do not block a fixed time slot;
             // exclude them from strict overlap checking to avoid false positives.
             TimeRange previous = ranges.get(i - 1);
             TimeRange current = ranges.get(i);
@@ -1106,10 +1101,6 @@ public class AiService {
         }
         if (ItineraryQualityPolicy.exceedsNonLogisticsItems(nonLogisticsActivities)) {
             return QualityCheck.fail("regenerated day has too many non-logistics activities");
-        }
-        if (requiresLocalTransportPlan(List.of(day), Math.max(1, req.getDays()), nonLogisticsActivities)
-                && localTransportActivities == 0) {
-            return QualityCheck.fail("missing explicit local transport in regenerated day");
         }
         if (hasTooManyDuplicatePlaces(day, currentSchedule)) {
             return QualityCheck.fail("regenerated day repeats too many places from other days");
@@ -1133,9 +1124,6 @@ public class AiService {
         String combined = String.join(" ", normalizedName, normalizedLocation, normalizedNote);
         long cost = Math.max(0, act.getEstimatedCost());
 
-        if (mentionsExcludedRequiredCost(combined)) {
-            return "activity excludes a required cost from estimatedCost: " + act.getName();
-        }
         if (isOutboundOrReturnTransport(combined, req)) {
             if (cost == 0 && !bundledIntercityTransportCost) {
                 return "intercity transport cost is missing: " + act.getName();
@@ -1154,8 +1142,7 @@ public class AiService {
             return false;
         }
         return reason.startsWith("intercity transport cost is missing:")
-                || reason.startsWith("vehicle rental cost is missing:")
-                || reason.startsWith("activity excludes a required cost from estimatedCost:");
+                || reason.startsWith("vehicle rental cost is missing:");
     }
 
     private boolean hasBundledIntercityTransportCost(List<TripDto.DayResponse> days, TripDto.GenerateRequest req) {
@@ -1217,15 +1204,6 @@ public class AiService {
                 "nhan oto",
                 "lay o to",
                 "lay oto");
-    }
-
-    private boolean mentionsExcludedRequiredCost(String normalizedText) {
-        return containsAny(normalizedText,
-                "khong bao gom trong chi phi nay",
-                "chua bao gom trong chi phi nay",
-                "khong bao gom vao chi phi",
-                "chua bao gom vao chi phi",
-                "not included");
     }
 
     private boolean containsAny(String text, String... terms) {
@@ -1400,45 +1378,7 @@ public class AiService {
         return normalizedType.equals("transport") || normalizedType.equals("accommodation");
     }
 
-    private boolean requiresLocalTransportPlan(
-            List<TripDto.DayResponse> days,
-            int expectedDays,
-            int nonLogisticsActivities) {
-        return expectedDays >= 2
-                && nonLogisticsActivities >= 4
-                && hasDistantNonLogisticsPlaces(days);
-    }
 
-    private boolean hasDistantNonLogisticsPlaces(List<TripDto.DayResponse> days) {
-        for (TripDto.DayResponse day : days == null ? List.<TripDto.DayResponse>of() : days) {
-            if (day == null || day.getActivities() == null) {
-                continue;
-            }
-            List<TripDto.ActivityResponse> placeActivities = day.getActivities().stream()
-                    .filter(activity -> {
-                        String type = normalize(activity.getType());
-                        return !type.equals("transport") && !type.equals("accommodation");
-                    })
-                    .toList();
-            for (int i = 0; i < placeActivities.size(); i++) {
-                TripDto.ActivityResponse first = placeActivities.get(i);
-                if (first.getLatitude() == null || first.getLongitude() == null) {
-                    continue;
-                }
-                for (int j = i + 1; j < placeActivities.size(); j++) {
-                    TripDto.ActivityResponse second = placeActivities.get(j);
-                    if (second.getLatitude() == null || second.getLongitude() == null) {
-                        continue;
-                    }
-                    if (distanceKm(first.getLatitude(), first.getLongitude(), second.getLatitude(),
-                            second.getLongitude()) >= 2.0) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
 
     private double distanceKm(double lat1, double lon1, double lat2, double lon2) {
         double earthRadiusKm = 6371.0;
