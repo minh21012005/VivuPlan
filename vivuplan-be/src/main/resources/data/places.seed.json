@@ -358,7 +358,7 @@
     "address": "Lũng Cú, Đồng Văn, Hà Giang",
     "priceLevel": "LOW",
     "estimatedCostMin": 25000,
-    "estimatedCostMax": 50000,
+    "estimatedCostMax": 30000,
     "rating": 4.6,
     "latitude": 23.3635,
     "longitude": 105.3147,
@@ -700,24 +700,27 @@
     "type": "ATTRACTION",
     "address": "Nhơn Lý, Quy Nhơn, Bình Định",
     "priceLevel": "MID",
-    "estimatedCostMin": 150000,
+    "estimatedCostMin": 30000,
     "estimatedCostMax": 350000,
     "rating": 4.5,
     "latitude": 13.9092,
     "longitude": 109.2962,
-    "description": "Bãi biển nước xanh trong, thường kết hợp Eo Gió trong nửa ngày hoặc một ngày.",
-    "openingHours": "Ban ngày, theo thời tiết biển",
+    "description": "Bãi biển nước xanh trong ở Nhơn Lý, thường kết hợp Eo Gió trong nửa ngày hoặc một ngày; hoạt động biển phụ thuộc thời tiết.",
+    "openingHours": "07:00-17:00 theo cổng Du lịch Quy Nhơn - Bình Định; tour biển/cano phụ thuộc thời tiết",
     "verified": true,
-    "source": "VNAT",
+    "source": "Du lịch Quy Nhơn - Bình Định",
     "indoorOutdoor": "OUTDOOR",
-    "weatherSensitivity": "MEDIUM",
+    "weatherSensitivity": "HIGH",
     "tags": [
       "attraction",
       "outdoor",
       "beach"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://dulichquynhon.binhdinh.gov.vn/vi/baikyco",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Cổng Du lịch Quy Nhơn - Bình Định ghi giá tham quan Kỳ Co khoảng 30k-60k/người. Estimate mở rộng tới 350k/người để phản ánh trường hợp đi cano/tour, tắm biển, dịch vụ biển hoặc trung chuyển; ăn uống tính riêng."
   },
   {
     "name": "Eo Gió",
@@ -726,22 +729,27 @@
     "address": "Bán đảo Phương Mai, Nhơn Lý, Quy Nhơn, Bình Định",
     "priceLevel": "LOW",
     "estimatedCostMin": 25000,
-    "estimatedCostMax": 50000,
+    "estimatedCostMax": 25000,
     "rating": 4.5,
     "latitude": 13.8937,
     "longitude": 109.2893,
-    "description": "Eo biển hình vòng cung với vách đá, cách trung tâm Quy Nhơn khoảng 25km.",
-    "openingHours": "Ban ngày",
+    "description": "Eo biển hình vòng cung với vách đá ở Nhơn Lý, nổi bật với cảnh biển, gió mạnh và đường ngắm cảnh ven vách đá.",
+    "openingHours": "07:00-19:00 theo cổng Du lịch Quy Nhơn - Bình Định; phụ thuộc thời tiết, nên tránh mưa lớn, gió mạnh hoặc biển động",
     "verified": true,
-    "source": "VNAT",
+    "source": "Du lịch Quy Nhơn - Bình Định",
     "indoorOutdoor": "MIXED",
-    "weatherSensitivity": "MEDIUM",
+    "weatherSensitivity": "HIGH",
     "tags": [
       "attraction",
-      "mixed"
+      "mixed",
+      "beach",
+      "viewpoint"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://dulichquynhon.binhdinh.gov.vn/vi/eogiolandscape",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Cổng Du lịch Quy Nhơn - Bình Định ghi giá vé Eo Gió 25k/người, trẻ em dưới 0,9m miễn phí. Gửi xe, đồ uống, dịch vụ chụp ảnh hoặc điểm dừng tư nhân nếu có tính riêng."
   },
   {
     "name": "Tháp Đôi Quy Nhơn",
@@ -750,46 +758,55 @@
     "address": "Trần Hưng Đạo, Quy Nhơn, Bình Định",
     "priceLevel": "LOW",
     "estimatedCostMin": 20000,
-    "estimatedCostMax": 50000,
+    "estimatedCostMax": 20000,
     "rating": 4.3,
     "latitude": 13.7828,
     "longitude": 109.2229,
-    "description": "Cụm tháp Chăm trong thành phố, thuận tiện ghé ngắn.",
-    "openingHours": "Ban ngày",
+    "description": "Cụm tháp Chăm Hưng Thạnh trong thành phố Quy Nhơn, phù hợp ghé ngắn trong lịch trình văn hóa.",
+    "openingHours": "07:00-18:00 theo cổng Du lịch Quy Nhơn - Bình Định",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Du lịch Quy Nhơn - Bình Định",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
-      "mixed"
+      "mixed",
+      "heritage"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://dulichquynhon.binhdinh.gov.vn/vi/thapdoiquynhon",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Cổng Du lịch Quy Nhơn - Bình Định ghi giá vé Tháp Đôi 20k/người. Gửi xe, thuyết minh hoặc mua đồ lưu niệm tính riêng."
   },
   {
     "name": "Ghềnh Ráng Tiên Sa",
     "destination": "Quy Nhơn",
     "type": "ATTRACTION",
     "address": "Ghềnh Ráng, Quy Nhơn, Bình Định",
-    "priceLevel": "LOW",
+    "priceLevel": "FREE",
     "estimatedCostMin": 0,
-    "estimatedCostMax": 50000,
+    "estimatedCostMax": 0,
     "rating": 4.3,
     "latitude": 13.7484,
     "longitude": 109.2188,
-    "description": "Khu thắng cảnh ven biển, mộ Hàn Mặc Tử và bãi đá trứng.",
-    "openingHours": "Ban ngày",
+    "description": "Khu thắng cảnh ven biển phía đông nam Quy Nhơn, gồm Ghềnh Ráng, Bãi Trứng, Tiên Sa và khu mộ Hàn Mặc Tử.",
+    "openingHours": "07:00-18:00 theo cổng Du lịch Quy Nhơn - Bình Định",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Du lịch Quy Nhơn - Bình Định",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
-      "mixed"
+      "mixed",
+      "beach",
+      "heritage"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "FREE",
+    "sourceUrl": "https://dulichquynhon.binhdinh.gov.vn/vi/ghenhrang",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Cổng Du lịch Quy Nhơn - Bình Định ghi giá tham quan miễn phí. Chi phí phát sinh có thể là gửi xe, đồ uống hoặc dịch vụ tại từng điểm bên trong khu thắng cảnh."
   },
   {
     "name": "Chùa Thiên Hưng",
@@ -802,10 +819,10 @@
     "rating": 4.5,
     "latitude": 13.8317,
     "longitude": 109.166,
-    "description": "Ngôi chùa nổi tiếng gần Quy Nhơn, phù hợp lịch trình văn hóa nhẹ.",
-    "openingHours": "Ban ngày",
+    "description": "Thiên Hưng Tự ở An Nhơn, nổi tiếng với không gian chùa và Xá lợi Phật, phù hợp lịch trình văn hóa nhẹ.",
+    "openingHours": "08:00-17:00 theo cổng Du lịch Quy Nhơn - Bình Định",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Du lịch Quy Nhơn - Bình Định",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -814,7 +831,10 @@
       "spiritual"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://dulichquynhon.binhdinh.gov.vn/vi/thienhungtu",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Cổng Du lịch Quy Nhơn - Bình Định ghi giá tham quan miễn phí. Gửi xe, công đức, đồ uống hoặc mua đồ lưu niệm là chi phí tùy chọn."
   },
   {
     "name": "Surf Bar Quy Nhơn",
@@ -827,18 +847,22 @@
     "rating": 4.2,
     "latitude": 13.7565,
     "longitude": 109.2168,
-    "description": "Cafe ven biển phù hợp buổi chiều/tối nhẹ nhàng.",
-    "openingHours": "Chiều - tối",
+    "description": "Cafe ven biển trên đường Xuân Diệu, phù hợp ngắm biển Quy Nhơn buổi sáng, chiều hoặc tối nhẹ nhàng.",
+    "openingHours": "06:00-22:59 theo cổng Du lịch Quy Nhơn - Bình Định",
     "verified": true,
-    "source": "Local listing",
-    "indoorOutdoor": "INDOOR",
-    "weatherSensitivity": "LOW",
+    "source": "Du lịch Quy Nhơn - Bình Định",
+    "indoorOutdoor": "MIXED",
+    "weatherSensitivity": "MEDIUM",
     "tags": [
       "cafe",
-      "indoor"
+      "mixed",
+      "beach"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://dulichquynhon.binhdinh.gov.vn/vi/suftbar",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Cổng Du lịch Quy Nhơn - Bình Định ghi mức giá trung bình khoảng 25k-150k/người. Chi phí phụ thuộc đồ uống, đồ ăn và thời điểm ghé."
   },
   {
     "name": "Tháp Bà Ponagar",
@@ -851,18 +875,23 @@
     "rating": 4.4,
     "latitude": 12.2654,
     "longitude": 109.1952,
-    "description": "Quần thể tháp Chăm nổi tiếng trong thành phố Nha Trang.",
-    "openingHours": "Ban ngày",
+    "description": "Di tích quốc gia đặc biệt Tháp Bà Ponagar, quần thể tháp Chăm nổi tiếng trong thành phố Nha Trang.",
+    "openingHours": "Ban ngày; chương trình biểu diễn đêm nếu có bán vé riêng theo lịch sự kiện",
     "verified": true,
-    "source": "Vietnam Tourism",
+    "source": "Cổng thông tin Du lịch Khánh Hòa",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
-      "mixed"
+      "mixed",
+      "heritage",
+      "spiritual"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://nhatrang-travel.com/tin-tuc-su-kien/kham-pha-khanh-hoa/kien-truc-doc-dao-cua-thap-ba-ponagar-o-nha-trang.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn du lịch Khánh Hòa xác nhận giá trị di tích; bài cập nhật 2024 về chương trình đêm tại Tháp Bà ghi vé 30k/người/lượt. Estimate dùng mức vé tham khảo; gửi xe, thuyết minh hoặc show đêm tính theo lịch riêng."
   },
   {
     "name": "Viện Hải dương học Nha Trang",
@@ -875,20 +904,23 @@
     "rating": 4.2,
     "latitude": 12.2075,
     "longitude": 109.2146,
-    "description": "Bảo tàng/sưu tập sinh vật biển, phù hợp gia đình và ngày mưa.",
-    "openingHours": "Ban ngày",
+    "description": "Bảo tàng Hải dương học thuộc Viện Hải dương học, phù hợp gia đình, học sinh và ngày mưa.",
+    "openingHours": "Ban ngày; nên kiểm tra giờ mở cửa trực tiếp nếu đi dịp cao điểm/lễ",
     "verified": true,
-    "source": "Vietnam Tourism",
-    "indoorOutdoor": "MIXED",
-    "weatherSensitivity": "MEDIUM",
+    "source": "Cổng thông tin Du lịch Khánh Hòa",
+    "indoorOutdoor": "INDOOR",
+    "weatherSensitivity": "LOW",
     "tags": [
       "attraction",
-      "mixed",
+      "indoor",
       "museum",
       "family"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://nhatrang-travel.com/tin-tuc-su-kien/bao-tang-hai-duong-hoc-hut-khach-tham-quan.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn du lịch Khánh Hòa năm 2025 xác nhận Bảo tàng Hải dương học đang đón khách đông. Estimate là vé/chi phí tham quan tham khảo; dịch vụ gửi xe hoặc hoạt động bổ sung nếu có tính riêng."
   },
   {
     "name": "VinWonders Nha Trang",
@@ -896,13 +928,13 @@
     "type": "ACTIVITY",
     "address": "Đảo Hòn Tre, Nha Trang, Khánh Hòa",
     "priceLevel": "HIGH",
-    "estimatedCostMin": 800000,
-    "estimatedCostMax": 1200000,
+    "estimatedCostMin": 950000,
+    "estimatedCostMax": 1450000,
     "rating": 4.5,
     "latitude": 12.2185,
     "longitude": 109.2416,
-    "description": "Công viên giải trí lớn trên đảo Hòn Tre, cần dành nửa ngày đến một ngày.",
-    "openingHours": "Theo lịch vận hành VinWonders",
+    "description": "Công viên giải trí lớn trên đảo Hòn Tre, cần dành nửa ngày đến một ngày; có khu ngoài trời, công viên nước và show theo khung giờ.",
+    "openingHours": "Theo lịch vận hành VinWonders Nha Trang; một số phân khu/show có giờ riêng",
     "verified": true,
     "source": "VinWonders",
     "indoorOutdoor": "MIXED",
@@ -910,11 +942,14 @@
     "tags": [
       "activity",
       "mixed",
-      "spiritual",
+      "theme-park",
       "family"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://vinwonders.com/vi/wonderpedia/news/vinwonders-nha-trang-thong-bao-cap-nhat-gia-ve-khu-vui-choi-2026-va-chuong-trinh-tang-voucher-am-thuc/",
+    "verifiedAt": "2026-05-19",
+    "costNote": "VinWonders công bố cập nhật giá vé khu vui chơi năm 2026. Estimate phản ánh vé/combo phổ biến theo người lớn và gói dịch vụ; buffet, fastpass, dịch vụ premium hoặc ưu đãi theo thời điểm có thể làm giá thay đổi."
   },
   {
     "name": "Chợ Đầm",
@@ -928,9 +963,9 @@
     "latitude": 12.2544,
     "longitude": 109.1909,
     "description": "Chợ trung tâm để ăn uống, mua đặc sản và trải nghiệm địa phương.",
-    "openingHours": "Sáng - chiều",
+    "openingHours": "Sáng - chiều; thời gian từng quầy hàng có thể khác nhau",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Cổng thông tin Du lịch Khánh Hòa",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -951,20 +986,23 @@
     "rating": 4.2,
     "latitude": 12.2723,
     "longitude": 109.2046,
-    "description": "Cụm đá ven biển và điểm ngắm vịnh Nha Trang.",
-    "openingHours": "Ban ngày",
+    "description": "Cụm đá ven biển và điểm ngắm vịnh Nha Trang; trải nghiệm ngoài trời nên phụ thuộc thời tiết, mưa và sóng.",
+    "openingHours": "Ban ngày; nên tránh mưa lớn, sóng mạnh hoặc đường đá trơn",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Cổng thông tin Du lịch Khánh Hòa",
     "indoorOutdoor": "OUTDOOR",
-    "weatherSensitivity": "MEDIUM",
+    "weatherSensitivity": "HIGH",
     "tags": [
       "attraction",
       "outdoor",
       "beach",
-      "island"
+      "viewpoint"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://nhatrang-travel.com/en/news/news-and-event/hon-chong-club-house-interesting-cultural-spot.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn du lịch Khánh Hòa xác nhận Hòn Chồng là điểm văn hóa/ngắm vịnh. Estimate là vé tham quan tham khảo; gửi xe, nước uống hoặc chương trình biểu diễn nếu có tính riêng."
   },
   {
     "name": "Nhà thờ Núi Nha Trang",
@@ -977,10 +1015,10 @@
     "rating": 4.4,
     "latitude": 12.2485,
     "longitude": 109.1868,
-    "description": "Nhà thờ đá cổ trên đồi nhỏ, thuận tiện ghé trong trung tâm.",
-    "openingHours": "Ban ngày",
+    "description": "Nhà thờ Chánh tòa Kitô Vua, thường gọi Nhà thờ Núi/Nhà thờ Đá, nằm trên đồi nhỏ giữa trung tâm thành phố.",
+    "openingHours": "Ban ngày; cần tôn trọng giờ lễ và sinh hoạt tôn giáo",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Cổng thông tin Du lịch Khánh Hòa",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -990,7 +1028,10 @@
       "spiritual"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://nhatrang-travel.com/tin-tuc-su-kien/kham-pha-nha-tho-chanh-toa-net-dep-doc-dao-giua-long-tp.nha-.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Tham quan không gian bên ngoài không có vé trong nguồn du lịch Khánh Hòa. Gửi xe, công đức hoặc dịch vụ chụp ảnh nếu có là chi phí tùy chọn."
   },
   {
     "name": "Núi Langbiang",
@@ -1766,10 +1807,10 @@
     "rating": 4.4,
     "latitude": 13.8089,
     "longitude": 109.2685,
-    "description": "Đảo gần bờ phù hợp cano, tắm biển, lặn ngắm san hô khi biển êm.",
-    "openingHours": "Ban ngày",
+    "description": "Đảo gần bờ ở Nhơn Hải, phù hợp đi cano/tàu, tắm biển, lặn ngắm san hô và ăn hải sản khi biển êm.",
+    "openingHours": "07:00-18:00 theo cổng Du lịch Quy Nhơn - Bình Định; cano/tàu phụ thuộc thời tiết biển",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Du lịch Quy Nhơn - Bình Định",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "HIGH",
     "tags": [
@@ -1779,7 +1820,10 @@
       "boat"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://dulichquynhon.binhdinh.gov.vn/vi/dryisland",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Cổng Du lịch Quy Nhơn - Bình Định ghi giá tham quan Hòn Khô miễn phí. Estimate là chi phí phổ biến cho cano/tàu, lặn ngắm san hô hoặc dịch vụ biển; ăn uống hải sản tính riêng."
   },
   {
     "name": "Bãi Xép Quy Nhơn",
@@ -1792,10 +1836,10 @@
     "rating": 4.4,
     "latitude": 13.7041,
     "longitude": 109.2257,
-    "description": "Làng chài và bãi biển yên hơn trung tâm, phù hợp nghỉ nhẹ và ăn hải sản.",
-    "openingHours": "Cả ngày",
+    "description": "Làng chài và bãi biển cách trung tâm Quy Nhơn khoảng 13km theo tuyến ven biển, phù hợp nghỉ nhẹ, đi dạo và ăn hải sản.",
+    "openingHours": "Không gian làng chài/bãi biển mở cả ngày; nên đi ban ngày nếu tắm biển hoặc chụp ảnh",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Du lịch Quy Nhơn - Bình Định",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -1805,7 +1849,10 @@
       "food"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://dulichquynhon.binhdinh.gov.vn/vi/detailnews/?id=news_1182&t=the-wild-beauty-of-bai-lay-fishing-village-in-quy-nhon",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn chính thức giới thiệu Bãi Xép là làng chài/bãi biển, không nêu vé vào cửa. Estimate là chi phí ăn uống, đồ uống, gửi xe hoặc dịch vụ tại làng chài; tắm biển tự do cần theo điều kiện an toàn."
   },
   {
     "name": "Tháp Bánh Ít",
@@ -1814,22 +1861,26 @@
     "address": "Tuy Phước, Bình Định",
     "priceLevel": "LOW",
     "estimatedCostMin": 15000,
-    "estimatedCostMax": 30000,
+    "estimatedCostMax": 15000,
     "rating": 4.4,
     "latitude": 13.8867,
     "longitude": 109.1042,
-    "description": "Cụm tháp Chăm trên đồi, phù hợp lịch trình văn hóa và chụp ảnh nửa ngày.",
-    "openingHours": "Ban ngày",
+    "description": "Cụm tháp Chăm cuối thế kỷ XI - đầu thế kỷ XII trên đồi ở Tuy Phước, phù hợp lịch trình văn hóa và chụp ảnh.",
+    "openingHours": "07:00-18:00 theo cổng Du lịch Quy Nhơn - Bình Định",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Du lịch Quy Nhơn - Bình Định",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
-      "mixed"
+      "mixed",
+      "heritage"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://dulichquynhon.binhdinh.gov.vn/vi/thapbanhit",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Cổng Du lịch Quy Nhơn - Bình Định ghi giá vé Tháp Bánh Ít 15k/người. Gửi xe, thuyết minh hoặc mua đồ lưu niệm tính riêng."
   },
   {
     "name": "Đầm Thị Nại",
@@ -1842,19 +1893,23 @@
     "rating": 4.2,
     "latitude": 13.823,
     "longitude": 109.19,
-    "description": "Đầm nước lớn gần trung tâm, phù hợp ngắm cảnh, chụp ảnh và kết hợp cầu Thị Nại.",
-    "openingHours": "Cả ngày",
+    "description": "Đầm lớn nhất Bình Định, cách trung tâm Quy Nhơn khoảng 8km, phù hợp ngắm cảnh, chụp ảnh và kết hợp cầu Thị Nại.",
+    "openingHours": "07:00-18:00 theo cổng Du lịch Quy Nhơn - Bình Định",
     "verified": true,
-    "source": "Local tourism",
+    "source": "Du lịch Quy Nhơn - Bình Định",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
       "attraction",
       "mixed",
-      "couple"
+      "couple",
+      "viewpoint"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://dulichquynhon.binhdinh.gov.vn/vi/thinailagoon",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Cổng Du lịch Quy Nhơn - Bình Định ghi giá tham quan miễn phí. Chi phí phát sinh thường là gửi xe, đồ uống, tour sinh thái hoặc dịch vụ riêng nếu ghé Cồn Chim/khu vực lân cận."
   },
   {
     "name": "Chùa Long Sơn",
@@ -1867,10 +1922,10 @@
     "rating": 4.4,
     "latitude": 12.2501,
     "longitude": 109.1808,
-    "description": "Ngôi chùa nổi tiếng với tượng Phật trắng lớn, phù hợp lịch trình văn hóa trong thành phố.",
-    "openingHours": "Ban ngày",
+    "description": "Ngôi chùa lâu đời ở Nha Trang, nổi tiếng với tượng Phật trắng trên núi Trại Thủy, phù hợp lịch trình văn hóa trong thành phố.",
+    "openingHours": "Ban ngày; cần tôn trọng không gian tu học và sinh hoạt tôn giáo",
     "verified": true,
-    "source": "Vietnam Tourism",
+    "source": "Cổng thông tin Du lịch Khánh Hòa",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "MEDIUM",
     "tags": [
@@ -1879,7 +1934,10 @@
       "spiritual"
     ],
     "aliases": [],
-    "costBasis": "FREE"
+    "costBasis": "FREE",
+    "sourceUrl": "https://nhatrang-travel.com/ho-tro-cskh/tin-tuc/kham-pha-ve-dep-3-ngoi-chua-noi-tieng-o-nha-trang.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn du lịch Khánh Hòa giới thiệu chùa Long Sơn như điểm văn hóa tâm linh. Không ghi nhận vé vào cửa; gửi xe, công đức hoặc đồ uống tính riêng nếu có."
   },
   {
     "name": "Hòn Mun",
@@ -1892,10 +1950,10 @@
     "rating": 4.3,
     "latitude": 12.165,
     "longitude": 109.304,
-    "description": "Điểm lặn/ngắm san hô trong vịnh Nha Trang, chỉ nên xếp khi biển êm và thời tiết tốt.",
-    "openingHours": "Theo lịch tour/tàu",
+    "description": "Khu bảo tồn biển trong vịnh Nha Trang, nổi tiếng với hệ sinh thái san hô; chỉ nên xếp khi biển êm và thời tiết tốt.",
+    "openingHours": "Theo lịch tour/tàu và điều kiện thời tiết biển",
     "verified": true,
-    "source": "Khanh Hoa Tourism",
+    "source": "Cổng thông tin Du lịch Khánh Hòa",
     "indoorOutdoor": "OUTDOOR",
     "weatherSensitivity": "HIGH",
     "tags": [
@@ -1922,7 +1980,7 @@
     "description": "Bãi biển trung tâm, phù hợp đi dạo, tắm biển và ngắm bình minh khi thời tiết thuận lợi.",
     "openingHours": "Cả ngày",
     "verified": true,
-    "source": "Vietnam Travel",
+    "source": "Cổng thông tin Du lịch Khánh Hòa",
     "indoorOutdoor": "MIXED",
     "weatherSensitivity": "HIGH",
     "tags": [
@@ -1956,7 +2014,10 @@
       "mixed"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://nhatrang-travel.com/diem-den/dich-vu/mua-sam/-cho-dam-nha-trang.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Chợ Đầm không có vé vào cửa trong nguồn du lịch Khánh Hòa. Estimate là chi phí ăn uống/mua đặc sản tham khảo cho một người, phụ thuộc món và lượng mua."
   },
   {
     "name": "Thung lũng Tình Yêu",
@@ -3558,7 +3619,10 @@
       "indoor"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://nhatrang-travel.com/diem-den/diem-tham-quan/diem-tham-quan/hon-mun-cung-dien-bien-dong.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Nguồn du lịch Khánh Hòa xác nhận Hòn Mun là khu bảo tồn biển và điểm trải nghiệm đảo. Estimate là chi phí tour/tàu/lặn ngắm san hô tham khảo; phụ phí bảo tồn, thiết bị lặn, ăn uống hoặc dịch vụ riêng có thể tính thêm."
   },
   {
     "name": "Thác Pa Sỹ",
@@ -3711,7 +3775,10 @@
       "heritage"
     ],
     "aliases": [],
-    "costBasis": "PER_PERSON"
+    "costBasis": "PER_PERSON",
+    "sourceUrl": "https://nhatrang-travel.com/gioi-thieu/don-vi-hanh-chinh/gioi-thieu-tong-quan-nha-trang.html",
+    "verifiedAt": "2026-05-19",
+    "costNote": "Bãi biển trung tâm là không gian công cộng, không có vé vào cửa trong nguồn du lịch Khánh Hòa. Estimate là chi phí thuê ghế/dù, gửi đồ, đồ uống hoặc dịch vụ biển tùy chọn."
   },
   {
     "name": "Cổng Tò Vò",

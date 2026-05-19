@@ -99,18 +99,19 @@ public class WeatherService {
             return cached.data();
         }
 
-        String url = UriComponentsBuilder.fromHttpUrl(OPEN_METEO_BASE)
+        java.net.URI uri = UriComponentsBuilder.fromHttpUrl(OPEN_METEO_BASE)
                 .queryParam("latitude",  String.format("%.4f", lat))
                 .queryParam("longitude", String.format("%.4f", lon))
                 .queryParam("daily", "weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max,precipitation_probability_max")
                 .queryParam("timezone", "Asia/Ho_Chi_Minh")
                 .queryParam("forecast_days", 16)
-                .build(true)
-                .toUriString();
+                .build()
+                .encode()
+                .toUri();
 
         try {
             @SuppressWarnings("unchecked")
-            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            Map<String, Object> response = restTemplate.getForObject(uri, Map.class);
             if (response == null || !response.containsKey("daily")) {
                 log.warn("Open-Meteo returned no 'daily' block for {}", cacheKey);
                 return List.of();
@@ -140,13 +141,14 @@ public class WeatherService {
             return geocodeCache.get(key); // null means previously unresolvable — don't retry
         }
 
-        String url = UriComponentsBuilder.fromHttpUrl(NOMINATIM_BASE)
+        java.net.URI uri = UriComponentsBuilder.fromHttpUrl(NOMINATIM_BASE)
                 .queryParam("q", placeName.trim())
                 .queryParam("format", "json")
                 .queryParam("limit", 1)
                 .queryParam("countrycodes", "vn")  // prefer Vietnam results
-                .build(true)
-                .toUriString();
+                .build()
+                .encode()
+                .toUri();
 
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -155,7 +157,7 @@ public class WeatherService {
 
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> results = restTemplate.exchange(
-                    url, HttpMethod.GET, entity,
+                    uri, HttpMethod.GET, entity,
                     (Class<List<Map<String, Object>>>) (Class<?>) List.class
             ).getBody();
 

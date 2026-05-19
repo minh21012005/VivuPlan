@@ -270,7 +270,7 @@ public class AiService {
                         Regenerate the itinerary from scratch.
                         Return exactly ONE JSON object with keys "itinerary" and "requestFulfillment". Never return a bare JSON array, and never use "days" or "schedule" instead of "itinerary".
                         Use named, real places and restaurants in or near %s.
-                        Avoid placeholder wording such as "địa điểm nổi bật", "đặc sản địa phương", "khu trung tâm", "vùng ven", "nhà hàng địa phương", or "cà phê view đẹp" unless paired with a specific real name and location.
+                        Avoid ANY generic placeholder wording (e.g., "địa điểm nổi bật", "đặc sản địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "chợ địa phương", "địa điểm thuê xe"). Every place, restaurant, cafe, accommodation, or rental shop MUST be a specific real-world business with a concrete proper name (e.g., "Khách sạn Mường Thanh", "Hải Sản Bé Mặn").
                         %s
                         %s
                         Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
@@ -356,9 +356,9 @@ public class AiService {
                         1. Treat verified place candidates as trusted suggestions, not an allowed-only list.
                         2. Candidates are ordered by backend relevance. Consider higher-ranked candidates first, but do not blindly pick the top items when route, weather, pacing, budget, or the user's request makes another choice better.
                         3. Prefer verified candidates when they fit this regenerated day, the user's request, route, weather, and budget.
-                        4. You may use other real places or valuable local activities outside the verified candidates when they improve the day, better satisfy the user's request, or fill a gap in the candidate list.
+                        4. CRITICAL: The candidate list is NOT exhaustive. It may lack specific accommodations, restaurants, cafes, rental shops, or niche local spots. For ANY category lacking suitable candidates, you MUST actively use your extensive internal knowledge to suggest specific, real, and named businesses/places (e.g., "Khách sạn Mường Thanh", "Quán Mì Quảng Bà Mua", "Thuê xe máy Cửa Đại").
                         5. When using a verified candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
-                        6. When using a non-candidate place or activity, it must still be a specific real place/activity with a concrete name and address/area. Avoid generic unnamed places.
+                        6. When using a non-candidate place or activity, it MUST be a specific, existing real-world place with a concrete proper name and address. Absolutely DO NOT use ANY generic or unnamed placeholders for ANY activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "chợ địa phương", "quán cà phê"). If you don't have a candidate, confidently recommend a real place with a specific brand/name from your own knowledge.
                         7. Do not force every candidate into the day; choose only what makes the day practical.
 
                         Regeneration task:
@@ -595,9 +595,9 @@ public class AiService {
                         1. Treat verified place candidates as trusted suggestions, not an allowed-only list.
                         2. Candidates are ordered by backend relevance. Consider higher-ranked candidates first, but do not blindly pick the top items when route, weather, pacing, budget, or the user's request makes another choice better.
                         3. Prefer verified candidates when they fit the user's constraints, route, weather, and budget.
-                        4. You may use other real places or valuable local activities outside the verified candidates when they improve the itinerary, better satisfy the user's request, or fill a gap in the candidate list.
+                        4. CRITICAL: The candidate list is NOT exhaustive. It may lack specific accommodations, restaurants, cafes, rental shops, or niche local spots. For ANY category lacking suitable candidates, you MUST actively use your extensive internal knowledge to suggest specific, real, and named businesses/places (e.g., "Khách sạn Mường Thanh", "Quán Mì Quảng Bà Mua", "Thuê xe máy Cửa Đại").
                         5. When using a verified candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
-                        6. When using a non-candidate place or activity, it must still be a specific real place/activity with a concrete name and address/area. Avoid generic unnamed places.
+                        6. When using a non-candidate place or activity, it MUST be a specific, existing real-world place with a concrete proper name and address. Absolutely DO NOT use ANY generic or unnamed placeholders for ANY activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "chợ địa phương", "quán cà phê"). If you don't have a candidate, confidently recommend a real place with a specific brand/name from your own knowledge.
                         7. Do not force every candidate into the trip; choose only what makes the itinerary practical.
 
                         Local transportation rules:
@@ -1526,9 +1526,12 @@ public class AiService {
 
     private boolean isGenericActivity(String normalizedName, String normalizedLocation, String normalizedType) {
         List<String> genericTerms = List.of(
-                "an sang dac san dia phuong",
-                "an trua dac san dia phuong",
-                "an toi dac san dia phuong",
+                "an sang dac san",
+                "an trua dac san",
+                "an toi dac san",
+                "an trua tai dia phuong",
+                "an toi tai dia phuong",
+                "an sang tai dia phuong",
                 "dac san dia phuong",
                 "diem noi bat",
                 "khu vuc lan can",
@@ -1537,8 +1540,15 @@ public class AiService {
                 "ca phe view dep",
                 "cum diem bieu tuong",
                 "khu tham quan chinh",
-                "trai nghiem van hoa hoac thien nhien");
-        boolean genericName = genericTerms.stream().anyMatch(normalizedName::contains);
+                "trai nghiem van hoa",
+                "trai nghiem thien nhien",
+                "dia diem thue xe",
+                "an toi o khach san",
+                "an sang tai khach san",
+                "thue homestay");
+                
+        boolean containsGenericTerm = genericTerms.stream().anyMatch(normalizedName::contains);
+
         boolean weakLocation = normalizedLocation.isBlank()
                 || normalizedLocation.equals("khu trung tam")
                 || normalizedLocation.equals("khu dem")
@@ -1548,8 +1558,46 @@ public class AiService {
                 || normalizedLocation.contains("khu view dep")
                 || normalizedLocation.contains("khu an toi")
                 || normalizedLocation.length() < 6;
+
         boolean transportOrAccommodation = normalizedType.equals("transport") || normalizedType.equals("accommodation");
-        return !transportOrAccommodation && genericName && weakLocation;
+        if (transportOrAccommodation) {
+            return false;
+        }
+
+        if (containsGenericTerm) {
+            return true;
+        }
+
+        // Advanced heuristic: remove common generic filler words and check if anything meaningful is left
+        String cleanedName = normalizedName;
+        String[] prefixesToRemove = {
+            "an sang", "an trua", "an toi", "an", "uong", "thuong thuc", "trai nghiem", 
+            "tham quan", "kham pha", "check in", "mua sam", "dao", "nghi ngoi", "tu do", 
+            "thue xe may", "thue o to", "thue xe", "di chuyen"
+        };
+        for (String prefix : prefixesToRemove) {
+            cleanedName = cleanedName.replaceAll("\\b" + prefix + "\\b", "");
+        }
+        
+        String[] genericNouns = {
+            "tai dia phuong", "dac san", "dia phuong", "hai san", "nha hang", "quan an", "quan", 
+            "khach san", "homestay", "resort", "bai bien", "cho", "ca phe", "cafe", 
+            "trung tam", "vung ven", "noi bat", "chinh", "van hoa", "thien nhien", 
+            "banh mi", "bun bo hue", "bun bo", "pho", "com", "bua", "dem", "view dep", 
+            "quanh", "gan", "o", "tai", "cua hang", "sieu thi", "khu vuc", "diem",
+            "thue", "xe may", "o to", "oto", "xe dap", "xe dien", "xe"
+        };
+        for (String noun : genericNouns) {
+            cleanedName = cleanedName.replaceAll("\\b" + noun + "\\b", " ");
+        }
+        
+        cleanedName = cleanedName.replaceAll("\\s+", "").trim();
+        
+        // If 1 or 0 non-space characters remain after removing filler words, it's a completely generic name
+        // (Allows very short specific names like "Vy", "Bo", "Oc" of length >= 2 to pass)
+        boolean isHeuristicGeneric = cleanedName.length() <= 1;
+
+        return isHeuristicGeneric || (weakLocation && normalizedName.split(" ").length <= 3);
     }
 
     private String normalize(String value) {
