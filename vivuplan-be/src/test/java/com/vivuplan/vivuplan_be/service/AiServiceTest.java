@@ -36,6 +36,50 @@ class AiServiceTest {
     }
 
     @Test
+    void itineraryQualityAllowsZeroCostVehicleReturnWhenRentalWasAlreadyCounted() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Nhan xe may thue tai Tam Coc", "TRANSPORT",
+                        "Tam Coc, Ninh Binh", 300_000L,
+                        "Chi phi thue xe may 2 ngay cho ca nhom."),
+                activity("09:30", "Tham quan Hang Mua", "ATTRACTION",
+                        "Khe Dau Ha, Ninh Binh", 200_000L, null),
+                activity("12:00", "An trua tai Nha hang Duc De", "FOOD",
+                        "Ninh Binh", 250_000L, null),
+                activity("17:00", "Tra phong va tra xe may thue", "TRANSPORT",
+                        "Tam Coc, Ninh Binh", 0,
+                        "Chi phi thue xe da duoc tinh o luc nhan xe.")));
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).isTrue();
+    }
+
+    @Test
+    void itineraryQualityStillFlagsZeroCostVehiclePickup() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Nhan xe may thue tai Tam Coc", "TRANSPORT",
+                        "Tam Coc, Ninh Binh", 0,
+                        "Nhan xe may de di chuyen trong ngay."),
+                activity("09:30", "Tham quan Hang Mua", "ATTRACTION",
+                        "Khe Dau Ha, Ninh Binh", 200_000L, null),
+                activity("12:00", "An trua tai Nha hang Duc De", "FOOD",
+                        "Ninh Binh", 250_000L, null)));
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).isFalse();
+        assertThat(quality.reason()).contains("vehicle rental cost is missing");
+    }
+
+    @Test
     void generatedItineraryParserRejectsLegacyArrayResponse() {
         AiService service = new AiService(new ObjectMapper());
 

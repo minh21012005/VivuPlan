@@ -1194,6 +1194,9 @@ public class AiService {
         if (!normalizedType.equals("transport")) {
             return false;
         }
+        if (isVehicleRentalReturnActivity(normalizedText)) {
+            return false;
+        }
         return containsAny(normalizedText,
                 "thue xe may",
                 "nhan xe may",
@@ -1206,6 +1209,20 @@ public class AiService {
                 "nhan oto",
                 "lay o to",
                 "lay oto");
+    }
+
+    private boolean isVehicleRentalReturnActivity(String normalizedText) {
+        return containsAny(normalizedText,
+                "tra xe",
+                "tra lai xe",
+                "hoan tra xe",
+                "ban giao xe",
+                "return rental",
+                "return rented",
+                "return motorbike",
+                "return bike",
+                "return bicycle",
+                "return car");
     }
 
     private boolean containsAny(String text, String... terms) {
