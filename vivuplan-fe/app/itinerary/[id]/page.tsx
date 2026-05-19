@@ -227,7 +227,7 @@ export default function ItineraryPage() {
   const [regeneratingDay, setRegeneratingDay] = useState(false);
   const [applyingRegeneration, setApplyingRegeneration] = useState(false);
   const [clientWarnings, setClientWarnings] = useState<string[]>([]);
-  const [aiWarningsDismissed, setAiWarningsDismissed] = useState(false);
+  const [aiWarningsCollapsed, setAiWarningsCollapsed] = useState(false);
   const [aiWarningsExpanded, setAiWarningsExpanded] = useState(false);
   const [weatherAdvisoryDismissed, setWeatherAdvisoryDismissed] = useState(false);
   const { toasts, show: showToast, dismiss: dismissToast } = useToast();
@@ -268,7 +268,7 @@ export default function ItineraryPage() {
         setDayCopied(false);
         setShareError("");
         setClientWarnings([]);
-        setAiWarningsDismissed(false);
+        setAiWarningsCollapsed(false);
         setAiWarningsExpanded(false);
         setRegenerateOpen(false);
         setRegeneratePreview(null);
@@ -329,31 +329,6 @@ export default function ItineraryPage() {
       });
   }, [clientWarnings, trip?.warnings]);
   const warningSignature = visibleWarnings.join("\u001f");
-
-  useEffect(() => {
-    if (!trip?.id || !warningSignature || typeof window === "undefined") {
-      setAiWarningsDismissed(false);
-      setAiWarningsExpanded(false);
-      return;
-    }
-    const dismissedSignature = window.localStorage.getItem(`vivuplan:trip:${trip.id}:warnings-dismissed`);
-    setAiWarningsDismissed(dismissedSignature === warningSignature);
-    setAiWarningsExpanded(false);
-  }, [trip?.id, warningSignature]);
-
-  const dismissAiWarnings = () => {
-    if (!trip?.id || !warningSignature || typeof window === "undefined") return;
-    window.localStorage.setItem(`vivuplan:trip:${trip.id}:warnings-dismissed`, warningSignature);
-    setAiWarningsDismissed(true);
-    setAiWarningsExpanded(false);
-  };
-
-  const restoreAiWarnings = () => {
-    if (trip?.id && typeof window !== "undefined") {
-      window.localStorage.removeItem(`vivuplan:trip:${trip.id}:warnings-dismissed`);
-    }
-    setAiWarningsDismissed(false);
-  };
 
   const weatherSignature = useMemo(() => {
     if (!trip?.id || !trip.startDate || forecast.length === 0) return "";
@@ -641,40 +616,37 @@ export default function ItineraryPage() {
 
       <main className="container" style={{ paddingTop: 30, paddingBottom: 80 }}>
         {visibleWarnings.length > 0 && (
-          aiWarningsDismissed ? (
-            <div className="itinerary-ai-messages-collapsed">
-              <span><AlertCircle size={13} /> Đã ẩn {visibleWarnings.length} thông điệp từ AI</span>
-              <button type="button" onClick={restoreAiWarnings}>Hiện lại</button>
+          <section className="itinerary-ai-messages" aria-label="Thông điệp từ AI">
+            <div
+              className="itinerary-ai-messages-head"
+              style={{ cursor: "pointer", userSelect: "none" }}
+              onClick={() => setAiWarningsCollapsed(!aiWarningsCollapsed)}
+            >
+              <AlertCircle size={16} />
+              <div style={{ flex: 1 }}>
+                <strong>Thông điệp từ AI</strong>
+              </div>
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
+                {aiWarningsCollapsed ? <ChevronDown size={18} style={{ color: "#92400E" }} /> : <ChevronUp size={18} style={{ color: "#92400E" }} />}
+              </div>
             </div>
-          ) : (
-            <section className="itinerary-ai-messages" aria-label="Thông điệp từ AI">
-              <div className="itinerary-ai-messages-head">
-                <AlertCircle size={16} />
-                <div>
-                  <strong>Thông điệp từ AI cho lịch trình này</strong>
-                  <span>Các lưu ý này được giữ lại để bạn kiểm tra trong suốt quá trình chỉnh lịch.</span>
+            {!aiWarningsCollapsed && (
+              <>
+                <div className="itinerary-ai-message-list">
+                  {shownWarnings.map((warning) => (
+                    <p key={warning}>{warning}</p>
+                  ))}
                 </div>
-                <button type="button" className="itinerary-ai-dismiss" onClick={dismissAiWarnings} aria-label="Ẩn thông điệp từ AI">
-                  <X size={14} />
-                </button>
-              </div>
-              <div className="itinerary-ai-message-list">
-                {shownWarnings.map((warning) => (
-                  <p key={warning}>{warning}</p>
-                ))}
-              </div>
-              {(visibleWarnings.length > 2 || aiWarningsExpanded) && (
-                <div className="itinerary-ai-message-actions">
-                  {visibleWarnings.length > 2 && (
+                {visibleWarnings.length > 2 && (
+                  <div className="itinerary-ai-message-actions">
                     <button type="button" onClick={() => setAiWarningsExpanded((value) => !value)}>
                       {aiWarningsExpanded ? "Thu gọn" : `Xem thêm ${visibleWarnings.length - 2} thông điệp`}
                     </button>
-                  )}
-                  <button type="button" onClick={dismissAiWarnings}>Đã hiểu, ẩn phần này</button>
-                </div>
-              )}
-            </section>
-          )
+                  </div>
+                )}
+              </>
+            )}
+          </section>
         )}
 
         {/* Feature 1 – Smart Reschedule Suggestions */}
@@ -843,7 +815,7 @@ export default function ItineraryPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {day.activities.map((activity, index) => {
                   const dw = getByDayIndex(activeDay, trip.startDate);
-                  const warning = dw ? getActivityWeatherWarning(activity.name, dw, activity.location, activity.type) : null;
+                  const warning = dw ? getActivityWeatherWarning(activity.name, dw, activity.location, activity.type, activity.time) : null;
                   return (
                     <ActivityItem
                       key={activity.id ?? `${activity.time}-${activity.name}`}

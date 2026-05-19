@@ -71,6 +71,30 @@ export function getOutdoorRiskLevel(weather: DailyWeather): 0 | 1 | 2 {
   return 0;
 }
 
+function getWindowOutdoorRiskLevel(window: WeatherWindow): 0 | 1 | 2 {
+  if (typeof window.outdoorRiskLevel === "number") {
+    return window.outdoorRiskLevel >= 2 ? 2 : window.outdoorRiskLevel >= 1 ? 1 : 0;
+  }
+
+  const { code, precipitationMm, precipitationProbability, windspeedKmh } = window;
+  if (code >= 96 && code <= 99) return 2;
+  if (code === 95 && (
+    precipitationProbability >= 60 ||
+    precipitationMm >= 3 ||
+    windspeedKmh >= 40 ||
+    (precipitationProbability >= 50 && precipitationMm >= 1)
+  )) return 2;
+  if (code === 65 || code === 67 || code === 82 || code === 86) return 2;
+  if (precipitationMm >= 25) return 2;
+  if (windspeedKmh >= 50 && precipitationProbability >= 70) return 2;
+  if (precipitationProbability >= 95 && precipitationMm >= 15) return 2;
+  if (code === 95) return 1;
+  if ((code >= 51 && code <= 64) || (code >= 80 && code <= 81)) return 1;
+  if (precipitationMm >= 1) return 1;
+  if (precipitationProbability >= 60) return 1;
+  return 0;
+}
+
 export function interpretWeather(weather: DailyWeather): WeatherCondition {
   const base = interpretWeatherCode(weather.code);
   const risk = getOutdoorRiskLevel(weather);
@@ -130,35 +154,52 @@ export function getActivityWeatherWarning(
   weather: DailyWeather,
   activityLocation?: string,
   activityType?: string,
+  activityTime?: string,
 ): ActivityWeatherWarning | null {
   // Indoor activities and transport are not strictly 'outdoor activities' in the sense of being canceled by rain
   if (activityType === "FOOD" || activityType === "CAFE" || activityType === "ACCOMMODATION" || activityType === "TRANSPORT") {
     return null;
   }
 
-  const condition = interpretWeather(weather);
-  const outdoorRisk = getOutdoorRiskLevel(weather);
   const isRisky = isOutdoorRiskyActivity(activityName, activityLocation);
   if (!isRisky) return null;
 
+  const activityWindow = findWeatherWindowForActivity(weather, activityTime);
+  const condition = activityWindow ? interpretWeatherCode(activityWindow.code) : interpretWeather(weather);
+  const outdoorRisk = activityWindow ? getWindowOutdoorRiskLevel(activityWindow) : getOutdoorRiskLevel(weather);
+  const rainChance = activityWindow?.precipitationProbability ?? weather.precipitationProbability;
+  const rainMm = activityWindow?.precipitationMm ?? weather.precipitationMm;
+  const windKmh = activityWindow?.windspeedKmh ?? weather.windspeedKmh;
   const actText = `"${activityName}"`;
 
-  if (weather.windspeedKmh > 50 && (activityName.toLowerCase().includes("vịnh") || activityName.toLowerCase().includes("biển") || activityName.toLowerCase().includes("thuyền"))) {
-    return { icon: "wind", message: `Gió mạnh (${weather.windspeedKmh.toFixed(0)} km/h) – Hoạt động ${actText} có thể bị hoãn. Kiểm tra lại với đơn vị vận hành.` };
+  if (activityWindow && outdoorRisk < 2 && rainChance < 60 && rainMm < 1 && windKmh <= 50) {
+    return null;
   }
-  if (outdoorRisk === 2 && condition.isRainy) {
+
+  if (windKmh > 50 && (activityName.toLowerCase().includes("vịnh") || activityName.toLowerCase().includes("biển") || activityName.toLowerCase().includes("thuyền"))) {
+    return { icon: "wind", message: `Gió mạnh (${windKmh.toFixed(0)} km/h) – Hoạt động ${actText} có thể bị hoãn. Kiểm tra lại với đơn vị vận hành.` };
+  }
+  if (outdoorRisk === 2 && condition.isRainy && (rainChance >= 50 || rainMm >= 2)) {
     return { icon: "rain", message: `Dự báo mưa lớn hoặc thời tiết xấu – Hoạt động ngoài trời ${actText} có thể bị ảnh hưởng, hãy kiểm tra điều kiện thực tế trước khi đi.` };
   }
   if (condition.isFoggy && (activityName.toLowerCase().includes("cáp treo") || activityName.toLowerCase().includes("leo"))) {
     return { icon: "fog", message: `Có sương mù – Hoạt động ${actText} có thể bị hạn chế tầm nhìn, hãy kiểm tra trước khi khởi hành.` };
   }
-  if (outdoorRisk === 1 && condition.isRainy && (weather.precipitationProbability >= 60 || weather.precipitationMm >= 1)) {
-    return { icon: "rain", message: `Có thể có mưa trong ngày (${weather.precipitationProbability}%) – ${actText} vẫn có thể phù hợp, nên mang áo mưa và linh hoạt khung giờ.` };
+  if (outdoorRisk === 1 && condition.isRainy && (rainChance >= 60 || rainMm >= 1)) {
+    return { icon: "rain", message: `Có thể có mưa trong khung giờ này (${rainChance}%) – ${actText} vẫn có thể phù hợp, nên mang áo mưa và linh hoạt khung giờ.` };
   }
   return null;
 }
 
 // ─── Packing suggestions ──────────────────────────────────────────────────────
+
+function findWeatherWindowForActivity(weather: DailyWeather, activityTime?: string): WeatherWindow | null {
+  if (!activityTime || !weather.timeWindows?.length) return null;
+  const match = activityTime.match(/^([01]\d|2[0-3]):[0-5]\d/);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  return weather.timeWindows.find((window) => hour >= window.startHour && hour <= window.endHour) ?? null;
+}
 
 export interface PackingSuggestion {
   icon: "jacket" | "scarf" | "sun-glasses" | "umbrella-heavy" | "umbrella" | "fog" | "wind" | "check";
