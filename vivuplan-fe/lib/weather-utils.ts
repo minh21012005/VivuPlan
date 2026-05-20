@@ -57,76 +57,29 @@ export function interpretWeatherCode(code: number): WeatherCondition {
   return { label: "N/A", severity: "mild", isRainy: false, isWindy: false, isFoggy: false, iconKey: "unknown" };
 }
 
-export function getOutdoorRiskLevel(weather: DailyWeather): 0 | 1 | 2 {
-  if (typeof weather.outdoorRiskLevel === "number") {
-    return weather.outdoorRiskLevel >= 2 ? 2 : weather.outdoorRiskLevel >= 1 ? 1 : 0;
-  }
+type RiskInput = {
+  precipitationMm: number;
+  precipitationProbability: number;
+  outdoorRiskLevel?: number;
+};
 
-  const { code, precipitationMm, precipitationProbability, windspeedKmh } = weather;
-  if (code >= 96 && code <= 99) return 2;
-  if (code === 95 && (
-    precipitationProbability >= 60 ||
-    precipitationMm >= 3 ||
-    windspeedKmh >= 40 ||
-    (precipitationProbability >= 50 && precipitationMm >= 1)
-  )) return 2;
-  if (code === 65 || code === 67 || code === 82 || code === 86) return 2;
-  if (precipitationMm >= 25) return 2;
-  if (windspeedKmh >= 50 && precipitationProbability >= 70) return 2;
-  if (precipitationProbability >= 95 && precipitationMm >= 15) return 2;
-  if (code === 95) return 1;
-  if ((code >= 51 && code <= 64) || (code >= 80 && code <= 81)) return 1;
-  if (precipitationMm >= 1) return 1;
-  if (precipitationProbability >= 60) return 1;
+function normalizeOutdoorRiskLevel(value?: number): 0 | 1 | 2 | null {
+  if (typeof value !== "number") return null;
+  return value >= 2 ? 2 : value >= 1 ? 1 : 0;
+}
+
+function fallbackOutdoorRiskLevel(weather: RiskInput): 0 | 1 | 2 {
+  if (weather.precipitationMm >= 3 || weather.precipitationProbability >= 80) return 2;
+  if (weather.precipitationMm >= 1 || weather.precipitationProbability >= 60) return 1;
   return 0;
+}
+
+export function getOutdoorRiskLevel(weather: DailyWeather): 0 | 1 | 2 {
+  return normalizeOutdoorRiskLevel(weather.outdoorRiskLevel) ?? fallbackOutdoorRiskLevel(weather);
 }
 
 export function getWindowOutdoorRiskLevel(window: WeatherWindow): 0 | 1 | 2 {
-  if (typeof window.outdoorRiskLevel === "number") {
-    return window.outdoorRiskLevel >= 2 ? 2 : window.outdoorRiskLevel >= 1 ? 1 : 0;
-  }
-
-  const { code, precipitationMm, precipitationProbability, windspeedKmh } = window;
-  if (code >= 96 && code <= 99) return 2;
-  if (code === 95 && (
-    precipitationProbability >= 60 ||
-    precipitationMm >= 3 ||
-    windspeedKmh >= 40 ||
-    (precipitationProbability >= 50 && precipitationMm >= 1)
-  )) return 2;
-  if (code === 65 || code === 67 || code === 82 || code === 86) return 2;
-  if (precipitationMm >= 25) return 2;
-  if (windspeedKmh >= 50 && precipitationProbability >= 70) return 2;
-  if (precipitationProbability >= 95 && precipitationMm >= 15) return 2;
-  if (code === 95) return 1;
-  if ((code >= 51 && code <= 64) || (code >= 80 && code <= 81)) return 1;
-  if (precipitationMm >= 1) return 1;
-  if (precipitationProbability >= 60) return 1;
-  return 0;
-}
-
-export function getCurrentHourlyOutdoorRiskLevel(weather: CurrentHourlyWeather): 0 | 1 | 2 {
-  if (typeof weather.outdoorRiskLevel === "number") {
-    return weather.outdoorRiskLevel >= 2 ? 2 : weather.outdoorRiskLevel >= 1 ? 1 : 0;
-  }
-
-  const { code, precipitationMm, precipitationProbability, windspeedKmh } = weather;
-  if (code >= 96 && code <= 99) return 2;
-  if (code === 95 && (
-    precipitationProbability >= 60 ||
-    precipitationMm >= 3 ||
-    windspeedKmh >= 40 ||
-    (precipitationProbability >= 50 && precipitationMm >= 1)
-  )) return 2;
-  if (code === 65 || code === 67 || code === 82 || code === 86) return 2;
-  if (precipitationMm >= 25) return 2;
-  if (windspeedKmh >= 50 && precipitationProbability >= 70) return 2;
-  if (precipitationProbability >= 95 && precipitationMm >= 15) return 2;
-  if (code === 95) return 1;
-  if ((code >= 51 && code <= 64) || (code >= 80 && code <= 81)) return 1;
-  if (precipitationMm >= 1) return 1;
-  if (precipitationProbability >= 60) return 1;
-  return 0;
+  return normalizeOutdoorRiskLevel(window.outdoorRiskLevel) ?? fallbackOutdoorRiskLevel(window);
 }
 
 function softenLowRiskThunderstorm(
@@ -303,10 +256,6 @@ export function interpretCurrentDisplayWeather(weather: CurrentHourlyWeather): W
   };
 }
 
-export function interpretCurrentHourlyWeather(weather: CurrentHourlyWeather): WeatherCondition {
-  return interpretCurrentDisplayWeather(weather);
-}
-
 // ─── Activity outdoor risk assessment ────────────────────────────────────────
 
 const OUTDOOR_RISKY_KEYWORDS = [
@@ -399,15 +348,6 @@ export interface ItineraryDayWeatherSummary {
   rainChance: number;
   windKmh: number;
   source: "day-windows" | "daily";
-}
-
-export interface CurrentWeatherWindowSummary {
-  condition: WeatherCondition;
-  title: string;
-  temp: number;
-  rainChance: number;
-  windKmh: number;
-  source: "current-window" | "nearest-window" | "daily";
 }
 
 function activityWeatherContext(weather: DailyWeather, activityTime?: string) {
@@ -521,61 +461,6 @@ export function summarizeItineraryDayWeather(
   return {
     condition,
     title: `${condition.label} · mưa ${weather.precipitationProbability}% · gió ${weather.windspeedKmh.toFixed(0)} km/h`,
-    rainChance: weather.precipitationProbability,
-    windKmh: weather.windspeedKmh,
-    source: "daily",
-  };
-}
-
-function getVietnamHour(now = new Date()): number {
-  const hour = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Ho_Chi_Minh",
-    hour: "2-digit",
-    hour12: false,
-  }).format(now);
-  const parsed = Number(hour);
-  return Number.isFinite(parsed) ? parsed : now.getHours();
-}
-
-function findCurrentOrNearestWeatherWindow(weather: DailyWeather, now = new Date()) {
-  const windows = weather.timeWindows ?? [];
-  if (windows.length === 0) return null;
-
-  const hour = getVietnamHour(now);
-  const current = windows.find((window) => hour >= window.startHour && hour <= window.endHour);
-  if (current) return { window: current, source: "current-window" as const };
-
-  const nearest = windows
-    .slice()
-    .sort((a, b) => {
-      const aDistance = Math.min(Math.abs(hour - a.startHour), Math.abs(hour - a.endHour));
-      const bDistance = Math.min(Math.abs(hour - b.startHour), Math.abs(hour - b.endHour));
-      return aDistance - bDistance;
-    })[0];
-
-  return nearest ? { window: nearest, source: "nearest-window" as const } : null;
-}
-
-export function summarizeCurrentWeatherWindow(weather: DailyWeather, now = new Date()): CurrentWeatherWindowSummary {
-  const match = findCurrentOrNearestWeatherWindow(weather, now);
-  if (match) {
-    const condition = interpretWeatherWindow(match.window);
-    const temp = Math.round(match.window.temperatureC ?? (weather.maxTemp + weather.minTemp) / 2);
-    return {
-      condition,
-      title: `${condition.label} · ${match.window.label} ${match.window.startHour}:00-${match.window.endHour}:00 · mưa ${match.window.precipitationProbability}% · gió ${match.window.windspeedKmh.toFixed(0)} km/h`,
-      temp,
-      rainChance: match.window.precipitationProbability,
-      windKmh: match.window.windspeedKmh,
-      source: match.source,
-    };
-  }
-
-  const condition = interpretWeather(weather);
-  return {
-    condition,
-    title: `${condition.label} · hôm nay · mưa ${weather.precipitationProbability}% · gió ${weather.windspeedKmh.toFixed(0)} km/h`,
-    temp: Math.round((weather.maxTemp + weather.minTemp) / 2),
     rainChance: weather.precipitationProbability,
     windKmh: weather.windspeedKmh,
     source: "daily",
