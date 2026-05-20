@@ -103,6 +103,7 @@ public class DestinationService {
                                         .startHour(window.getStartHour())
                                         .endHour(window.getEndHour())
                                         .code(window.getCode())
+                                        .temperatureC(window.getTemperatureC())
                                         .precipitationMm(window.getPrecipitationMm())
                                         .precipitationProbability(window.getPrecipitationProbability())
                                         .windspeedKmh(window.getWindspeedKmh())
@@ -111,6 +112,38 @@ public class DestinationService {
                                 .collect(Collectors.toList()))
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    public DestinationDto.CurrentWeatherResponse getCurrentWeather(String destinationName, Double lat, Double lon) {
+        Double resolvedLat = lat;
+        Double resolvedLon = lon;
+        String trimmedDestination = destinationName != null ? destinationName.trim() : "";
+
+        if ((resolvedLat == null || resolvedLon == null) && !trimmedDestination.isBlank()) {
+            var dbDestination = destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(
+                    trimmedDestination,
+                    toSlug(trimmedDestination));
+            if (dbDestination.isPresent()) {
+                resolvedLat = dbDestination.get().getLatitude();
+                resolvedLon = dbDestination.get().getLongitude();
+            }
+        }
+
+        WeatherService.CurrentWeather current =
+                weatherService.getCurrentWeatherForDestination(trimmedDestination, resolvedLat, resolvedLon);
+        if (current == null) {
+            return null;
+        }
+
+        return DestinationDto.CurrentWeatherResponse.builder()
+                .time(current.getTime())
+                .code(current.getCode())
+                .temperatureC(current.getTemperatureC())
+                .precipitationMm(current.getPrecipitationMm())
+                .precipitationProbability(current.getPrecipitationProbability())
+                .windspeedKmh(current.getWindspeedKmh())
+                .outdoorRiskLevel(current.outdoorRiskLevel())
+                .build();
     }
 
     private boolean matchesKeyword(Destination destination, String keyword) {

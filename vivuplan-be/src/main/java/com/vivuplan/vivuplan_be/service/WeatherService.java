@@ -11,6 +11,9 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,12 +37,16 @@ public class WeatherService {
     private static final String NOMINATIM_BASE    = "https://nominatim.openstreetmap.org/search";
     private static final long   WEATHER_CACHE_TTL = 30  * 60 * 1000L;       // 30 minutes
     private static final long   GEOCODE_CACHE_TTL = 24  * 60 * 60 * 1000L;  // 24 hours
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final DateTimeFormatter OPEN_METEO_HOUR_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
 
     public record LatLon(double lat, double lon) {}
 
     private record WeatherCacheEntry(List<DailyWeather> data, long fetchedAt) {}
+    private record CurrentWeatherCacheEntry(CurrentWeather data, long fetchedAt) {}
 
     private final Map<String, WeatherCacheEntry> weatherCache    = new ConcurrentHashMap<>();
+    private final Map<String, CurrentWeatherCacheEntry> currentWeatherCache = new ConcurrentHashMap<>();
     private final Map<String, LatLon>            geocodeCache    = new ConcurrentHashMap<>();
     private final Map<String, Long>              geocodeFetchedAt = new ConcurrentHashMap<>();
 
@@ -78,6 +85,26 @@ public class WeatherService {
         private int startHour;
         private int endHour;
         private int code;
+        private double temperatureC;
+        private double precipitationMm;
+        private int precipitationProbability;
+        private double windspeedKmh;
+
+        public String toWeatherLabel() {
+            return weatherLabel(code);
+        }
+
+        public int outdoorRiskLevel() {
+            return resolveOutdoorRiskLevel(code, precipitationMm, precipitationProbability, windspeedKmh);
+        }
+    }
+
+    @Data
+    @Builder
+    public static class CurrentWeather {
+        private String time;
+        private int code;
+        private double temperatureC;
         private double precipitationMm;
         private int precipitationProbability;
         private double windspeedKmh;
@@ -146,7 +173,7 @@ public class WeatherService {
                 .queryParam("latitude",  String.format("%.4f", lat))
                 .queryParam("longitude", String.format("%.4f", lon))
                 .queryParam("daily", "weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max,precipitation_probability_max")
-                .queryParam("hourly", "weathercode,precipitation,precipitation_probability,windspeed_10m")
+                .queryParam("hourly", "weathercode,temperature_2m,precipitation,precipitation_probability,windspeed_10m")
                 .queryParam("timezone", "Asia/Ho_Chi_Minh")
                 .queryParam("forecast_days", 16)
                 .build()
@@ -167,6 +194,54 @@ public class WeatherService {
         } catch (Exception e) {
             log.warn("Failed to fetch weather for {}: {}", cacheKey, e.getMessage());
             return List.of();
+        }
+    }
+
+    /**
+     * Fetches the current hourly weather sample for destination cards.
+     * The cache key includes the current local hour, so cards move to the next
+     * hourly sample immediately when the displayed hour changes.
+     */
+    public CurrentWeather getCurrentWeather(Double lat, Double lon) {
+        if (lat == null || lon == null) return null;
+
+        String coordKey = String.format("%.4f,%.4f", lat, lon);
+        LocalDateTime currentHour = LocalDateTime.now(VIETNAM_ZONE)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+        String currentHourKey = currentHour.format(OPEN_METEO_HOUR_FORMAT);
+        String cacheKey = coordKey + "@" + currentHourKey;
+        CurrentWeatherCacheEntry cached = currentWeatherCache.get(cacheKey);
+        if (cached != null && (Instant.now().toEpochMilli() - cached.fetchedAt()) < WEATHER_CACHE_TTL) {
+            log.debug("Current weather cache hit for {}", cacheKey);
+            return cached.data();
+        }
+
+        java.net.URI uri = UriComponentsBuilder.fromHttpUrl(OPEN_METEO_BASE)
+                .queryParam("latitude", String.format("%.4f", lat))
+                .queryParam("longitude", String.format("%.4f", lon))
+                .queryParam("hourly", "weathercode,temperature_2m,precipitation,precipitation_probability,windspeed_10m")
+                .queryParam("timezone", "Asia/Ho_Chi_Minh")
+                .queryParam("forecast_days", 2)
+                .build()
+                .encode()
+                .toUri();
+
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = restTemplate.getForObject(uri, Map.class);
+            CurrentWeather current = parseCurrentHourly(response, currentHourKey);
+            if (current == null) {
+                log.warn("Open-Meteo returned no hourly current weather for {}", cacheKey);
+                return null;
+            }
+            currentWeatherCache.put(cacheKey, new CurrentWeatherCacheEntry(current, Instant.now().toEpochMilli()));
+            log.debug("Fetched current hourly weather for {} at {}", coordKey, current.getTime());
+            return current;
+        } catch (Exception e) {
+            log.warn("Failed to fetch current hourly weather for {}: {}", coordKey, e.getMessage());
+            return null;
         }
     }
 
@@ -239,7 +314,73 @@ public class WeatherService {
         return getForecast(resolved.lat(), resolved.lon());
     }
 
+    public CurrentWeather getCurrentWeatherForDestination(String destinationName, Double lat, Double lon) {
+        if (lat != null && lon != null) {
+            return getCurrentWeather(lat, lon);
+        }
+        LatLon resolved = geocodeDestination(destinationName);
+        if (resolved == null) return null;
+        return getCurrentWeather(resolved.lat(), resolved.lon());
+    }
+
     // ─── Parsing ─────────────────────────────────────────────────────────────
+
+    @SuppressWarnings("unchecked")
+    private CurrentWeather parseCurrentHourly(Map<String, Object> response, String targetTime) {
+        if (response == null || !(response.get("hourly") instanceof Map<?, ?>)) {
+            return null;
+        }
+        Map<String, Object> hourly = (Map<String, Object>) response.get("hourly");
+        List<String> times = (List<String>) hourly.get("time");
+        if (times == null || times.isEmpty()) {
+            return null;
+        }
+
+        int index = findHourlyIndex(times, targetTime);
+        if (index < 0) {
+            return null;
+        }
+
+        List<Number> codes = (List<Number>) hourly.get("weathercode");
+        List<Number> temperatures = (List<Number>) hourly.get("temperature_2m");
+        List<Number> precipitation = (List<Number>) hourly.get("precipitation");
+        List<Number> rainProbs = (List<Number>) hourly.get("precipitation_probability");
+        List<Number> windSpeeds = (List<Number>) hourly.get("windspeed_10m");
+
+        return CurrentWeather.builder()
+                .time(getString(times, index))
+                .code(getInt(codes, index, 0))
+                .temperatureC(getDouble(temperatures, index, 0))
+                .precipitationMm(getDouble(precipitation, index, 0))
+                .precipitationProbability(getInt(rainProbs, index, 0))
+                .windspeedKmh(getDouble(windSpeeds, index, 0))
+                .build();
+    }
+
+    private int findHourlyIndex(List<String> times, String targetTime) {
+        int nearestIndex = -1;
+        long nearestDistanceSeconds = Long.MAX_VALUE;
+        LocalDateTime target = LocalDateTime.parse(targetTime, OPEN_METEO_HOUR_FORMAT);
+
+        for (int i = 0; i < times.size(); i++) {
+            String time = times.get(i);
+            if (targetTime.equals(time)) {
+                return i;
+            }
+            try {
+                LocalDateTime candidate = LocalDateTime.parse(time, OPEN_METEO_HOUR_FORMAT);
+                long distance = Math.abs(java.time.Duration.between(target, candidate).getSeconds());
+                if (distance < nearestDistanceSeconds) {
+                    nearestDistanceSeconds = distance;
+                    nearestIndex = i;
+                }
+            } catch (RuntimeException ignored) {
+                // Ignore malformed timestamps from upstream.
+            }
+        }
+
+        return nearestDistanceSeconds <= 60 * 60 ? nearestIndex : -1;
+    }
 
     @SuppressWarnings("unchecked")
     private List<DailyWeather> parseDailyBlock(Map<String, Object> response) {
@@ -294,6 +435,7 @@ public class WeatherService {
         }
 
         List<Number> codes = (List<Number>) hourly.get("weathercode");
+        List<Number> temperatures = (List<Number>) hourly.get("temperature_2m");
         List<Number> precipitation = (List<Number>) hourly.get("precipitation");
         List<Number> rainProbs = (List<Number>) hourly.get("precipitation_probability");
         List<Number> windSpeeds = (List<Number>) hourly.get("windspeed_10m");
@@ -317,6 +459,7 @@ public class WeatherService {
             });
             accumulators[windowIndex].add(
                     getInt(codes, i, 0),
+                    getDouble(temperatures, i, 0),
                     getDouble(precipitation, i, 0),
                     getInt(rainProbs, i, 0),
                     getDouble(windSpeeds, i, 0));
@@ -373,6 +516,7 @@ public class WeatherService {
         private final int endHour;
         private int samples;
         private int code;
+        private double temperatureSum;
         private double precipitationMm;
         private int precipitationProbability;
         private double windspeedKmh;
@@ -383,11 +527,12 @@ public class WeatherService {
             this.endHour = endHour;
         }
 
-        private void add(int code, double precipitationMm, int precipitationProbability, double windspeedKmh) {
+        private void add(int code, double temperatureC, double precipitationMm, int precipitationProbability, double windspeedKmh) {
             samples++;
             if (weatherCodeRank(code) > weatherCodeRank(this.code)) {
                 this.code = code;
             }
+            this.temperatureSum += temperatureC;
             this.precipitationMm += Math.max(0, precipitationMm);
             this.precipitationProbability = Math.max(this.precipitationProbability, precipitationProbability);
             this.windspeedKmh = Math.max(this.windspeedKmh, windspeedKmh);
@@ -403,6 +548,7 @@ public class WeatherService {
                     .startHour(startHour)
                     .endHour(endHour)
                     .code(code)
+                    .temperatureC(samples > 0 ? temperatureSum / samples : 0)
                     .precipitationMm(precipitationMm)
                     .precipitationProbability(precipitationProbability)
                     .windspeedKmh(windspeedKmh)

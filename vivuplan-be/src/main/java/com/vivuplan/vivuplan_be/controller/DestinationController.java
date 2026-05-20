@@ -42,6 +42,15 @@ public class DestinationController {
         return ResponseEntity.ok(destinationService.getWeather(destination, lat, lon));
     }
 
+    @GetMapping("/weather/current")
+    public ResponseEntity<DestinationDto.CurrentWeatherResponse> currentWeather(
+            @RequestParam(required = false) String destination,
+            @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lon) {
+        DestinationDto.CurrentWeatherResponse response = destinationService.getCurrentWeather(destination, lat, lon);
+        return response != null ? ResponseEntity.ok(response) : ResponseEntity.notFound().build();
+    }
+
     @GetMapping("/{slug}")
     public ResponseEntity<DestinationDto.DestinationResponse> destination(@PathVariable String slug) {
         return ResponseEntity.ok(destinationService.getBySlug(slug));

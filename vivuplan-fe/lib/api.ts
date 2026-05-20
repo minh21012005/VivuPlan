@@ -184,6 +184,16 @@ export const destinationApi = {
     return fetch(`${API_BASE}/api/destinations/weather${suffix}`)
       .then(handleResponse<WeatherDayResponse[]>);
   },
+
+  currentWeather: (params: { destination?: string; lat?: number; lon?: number }) => {
+    const query = new URLSearchParams();
+    if (params.destination) query.set("destination", params.destination);
+    if (params.lat !== undefined) query.set("lat", String(params.lat));
+    if (params.lon !== undefined) query.set("lon", String(params.lon));
+    const suffix = query.toString() ? `?${query}` : "";
+    return fetch(`${API_BASE}/api/destinations/weather/current${suffix}`)
+      .then(handleResponse<CurrentWeatherResponse>);
+  },
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -371,11 +381,22 @@ export interface WeatherDayResponse {
   timeWindows?: WeatherWindowResponse[];
 }
 
+export interface CurrentWeatherResponse {
+  time: string;
+  code: number;
+  temperatureC: number;
+  precipitationMm: number;
+  precipitationProbability: number;
+  windspeedKmh: number;
+  outdoorRiskLevel?: number;
+}
+
 export interface WeatherWindowResponse {
   label: string;
   startHour: number;
   endHour: number;
   code: number;
+  temperatureC?: number;
   precipitationMm: number;
   precipitationProbability: number;
   windspeedKmh: number;

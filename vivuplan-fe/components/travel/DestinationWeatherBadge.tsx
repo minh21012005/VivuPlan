@@ -1,7 +1,7 @@
 "use client";
 
-import { useWeather } from "@/lib/use-weather";
-import { interpretWeather } from "@/lib/weather-utils";
+import { useCurrentWeather } from "@/lib/use-current-weather";
+import { interpretCurrentHourlyWeather } from "@/lib/weather-utils";
 import { WeatherIcon } from "@/components/travel/WeatherIcon";
 
 interface Props {
@@ -14,17 +14,16 @@ interface Props {
  * Renders nothing while loading or on error.
  */
 export function DestinationWeatherBadge({ lat, lon }: Props) {
-  const { forecast } = useWeather(lat, lon);
+  const { weather } = useCurrentWeather(lat, lon);
 
-  if (forecast.length === 0) return null;
+  if (!weather) return null;
 
-  const today = forecast[0];
-  const condition = interpretWeather(today);
-  const avgTemp = Math.round((today.maxTemp + today.minTemp) / 2);
+  const condition = interpretCurrentHourlyWeather(weather);
+  const hour = weather.time?.slice(11, 16);
 
   return (
     <span
-      title={`${condition.label} · ${today.minTemp.toFixed(0)}–${today.maxTemp.toFixed(0)}°C hôm nay`}
+      title={`${condition.label} · ${hour ?? "hiện tại"} · mưa ${weather.precipitationProbability}% · gió ${weather.windspeedKmh.toFixed(0)} km/h`}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -39,7 +38,7 @@ export function DestinationWeatherBadge({ lat, lon }: Props) {
         boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
       }}
     >
-      <WeatherIcon iconKey={condition.iconKey} size={14} style={{ marginRight: 2 }} /> {avgTemp}°C
+      <WeatherIcon iconKey={condition.iconKey} size={14} style={{ marginRight: 2 }} /> {weather.temperatureC.toFixed(0)}°C
     </span>
   );
 }

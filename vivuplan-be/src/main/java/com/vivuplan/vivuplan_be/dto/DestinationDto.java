@@ -92,6 +92,19 @@ public class DestinationDto {
         private int startHour;
         private int endHour;
         private int code;
+        private double temperatureC;
+        private double precipitationMm;
+        private int precipitationProbability;
+        private double windspeedKmh;
+        private int outdoorRiskLevel;
+    }
+
+    @Data
+    @Builder
+    public static class CurrentWeatherResponse {
+        private String time;
+        private int code;
+        private double temperatureC;
         private double precipitationMm;
         private int precipitationProbability;
         private double windspeedKmh;

@@ -17,6 +17,16 @@ export interface WeatherWindow {
   startHour: number;
   endHour: number;
   code: number;
+  temperatureC?: number;
+  precipitationMm: number;
+  precipitationProbability: number;
+  windspeedKmh: number;
+  outdoorRiskLevel?: number;
+}
+
+export interface CurrentHourlyWeather {
+  code: number;
+  temperatureC: number;
   precipitationMm: number;
   precipitationProbability: number;
   windspeedKmh: number;
@@ -95,6 +105,30 @@ export function getWindowOutdoorRiskLevel(window: WeatherWindow): 0 | 1 | 2 {
   return 0;
 }
 
+export function getCurrentHourlyOutdoorRiskLevel(weather: CurrentHourlyWeather): 0 | 1 | 2 {
+  if (typeof weather.outdoorRiskLevel === "number") {
+    return weather.outdoorRiskLevel >= 2 ? 2 : weather.outdoorRiskLevel >= 1 ? 1 : 0;
+  }
+
+  const { code, precipitationMm, precipitationProbability, windspeedKmh } = weather;
+  if (code >= 96 && code <= 99) return 2;
+  if (code === 95 && (
+    precipitationProbability >= 60 ||
+    precipitationMm >= 3 ||
+    windspeedKmh >= 40 ||
+    (precipitationProbability >= 50 && precipitationMm >= 1)
+  )) return 2;
+  if (code === 65 || code === 67 || code === 82 || code === 86) return 2;
+  if (precipitationMm >= 25) return 2;
+  if (windspeedKmh >= 50 && precipitationProbability >= 70) return 2;
+  if (precipitationProbability >= 95 && precipitationMm >= 15) return 2;
+  if (code === 95) return 1;
+  if ((code >= 51 && code <= 64) || (code >= 80 && code <= 81)) return 1;
+  if (precipitationMm >= 1) return 1;
+  if (precipitationProbability >= 60) return 1;
+  return 0;
+}
+
 function softenLowRiskThunderstorm(
   base: WeatherCondition,
   risk: 0 | 1 | 2,
@@ -147,6 +181,36 @@ function interpretWeatherWindow(window: WeatherWindow): WeatherCondition {
 export function interpretWeather(weather: DailyWeather): WeatherCondition {
   const rawBase = interpretWeatherCode(weather.code);
   const risk = getOutdoorRiskLevel(weather);
+  const base = softenLowRiskThunderstorm(rawBase, risk, weather.precipitationProbability, weather.precipitationMm);
+
+  if (risk === 2) {
+    return {
+      ...base,
+      severity: "severe",
+      label: base.isRainy ? base.label : "Thời tiết khắc nghiệt",
+    };
+  }
+
+  if (risk === 1 && base.isRainy) {
+    return {
+      ...base,
+      severity: "moderate",
+    };
+  }
+
+  if (base.isRainy) {
+    return {
+      ...base,
+      severity: "mild",
+    };
+  }
+
+  return base;
+}
+
+export function interpretCurrentHourlyWeather(weather: CurrentHourlyWeather): WeatherCondition {
+  const rawBase = interpretWeatherCode(weather.code);
+  const risk = getCurrentHourlyOutdoorRiskLevel(weather);
   const base = softenLowRiskThunderstorm(rawBase, risk, weather.precipitationProbability, weather.precipitationMm);
 
   if (risk === 2) {
@@ -265,7 +329,16 @@ export interface ItineraryDayWeatherSummary {
   title: string;
   rainChance: number;
   windKmh: number;
-  source: "activity-windows" | "daily";
+  source: "day-windows" | "daily";
+}
+
+export interface CurrentWeatherWindowSummary {
+  condition: WeatherCondition;
+  title: string;
+  temp: number;
+  rainChance: number;
+  windKmh: number;
+  source: "current-window" | "nearest-window" | "daily";
 }
 
 function activityWeatherContext(weather: DailyWeather, activityTime?: string) {
@@ -302,34 +375,76 @@ function isGoodActivityWindow(weather: DailyWeather, activityTime?: string) {
   return context.risk === 0 || (context.risk === 1 && context.rainChance < 40 && context.rainMm < 1 && context.windKmh <= 35);
 }
 
+function interpretAverageDayWeather(
+  risk: 0 | 1 | 2,
+  rainChance: number,
+  rainMm: number,
+  windKmh: number,
+): WeatherCondition {
+  if (risk === 2) {
+    const stormLike = rainChance >= 60 || rainMm >= 3 || windKmh >= 40;
+    return {
+      label: stormLike ? "Giông bão" : "Mưa lớn",
+      severity: "severe",
+      isRainy: true,
+      isWindy: windKmh >= 40,
+      isFoggy: false,
+      iconKey: stormLike ? "storm" : "rain",
+    };
+  }
+
+  if (rainChance >= 60 || rainMm >= 1) {
+    return {
+      label: "Có thể có mưa",
+      severity: "moderate",
+      isRainy: true,
+      isWindy: windKmh >= 40,
+      isFoggy: false,
+      iconKey: "rain",
+    };
+  }
+
+  if (risk === 1 || rainChance >= 30) {
+    return {
+      label: "Có mây",
+      severity: "mild",
+      isRainy: false,
+      isWindy: windKmh >= 40,
+      isFoggy: false,
+      iconKey: "cloudy",
+    };
+  }
+
+  return {
+    label: "Thời tiết thuận lợi",
+    severity: "clear",
+    isRainy: false,
+    isWindy: windKmh >= 40,
+    isFoggy: false,
+    iconKey: "sun",
+  };
+}
+
 export function summarizeItineraryDayWeather(
   weather: DailyWeather,
-  activities: Array<{ time?: string }> = [],
+  _activities: Array<{ time?: string }> = [],
 ): ItineraryDayWeatherSummary {
-  const windows = activities
-    .map((activity) => findWeatherWindowForActivity(weather, activity.time))
-    .filter((window): window is WeatherWindow => Boolean(window));
-  const uniqueWindows = Array.from(
-    new Map(windows.map((window) => [`${window.label}-${window.startHour}-${window.endHour}`, window])).values(),
-  );
+  const windows = weather.timeWindows ?? [];
 
-  if (uniqueWindows.length > 0) {
-    const worstWindow = uniqueWindows
-      .slice()
-      .sort((a, b) =>
-        getWindowOutdoorRiskLevel(b) - getWindowOutdoorRiskLevel(a) ||
-        b.precipitationProbability - a.precipitationProbability ||
-        b.precipitationMm - a.precipitationMm ||
-        b.windspeedKmh - a.windspeedKmh
-      )[0];
-    const condition = interpretWeatherWindow(worstWindow);
-    const title = `${condition.label} · mưa ${worstWindow.precipitationProbability}% · gió ${worstWindow.windspeedKmh.toFixed(0)} km/h`;
+  if (windows.length > 0) {
+    const avgRisk = windows.reduce((sum, window) => sum + getWindowOutdoorRiskLevel(window), 0) / windows.length;
+    const avgRainChance = Math.round(windows.reduce((sum, window) => sum + window.precipitationProbability, 0) / windows.length);
+    const avgRainMm = windows.reduce((sum, window) => sum + window.precipitationMm, 0) / windows.length;
+    const avgWindKmh = windows.reduce((sum, window) => sum + window.windspeedKmh, 0) / windows.length;
+    const roundedRisk: 0 | 1 | 2 = avgRisk >= 1.5 ? 2 : avgRisk >= 0.5 ? 1 : 0;
+    const condition = interpretAverageDayWeather(roundedRisk, avgRainChance, avgRainMm, avgWindKmh);
+    const title = `${condition.label} · mưa trung bình ${avgRainChance}% · gió ${avgWindKmh.toFixed(0)} km/h`;
     return {
       condition,
       title,
-      rainChance: worstWindow.precipitationProbability,
-      windKmh: worstWindow.windspeedKmh,
-      source: "activity-windows",
+      rainChance: avgRainChance,
+      windKmh: avgWindKmh,
+      source: "day-windows",
     };
   }
 
@@ -337,6 +452,61 @@ export function summarizeItineraryDayWeather(
   return {
     condition,
     title: `${condition.label} · mưa ${weather.precipitationProbability}% · gió ${weather.windspeedKmh.toFixed(0)} km/h`,
+    rainChance: weather.precipitationProbability,
+    windKmh: weather.windspeedKmh,
+    source: "daily",
+  };
+}
+
+function getVietnamHour(now = new Date()): number {
+  const hour = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    hour: "2-digit",
+    hour12: false,
+  }).format(now);
+  const parsed = Number(hour);
+  return Number.isFinite(parsed) ? parsed : now.getHours();
+}
+
+function findCurrentOrNearestWeatherWindow(weather: DailyWeather, now = new Date()) {
+  const windows = weather.timeWindows ?? [];
+  if (windows.length === 0) return null;
+
+  const hour = getVietnamHour(now);
+  const current = windows.find((window) => hour >= window.startHour && hour <= window.endHour);
+  if (current) return { window: current, source: "current-window" as const };
+
+  const nearest = windows
+    .slice()
+    .sort((a, b) => {
+      const aDistance = Math.min(Math.abs(hour - a.startHour), Math.abs(hour - a.endHour));
+      const bDistance = Math.min(Math.abs(hour - b.startHour), Math.abs(hour - b.endHour));
+      return aDistance - bDistance;
+    })[0];
+
+  return nearest ? { window: nearest, source: "nearest-window" as const } : null;
+}
+
+export function summarizeCurrentWeatherWindow(weather: DailyWeather, now = new Date()): CurrentWeatherWindowSummary {
+  const match = findCurrentOrNearestWeatherWindow(weather, now);
+  if (match) {
+    const condition = interpretWeatherWindow(match.window);
+    const temp = Math.round(match.window.temperatureC ?? (weather.maxTemp + weather.minTemp) / 2);
+    return {
+      condition,
+      title: `${condition.label} · ${match.window.label} ${match.window.startHour}:00-${match.window.endHour}:00 · mưa ${match.window.precipitationProbability}% · gió ${match.window.windspeedKmh.toFixed(0)} km/h`,
+      temp,
+      rainChance: match.window.precipitationProbability,
+      windKmh: match.window.windspeedKmh,
+      source: match.source,
+    };
+  }
+
+  const condition = interpretWeather(weather);
+  return {
+    condition,
+    title: `${condition.label} · hôm nay · mưa ${weather.precipitationProbability}% · gió ${weather.windspeedKmh.toFixed(0)} km/h`,
+    temp: Math.round((weather.maxTemp + weather.minTemp) / 2),
     rainChance: weather.precipitationProbability,
     windKmh: weather.windspeedKmh,
     source: "daily",
