@@ -1,7 +1,7 @@
 "use client";
 
 import { useCurrentWeather } from "@/lib/use-current-weather";
-import { interpretCurrentHourlyWeather } from "@/lib/weather-utils";
+import { interpretCurrentDisplayWeather } from "@/lib/weather-utils";
 import { WeatherIcon } from "@/components/travel/WeatherIcon";
 
 interface Props {
@@ -18,7 +18,7 @@ export function DestinationWeatherBadge({ lat, lon }: Props) {
 
   if (!weather) return null;
 
-  const condition = interpretCurrentHourlyWeather(weather);
+  const condition = interpretCurrentDisplayWeather(weather);
   const hour = weather.time?.slice(11, 16);
 
   return (

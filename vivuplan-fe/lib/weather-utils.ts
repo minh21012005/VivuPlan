@@ -208,34 +208,103 @@ export function interpretWeather(weather: DailyWeather): WeatherCondition {
   return base;
 }
 
-export function interpretCurrentHourlyWeather(weather: CurrentHourlyWeather): WeatherCondition {
-  const rawBase = interpretWeatherCode(weather.code);
-  const risk = getCurrentHourlyOutdoorRiskLevel(weather);
-  const base = softenLowRiskThunderstorm(rawBase, risk, weather.precipitationProbability, weather.precipitationMm);
+export function interpretCurrentDisplayWeather(weather: CurrentHourlyWeather): WeatherCondition {
+  const { code, precipitationMm, precipitationProbability, windspeedKmh } = weather;
+  const hasRain = precipitationMm >= 0.1;
+  const rainCode = (code >= 51 && code <= 67) || (code >= 80 && code <= 82);
+  const credibleRainForecast = rainCode && precipitationProbability >= 50;
+  const heavyRain = precipitationMm >= 3 || ((code === 65 || code === 67 || code === 82) && precipitationProbability >= 50);
+  const strongWind = windspeedKmh >= 40;
 
-  if (risk === 2) {
+  if (code >= 45 && code <= 48) {
     return {
-      ...base,
-      severity: "severe",
-      label: base.isRainy ? base.label : "Thời tiết khắc nghiệt",
-    };
-  }
-
-  if (risk === 1 && base.isRainy) {
-    return {
-      ...base,
-      severity: "moderate",
-    };
-  }
-
-  if (base.isRainy) {
-    return {
-      ...base,
+      label: "Sương mù",
       severity: "mild",
+      isRainy: false,
+      isWindy: strongWind,
+      isFoggy: true,
+      iconKey: "fog",
     };
   }
 
-  return base;
+  if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) {
+    return {
+      label: "Có tuyết",
+      severity: "severe",
+      isRainy: false,
+      isWindy: strongWind,
+      isFoggy: false,
+      iconKey: "snow",
+    };
+  }
+
+  if (code >= 95 && code <= 99) {
+    if (code >= 96 || hasRain || strongWind || precipitationProbability >= 70) {
+      return {
+        label: "Giông bão",
+        severity: code >= 96 || precipitationMm >= 3 || strongWind || precipitationProbability >= 80 ? "severe" : "moderate",
+        isRainy: true,
+        isWindy: strongWind,
+        isFoggy: false,
+        iconKey: "storm",
+      };
+    }
+
+    return {
+      label: "Có mây",
+      severity: "mild",
+      isRainy: false,
+      isWindy: false,
+      isFoggy: false,
+      iconKey: "cloudy",
+    };
+  }
+
+  if (hasRain || credibleRainForecast) {
+    return {
+      label: heavyRain ? "Mưa lớn" : "Có thể có mưa",
+      severity: heavyRain ? "severe" : "moderate",
+      isRainy: true,
+      isWindy: strongWind,
+      isFoggy: false,
+      iconKey: "rain",
+    };
+  }
+
+  if (code === 0) {
+    return {
+      label: "Trời nắng",
+      severity: "clear",
+      isRainy: false,
+      isWindy: strongWind,
+      isFoggy: false,
+      iconKey: "sun",
+    };
+  }
+
+  if (code >= 1 && code <= 3) {
+    return {
+      label: "Có mây",
+      severity: "mild",
+      isRainy: false,
+      isWindy: strongWind,
+      isFoggy: false,
+      iconKey: "cloudy",
+    };
+  }
+
+  return {
+    label: "Có mây",
+    severity: "mild",
+    isRainy: false,
+    isWindy: strongWind,
+    isFoggy: false,
+    iconKey: "cloudy",
+  };
+}
+
+export function interpretCurrentHourlyWeather(weather: CurrentHourlyWeather): WeatherCondition {
+  return interpretCurrentDisplayWeather(weather);
 }
 
 // ─── Activity outdoor risk assessment ────────────────────────────────────────
