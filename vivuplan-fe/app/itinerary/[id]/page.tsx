@@ -16,9 +16,9 @@ import { useWeather } from "@/lib/use-weather";
 import { useGeocode } from "@/lib/use-geocode";
 import { WeatherIcon } from "@/components/travel/WeatherIcon";
 import {
-  interpretWeather,
   getRescheduleSuggestions,
   getActivityWeatherWarning,
+  summarizeItineraryDayWeather,
 } from "@/lib/weather-utils";
 
 import {
@@ -335,7 +335,7 @@ export default function ItineraryPage() {
     const suggestions = getRescheduleSuggestions(
       (trip.schedule ?? []).map((d) => ({
         day: d.day,
-        activities: d.activities.map((a) => ({ name: a.name, type: a.type, location: a.location })),
+        activities: d.activities.map((a) => ({ name: a.name, type: a.type, location: a.location, time: a.time })),
       })),
       forecast,
       trip.startDate,
@@ -654,7 +654,7 @@ export default function ItineraryPage() {
           const suggestions = getRescheduleSuggestions(
             (trip.schedule ?? []).map((d) => ({
               day: d.day,
-              activities: d.activities.map((a) => ({ name: a.name, type: a.type, location: a.location })),
+              activities: d.activities.map((a) => ({ name: a.name, type: a.type, location: a.location, time: a.time })),
             })),
             forecast,
             trip.startDate,
@@ -736,7 +736,8 @@ export default function ItineraryPage() {
               <div style={{ display: "flex", gap: 8, overflowX: "auto", minWidth: 0 }} className="no-scrollbar">
                 {trip.schedule?.map((item, index) => {
                   const dw = getByDayIndex(item.day - 1, trip.startDate);
-                  const dc = dw ? interpretWeather(dw) : null;
+                  const weatherSummary = dw ? summarizeItineraryDayWeather(dw, item.activities) : null;
+                  const dc = weatherSummary?.condition ?? null;
                   return (
                     <button
                       key={item.day}
@@ -797,9 +798,10 @@ export default function ItineraryPage() {
                 {/* Feature 3 – Weather insight chip (always rendered for layout consistency) */}
                 {(() => {
                   const dw = getByDayIndex(activeDay, trip.startDate);
-                  const dc = dw ? interpretWeather(dw) : null;
+                  const weatherSummary = dw ? summarizeItineraryDayWeather(dw, dayActivities) : null;
+                  const dc = weatherSummary?.condition ?? null;
                   return (
-                    <div title={dw ? `Mưa ${dw.precipitationProbability}% · Gió ${dw.windspeedKmh.toFixed(0)} km/h` : "Chưa có dữ liệu thời tiết"}>
+                    <div title={weatherSummary?.title ?? "Chưa có dữ liệu thời tiết"}>
                       {dc ? <WeatherIcon iconKey={dc.iconKey} size={16} /> : <Thermometer size={16} />}
                       <span>Thời tiết</span>
                       <strong>{dw ? `${dw.minTemp.toFixed(0)}–${dw.maxTemp.toFixed(0)}°C` : "--°C"}</strong>
