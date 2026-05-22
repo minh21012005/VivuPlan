@@ -1,0 +1,358 @@
+{
+  "generatedAt": "2026-05-22T18:53:26.614Z",
+  "images": [
+    {
+      "slug": "ha-noi",
+      "name": "Hà Nội",
+      "sourceUrl": "https://static.vinwonders.com/production/ho-hoan-kiem-banner.jpg",
+      "localPath": "/images/destinations/ha-noi.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 427426
+    },
+    {
+      "slug": "ha-long",
+      "name": "Hạ Long",
+      "sourceUrl": "https://cdn-media.sforum.vn/storage/app/media/anh-vinh-ha-long-28.jpg",
+      "localPath": "/images/destinations/ha-long.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 125010
+    },
+    {
+      "slug": "cat-ba",
+      "name": "Cát Bà",
+      "sourceUrl": "https://amazingo.vn/upload/vivu_image/Top-bai-bien-Cat-Ba-dep/Top-bai-bien-Cat-Ba-dep-1.jpg",
+      "localPath": "/images/destinations/cat-ba.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 381367
+    },
+    {
+      "slug": "sa-pa",
+      "name": "Sa Pa",
+      "sourceUrl": "https://media.vietravel.com/images/Content/dia-diem-du-lich-sapa-1.png",
+      "localPath": "/images/destinations/sa-pa.png",
+      "contentType": "image/png",
+      "bytes": 1753108
+    },
+    {
+      "slug": "ha-giang",
+      "name": "Hà Giang",
+      "sourceUrl": "https://www.vietnambooking.com/wp-content/uploads/2019/09/dia-diem-du-lich-ha-giang-1.jpg",
+      "localPath": "/images/destinations/ha-giang.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 131605
+    },
+    {
+      "slug": "ninh-binh",
+      "name": "Ninh Bình",
+      "sourceUrl": "https://media.vietravel.com/images/Content/hang-mua-8-1451.jpg",
+      "localPath": "/images/destinations/ninh-binh.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 192703
+    },
+    {
+      "slug": "moc-chau",
+      "name": "Mộc Châu",
+      "sourceUrl": "https://ik.imagekit.io/tvlk/blog/2022/06/dia-diem-du-lich-moc-chau-1-1024x569.jpg?tr=q-70,c-at_max,w-1000,h-600",
+      "localPath": "/images/destinations/moc-chau.webp",
+      "contentType": "image/webp",
+      "bytes": 88476
+    },
+    {
+      "slug": "mu-cang-chai",
+      "name": "Mù Cang Chải",
+      "sourceUrl": "https://media-cdn-v2.laodong.vn/storage/newsportal/2024/9/20/1396892/Mucangchai3.jpg",
+      "localPath": "/images/destinations/mu-cang-chai.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 661678
+    },
+    {
+      "slug": "cao-bang",
+      "name": "Cao Bằng",
+      "sourceUrl": "https://media.vietravel.com/images/Content/trai-nghiem-du-lich-cao-bang-1.jpg",
+      "localPath": "/images/destinations/cao-bang.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 397584
+    },
+    {
+      "slug": "ba-be",
+      "name": "Ba Bể",
+      "sourceUrl": "https://media.vietravel.com/images/Content/dia-diem-du-lich-ho-ba-be-1.png",
+      "localPath": "/images/destinations/ba-be.png",
+      "contentType": "image/png",
+      "bytes": 2029052
+    },
+    {
+      "slug": "yen-tu",
+      "name": "Yên Tử",
+      "sourceUrl": "https://static.vinwonders.com/production/2025/03/chua-dong-yen-tu.jpg",
+      "localPath": "/images/destinations/yen-tu.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 150101
+    },
+    {
+      "slug": "hue",
+      "name": "Huế",
+      "sourceUrl": "https://motogo.vn/wp-content/uploads/2023/10/dai-noi-kinh-thanh-hue.jpg",
+      "localPath": "/images/destinations/hue.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 79306
+    },
+    {
+      "slug": "da-nang",
+      "name": "Đà Nẵng",
+      "sourceUrl": "https://xpscntm-asset-6aaa6adb24ad2493.s3.ap-southeast-1.amazonaws.com/2000908871772/Sun-World-Ba-Na-Hills-in-Da-Nang--c39af630-d743-4c44-b97a-a6b413af98f6.jpeg?tr=q-70,c-at_max,w-1000,h-600",
+      "localPath": "/images/destinations/da-nang.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 138579
+    },
+    {
+      "slug": "hoi-an",
+      "name": "Hội An",
+      "sourceUrl": "https://buulong.com.vn/wp-content/uploads/2026/02/hinh-anh-hoi-an-dep-nhat-4.jpg",
+      "localPath": "/images/destinations/hoi-an.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 84202
+    },
+    {
+      "slug": "my-son",
+      "name": "Mỹ Sơn",
+      "sourceUrl": "https://media.vietravel.com/images/Content/thanh-dia-my-son-1.jpg",
+      "localPath": "/images/destinations/my-son.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 196994
+    },
+    {
+      "slug": "phong-nha-ke-bang",
+      "name": "Phong Nha - Kẻ Bàng",
+      "sourceUrl": "https://ecotour.com.vn/wp-content/uploads/2025/05/du-lich-dong-phong-nha-ke-bang-quang-binh.jpeg",
+      "localPath": "/images/destinations/phong-nha-ke-bang.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 172567
+    },
+    {
+      "slug": "quy-nhon",
+      "name": "Quy Nhơn",
+      "sourceUrl": "https://static.vinwonders.com/production/bien-quy-nhon.jpg",
+      "localPath": "/images/destinations/quy-nhon.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 215239
+    },
+    {
+      "slug": "phu-yen",
+      "name": "Phú Yên",
+      "sourceUrl": "https://static.vinwonders.com/production/du-lich-phu-yen-5.jpg",
+      "localPath": "/images/destinations/phu-yen.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 320105
+    },
+    {
+      "slug": "nha-trang",
+      "name": "Nha Trang",
+      "sourceUrl": "https://vndiscovery.com.vn/wp-content/uploads/2024/04/du-lich-nha-trang.jpg",
+      "localPath": "/images/destinations/nha-trang.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 281714
+    },
+    {
+      "slug": "da-lat",
+      "name": "Đà Lạt",
+      "sourceUrl": "https://static.vinwonders.com/production/da-lat-duoc-menh-danh-la-gi-top-banner.jpg",
+      "localPath": "/images/destinations/da-lat.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 331061
+    },
+    {
+      "slug": "mang-den",
+      "name": "Măng Đen",
+      "sourceUrl": "https://media.vietravel.com/images/Content/diem-du-lich-mang-den-1.jpg",
+      "localPath": "/images/destinations/mang-den.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 217507
+    },
+    {
+      "slug": "buon-ma-thuot",
+      "name": "Buôn Ma Thuột",
+      "sourceUrl": "https://media.vietravel.com/images/Content/nhung-trai-nghiem-va-dia-diem-du-lich-buon-ma-thuot-mua-he-2.png",
+      "localPath": "/images/destinations/buon-ma-thuot.png",
+      "contentType": "image/png",
+      "bytes": 1488398
+    },
+    {
+      "slug": "ly-son",
+      "name": "Lý Sơn",
+      "sourceUrl": "https://www.vietnambooking.com/wp-content/uploads/2020/07/tour-ly-son-tu-tp-hcm-3.jpg",
+      "localPath": "/images/destinations/ly-son.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 134227
+    },
+    {
+      "slug": "mui-ne-phan-thiet",
+      "name": "Mũi Né - Phan Thiết",
+      "sourceUrl": "https://perfectholidayvn.com/upload/product/muinebeach1085130752-4308.jpg",
+      "localPath": "/images/destinations/mui-ne-phan-thiet.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 349683
+    },
+    {
+      "slug": "ninh-thuan",
+      "name": "Ninh Thuận",
+      "sourceUrl": "https://buulong.com.vn/wp-content/uploads/2026/03/du-lich-ninh-thuan-co-gi.jpg",
+      "localPath": "/images/destinations/ninh-thuan.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 165568
+    },
+    {
+      "slug": "tp-ho-chi-minh",
+      "name": "TP. Hồ Chí Minh",
+      "sourceUrl": "https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=1600&q=85",
+      "localPath": "/images/destinations/tp-ho-chi-minh.avif",
+      "contentType": "image/avif",
+      "bytes": 359894
+    },
+    {
+      "slug": "phu-quoc",
+      "name": "Phú Quốc",
+      "sourceUrl": "https://static.vinwonders.com/production/Phu-quoc-18.jpg",
+      "localPath": "/images/destinations/phu-quoc.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 298067
+    },
+    {
+      "slug": "can-tho",
+      "name": "Cần Thơ",
+      "sourceUrl": "https://cdn-media.sforum.vn/storage/app/media/ctv_seo4/danh-lam-thang-canh-can-tho-thumb.jpg",
+      "localPath": "/images/destinations/can-tho.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 192243
+    },
+    {
+      "slug": "chau-doc-an-giang",
+      "name": "Châu Đốc - An Giang",
+      "sourceUrl": "https://static.vinwonders.com/production/2025/10/mieu-ba-chua-xu-nui-sam.jpg",
+      "localPath": "/images/destinations/chau-doc-an-giang.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 258194
+    },
+    {
+      "slug": "ha-tien",
+      "name": "Hà Tiên",
+      "sourceUrl": "https://static.vinwonders.com/production/thang-canh-dep-o-ha-tien.jpg",
+      "localPath": "/images/destinations/ha-tien.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 276851
+    },
+    {
+      "slug": "nam-du",
+      "name": "Nam Du",
+      "sourceUrl": "https://www.vietnamairlines.com/vn/vi/plan-book/travel/travel-guide/dao-nam-du/_jcr_content/root/maincontent/container/container_911134791/container_1490556511/container_2051784589/image-10-0.coreimg.85.1600.jpeg/1767625024471/dao-nam-du-gom-21-hon-dao-lon-nho.jpeg",
+      "localPath": "/images/destinations/nam-du.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 50804
+    },
+    {
+      "slug": "con-dao",
+      "name": "Côn Đảo",
+      "sourceUrl": "https://static.vinwonders.com/production/2025/10/Is-Con-Dao-worth-visiting-Absolutely.jpeg",
+      "localPath": "/images/destinations/con-dao.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 405341
+    },
+    {
+      "slug": "vung-tau",
+      "name": "Vũng Tàu",
+      "sourceUrl": "https://dulichsaigon.edu.vn/wp-content/uploads/2025/03/13-dia-diem-du-lich-vung-tau-1.jpg",
+      "localPath": "/images/destinations/vung-tau.webp",
+      "contentType": "image/webp",
+      "bytes": 74428
+    },
+    {
+      "slug": "tay-ninh",
+      "name": "Tây Ninh",
+      "sourceUrl": "https://dulich.tayninh.gov.vn/uploads/images/mang-huong-sac-tay-ninh-den-voi-thu-do-ha-noi-6b07b.jpg",
+      "localPath": "/images/destinations/tay-ninh.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 465991
+    },
+    {
+      "slug": "ben-tre",
+      "name": "Bến Tre",
+      "sourceUrl": "https://i1-dulich.vnecdn.net/2022/04/06/bentre-1649218519-7880-1649218522.jpg?w=0&h=0&q=100&dpr=2&fit=crop&s=FSFjGE8LLvottl2MX2rNlw",
+      "localPath": "/images/destinations/ben-tre.webp",
+      "contentType": "image/webp",
+      "bytes": 760142
+    },
+    {
+      "slug": "dong-thap",
+      "name": "Đồng Tháp",
+      "sourceUrl": "https://dulichviet.com.vn/images/bandidau/lang-hoa-sa-dec-dia-diem-check-in-dong-thap-noi-tieng.jpg",
+      "localPath": "/images/destinations/dong-thap.webp",
+      "contentType": "image/webp",
+      "bytes": 49966
+    },
+    {
+      "slug": "ca-mau",
+      "name": "Cà Mau",
+      "sourceUrl": "https://media.vietravel.com/images/Content/dia-diem-du-lich-ca-mau-3.jpg",
+      "localPath": "/images/destinations/ca-mau.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 736393
+    },
+    {
+      "slug": "thanh-hoa",
+      "name": "Thanh Hóa",
+      "sourceUrl": "https://static.vinwonders.com/production/du-lich-sam-son-mua-nao-dep.jpg",
+      "localPath": "/images/destinations/thanh-hoa.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 265964
+    },
+    {
+      "slug": "dao-phu-quy",
+      "name": "Đảo Phú Quý",
+      "sourceUrl": "https://bizweb.dktcdn.net/100/101/075/files/tour-dao-phu-quy-4-ngay-3-dem.jpg?v=1735123288297",
+      "localPath": "/images/destinations/dao-phu-quy.webp",
+      "contentType": "image/webp",
+      "bytes": 901333
+    },
+    {
+      "slug": "tam-dao",
+      "name": "Tam Đảo",
+      "sourceUrl": "https://cdn.xanhsm.com/2025/02/c5b8c05e-cong-troi-tam-dao-1.jpg",
+      "localPath": "/images/destinations/tam-dao.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 100194
+    },
+    {
+      "slug": "mai-chau",
+      "name": "Mai Châu",
+      "sourceUrl": "https://i1-dulich.vnecdn.net/2022/04/12/Avana-2-9766-1649760588.jpg?w=0&h=0&q=100&dpr=1&fit=crop&s=Ol1PecECLQrtZ1K8eqRBgQ",
+      "localPath": "/images/destinations/mai-chau.webp",
+      "contentType": "image/webp",
+      "bytes": 401218
+    },
+    {
+      "slug": "pleiku",
+      "name": "Pleiku",
+      "sourceUrl": "https://www.vietnambooking.com/wp-content/uploads/2020/12/Dia-diem-du-lich-Pleiku-thac-xung-khoeng.jpg",
+      "localPath": "/images/destinations/pleiku.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 145786
+    },
+    {
+      "slug": "bao-loc",
+      "name": "Bảo Lộc",
+      "sourceUrl": "https://static.vinwonders.com/production/bao-loc-co-gi-choi-5.jpg",
+      "localPath": "/images/destinations/bao-loc.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 151863
+    },
+    {
+      "slug": "nam-cat-tien",
+      "name": "Vườn Quốc Gia Nam Cát Tiên",
+      "sourceUrl": "https://buulong.com.vn/wp-content/uploads/2026/02/he-sinh-thai-vuon-quoc-gia-cat-tien.jpg",
+      "localPath": "/images/destinations/nam-cat-tien.jpg",
+      "contentType": "image/jpeg",
+      "bytes": 163923
+    }
+  ],
+  "failures": []
+}

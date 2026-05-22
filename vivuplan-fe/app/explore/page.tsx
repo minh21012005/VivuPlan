@@ -26,6 +26,7 @@ export default function ExplorePage() {
   const [region, setRegion] = useState(getInitialRegion);
   const [currentPage, setCurrentPage] = useState(1);
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const resultsRef = useRef<HTMLElement | null>(null);
   const navigationResetTimer = useRef<number | null>(null);
 
   const filtered = useMemo(() => {
@@ -65,6 +66,13 @@ export default function ExplorePage() {
     navigationResetTimer.current = window.setTimeout(() => {
       setPendingHref((current) => (current === href ? null : current));
     }, 12000);
+  };
+
+  const changePage = (nextPage: number) => {
+    setCurrentPage(Math.min(totalPages, Math.max(1, nextPage)));
+    window.requestAnimationFrame(() => {
+      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   };
 
   return (
@@ -138,7 +146,7 @@ export default function ExplorePage() {
         </div>
       </section>
 
-      <section style={{ padding: "40px 0 84px" }}>
+      <section ref={resultsRef} style={{ padding: "40px 0 84px", scrollMarginTop: 150 }}>
         <div className="container">
           {loading && (
             <Card className="library-state">
@@ -178,7 +186,7 @@ export default function ExplorePage() {
 
               {totalPages > 1 && (
                 <nav className="library-pagination" aria-label="Phân trang điểm đến" style={{ marginTop: 40 }}>
-                  <Button type="button" variant="secondary" size="icon" onClick={() => setCurrentPage((c) => Math.max(1, c - 1))} disabled={page === 1} title="Trang trước">
+                  <Button type="button" variant="secondary" size="icon" onClick={() => changePage(page - 1)} disabled={page === 1} title="Trang trước">
                     <ChevronLeft size={16} />
                   </Button>
                   <div className="library-page-list">
@@ -186,14 +194,14 @@ export default function ExplorePage() {
                       <button
                         key={pageNumber}
                         className={`library-page-button${page === pageNumber ? " active" : ""}`}
-                        onClick={() => setCurrentPage(pageNumber)}
+                        onClick={() => changePage(pageNumber)}
                         aria-current={page === pageNumber ? "page" : undefined}
                       >
                         {pageNumber}
                       </button>
                     ))}
                   </div>
-                  <Button type="button" variant="secondary" size="icon" onClick={() => setCurrentPage((c) => Math.min(totalPages, c + 1))} disabled={page === totalPages} title="Trang sau">
+                  <Button type="button" variant="secondary" size="icon" onClick={() => changePage(page + 1)} disabled={page === totalPages} title="Trang sau">
                     <ChevronRight size={16} />
                   </Button>
                 </nav>
