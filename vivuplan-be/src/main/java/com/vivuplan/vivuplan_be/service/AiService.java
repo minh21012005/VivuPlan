@@ -1430,7 +1430,7 @@ public class AiService {
     }
 
     private boolean containsAvoidedContent(String combinedActivityText, String avoidText) {
-        List<String> avoidTerms = extractAvoidTerms(avoidText);
+        List<String> avoidTerms = extractAvoidTerms(avoidText, false);
         if (avoidTerms.isEmpty()) {
             return false;
         }
@@ -1438,10 +1438,10 @@ public class AiService {
     }
 
     private String extractNegativeInstruction(String notes) {
-        return String.join("\n", extractAvoidTerms(notes));
+        return String.join("\n", extractAvoidTerms(notes, true));
     }
 
-    private List<String> extractAvoidTerms(String text) {
+    private List<String> extractAvoidTerms(String text, boolean requireNegativeMarker) {
         String normalized = normalize(text);
         if (normalized.isBlank()) {
             return List.of();
@@ -1458,12 +1458,17 @@ public class AiService {
                 continue;
 
             String avoidPhrase = trimmedClause;
+            boolean hasNegativeMarker = false;
             for (String marker : negativeMarkers) {
                 int index = trimmedClause.indexOf(marker);
                 if (index >= 0) {
                     avoidPhrase = trimmedClause.substring(index + marker.length()).trim();
+                    hasNegativeMarker = true;
                     break;
                 }
+            }
+            if (requireNegativeMarker && !hasNegativeMarker) {
+                continue;
             }
 
             for (String part : avoidPhrase.split("\\s+(?:va|hoac|hay)\\s+")) {

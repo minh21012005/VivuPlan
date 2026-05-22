@@ -61,6 +61,52 @@ class AiServiceTest {
     }
 
     @Test
+    void regeneratedDayQualityDoesNotTreatPositiveNotesAsAvoidTerms() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDestination("Sa Pa");
+        req.setNotes("Thich chup anh va an dac san");
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "An sang tai Pho Cuong Sa Pa", "FOOD",
+                        "Pho Cuong, Sa Pa", 100_000L,
+                        "Bua sang am bung."),
+                activity("09:30", "Tham quan Nui Ham Rong", "ATTRACTION",
+                        "Nui Ham Rong, Sa Pa", 140_000L,
+                        "Diem chup anh dep gan trung tam."),
+                activity("18:30", "An toi dac san tai Cho Sa Pa", "FOOD",
+                        "Cho Sa Pa, thi xa Sa Pa", 250_000L,
+                        "Thuong thuc dac san dia phuong tai khu cho dem.")));
+
+        QualityResult quality = assessRegeneratedDayQuality(service, day, List.of(), req);
+
+        assertThat(quality.passed()).isTrue();
+    }
+
+    @Test
+    void regeneratedDayQualityStillHonorsNegativeNotesAsAvoidTerms() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setNotes("Khong thich hai san");
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "An sang tai Mi Quang Ba Mua", "FOOD",
+                        "231 Tran Phu, Da Nang", 100_000L, null),
+                activity("09:30", "Tham quan Bao tang Da Nang", "ATTRACTION",
+                        "24 Tran Phu, Hai Chau, Da Nang", 80_000L, null),
+                activity("18:30", "An toi tai Hai san Be Man", "FOOD",
+                        "Lo 14 Hoang Sa, Da Nang", 400_000L,
+                        "Thuong thuc hai san tuoi.")));
+
+        QualityResult quality = assessRegeneratedDayQuality(service, day, List.of(), req);
+
+        assertThat(quality.passed()).isFalse();
+        assertThat(quality.reason()).contains("avoid instruction");
+    }
+
+    @Test
     void itineraryQualityStillFlagsZeroReturnFlightWithoutBundledRoundTripCost() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
