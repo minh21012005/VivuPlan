@@ -398,26 +398,29 @@ textarea.input.textarea-compact {
 }
 
 .home-hero h1 {
-  max-width: 840px;
-  margin-bottom: 22px;
+  max-width: 900px;
+  margin-bottom: 18px;
+  padding-bottom: 4px;
   color: #fff;
-  font-size: 66px;
+  font-size: clamp(44px, 5.4vw, 62px);
   font-weight: 900;
-  line-height: 1.02;
+  line-height: 1.1;
   letter-spacing: 0;
   text-wrap: balance;
-  text-shadow: 0 12px 34px rgba(15, 23, 42, 0.42);
+  background: linear-gradient(180deg, #ffffff 0%, #eefdfb 58%, #d6f3ff 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 14px 34px rgba(15, 23, 42, 0.38);
 }
 
 .home-hero p {
-  max-width: 600px;
+  max-width: 620px;
   margin-bottom: 30px;
-  padding-left: 16px;
-  border-left: 3px solid rgba(45, 212, 191, 0.9);
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.88);
   font-size: 17px;
-  font-weight: 400;
-  line-height: 1.55;
+  font-weight: 500;
+  line-height: 1.65;
   letter-spacing: 0;
   text-wrap: pretty;
   text-shadow: 0 6px 18px rgba(15, 23, 42, 0.28);
