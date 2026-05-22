@@ -25,6 +25,42 @@ class AiServiceTest {
     }
 
     @Test
+    void itineraryQualityFlagsBundledRoundTripDescribedAsSingleLegCost() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        QualityResult quality = assessItineraryQuality(service, List.of(inconsistentBundledRoundTripDay()), req);
+
+        assertThat(quality.passed()).isFalse();
+        assertThat(quality.reason()).contains("intercity transport cost is inconsistent");
+    }
+
+    @Test
+    void itineraryQualityFlagsPaidReturnLegWhenRoundTripCostIsBundled() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        QualityResult quality = assessItineraryQuality(service, List.of(doubleCountedRoundTripDay()), req);
+
+        assertThat(quality.passed()).isFalse();
+        assertThat(quality.reason()).contains("intercity transport cost is double-counted");
+    }
+
+    @Test
+    void regeneratedDayQualityReplacesOldDayBeforeCheckingIntercityCosts() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        QualityResult quality = assessRegeneratedDayQuality(
+                service,
+                paidSeparateRoundTripDay(),
+                List.of(roundTripBundledDay()),
+                req);
+
+        assertThat(quality.passed()).isTrue();
+    }
+
+    @Test
     void itineraryQualityStillFlagsZeroReturnFlightWithoutBundledRoundTripCost() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
@@ -592,6 +628,51 @@ class AiServiceTest {
                 activity("20:00", "Chuyến bay Đà Nẵng (DAD) - Hà Nội (HAN)", "TRANSPORT",
                         "Sân bay Đà Nẵng (DAD) -> Sân bay Nội Bài (HAN)", 0,
                         "Vé máy bay về Hà Nội.")));
+        return day;
+    }
+
+    private TripDto.DayResponse inconsistentBundledRoundTripDay() {
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Ve may bay khu hoi Ha Noi - Da Nang", "TRANSPORT",
+                        "San bay Noi Bai (HAN) -> San bay Da Nang (DAD)", 3_600_000L,
+                        "Gia ve khu hoi cho ca nhom, day la chi phi cho chieu di."),
+                activity("11:30", "An trua Mi Quang Ba Mua", "FOOD",
+                        "231 Tran Phu, Hai Chau, Da Nang", 200_000L, null),
+                activity("14:00", "Tham quan Bao tang Da Nang", "ATTRACTION",
+                        "24 Tran Phu, Hai Chau, Da Nang", 80_000L, null)));
+        return day;
+    }
+
+    private TripDto.DayResponse doubleCountedRoundTripDay() {
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Ve may bay khu hoi Ha Noi - Da Nang", "TRANSPORT",
+                        "San bay Noi Bai (HAN) <-> San bay Da Nang (DAD)", 3_600_000L,
+                        "Chi phi ve may bay khu hoi cho ca nhom, bao gom ca chieu di va chieu ve."),
+                activity("11:30", "An trua Mi Quang Ba Mua", "FOOD",
+                        "231 Tran Phu, Hai Chau, Da Nang", 200_000L, null),
+                activity("14:00", "Tham quan Bao tang Da Nang", "ATTRACTION",
+                        "24 Tran Phu, Hai Chau, Da Nang", 80_000L, null),
+                activity("20:00", "Chuyen bay Da Nang - Ha Noi", "TRANSPORT",
+                        "San bay Da Nang (DAD) -> San bay Noi Bai (HAN)", 1_800_000L,
+                        "Chi phi cho chieu ve.")));
+        return day;
+    }
+
+    private TripDto.DayResponse paidSeparateRoundTripDay() {
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Chuyen bay Ha Noi - Da Nang", "TRANSPORT",
+                        "San bay Noi Bai (HAN) -> San bay Da Nang (DAD)", 1_800_000L,
+                        "Ve may bay mot chieu cho ca nhom."),
+                activity("11:30", "An trua Mi Quang Ba Mua", "FOOD",
+                        "231 Tran Phu, Hai Chau, Da Nang", 200_000L, null),
+                activity("14:00", "Tham quan Bao tang Da Nang", "ATTRACTION",
+                        "24 Tran Phu, Hai Chau, Da Nang", 80_000L, null),
+                activity("20:00", "Chuyen bay Da Nang - Ha Noi", "TRANSPORT",
+                        "San bay Da Nang (DAD) -> San bay Noi Bai (HAN)", 1_800_000L,
+                        "Ve may bay ve Ha Noi.")));
         return day;
     }
 

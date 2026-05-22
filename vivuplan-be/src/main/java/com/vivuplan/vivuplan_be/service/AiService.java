@@ -281,7 +281,7 @@ public class AiService {
                         %s
                         %s
                         Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
-                        For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg.
+                        For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg. Never combine a paid round-trip activity with another paid outbound/return leg, and never describe a round-trip price as only "chiều đi" or only "chiều về".
                         If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
                         Before returning, sum every activity.estimatedCost and keep the total at or below the total group budget unless the required outbound/return transport alone makes that impossible.
                         If the budget is tight, keep required transport realistic but reduce optional paid attractions, tours, premium meals, shopping, and accommodation comfort instead of exceeding budget.
@@ -319,7 +319,7 @@ public class AiService {
                                 %s
                                 Create a separate TRANSPORT activity with route/mode/cost instead of putting transport cost in an ATTRACTION, FOOD, CAFE, or ACTIVITY note.
                                 Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
-                                For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg.
+                                For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg. Never combine a paid round-trip activity with another paid outbound/return leg, and never describe a round-trip price as only "chiều đi" or only "chiều về".
                                 If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
                                 """,
                         retryReason,
@@ -407,7 +407,7 @@ public class AiService {
                         4. Keep times in HH:mm 24h format and avoid meaningful overlaps.
                         5. estimatedCost MUST be total VND for the whole group of %d travelers.
                         5a. Never set estimatedCost to 0 for paid intercity transport such as flights, trains, buses, private cars, airport transfers, vehicle rental pickup, lodging, tickets, tours, shows, or paid experiences.
-                        5b. For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg.
+                        5b. For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg. Never combine a paid round-trip activity with another paid outbound/return leg, and never describe a round-trip price as only "chiều đi" or only "chiều về".
                         5c. If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
                         5d. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
                         5e. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
@@ -634,7 +634,7 @@ public class AiService {
                         6. For fixed-price items such as cable car, theme park, show, museum, paid tour, boat tour, or entrance ticket, use a realistic recent public-market estimate and mention the unit basis in note, for example "khoảng 850k/người".
                         7. For accommodation, include a clear ACCOMMODATION activity with a specific real hotel, homestay, hostel, or resort name and total lodging cost for all nights and all travelers. Do not use generic wording like "homestay/khách sạn" or only an area name. Do not use the accommodation type for a taxi/check-in only.
                         8. Never set estimatedCost to 0 for paid intercity transport such as flights, trains, buses, private cars, airport transfers, vehicle rental pickup, lodging, tickets, tours, shows, or paid experiences.
-                        8a. For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg.
+                        8a. For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg. Never combine a paid round-trip activity with another paid outbound/return leg, and never describe a round-trip price as only "chiều đi" or only "chiều về".
                         8b. If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
                         9. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
                         10. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
@@ -990,9 +990,11 @@ public class AiService {
         Set<String> dayFingerprints = new HashSet<>();
         int genericActivities = 0;
         int totalActivities = 0;
-        int localTransportActivities = 0;
-        int nonLogisticsActivities = 0;
         String recoverableCostIssue = null;
+        String intercityPricingIssue = intercityTransportPricingIssue(days, req);
+        if (intercityPricingIssue != null) {
+            return QualityCheck.fail(intercityPricingIssue);
+        }
         boolean bundledIntercityTransportCost = hasBundledIntercityTransportCost(days, req);
         Set<String> paidVehicleRentalKinds = paidVehicleRentalKinds(days);
         for (TripDto.DayResponse day : days) {
@@ -1036,12 +1038,8 @@ public class AiService {
                 if (isGenericActivity(name, location, type)) {
                     genericActivities++;
                 }
-                if (isLocalTransportActivity(type, name, location, note, req)) {
-                    localTransportActivities++;
-                }
                 if (!isLogisticsType(type)) {
                     dayNonLogisticsActivities++;
-                    nonLogisticsActivities++;
                 }
             }
             if (ItineraryQualityPolicy.exceedsNonLogisticsItems(dayNonLogisticsActivities)) {
@@ -1082,15 +1080,14 @@ public class AiService {
         }
 
         int genericActivities = 0;
-        int localTransportActivities = 0;
         int nonLogisticsActivities = 0;
         String recoverableCostIssue = null;
         Set<String> seenTimes = new HashSet<>();
         List<TimeRange> ranges = new ArrayList<>();
-        List<TripDto.DayResponse> scheduleForCostContext = new ArrayList<>();
-        scheduleForCostContext.add(day);
-        if (currentSchedule != null) {
-            scheduleForCostContext.addAll(currentSchedule);
+        List<TripDto.DayResponse> scheduleForCostContext = scheduleWithRegeneratedDay(day, currentSchedule);
+        String intercityPricingIssue = intercityTransportPricingIssue(scheduleForCostContext, req);
+        if (intercityPricingIssue != null) {
+            return QualityCheck.fail(intercityPricingIssue);
         }
         boolean bundledIntercityTransportCost = hasBundledIntercityTransportCost(scheduleForCostContext, req);
         Set<String> paidVehicleRentalKinds = paidVehicleRentalKinds(scheduleForCostContext);
@@ -1139,9 +1136,6 @@ public class AiService {
             if (isGenericActivity(name, location, type)) {
                 genericActivities++;
             }
-            if (isLocalTransportActivity(type, name, location, note, req)) {
-                localTransportActivities++;
-            }
             if (!isLogisticsType(type)) {
                 nonLogisticsActivities++;
             }
@@ -1178,6 +1172,34 @@ public class AiService {
         }
 
         return QualityCheck.pass();
+    }
+
+    private List<TripDto.DayResponse> scheduleWithRegeneratedDay(
+            TripDto.DayResponse regeneratedDay,
+            List<TripDto.DayResponse> currentSchedule) {
+        if (regeneratedDay == null) {
+            return currentSchedule != null ? currentSchedule : List.of();
+        }
+        if (currentSchedule == null || currentSchedule.isEmpty()) {
+            return List.of(regeneratedDay);
+        }
+
+        List<TripDto.DayResponse> merged = new ArrayList<>();
+        boolean replaced = false;
+        for (TripDto.DayResponse existingDay : currentSchedule) {
+            if (existingDay != null && existingDay.getDay() == regeneratedDay.getDay()) {
+                if (!replaced) {
+                    merged.add(regeneratedDay);
+                    replaced = true;
+                }
+            } else {
+                merged.add(existingDay);
+            }
+        }
+        if (!replaced) {
+            merged.add(regeneratedDay);
+        }
+        return merged;
     }
 
     private String requiredActivityCostIssue(
@@ -1239,6 +1261,48 @@ public class AiService {
         return false;
     }
 
+    private String intercityTransportPricingIssue(List<TripDto.DayResponse> days, TripDto.GenerateRequest req) {
+        if (days == null || days.isEmpty()) {
+            return null;
+        }
+
+        TripDto.ActivityResponse paidBundledActivity = null;
+        TripDto.ActivityResponse paidSeparateLegActivity = null;
+        for (TripDto.DayResponse day : days) {
+            if (day == null || day.getActivities() == null) {
+                continue;
+            }
+            for (TripDto.ActivityResponse activity : day.getActivities()) {
+                String type = normalize(activity.getType());
+                if (!type.equals("transport") || Math.max(0, activity.getEstimatedCost()) == 0) {
+                    continue;
+                }
+                String combined = normalize(String.join(" ",
+                        nullToBlank(activity.getName()),
+                        nullToBlank(activity.getLocation()),
+                        nullToBlank(activity.getNote())));
+                if (!isOutboundOrReturnTransport(combined, req)) {
+                    continue;
+                }
+
+                boolean bundled = mentionsBundledIntercityTransportCost(combined);
+                if (bundled && mentionsSingleLegIntercityCost(combined)) {
+                    return "intercity transport cost is inconsistent: " + activity.getName();
+                }
+                if (bundled) {
+                    paidBundledActivity = activity;
+                } else {
+                    paidSeparateLegActivity = activity;
+                }
+            }
+        }
+
+        if (paidBundledActivity != null && paidSeparateLegActivity != null) {
+            return "intercity transport cost is double-counted: " + paidSeparateLegActivity.getName();
+        }
+        return null;
+    }
+
     private Set<String> paidVehicleRentalKinds(List<TripDto.DayResponse> days) {
         Set<String> paidKinds = new HashSet<>();
         if (days == null || days.isEmpty()) {
@@ -1282,6 +1346,19 @@ public class AiService {
                 "bao gom chuyen bay ve",
                 "bao gom ve ve",
                 "bao gom ca tien ve");
+    }
+
+    private boolean mentionsSingleLegIntercityCost(String normalizedText) {
+        return containsAny(normalizedText,
+                "chi phi cho chieu di",
+                "chi phi chieu di",
+                "gia ve chieu di",
+                "chi phi cho chieu ve",
+                "chi phi chieu ve",
+                "gia ve chieu ve",
+                "mot chieu",
+                "one way",
+                "one-way");
     }
 
     private boolean isVehicleRentalStartActivity(String normalizedType, String normalizedText) {
