@@ -220,13 +220,23 @@ function normalizeAiMessage(raw: string): AiMessage {
     .replace(/Đ/g, "D")
     .toLowerCase();
   const kind: AiMessageKind = normalized.startsWith("toi uu") ? "positive" : "caution";
-  const message = trimmed.replace(/^(Tối ưu|Toi uu|Yêu cầu|Yeu cau)\s*:\s*/i, "").trim();
+  const message = cleanAiMessage(
+    trimmed.replace(/^(Tối ưu|Toi uu|Yêu cầu|Yeu cau)\s*:\s*/i, "").trim(),
+  );
   return {
     raw,
     kind,
     message,
     displayText: getAiMessageDisplayText(message),
   };
+}
+
+function cleanAiMessage(message: string) {
+  return message
+    .replace(/^Lịch trình được thiết kế phù hợp cho\s+\d+\s+người,\s*đặc biệt là\s+/i, "Lịch trình phù hợp với ")
+    .replace(/^Lịch trình được thiết kế phù hợp cho\s+\d+\s+người\s*,?\s*/i, "Lịch trình ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function getAiMessageDisplayText(message: string) {

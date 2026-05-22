@@ -281,6 +281,7 @@ public class AiService {
                         %s
                         %s
                         Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
+                        For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg.
                         If using a rented motorbike, car, or bicycle, include one TRANSPORT activity with the total rental fee for the covered period. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee.
                         Before returning, sum every activity.estimatedCost and keep the total at or below the total group budget unless the required outbound/return transport alone makes that impossible.
                         If the budget is tight, keep required transport realistic but reduce optional paid attractions, tours, premium meals, shopping, and accommodation comfort instead of exceeding budget.
@@ -318,6 +319,7 @@ public class AiService {
                                 %s
                                 Create a separate TRANSPORT activity with route/mode/cost instead of putting transport cost in an ATTRACTION, FOOD, CAFE, or ACTIVITY note.
                                 Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
+                                For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg.
                                 If using a rented motorbike, car, or bicycle, include one TRANSPORT activity with the total rental fee for the covered period. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee.
                                 """,
                         retryReason,
@@ -405,9 +407,10 @@ public class AiService {
                         4. Keep times in HH:mm 24h format and avoid meaningful overlaps.
                         5. estimatedCost MUST be total VND for the whole group of %d travelers.
                         5a. Never set estimatedCost to 0 for paid intercity transport such as flights, trains, buses, private cars, airport transfers, vehicle rental pickup, lodging, tickets, tours, shows, or paid experiences.
-                        5b. If using a rented motorbike, car, or bicycle, include one TRANSPORT activity with the total rental fee for the covered period. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee.
-                        5c. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
-                        5d. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
+                        5b. For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg.
+                        5c. If using a rented motorbike, car, or bicycle, include one TRANSPORT activity with the total rental fee for the covered period. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee.
+                        5d. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
+                        5e. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
                         6. Preserve user constraints: avoid banned items, respect must-visit where relevant, respect style/group.
                         7. Treat Local transport as the user's preference, not an absolute law. Follow it when practical; if a different mode is safer or more realistic in Vietnam, explain briefly in a TRANSPORT note.
                         8. %s
@@ -425,7 +428,7 @@ public class AiService {
                         20. If a requested item is omitted, substituted, weakened, unsafe, too expensive, duplicated, or impossible under constraints, mark it PARTIAL or NOT_APPLIED and write a short Vietnamese userMessage explaining why.
                         21. Use reasonCode WEATHER_SAFETY when rain/storm/weather risk is the main reason. Other allowed reasonCode values: APPLIED, BUDGET, TIME_CONFLICT, DUPLICATE, CONSTRAINT, UNCLEAR, OTHER.
                         22. For important fulfilled user preferences, include a concise positive userMessage explaining how the regenerated day reflects it. Keep it under 24 Vietnamese words.
-                        23. Do not create fulfilled requestFulfillment items for default planning metadata such as traveler count, dates, transport choice, or staying within budget.
+                        23. Create positive fulfilled requestFulfillment items only for user-authored qualitative preferences or concrete requested places, foods, experiences, and constraints. Do not create them just to restate form-derived planning context or system constraints. If group context matters, mention the experience fit, for example "hợp cặp đôi" or "nhẹ nhàng cho gia đình", not the numeric traveler count.
                         24. If there is no meaningful user-specific request and no destination-signature omission/substitution needs explanation, set overallStatus to NO_REQUEST and items to []. If a signature experience category is omitted or substituted for a real constraint, return PARTIAL or NOT_FULFILLED with a concise grouped requestFulfillment item even without a user-specific request.
                         25. If you are unsure whether the request was satisfied, mark the item UNCLEAR and explain what the user should check.
 
@@ -631,7 +634,8 @@ public class AiService {
                         6. For fixed-price items such as cable car, theme park, show, museum, paid tour, boat tour, or entrance ticket, use a realistic recent public-market estimate and mention the unit basis in note, for example "khoảng 850k/người".
                         7. For accommodation, include a clear ACCOMMODATION activity with total lodging cost for all nights and all travelers. Do not use the accommodation type for a taxi/check-in only.
                         8. Never set estimatedCost to 0 for paid intercity transport such as flights, trains, buses, private cars, airport transfers, vehicle rental pickup, lodging, tickets, tours, shows, or paid experiences.
-                        8a. If using a rented motorbike, car, or bicycle, include one TRANSPORT activity with the total rental fee for the covered period. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee.
+                        8a. For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg.
+                        8b. If using a rented motorbike, car, or bicycle, include one TRANSPORT activity with the total rental fee for the covered period. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee.
                         9. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
                         10. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
                         11. If the budget cannot support all expensive attractions, choose fewer paid activities instead of exceeding budget.
@@ -677,7 +681,7 @@ public class AiService {
                         4. If a requested item is omitted, substituted, weakened, unsafe, too expensive, duplicated, or impossible under constraints, mark it PARTIAL or NOT_APPLIED and write a short Vietnamese userMessage explaining why.
                         5. Use reasonCode WEATHER_SAFETY when rain/storm/weather risk is the main reason. Other allowed reasonCode values: APPLIED, BUDGET, TIME_CONFLICT, DUPLICATE, CONSTRAINT, UNCLEAR, OTHER.
                         6. For important fulfilled user preferences from Notes, Must visit, or Avoid, include a concise positive userMessage explaining how the itinerary reflects it. Keep it under 24 Vietnamese words and avoid listing every place.
-                        7. Do not create fulfilled requestFulfillment items for default planning metadata such as traveler count, dates, transport choice, or staying within budget. Those are already shown elsewhere in the UI.
+                        7. Create positive fulfilled requestFulfillment items only for user-authored qualitative preferences or concrete requested places, foods, experiences, and constraints. Do not create them just to restate form-derived planning context or system constraints. If group context matters, mention the experience fit, for example "hợp cặp đôi" or "nhẹ nhàng cho gia đình", not the numeric traveler count.
                         8. If there is no meaningful user-specific request and no destination-signature omission/substitution needs explanation, set overallStatus to NO_REQUEST and items to []. If a signature experience category is omitted or substituted for a real constraint, return PARTIAL or NOT_FULFILLED with a concise grouped requestFulfillment item even without a user-specific request.
                         9. If you are unsure whether a request was satisfied, mark the item UNCLEAR and explain what the user should check.
                         10. Never mention the weather in itinerary day titles, summaries, activities, or notes. If weather blocks a user request, explain it only in requestFulfillment.items[].userMessage.
