@@ -389,12 +389,6 @@ function PlanContent() {
       if (!finalDestination) {
         throw new Error("Không thể gợi ý điểm đến vì dữ liệu điểm đến chưa sẵn sàng. Vui lòng nhập điểm đến cụ thể hoặc thử lại.");
       }
-      const groupDetail = form.travelers === 1
-        ? "Một mình"
-        : form.group
-          ? optionLabel(groupOptions, form.group)
-          : undefined;
-
       const trip = await tripApi.generate({
         destination: finalDestination,
         departure: form.departure.trim(),
@@ -411,8 +405,6 @@ function PlanContent() {
         outboundTransport: toApiTransport(form.outboundTransport, ""),
         localTransport: toApiTransport("", form.localTransport),
         destinationSuggested: !form.destination.trim(),
-        groupDetail,
-        budgetAdvisory: budgetAdvisory || undefined,
         mustVisit: form.mustVisit.trim() || undefined,
         avoid: form.avoid.trim() || undefined,
         notes: form.notes.trim() || undefined,

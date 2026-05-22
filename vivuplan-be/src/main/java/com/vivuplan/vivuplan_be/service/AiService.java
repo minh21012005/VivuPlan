@@ -344,7 +344,6 @@ public class AiService {
                         - Total group budget ceiling: %,d VND
                         - Style: %s
                         - Group: %s
-                        - Group detail: %s
                         - Outbound transport: %s
                         - Local transport: %s
                         - Must visit: %s
@@ -477,7 +476,6 @@ public class AiService {
                 totalBudget,
                 req.getStyle(),
                 req.getGroupType(),
-                req.getGroupDetail() != null && !req.getGroupDetail().isBlank() ? req.getGroupDetail() : "none",
                 req.getOutboundTransport(),
                 req.getLocalTransport(),
                 req.getMustVisit() != null && !req.getMustVisit().isBlank() ? req.getMustVisit() : "none",
@@ -586,10 +584,8 @@ public class AiService {
                         - Total group budget: %,d VND
                         - Budget per person: %,d VND
                         - Budget per person per day: %,d VND
-                        - Budget advisory: %s
                         - Style: %s
                         - Group: %s
-                        - Group detail: %s
                         - Outbound transport: %s
                         - Local transport: %s
                         - Must visit: %s
@@ -735,10 +731,8 @@ public class AiService {
                 totalBudget,
                 perPersonBudget,
                 perPersonPerDay,
-                req.getBudgetAdvisory() != null && !req.getBudgetAdvisory().isBlank() ? req.getBudgetAdvisory() : "none",
                 req.getStyle(),
                 req.getGroupType(),
-                req.getGroupDetail() != null && !req.getGroupDetail().isBlank() ? req.getGroupDetail() : "none",
                 req.getOutboundTransport(),
                 req.getLocalTransport(),
                 req.getMustVisit() != null && !req.getMustVisit().isBlank() ? req.getMustVisit() : "none",
@@ -1591,10 +1585,7 @@ public class AiService {
                         "homestay khu vuc",
                         "nha nghi khu vuc",
                         "khach san trung tam",
-                        "homestay trung tam",
-                        "khach san my khe",
-                        "khach san phong nha",
-                        "homestay phong nha")
+                        "homestay trung tam")
                 || (containsAny(searchable, "homestay khach san", "khach san homestay")
                         && !containsAny(searchableName, "hotel", "khach san", "homestay", "hostel", "resort"));
 

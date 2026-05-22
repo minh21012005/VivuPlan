@@ -229,8 +229,6 @@ export interface GenerateRequest {
   outboundTransport?: string;
   localTransport?: string;
   destinationSuggested?: boolean;
-  groupDetail?: string;
-  budgetAdvisory?: string;
   mustVisit?: string;
   avoid?: string;
   notes?: string;
@@ -253,7 +251,6 @@ export interface TripResponse {
   outboundTransport?: string;
   localTransport?: string;
   destinationSuggested?: boolean;
-  groupDetail?: string;
   mustVisit?: string;
   avoid?: string;
   status: string;
