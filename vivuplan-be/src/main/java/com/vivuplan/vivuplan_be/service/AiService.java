@@ -282,7 +282,7 @@ public class AiService {
                         %s
                         Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
                         For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg.
-                        If using a rented motorbike, car, or bicycle, include one TRANSPORT activity with the total rental fee for the covered period. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee.
+                        If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
                         Before returning, sum every activity.estimatedCost and keep the total at or below the total group budget unless the required outbound/return transport alone makes that impossible.
                         If the budget is tight, keep required transport realistic but reduce optional paid attractions, tours, premium meals, shopping, and accommodation comfort instead of exceeding budget.
                         If realistic required costs make the budget impossible, return realistic costs anyway. Never understate costs to fit the budget.
@@ -320,7 +320,7 @@ public class AiService {
                                 Create a separate TRANSPORT activity with route/mode/cost instead of putting transport cost in an ATTRACTION, FOOD, CAFE, or ACTIVITY note.
                                 Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
                                 For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg.
-                                If using a rented motorbike, car, or bicycle, include one TRANSPORT activity with the total rental fee for the covered period. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee.
+                                If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
                                 """,
                         retryReason,
                         dayNumber,
@@ -388,7 +388,7 @@ public class AiService {
                         3a. Candidates marked priority=destination-signature are core destination experiences. Preserve them when safe and practical; if weather makes them unsafe and there is no safer slot, explain the omission or substitution in requestFulfillment with reasonCode WEATHER_SAFETY.
                         4. CRITICAL: The candidate list is NOT exhaustive. It may lack specific accommodations, restaurants, cafes, rental shops, or niche local spots. For ANY category lacking suitable candidates, you MUST actively use your extensive internal knowledge to suggest specific, real, and named businesses/places that realistically match the user's budget, style, and daily route.
                         5. When using a verified candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
-                        6. When using a non-candidate place or activity, it MUST be a specific, existing real-world place with a concrete proper name and address. Absolutely DO NOT use ANY generic or unnamed placeholders for ANY activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "chợ địa phương", "quán cà phê").
+                        6. When using a non-candidate place or activity, it MUST be a specific, existing real-world place with a concrete proper name and address. Absolutely DO NOT use ANY generic or unnamed placeholders for ANY activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "nhận phòng tại homestay/khách sạn", "chợ địa phương", "quán cà phê").
                         7. Anti-Bias Rule: Do NOT lazily reuse the same default chains or luxury brands. Actively suggest diverse, budget-appropriate, logically located, and context-relevant local businesses.
                         8. Do not force every candidate into the day; choose only what makes the day practical.
 
@@ -408,7 +408,7 @@ public class AiService {
                         5. estimatedCost MUST be total VND for the whole group of %d travelers.
                         5a. Never set estimatedCost to 0 for paid intercity transport such as flights, trains, buses, private cars, airport transfers, vehicle rental pickup, lodging, tickets, tours, shows, or paid experiences.
                         5b. For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg.
-                        5c. If using a rented motorbike, car, or bicycle, include one TRANSPORT activity with the total rental fee for the covered period. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee.
+                        5c. If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
                         5d. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
                         5e. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
                         6. Preserve user constraints: avoid banned items, respect must-visit where relevant, respect style/group.
@@ -632,10 +632,10 @@ public class AiService {
                         4. If the budget is generous, prefer more comfortable or higher-quality choices such as better transport times, cleaner accommodation areas, memorable paid experiences, or reputable restaurants, but do not invent unnecessary costs just to use the budget.
                         5. Include realistic major costs: round-trip outbound transport, local transport, accommodation, food, entrance tickets, paid tours, shows, and shopping only if useful.
                         6. For fixed-price items such as cable car, theme park, show, museum, paid tour, boat tour, or entrance ticket, use a realistic recent public-market estimate and mention the unit basis in note, for example "khoảng 850k/người".
-                        7. For accommodation, include a clear ACCOMMODATION activity with total lodging cost for all nights and all travelers. Do not use the accommodation type for a taxi/check-in only.
+                        7. For accommodation, include a clear ACCOMMODATION activity with a specific real hotel, homestay, hostel, or resort name and total lodging cost for all nights and all travelers. Do not use generic wording like "homestay/khách sạn" or only an area name. Do not use the accommodation type for a taxi/check-in only.
                         8. Never set estimatedCost to 0 for paid intercity transport such as flights, trains, buses, private cars, airport transfers, vehicle rental pickup, lodging, tickets, tours, shows, or paid experiences.
                         8a. For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg.
-                        8b. If using a rented motorbike, car, or bicycle, include one TRANSPORT activity with the total rental fee for the covered period. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee.
+                        8b. If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
                         9. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
                         10. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
                         11. If the budget cannot support all expensive attractions, choose fewer paid activities instead of exceeding budget.
@@ -671,7 +671,7 @@ public class AiService {
                         3. FOOD/CAFE activities must name a specific dish or restaurant/cafe.
                         4. ATTRACTION/ACTIVITY activities must name a specific real place in or near %s.
                         5. TRANSPORT activities must include outbound/return travel and local travel between distant clusters of places. Walking between nearby places can be documented in notes.
-                        6. Do not use generic names like "ăn sáng đặc sản địa phương", "tham quan điểm nổi bật", "khám phá khu vực lân cận", "nhà hàng địa phương", or "cà phê view đẹp".
+                        6. Do not use generic names like "ăn sáng đặc sản địa phương", "tham quan điểm nổi bật", "khám phá khu vực lân cận", "nhà hàng địa phương", "cà phê view đẹp", or "nhận phòng tại homestay/khách sạn".
                         7. Days must be clearly different and should not repeat the same activity sequence.
 
                         User request fulfillment rules:
@@ -1554,8 +1554,7 @@ public class AiService {
     }
 
     private boolean isGenericActivity(String normalizedName, String normalizedLocation, String normalizedType) {
-        boolean transportOrAccommodation = normalizedType.equals("transport") || normalizedType.equals("accommodation");
-        if (transportOrAccommodation) {
+        if (normalizedType.equals("transport")) {
             return false;
         }
 
