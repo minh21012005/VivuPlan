@@ -5,6 +5,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { DestinationCard } from "@/components/travel/DestinationCard";
 import { heroImages, normalizeVietnameseSearch, vietnamProvinces } from "@/lib/travel-data";
@@ -40,8 +41,8 @@ const features = [
 ];
 
 const steps = [
-  "Nhập điểm xuất phát và ràng buộc chuyến đi",
-  "Chọn điểm đến hoặc để AI gợi ý",
+  "Nhập điểm xuất phát, điểm đến mong muốn, thời gian và ngân sách dự kiến",
+  "VivuPlan sẽ gợi ý điểm đến phù hợp nếu bạn chưa có kế hoạch cụ thể",
   "Nhận lịch trình chi tiết từng ngày và tinh chỉnh theo ý bạn",
 ];
 
@@ -114,7 +115,7 @@ export default function HomePage() {
             <span className="home-hero-eyebrow">VivuPlan AI Travel Planner</span>
             <h1>Lập kế hoạch du lịch thông minh hơn cùng AI</h1>
             <p>
-              Biến ý tưởng du lịch thành lịch trình rõ ràng chỉ trong vài giây.
+              Biến ý tưởng du lịch thành lịch trình rõ ràng chỉ trong vài giây
             </p>
 
             <div className="hero-search hero-planner" style={{ width: "100%" }}>
@@ -187,35 +188,39 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="section">
-        <div className="container split-grid">
-          <div>
-            <SectionHeader
-              eyebrow="Cách VivuPlan hoạt động"
-              title="Linh hoạt giữa chọn điểm đến và gợi ý bằng AI"
-              description="Bạn có thể nhập điểm đến cụ thể, hoặc chỉ cung cấp điểm xuất phát, thời gian, ngân sách để VivuPlan gợi ý điểm đến phù hợp."
-            />
-            <div className="check-list">
-              {steps.map((step) => (
-                <span key={step}>
-                  <CheckCircle2 size={18} /> {step}
-                </span>
+      <section className="section home-experience-section">
+        <div className="container">
+          <Badge tone="teal" className="section-eyebrow home-experience-eyebrow">
+            Trải nghiệm VivuPlan
+          </Badge>
+          <div className="split-grid home-experience-grid">
+            <div className="home-experience-copy">
+              <SectionHeader
+                title="Cá nhân hóa chuyến đi của bạn"
+                description="Chỉ với vài bước đơn giản, VivuPlan sẽ tạo ra lịch trình du lịch hoàn chỉnh, phù hợp với sở thích và nhu cầu của bạn."
+              />
+              <div className="check-list">
+                {steps.map((step) => (
+                  <span key={step}>
+                    <CheckCircle2 size={18} /> {step}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="feature-stack">
+              {features.map(({ icon: Icon, title, desc }) => (
+                <Card key={title} hover className="feature-row">
+                  <div className="feature-icon">
+                    <Icon size={22} />
+                  </div>
+                  <div>
+                    <h3>{title}</h3>
+                    <p>{desc}</p>
+                  </div>
+                </Card>
               ))}
             </div>
-          </div>
-
-          <div className="feature-stack">
-            {features.map(({ icon: Icon, title, desc }) => (
-              <Card key={title} hover className="feature-row">
-                <div className="feature-icon">
-                  <Icon size={22} />
-                </div>
-                <div>
-                  <h3>{title}</h3>
-                  <p>{desc}</p>
-                </div>
-              </Card>
-            ))}
           </div>
         </div>
       </section>

@@ -310,6 +310,10 @@ textarea.input.textarea-compact {
   padding: 80px 0;
 }
 
+.home-experience-section {
+  padding: 56px 0 60px;
+}
+
 .container {
   max-width: 1140px;
   margin: 0 auto;
@@ -394,26 +398,29 @@ textarea.input.textarea-compact {
 }
 
 .home-hero h1 {
-  max-width: 860px;
-  margin-bottom: 18px;
+  max-width: 840px;
+  margin-bottom: 22px;
   color: #fff;
-  font-size: 58px;
+  font-size: 66px;
   font-weight: 900;
-  line-height: 1.06;
+  line-height: 1.02;
   letter-spacing: 0;
   text-wrap: balance;
   text-shadow: 0 12px 34px rgba(15, 23, 42, 0.42);
 }
 
 .home-hero p {
-  max-width: 720px;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 18px;
-  font-weight: 500;
-  line-height: 1.75;
+  max-width: 600px;
+  margin-bottom: 30px;
+  padding-left: 16px;
+  border-left: 3px solid rgba(45, 212, 191, 0.9);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.55;
   letter-spacing: 0;
   text-wrap: pretty;
-  text-shadow: 0 8px 24px rgba(15, 23, 42, 0.38);
+  text-shadow: 0 6px 18px rgba(15, 23, 42, 0.28);
 }
 
 .hero-search {
@@ -657,6 +664,65 @@ textarea.input.textarea-compact {
 .check-list svg {
   color: var(--accent);
   flex-shrink: 0;
+}
+
+.home-experience-grid {
+  align-items: start;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+}
+
+.home-experience-eyebrow {
+  margin-top: 10px;
+  margin-bottom: 14px;
+}
+
+.home-experience-copy {
+  padding-top: 0;
+}
+
+.home-experience-section .section-header {
+  display: block;
+  max-width: 680px;
+  margin-bottom: 30px;
+}
+
+.home-experience-section .section-header h2 {
+  max-width: 640px;
+}
+
+.home-experience-section .section-header p {
+  max-width: 650px;
+}
+
+.home-experience-copy .check-list {
+  gap: 14px;
+  max-width: 620px;
+}
+
+.home-experience-copy .check-list span {
+  align-items: flex-start;
+  line-height: 1.6;
+}
+
+.home-experience-copy .check-list svg {
+  margin-top: 3px;
+}
+
+.home-experience-section .feature-stack {
+  gap: 12px;
+}
+
+.home-experience-section .feature-row {
+  padding: 20px 23px;
+}
+
+.home-experience-section .feature-icon {
+  width: 44px;
+  height: 44px;
+}
+
+.home-experience-section .feature-row p {
+  line-height: 1.62;
 }
 
 .destination-grid {
