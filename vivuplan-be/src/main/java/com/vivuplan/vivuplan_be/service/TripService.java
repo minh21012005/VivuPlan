@@ -91,6 +91,8 @@ public class TripService {
         aiReq.setOutboundTransport(req.getOutboundTransport());
         aiReq.setLocalTransport(req.getLocalTransport());
         aiReq.setDestinationSuggested(req.getDestinationSuggested());
+        aiReq.setGroupDetail(req.getGroupDetail());
+        aiReq.setBudgetAdvisory(req.getBudgetAdvisory());
         aiReq.setMustVisit(req.getMustVisit());
         aiReq.setAvoid(req.getAvoid());
         aiReq.setNotes(req.getNotes());
@@ -121,6 +123,7 @@ public class TripService {
                         parseEnum(Trip.TransportMode.class, req.getOutboundTransport(), Trip.TransportMode.MIXED))
                 .localTransport(parseEnum(Trip.TransportMode.class, req.getLocalTransport(), Trip.TransportMode.MIXED))
                 .destinationSuggested(Boolean.TRUE.equals(req.getDestinationSuggested()))
+                .groupDetail(req.getGroupDetail())
                 .mustVisit(req.getMustVisit())
                 .avoid(req.getAvoid())
                 .notes(req.getNotes())
@@ -418,6 +421,7 @@ public class TripService {
         req.setOutboundTransport(trip.getOutboundTransport().name());
         req.setLocalTransport(trip.getLocalTransport().name());
         req.setDestinationSuggested(trip.getDestinationSuggested());
+        req.setGroupDetail(trip.getGroupDetail());
         req.setMustVisit(trip.getMustVisit());
         req.setAvoid(trip.getAvoid());
         req.setNotes(trip.getNotes());

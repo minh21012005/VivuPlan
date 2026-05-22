@@ -332,8 +332,8 @@ class AiServiceTest {
         }
         activities.add(activity("17:30", "Taxi ve khach san", "TRANSPORT",
                 "Cho Con -> Khach san My Khe", 120_000L, "Taxi/Grab ve khach san."));
-        activities.add(activity("18:30", "Nhan phong khach san", "ACCOMMODATION",
-                "Khach san khu vuc My Khe", 0, "Chi phi luu tru da tinh trong muc khac."));
+        activities.add(activity("18:30", "Nhan phong Khach san Brilliant Da Nang", "ACCOMMODATION",
+                "162 Bach Dang, Hai Chau, Da Nang", 0, "Chi phi luu tru da tinh trong muc khac."));
         day.setActivities(activities);
 
         QualityResult quality = assessRegeneratedDayQuality(service, day, List.of(), req);
@@ -383,8 +383,8 @@ class AiServiceTest {
         }
         activities.add(activity("16:30", "Taxi My Khe ve Hai Chau", "TRANSPORT",
                 "My Khe -> Hai Chau", 120_000L, "Chi phi taxi/Grab cho ca nhom."));
-        activities.add(activity("17:30", "Nhan phong khach san My Khe", "ACCOMMODATION",
-                "Khach san khu vuc My Khe", 0, "Chi phi luu tru da tinh trong muc khac."));
+        activities.add(activity("17:30", "Nhan phong Khach san Brilliant Da Nang", "ACCOMMODATION",
+                "162 Bach Dang, Hai Chau, Da Nang", 0, "Chi phi luu tru da tinh trong muc khac."));
         activities.add(activity("18:30", "Di chuyen toi Cho dem Son Tra", "TRANSPORT",
                 "My Khe -> Cho dem Son Tra", 80_000L, "Taxi/Grab toi cho dem."));
         activities.add(activity("21:30", "Taxi ve khach san", "TRANSPORT",

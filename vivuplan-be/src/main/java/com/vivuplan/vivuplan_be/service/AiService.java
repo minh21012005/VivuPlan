@@ -344,6 +344,7 @@ public class AiService {
                         - Total group budget ceiling: %,d VND
                         - Style: %s
                         - Group: %s
+                        - Group detail: %s
                         - Outbound transport: %s
                         - Local transport: %s
                         - Must visit: %s
@@ -414,7 +415,7 @@ public class AiService {
                         6. Preserve user constraints: avoid banned items, respect must-visit where relevant, respect style/group.
                         7. Treat Local transport as the user's preference, not an absolute law. Follow it when practical; if a different mode is safer or more realistic in Vietnam, explain briefly in a TRANSPORT note.
                         8. %s
-                        9. Use named, real places/restaurants/cafes. Avoid generic wording such as "địa phương", "điểm nổi bật", "khu trung tâm" unless paired with a specific real name.
+                        9. Use named, real places/restaurants/cafes/accommodations. If the regenerated day includes ACCOMMODATION, it must name a specific real hotel, homestay, hostel, or resort and include the lodging cost when not already counted elsewhere. Avoid generic wording such as "địa phương", "điểm nổi bật", "khu trung tâm", or "homestay/khách sạn" unless paired with a specific real name.
                         10. Treat the user's free-form request as the primary goal. Infer the requested change from natural language, for example seafood, cheaper, lighter pacing, fewer walks, more local food, more culture, better transport, or replacing a disliked place.
                         11. If the user asks for food such as seafood, vegetarian food, coffee, local dishes, or a specific cuisine, adjust FOOD/CAFE activities while keeping the day practical.
                         12. If the user asks to save money, reduce cost without making the plan unrealistic.
@@ -476,6 +477,7 @@ public class AiService {
                 totalBudget,
                 req.getStyle(),
                 req.getGroupType(),
+                req.getGroupDetail() != null && !req.getGroupDetail().isBlank() ? req.getGroupDetail() : "none",
                 req.getOutboundTransport(),
                 req.getLocalTransport(),
                 req.getMustVisit() != null && !req.getMustVisit().isBlank() ? req.getMustVisit() : "none",
@@ -584,8 +586,10 @@ public class AiService {
                         - Total group budget: %,d VND
                         - Budget per person: %,d VND
                         - Budget per person per day: %,d VND
+                        - Budget advisory: %s
                         - Style: %s
                         - Group: %s
+                        - Group detail: %s
                         - Outbound transport: %s
                         - Local transport: %s
                         - Must visit: %s
@@ -652,7 +656,7 @@ public class AiService {
                         3a. Candidates marked priority=destination-signature are core destination experiences. Preserve them when safe and practical; if weather makes them unsafe and there is no safer slot, explain the omission or substitution in requestFulfillment with reasonCode WEATHER_SAFETY.
                         4. CRITICAL: The candidate list is NOT exhaustive. It may lack specific accommodations, restaurants, cafes, rental shops, or niche local spots. For ANY category lacking suitable candidates, you MUST actively use your extensive internal knowledge to suggest specific, real, and named businesses/places that realistically match the user's budget, style, and daily route.
                         5. When using a verified candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
-                        6. When using a non-candidate place or activity, it MUST be a specific, existing real-world place with a concrete proper name and address. Absolutely DO NOT use ANY generic or unnamed placeholders for ANY activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "chợ địa phương", "quán cà phê").
+                        6. When using a non-candidate place or activity, it MUST be a specific, existing real-world place with a concrete proper name and address. Absolutely DO NOT use ANY generic or unnamed placeholders for ANY activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "nhận phòng tại homestay/khách sạn", "chợ địa phương", "quán cà phê").
                         7. Anti-Bias Rule: Do NOT lazily reuse the same default chains or luxury brands. Actively suggest diverse, budget-appropriate, logically located, and context-relevant local businesses.
                         8. Do not force every candidate into the trip; choose only what makes the itinerary practical.
 
@@ -731,8 +735,10 @@ public class AiService {
                 totalBudget,
                 perPersonBudget,
                 perPersonPerDay,
+                req.getBudgetAdvisory() != null && !req.getBudgetAdvisory().isBlank() ? req.getBudgetAdvisory() : "none",
                 req.getStyle(),
                 req.getGroupType(),
+                req.getGroupDetail() != null && !req.getGroupDetail().isBlank() ? req.getGroupDetail() : "none",
                 req.getOutboundTransport(),
                 req.getLocalTransport(),
                 req.getMustVisit() != null && !req.getMustVisit().isBlank() ? req.getMustVisit() : "none",
@@ -1029,6 +1035,10 @@ public class AiService {
                         return QualityCheck.fail(costIssue);
                     }
                 }
+                String accommodationIssue = accommodationSpecificityIssue(act, name, location, type);
+                if (accommodationIssue != null) {
+                    return QualityCheck.fail(accommodationIssue);
+                }
                 if (isGenericActivity(name, location, type)) {
                     genericActivities++;
                 }
@@ -1127,6 +1137,10 @@ public class AiService {
             }
             if (!avoid.isBlank() && containsAvoidedContent(combined, avoid)) {
                 return QualityCheck.fail("activity appears to violate avoid instruction: " + act.getName());
+            }
+            String accommodationIssue = accommodationSpecificityIssue(act, name, location, type);
+            if (accommodationIssue != null) {
+                return QualityCheck.fail(accommodationIssue);
             }
             if (isGenericActivity(name, location, type)) {
                 genericActivities++;
@@ -1553,6 +1567,44 @@ public class AiService {
         return normalizedText.contains(departure) && normalizedText.contains(destination);
     }
 
+    private String accommodationSpecificityIssue(
+            TripDto.ActivityResponse act,
+            String normalizedName,
+            String normalizedLocation,
+            String normalizedType) {
+        if (!"accommodation".equals(normalizedType)) {
+            return null;
+        }
+
+        String searchableName = normalizeSearchText(normalizedName);
+        String searchable = normalizeSearchText(normalizedName + " " + normalizedLocation + " " + normalize(act.getNote()));
+        boolean genericPlaceholder = isGenericActivity(normalizedName, normalizedLocation, normalizedType)
+                || containsAny(searchableName,
+                        "homestay khach san",
+                        "khach san homestay",
+                        "hotel homestay",
+                        "homestay hotel",
+                        "nha nghi khach san",
+                        "noi luu tru",
+                        "co so luu tru",
+                        "khach san khu vuc",
+                        "homestay khu vuc",
+                        "nha nghi khu vuc",
+                        "khach san trung tam",
+                        "homestay trung tam",
+                        "khach san my khe",
+                        "khach san phong nha",
+                        "homestay phong nha")
+                || (containsAny(searchable, "homestay khach san", "khach san homestay")
+                        && !containsAny(searchableName, "hotel", "khach san", "homestay", "hostel", "resort"));
+
+        return genericPlaceholder ? "accommodation is generic: " + act.getName() : null;
+    }
+
+    private String normalizeSearchText(String text) {
+        return normalize(text).replaceAll("[^a-z0-9]+", " ").replaceAll("\\s+", " ").trim();
+    }
+
     private boolean isGenericActivity(String normalizedName, String normalizedLocation, String normalizedType) {
         if (normalizedType.equals("transport")) {
             return false;
@@ -1564,6 +1616,7 @@ public class AiService {
         String[] prefixesToRemove = {
                 "an sang", "an trua", "an toi", "an", "uong", "thuong thuc", "trai nghiem",
                 "tham quan", "kham pha", "check in", "mua sam", "dao", "nghi ngoi", "tu do",
+                "nhan phong", "check-in", "luu tru", "o tai",
                 "thue xe may", "thue o to", "thue xe", "di chuyen"
         };
         for (String prefix : prefixesToRemove) {

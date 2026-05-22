@@ -91,6 +91,8 @@ public class Trip {
     @Builder.Default
     private Boolean destinationSuggested = false;
 
+    private String groupDetail;
+
     @Column(columnDefinition = "TEXT")
     private String mustVisit;
 

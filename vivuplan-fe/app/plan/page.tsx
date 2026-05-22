@@ -389,17 +389,11 @@ function PlanContent() {
       if (!finalDestination) {
         throw new Error("Không thể gợi ý điểm đến vì dữ liệu điểm đến chưa sẵn sàng. Vui lòng nhập điểm đến cụ thể hoặc thử lại.");
       }
-      const planningNotes = [
-        `Số người: ${form.travelers}`,
-        `Ngân sách tối đa người dùng nhập: ${fmtBudget(form.budget)} ${form.budgetMode === "total" ? "tổng nhóm" : "mỗi người"}`,
-        form.travelers === 1 ? "Thành phần nhóm: Một mình" : form.group ? `Thành phần nhóm: ${optionLabel(groupOptions, form.group)}` : "",
-        form.outboundTransport ? `Di chuyển đến điểm đến: ${optionLabel(outboundTransportOptions, form.outboundTransport)}` : "Di chuyển đến điểm đến: để AI đề xuất",
-        form.localTransport ? `Di chuyển trong chuyến đi: ${optionLabel(localTransportOptions, form.localTransport)}` : "Di chuyển trong chuyến đi: để AI đề xuất",
-        budgetAdvisory ? `Lưu ý ngân sách: ${budgetAdvisory}` : "",
-        form.mustVisit.trim() ? `Nơi muốn ghé: ${form.mustVisit.trim()}` : "",
-        form.avoid.trim() ? `Điều muốn tránh: ${form.avoid.trim()}` : "",
-        form.notes.trim(),
-      ].filter(Boolean).join("\n");
+      const groupDetail = form.travelers === 1
+        ? "Một mình"
+        : form.group
+          ? optionLabel(groupOptions, form.group)
+          : undefined;
 
       const trip = await tripApi.generate({
         destination: finalDestination,
@@ -417,9 +411,11 @@ function PlanContent() {
         outboundTransport: toApiTransport(form.outboundTransport, ""),
         localTransport: toApiTransport("", form.localTransport),
         destinationSuggested: !form.destination.trim(),
+        groupDetail,
+        budgetAdvisory: budgetAdvisory || undefined,
         mustVisit: form.mustVisit.trim() || undefined,
         avoid: form.avoid.trim() || undefined,
-        notes: planningNotes || undefined,
+        notes: form.notes.trim() || undefined,
       });
       const creationWarnings = trip.warnings?.filter((warning) => warning.trim().length > 0) ?? [];
       if (creationWarnings.length > 0 && typeof window !== "undefined") {

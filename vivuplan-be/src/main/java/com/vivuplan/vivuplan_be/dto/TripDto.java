@@ -38,6 +38,7 @@ public class TripDto {
         private String outboundTransport = "MIXED";
         private String localTransport = "MIXED";
         private Boolean destinationSuggested = false;
+        private String groupDetail;
         private String mustVisit;
         private String avoid;
         private String notes;
@@ -61,6 +62,7 @@ public class TripDto {
         private String outboundTransport;
         private String localTransport;
         private Boolean destinationSuggested;
+        private String groupDetail;
         private String mustVisit;
         private String avoid;
         private String status;
@@ -91,6 +93,7 @@ public class TripDto {
             r.setOutboundTransport(trip.getOutboundTransport().name());
             r.setLocalTransport(trip.getLocalTransport().name());
             r.setDestinationSuggested(trip.getDestinationSuggested());
+            r.setGroupDetail(trip.getGroupDetail());
             r.setMustVisit(trip.getMustVisit());
             r.setAvoid(trip.getAvoid());
             r.setStatus(trip.getStatus().name());
@@ -265,6 +268,8 @@ public class TripDto {
         private String outboundTransport;
         private String localTransport;
         private Boolean destinationSuggested;
+        private String groupDetail;
+        private String budgetAdvisory;
         private String mustVisit;
         private String avoid;
         private String notes;
