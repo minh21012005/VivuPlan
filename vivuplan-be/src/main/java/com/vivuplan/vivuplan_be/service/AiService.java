@@ -1035,6 +1035,10 @@ public class AiService {
                 if (accommodationIssue != null) {
                     return QualityCheck.fail(accommodationIssue);
                 }
+                String foodIssue = foodSpecificityIssue(act, req, name, location, type);
+                if (foodIssue != null) {
+                    return QualityCheck.fail(foodIssue);
+                }
                 if (isGenericActivity(name, location, type)) {
                     genericActivities++;
                 }
@@ -1132,6 +1136,10 @@ public class AiService {
             String accommodationIssue = accommodationSpecificityIssue(act, name, location, type);
             if (accommodationIssue != null) {
                 return QualityCheck.fail(accommodationIssue);
+            }
+            String foodIssue = foodSpecificityIssue(act, req, name, location, type);
+            if (foodIssue != null) {
+                return QualityCheck.fail(foodIssue);
             }
             if (isGenericActivity(name, location, type)) {
                 genericActivities++;
@@ -1667,6 +1675,59 @@ public class AiService {
                         && !containsAny(searchableName, "hotel", "khach san", "homestay", "hostel", "resort"));
 
         return genericPlaceholder ? "accommodation is generic: " + act.getName() : null;
+    }
+
+    private String foodSpecificityIssue(
+            TripDto.ActivityResponse act,
+            TripDto.GenerateRequest req,
+            String normalizedName,
+            String normalizedLocation,
+            String normalizedType) {
+        if (!normalizedType.equals("food") && !normalizedType.equals("cafe")) {
+            return null;
+        }
+
+        String searchableName = normalizeSearchText(normalizedName);
+        String searchableLocation = normalizeSearchText(normalizedLocation);
+        String searchableNameLocation = normalizeSearchText(normalizedName + " " + normalizedLocation);
+        String destination = normalizeSearchText(req.getDestination());
+        boolean destinationOnlyMeal = !destination.isBlank()
+                && containsAny(searchableName,
+                        "an sang tai " + destination,
+                        "an trua tai " + destination,
+                        "an toi tai " + destination,
+                        "bua sang tai " + destination,
+                        "bua trua tai " + destination,
+                        "bua toi tai " + destination);
+        boolean genericName = isGenericActivity(normalizedName, normalizedLocation, normalizedType)
+                || destinationOnlyMeal
+                || containsAny(searchableName,
+                        "nha hang dia phuong",
+                        "quan an dia phuong",
+                        "quan dia phuong",
+                        "cac quan dia phuong",
+                        "mon an dia phuong",
+                        "dac san dia phuong",
+                        "quan an gan do",
+                        "khach san hoac quan an",
+                        "hoac quan an dia phuong",
+                        "hoac quan dia phuong");
+        boolean genericLocation = containsAny(searchableLocation,
+                        "nha hang dia phuong",
+                        "quan an dia phuong",
+                        "khu vuc trung tam",
+                        "trung tam thanh pho");
+        boolean genericPlaceholder = genericName
+                || (genericLocation && containsAny(searchableNameLocation,
+                        "nha hang dia phuong",
+                        "quan an dia phuong",
+                        "quan dia phuong",
+                        "cac quan dia phuong",
+                        "khach san hoac quan an",
+                        "hoac quan an dia phuong",
+                        "hoac quan dia phuong"));
+
+        return genericPlaceholder ? "food/cafe is generic: " + act.getName() : null;
     }
 
     private String normalizeSearchText(String text) {

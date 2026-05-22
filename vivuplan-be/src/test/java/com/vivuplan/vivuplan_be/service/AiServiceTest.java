@@ -139,6 +139,72 @@ class AiServiceTest {
     }
 
     @Test
+    void itineraryQualityFlagsGenericFoodPlaceholders() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "An sang Pho hoac Bun tai Da Nang", "FOOD",
+                        "Quan Pho Cuong hoac quan an dia phuong", 100_000L,
+                        "Bua sang am bung."),
+                activity("09:30", "Tham quan Bao tang Da Nang", "ATTRACTION",
+                        "24 Tran Phu, Hai Chau, Da Nang", 80_000L, null),
+                activity("12:00", "An trua tai nha hang dia phuong", "FOOD",
+                        "Khu vuc trung tam Da Nang", 200_000L,
+                        "Thuong thuc cac mon an dac trung.")));
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).isFalse();
+        assertThat(quality.reason()).contains("food/cafe is generic");
+    }
+
+    @Test
+    void itineraryQualityAllowsFoodAtSpecificMarketEvenWhenNoteMentionsLocalSpecialties() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDestination("Sa Pa");
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "An sang Pho Cuong Sa Pa", "FOOD",
+                        "Pho Cuong, trung tam Sa Pa", 100_000L,
+                        "Bua sang am bung."),
+                activity("09:30", "Tham quan Nui Ham Rong", "ATTRACTION",
+                        "Nui Ham Rong, Sa Pa", 140_000L, null),
+                activity("18:30", "An toi dac san tai Cho Sa Pa", "FOOD",
+                        "Cho Sa Pa, thi xa Sa Pa", 250_000L,
+                        "Thuong thuc dac san dia phuong tai khu cho dem.")));
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).isTrue();
+    }
+
+    @Test
+    void itineraryQualityAllowsSpecificRestaurantWithBroadLocation() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDestination("Sa Pa");
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "An sang tai Pho Cuong Sa Pa", "FOOD",
+                        "Khu vuc trung tam Sa Pa", 100_000L,
+                        "Bua sang am bung."),
+                activity("09:30", "Tham quan Nui Ham Rong", "ATTRACTION",
+                        "Nui Ham Rong, Sa Pa", 140_000L, null),
+                activity("18:30", "An toi tai Nha hang La Do", "FOOD",
+                        "Khu vuc trung tam Sa Pa", 250_000L,
+                        "Thuong thuc dac san vung cao.")));
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).isTrue();
+    }
+
+    @Test
     void generatedItineraryParserRejectsLegacyArrayResponse() {
         AiService service = new AiService(new ObjectMapper());
 
