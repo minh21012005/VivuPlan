@@ -424,8 +424,10 @@ public class AiService {
                         19. If a requested item is fully reflected in the regenerated day, mark it FULFILLED with reasonCode APPLIED.
                         20. If a requested item is omitted, substituted, weakened, unsafe, too expensive, duplicated, or impossible under constraints, mark it PARTIAL or NOT_APPLIED and write a short Vietnamese userMessage explaining why.
                         21. Use reasonCode WEATHER_SAFETY when rain/storm/weather risk is the main reason. Other allowed reasonCode values: APPLIED, BUDGET, TIME_CONFLICT, DUPLICATE, CONSTRAINT, UNCLEAR, OTHER.
-                        22. If there is no meaningful user-specific request and no destination-signature omission/substitution needs explanation, set overallStatus to NO_REQUEST and items to []. If a signature experience category is omitted or substituted for a real constraint, return PARTIAL or NOT_FULFILLED with a concise grouped requestFulfillment item even without a user-specific request.
-                        23. If you are unsure whether the request was satisfied, mark the item UNCLEAR and explain what the user should check.
+                        22. For important fulfilled user preferences, include a concise positive userMessage explaining how the regenerated day reflects it. Keep it under 24 Vietnamese words.
+                        23. Do not create fulfilled requestFulfillment items for default planning metadata such as traveler count, dates, transport choice, or staying within budget.
+                        24. If there is no meaningful user-specific request and no destination-signature omission/substitution needs explanation, set overallStatus to NO_REQUEST and items to []. If a signature experience category is omitted or substituted for a real constraint, return PARTIAL or NOT_FULFILLED with a concise grouped requestFulfillment item even without a user-specific request.
+                        25. If you are unsure whether the request was satisfied, mark the item UNCLEAR and explain what the user should check.
 
                         JSON schema:
                         {
@@ -455,7 +457,7 @@ public class AiService {
                                 "requestedText": "Hoạt động, địa điểm, món ăn, trải nghiệm, hoặc ràng buộc user đã yêu cầu",
                                 "status": "FULFILLED|PARTIAL|NOT_APPLIED|UNCLEAR",
                                 "reasonCode": "APPLIED|WEATHER_SAFETY|BUDGET|TIME_CONFLICT|DUPLICATE|CONSTRAINT|UNCLEAR|OTHER",
-                                "userMessage": "Thông báo ngắn bằng tiếng Việt nếu chưa đáp ứng đầy đủ; để trống nếu đã đáp ứng đầy đủ"
+                                "userMessage": "Thông báo ngắn bằng tiếng Việt; với sở thích quan trọng đã đáp ứng, nói ngắn gọn lịch trình đã tối ưu thế nào"
                               }
                             ]
                           }
@@ -669,14 +671,16 @@ public class AiService {
                         7. Days must be clearly different and should not repeat the same activity sequence.
 
                         User request fulfillment rules:
-                        1. Always evaluate user-specific requests from Must visit, Avoid, and Notes in requestFulfillment.
+                        1. Always evaluate user-specific requests from Must visit, Avoid, and user-authored Notes in requestFulfillment.
                         2. Split meaningful requests into concrete requested items. Treat implicit phrasing as a request when it proposes an activity, place, food, experience, or constraint, for example "nhảy dù ở Đà Nẵng cũng hay mà".
                         3. If a requested item is fully reflected in the itinerary, mark it FULFILLED with reasonCode APPLIED.
                         4. If a requested item is omitted, substituted, weakened, unsafe, too expensive, duplicated, or impossible under constraints, mark it PARTIAL or NOT_APPLIED and write a short Vietnamese userMessage explaining why.
                         5. Use reasonCode WEATHER_SAFETY when rain/storm/weather risk is the main reason. Other allowed reasonCode values: APPLIED, BUDGET, TIME_CONFLICT, DUPLICATE, CONSTRAINT, UNCLEAR, OTHER.
-                        6. If there is no meaningful user-specific request and no destination-signature omission/substitution needs explanation, set overallStatus to NO_REQUEST and items to []. If a signature experience category is omitted or substituted for a real constraint, return PARTIAL or NOT_FULFILLED with a concise grouped requestFulfillment item even without a user-specific request.
-                        7. If you are unsure whether a request was satisfied, mark the item UNCLEAR and explain what the user should check.
-                        8. Never mention the weather in itinerary day titles, summaries, activities, or notes. If weather blocks a user request, explain it only in requestFulfillment.items[].userMessage.
+                        6. For important fulfilled user preferences from Notes, Must visit, or Avoid, include a concise positive userMessage explaining how the itinerary reflects it. Keep it under 24 Vietnamese words and avoid listing every place.
+                        7. Do not create fulfilled requestFulfillment items for default planning metadata such as traveler count, dates, transport choice, or staying within budget. Those are already shown elsewhere in the UI.
+                        8. If there is no meaningful user-specific request and no destination-signature omission/substitution needs explanation, set overallStatus to NO_REQUEST and items to []. If a signature experience category is omitted or substituted for a real constraint, return PARTIAL or NOT_FULFILLED with a concise grouped requestFulfillment item even without a user-specific request.
+                        9. If you are unsure whether a request was satisfied, mark the item UNCLEAR and explain what the user should check.
+                        10. Never mention the weather in itinerary day titles, summaries, activities, or notes. If weather blocks a user request, explain it only in requestFulfillment.items[].userMessage.
 
                         JSON schema:
                         {
@@ -708,7 +712,7 @@ public class AiService {
                                 "requestedText": "Hoạt động, địa điểm, món ăn, trải nghiệm, hoặc ràng buộc user đã yêu cầu",
                                 "status": "FULFILLED|PARTIAL|NOT_APPLIED|UNCLEAR",
                                 "reasonCode": "APPLIED|WEATHER_SAFETY|BUDGET|TIME_CONFLICT|DUPLICATE|CONSTRAINT|UNCLEAR|OTHER",
-                                "userMessage": "Thông báo ngắn bằng tiếng Việt nếu chưa đáp ứng đầy đủ; để trống nếu đã đáp ứng đầy đủ"
+                                "userMessage": "Thông báo ngắn bằng tiếng Việt; với sở thích quan trọng đã đáp ứng, nói ngắn gọn lịch trình đã tối ưu thế nào"
                               }
                             ]
                           }

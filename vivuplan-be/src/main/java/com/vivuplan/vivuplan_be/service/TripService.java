@@ -46,6 +46,8 @@ public class TripService {
     private static final int MISSING_TRANSPORT_WARNING_MIN_ACTIVITIES = 4;
     private static final int MISSING_TRANSPORT_WARNING_MIN_DISTINCT_LOCATIONS = 3;
     private static final double MISSING_TRANSPORT_WARNING_DISTANCE_KM = 2.0;
+    private static final int MAX_OPTIMIZATION_MESSAGES = 2;
+    private static final int MAX_CAUTION_MESSAGES = 4;
     private static final String LEGACY_COST_REVIEW_NOTE =
             "Chi phí cần kiểm tra: hoạt động này có thể phát sinh phí, nhưng AI chưa đưa ra mức ước tính đáng tin cậy.";
 
@@ -964,7 +966,8 @@ public class TripService {
     }
 
     private boolean isPersistentAiWarning(String warning) {
-        return normalizeText(warning).replaceAll("\\s+", " ").trim().startsWith("yeu cau");
+        String normalized = normalizeText(warning).replaceAll("\\s+", " ").trim();
+        return normalized.startsWith("yeu cau") || normalized.startsWith("toi uu");
     }
 
     @SafeVarargs
@@ -1015,13 +1018,24 @@ public class TripService {
                     : List.of();
         }
 
-        List<String> warnings = new ArrayList<>();
+        List<String> optimizationMessages = new ArrayList<>();
+        List<String> cautionMessages = new ArrayList<>();
         for (TripDto.RequestFulfillmentItem item : items) {
             String status = normalizeFulfillmentToken(item.getStatus());
             String reasonCode = normalizeFulfillmentToken(item.getReasonCode());
             if ("FULFILLED".equals(status)
                     || "APPLIED".equals(status)
                     || (status.isBlank() && "APPLIED".equals(reasonCode))) {
+                String message = item.getUserMessage();
+                if (message == null || message.isBlank()) {
+                    message = buildFulfilledRequestMessage(item);
+                }
+                if (message != null
+                        && !message.isBlank()
+                        && !isGenericFulfilledPlanningMessage(item, message)
+                        && optimizationMessages.size() < MAX_OPTIMIZATION_MESSAGES) {
+                    optimizationMessages.add(toRequestOptimization(message));
+                }
                 continue;
             }
 
@@ -1037,13 +1051,15 @@ public class TripService {
                         requestedText,
                         contextLabel);
             }
-            warnings.add(toRequestWarning(message));
+            if (cautionMessages.size() < MAX_CAUTION_MESSAGES) {
+                cautionMessages.add(toRequestWarning(message));
+            }
         }
 
-        if (warnings.isEmpty() && isUnfulfilledOverallStatus(requestFulfillment.getOverallStatus())) {
-            warnings.add(unverifiedRequestWarning(contextLabel));
+        if (cautionMessages.isEmpty() && isUnfulfilledOverallStatus(requestFulfillment.getOverallStatus())) {
+            cautionMessages.add(unverifiedRequestWarning(contextLabel));
         }
-        return warnings;
+        return mergeWarnings(optimizationMessages, cautionMessages);
     }
 
     private boolean isUnfulfilledOverallStatus(String status) {
@@ -1069,6 +1085,89 @@ public class TripService {
             return trimmed;
         }
         return "Yêu cầu: " + trimmed;
+    }
+
+    private String toRequestOptimization(String message) {
+        String trimmed = message == null ? "" : message.trim();
+        String normalized = normalizeText(trimmed);
+        if (normalized.startsWith("toi uu")) {
+            return trimmed;
+        }
+        if (normalized.startsWith("yeu cau")) {
+            trimmed = trimmed.replaceFirst("(?iu)^yêu cầu\\s*:\\s*", "").trim();
+        }
+        return "Tối ưu: " + trimmed;
+    }
+
+    private String buildFulfilledRequestMessage(TripDto.RequestFulfillmentItem item) {
+        if (item == null || item.getRequestedText() == null || item.getRequestedText().isBlank()) {
+            return "";
+        }
+        return "Lịch trình đã được cân chỉnh theo \"" + item.getRequestedText().trim() + "\".";
+    }
+
+    private boolean isGenericFulfilledPlanningMessage(TripDto.RequestFulfillmentItem item, String message) {
+        String requestedText = item != null ? item.getRequestedText() : "";
+        String combined = normalizeText(String.join(" ",
+                requestedText != null ? requestedText : "",
+                message != null ? message : ""));
+        if (combined.isBlank()) {
+            return true;
+        }
+
+        boolean hasUserPreferenceSignal = containsAny(combined,
+                "chup anh",
+                "song ao",
+                "check in",
+                "check-in",
+                "canh dep",
+                "view",
+                "dac san",
+                "am thuc",
+                "mon an",
+                "hai san",
+                "ca phe",
+                "cafe",
+                "local",
+                "ban dia",
+                "van hoa",
+                "thien nhien",
+                "nghi duong",
+                "chua lanh",
+                "nhe nhang",
+                "it dong",
+                "tre em",
+                "nguoi lon tuoi",
+                "han che",
+                "tranh",
+                "khong thich",
+                "khong muon",
+                "muon ghe");
+        if (hasUserPreferenceSignal) {
+            return false;
+        }
+
+        return containsAny(combined,
+                "so nguoi",
+                "2 nguoi",
+                "3 nguoi",
+                "4 nguoi",
+                "5 nguoi",
+                "traveler",
+                "travelers",
+                "ngan sach",
+                "chi phi",
+                "tong chi phi",
+                "budget",
+                "vnd",
+                "phu hop cho",
+                "nam trong",
+                "thiet ke phu hop",
+                "ngay di",
+                "ngay ve",
+                "thoi gian chuyen di",
+                "phuong tien",
+                "di chuyen");
     }
 
     private String unverifiedRequestWarning(String contextLabel) {

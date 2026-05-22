@@ -203,6 +203,38 @@ function buildDayCopyText(trip: TripResponse, day: NonNullable<TripResponse["sch
   ].filter(Boolean).join("\n");
 }
 
+type AiMessageKind = "positive" | "caution";
+type AiMessage = {
+  raw: string;
+  kind: AiMessageKind;
+  message: string;
+  displayText: string;
+};
+
+function normalizeAiMessage(raw: string): AiMessage {
+  const trimmed = raw.trim();
+  const normalized = trimmed
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase();
+  const kind: AiMessageKind = normalized.startsWith("toi uu") ? "positive" : "caution";
+  const message = trimmed.replace(/^(Tối ưu|Toi uu|Yêu cầu|Yeu cau)\s*:\s*/i, "").trim();
+  return {
+    raw,
+    kind,
+    message,
+    displayText: getAiMessageDisplayText(message),
+  };
+}
+
+function getAiMessageDisplayText(message: string) {
+  const clean = message.replace(/\s+/g, " ").trim();
+  if (clean.length <= 420) return clean;
+  return `${clean.slice(0, 417).trim()}...`;
+}
+
 export default function ItineraryPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -228,7 +260,6 @@ export default function ItineraryPage() {
   const [applyingRegeneration, setApplyingRegeneration] = useState(false);
   const [clientWarnings, setClientWarnings] = useState<string[]>([]);
   const [aiWarningsCollapsed, setAiWarningsCollapsed] = useState(false);
-  const [aiWarningsExpanded, setAiWarningsExpanded] = useState(false);
   const [weatherAdvisoryDismissed, setWeatherAdvisoryDismissed] = useState(false);
   const { toasts, show: showToast, dismiss: dismissToast } = useToast();
 
@@ -269,7 +300,6 @@ export default function ItineraryPage() {
         setShareError("");
         setClientWarnings([]);
         setAiWarningsCollapsed(false);
-        setAiWarningsExpanded(false);
         setRegenerateOpen(false);
         setRegeneratePreview(null);
         setSelectedRegenerateIndexes([]);
@@ -328,6 +358,10 @@ export default function ItineraryPage() {
         return true;
       });
   }, [clientWarnings, trip?.warnings]);
+  const aiMessages = useMemo(() => visibleWarnings.map(normalizeAiMessage), [visibleWarnings]);
+  const positiveMessages = useMemo(() => aiMessages.filter((message) => message.kind === "positive"), [aiMessages]);
+  const cautionMessages = useMemo(() => aiMessages.filter((message) => message.kind === "caution"), [aiMessages]);
+  const shownAiMessages = useMemo(() => [...positiveMessages, ...cautionMessages], [cautionMessages, positiveMessages]);
   const warningSignature = visibleWarnings.join("\u001f");
 
   const weatherSignature = useMemo(() => {
@@ -365,8 +399,6 @@ export default function ItineraryPage() {
     }
     setWeatherAdvisoryDismissed(false);
   };
-
-  const shownWarnings = aiWarningsExpanded ? visibleWarnings : visibleWarnings.slice(0, 2);
 
   const day = trip?.schedule?.[activeDay];
   const dayActivities = day?.activities ?? [];
@@ -615,16 +647,16 @@ export default function ItineraryPage() {
       </section>
 
       <main className="container" style={{ paddingTop: 30, paddingBottom: 80 }}>
-        {visibleWarnings.length > 0 && (
+        {aiMessages.length > 0 && (
           <section className="itinerary-ai-messages" aria-label="Thông điệp từ AI">
             <div
               className="itinerary-ai-messages-head"
               style={{ cursor: "pointer", userSelect: "none" }}
               onClick={() => setAiWarningsCollapsed(!aiWarningsCollapsed)}
             >
-              <AlertCircle size={16} />
+              <Sparkles size={16} />
               <div style={{ flex: 1 }}>
-                <strong>Thông điệp từ AI</strong>
+                <strong>AI đã tối ưu lịch trình</strong>
               </div>
               <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
                 {aiWarningsCollapsed ? <ChevronDown size={18} style={{ color: "#92400E" }} /> : <ChevronUp size={18} style={{ color: "#92400E" }} />}
@@ -632,18 +664,14 @@ export default function ItineraryPage() {
             </div>
             {!aiWarningsCollapsed && (
               <>
-                <div className="itinerary-ai-message-list">
-                  {shownWarnings.map((warning) => (
-                    <p key={warning}>{warning}</p>
+                <div className="itinerary-ai-summary-list">
+                  {shownAiMessages.map((message) => (
+                    <div key={message.raw} className={`itinerary-ai-summary-item ${message.kind}`}>
+                      {message.kind === "positive" ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+                      <span>{message.displayText}</span>
+                    </div>
                   ))}
                 </div>
-                {visibleWarnings.length > 2 && (
-                  <div className="itinerary-ai-message-actions">
-                    <button type="button" onClick={() => setAiWarningsExpanded((value) => !value)}>
-                      {aiWarningsExpanded ? "Thu gọn" : `Xem thêm ${visibleWarnings.length - 2} thông điệp`}
-                    </button>
-                  </div>
-                )}
               </>
             )}
           </section>

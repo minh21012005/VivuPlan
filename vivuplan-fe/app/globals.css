@@ -1933,11 +1933,11 @@ textarea.input.textarea-compact {
   gap: 8px;
   margin-bottom: 24px;
   padding: 16px 18px;
-  border: 1px solid #FBBF24;
+  border: 1px solid #99F6E4;
   border-radius: var(--r-lg);
-  background: #FFFBEB;
-  color: #78350F;
-  box-shadow: 0 8px 24px -18px rgba(146, 64, 14, 0.45);
+  background: #F0FDFA;
+  color: #115E59;
+  box-shadow: 0 8px 24px -18px rgba(15, 118, 110, 0.36);
 }
 
 .itinerary-ai-messages-head {
@@ -1948,7 +1948,7 @@ textarea.input.textarea-compact {
 
 .itinerary-ai-messages-head > svg {
   flex-shrink: 0;
-  color: #D97706;
+  color: #0F9F9C;
 }
 
 .itinerary-ai-messages-head strong,
@@ -1963,7 +1963,7 @@ textarea.input.textarea-compact {
 
 .itinerary-ai-messages-head span {
   margin-top: 2px;
-  color: #92400E;
+  color: #0F766E;
   font-size: 12px;
   line-height: 1.45;
 }
@@ -2001,6 +2001,37 @@ textarea.input.textarea-compact {
   font-size: 13px;
   font-weight: 500;
   line-height: 1.55;
+}
+
+.itinerary-ai-summary-list {
+  display: grid;
+  gap: 8px;
+}
+
+.itinerary-ai-summary-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.72);
+  color: #78350F;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.itinerary-ai-summary-item svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.itinerary-ai-summary-item.positive {
+  color: #0F766E;
+}
+
+.itinerary-ai-summary-item.caution {
+  color: #78350F;
 }
 
 .itinerary-ai-message-actions {
