@@ -47,6 +47,16 @@ class AiServiceTest {
     }
 
     @Test
+    void itineraryQualityDoesNotTreatAdvisoryRoundTripTextAsBundledCost() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        QualityResult quality = assessItineraryQuality(service, List.of(separateLegsWithRoundTripAdvisoryDay()), req);
+
+        assertThat(quality.passed()).isTrue();
+    }
+
+    @Test
     void regeneratedDayQualityReplacesOldDayBeforeCheckingIntercityCosts() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
@@ -994,6 +1004,22 @@ class AiServiceTest {
                 activity("20:00", "Chuyen bay Da Nang - Ha Noi", "TRANSPORT",
                         "San bay Da Nang (DAD) -> San bay Noi Bai (HAN)", 1_800_000L,
                         "Chi phi cho chieu ve.")));
+        return day;
+    }
+
+    private TripDto.DayResponse separateLegsWithRoundTripAdvisoryDay() {
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Chuyen bay Ha Noi - Da Nang", "TRANSPORT",
+                        "San bay Noi Bai (HAN) -> San bay Da Nang (DAD)", 1_800_000L,
+                        "Ve mot chieu cho ca nhom; nen dat ve khu hoi rieng neu muon gia tot hon."),
+                activity("11:30", "An trua Mi Quang Ba Mua", "FOOD",
+                        "231 Tran Phu, Hai Chau, Da Nang", 200_000L, null),
+                activity("14:00", "Tham quan Bao tang Da Nang", "ATTRACTION",
+                        "24 Tran Phu, Hai Chau, Da Nang", 80_000L, null),
+                activity("20:00", "Chuyen bay Da Nang - Ha Noi", "TRANSPORT",
+                        "San bay Da Nang (DAD) -> San bay Noi Bai (HAN)", 1_800_000L,
+                        "Ve may bay ve Ha Noi.")));
         return day;
     }
 

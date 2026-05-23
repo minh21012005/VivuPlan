@@ -1357,6 +1357,21 @@ public class AiService {
     }
 
     private boolean mentionsBundledIntercityTransportCost(String normalizedText) {
+        if (containsAny(normalizedText,
+                "khong bao gom khu hoi",
+                "chua bao gom khu hoi",
+                "khong bao gom chieu ve",
+                "chua bao gom chieu ve",
+                "khong tinh khu hoi",
+                "chua tinh khu hoi",
+                "khong phai khu hoi",
+                "khong phai ve khu hoi",
+                "nen dat ve khu hoi",
+                "co the dat ve khu hoi",
+                "dat ve khu hoi rieng",
+                "mua ve khu hoi rieng")) {
+            return false;
+        }
         return containsAny(normalizedText,
                 "khu hoi",
                 "hai chieu",
