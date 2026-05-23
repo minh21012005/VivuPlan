@@ -274,7 +274,7 @@ public class AiService {
                         The previous itinerary was rejected because: %s
                         Regenerate the itinerary from scratch.
                         Return exactly ONE JSON object with keys "itinerary" and "requestFulfillment". Never return a bare JSON array, and never use "days" or "schedule" instead of "itinerary".
-                        Use named, real places and restaurants in or near %s.
+                        Use named, real places, restaurants, cafes, accommodations, and rental pickup points in or near %s.
                         Avoid ANY generic placeholder wording (e.g., "địa điểm nổi bật", "đặc sản địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "chợ địa phương", "địa điểm thuê xe"). Every place, restaurant, cafe, accommodation, or rental shop MUST be a specific real-world business with a concrete proper name.
                         Preserve the destination's signature/must-try experiences using your own Vietnam travel knowledge, including specific real places not present in verified candidates. If severe weather, time, budget, safety, or route constraints make a normally expected signature experience unsuitable, explain the omission/substitution in requestFulfillment. Keep these explanations concise and grouped by core experience category; mention 1-3 specific representative missed places/activities when helpful, but do not list every famous place that cannot fit.
                         Anti-Bias Rule: Do not default to the same well-known corporate chains. Suggest diverse, logically located, and budget-appropriate places.
@@ -282,7 +282,7 @@ public class AiService {
                         %s
                         Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
                         For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg. Never combine a paid round-trip activity with another paid outbound/return leg, and never describe a round-trip price as only "chiều đi" or only "chiều về".
-                        If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
+                        If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, name a specific rental shop, hotel/homestay pickup point, or concrete pickup area when practical, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
                         Before returning, sum every activity.estimatedCost and keep the total at or below the total group budget unless the required outbound/return transport alone makes that impossible.
                         If the budget is tight, keep required transport realistic but reduce optional paid attractions, tours, premium meals, shopping, and accommodation comfort instead of exceeding budget.
                         If realistic required costs make the budget impossible, return realistic costs anyway. Never understate costs to fit the budget.
@@ -320,7 +320,7 @@ public class AiService {
                                 Create a separate TRANSPORT activity with route/mode/cost instead of putting transport cost in an ATTRACTION, FOOD, CAFE, or ACTIVITY note.
                                 Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
                                 For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg. Never combine a paid round-trip activity with another paid outbound/return leg, and never describe a round-trip price as only "chiều đi" or only "chiều về".
-                                If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
+                                If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, name a specific rental shop, hotel/homestay pickup point, or concrete pickup area when practical, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
                                 """,
                         retryReason,
                         dayNumber,
@@ -388,7 +388,7 @@ public class AiService {
                         3a. Candidates marked priority=destination-signature are core destination experiences. Preserve them when safe and practical; if weather makes them unsafe and there is no safer slot, explain the omission or substitution in requestFulfillment with reasonCode WEATHER_SAFETY.
                         4. CRITICAL: The candidate list is NOT exhaustive. It may lack specific accommodations, restaurants, cafes, rental shops, or niche local spots. For ANY category lacking suitable candidates, you MUST actively use your extensive internal knowledge to suggest specific, real, and named businesses/places that realistically match the user's budget, style, and daily route.
                         5. When using a verified candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
-                        6. When using a non-candidate place or activity, it MUST be a specific, existing real-world place with a concrete proper name and address. Absolutely DO NOT use ANY generic or unnamed placeholders for ANY activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "nhận phòng tại homestay/khách sạn", "chợ địa phương", "quán cà phê").
+                        6. When using a non-candidate place or activity, it MUST be a specific, existing real-world place with a concrete proper name and address. This includes restaurants, cafes, accommodations, and rental shops or pickup points when a rental is part of the plan. Absolutely DO NOT use ANY generic or unnamed placeholders for ANY activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "nhận phòng tại homestay/khách sạn", "địa điểm thuê xe", "chợ địa phương", "quán cà phê").
                         7. Anti-Bias Rule: Do NOT lazily reuse the same default chains or luxury brands. Actively suggest diverse, budget-appropriate, logically located, and context-relevant local businesses.
                         8. Do not force every candidate into the day; choose only what makes the day practical.
 
@@ -408,13 +408,13 @@ public class AiService {
                         5. estimatedCost MUST be total VND for the whole group of %d travelers.
                         5a. Never set estimatedCost to 0 for paid intercity transport such as flights, trains, buses, private cars, airport transfers, vehicle rental pickup, lodging, tickets, tours, shows, or paid experiences.
                         5b. For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg. Never combine a paid round-trip activity with another paid outbound/return leg, and never describe a round-trip price as only "chiều đi" or only "chiều về".
-                        5c. If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
+                        5c. If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, name a specific rental shop, hotel/homestay pickup point, or concrete pickup area when practical, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
                         5d. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
                         5e. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
                         6. Preserve user constraints: avoid banned items, respect must-visit where relevant, respect style/group.
                         7. Treat Local transport as the user's preference, not an absolute law. Follow it when practical; if a different mode is safer or more realistic in Vietnam, explain briefly in a TRANSPORT note.
                         8. %s
-                        9. Use named, real places/restaurants/cafes/accommodations. If the regenerated day includes ACCOMMODATION, it must name a specific real hotel, homestay, hostel, or resort and include the lodging cost when not already counted elsewhere. Avoid generic wording such as "địa phương", "điểm nổi bật", "khu trung tâm", or "homestay/khách sạn" unless paired with a specific real name.
+                        9. Use named, real places/restaurants/cafes/accommodations/rental shops or pickup points. If the regenerated day includes ACCOMMODATION, it must name a specific real hotel, homestay, hostel, or resort and include the lodging cost when not already counted elsewhere. Avoid generic wording such as "địa phương", "điểm nổi bật", "khu trung tâm", "địa điểm thuê xe", or "homestay/khách sạn" unless paired with a specific real name.
                         10. Treat the user's free-form request as the primary goal. Infer the requested change from natural language, for example seafood, cheaper, lighter pacing, fewer walks, more local food, more culture, better transport, or replacing a disliked place.
                         11. If the user asks for food such as seafood, vegetarian food, coffee, local dishes, or a specific cuisine, adjust FOOD/CAFE activities while keeping the day practical.
                         12. If the user asks to save money, reduce cost without making the plan unrealistic.
@@ -635,7 +635,7 @@ public class AiService {
                         7. For accommodation, include a clear ACCOMMODATION activity with a specific real hotel, homestay, hostel, or resort name and total lodging cost for all nights and all travelers. Do not use generic wording like "homestay/khách sạn" or only an area name. Do not use the accommodation type for a taxi/check-in only.
                         8. Never set estimatedCost to 0 for paid intercity transport such as flights, trains, buses, private cars, airport transfers, vehicle rental pickup, lodging, tickets, tours, shows, or paid experiences.
                         8a. For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg. Never combine a paid round-trip activity with another paid outbound/return leg, and never describe a round-trip price as only "chiều đi" or only "chiều về".
-                        8b. If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
+                        8b. If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, name a specific rental shop, hotel/homestay pickup point, or concrete pickup area when practical, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
                         9. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
                         10. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
                         11. If the budget cannot support all expensive attractions, choose fewer paid activities instead of exceeding budget.
@@ -652,7 +652,7 @@ public class AiService {
                         3a. Candidates marked priority=destination-signature are core destination experiences. Preserve them when safe and practical; if weather makes them unsafe and there is no safer slot, explain the omission or substitution in requestFulfillment with reasonCode WEATHER_SAFETY.
                         4. CRITICAL: The candidate list is NOT exhaustive. It may lack specific accommodations, restaurants, cafes, rental shops, or niche local spots. For ANY category lacking suitable candidates, you MUST actively use your extensive internal knowledge to suggest specific, real, and named businesses/places that realistically match the user's budget, style, and daily route.
                         5. When using a verified candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
-                        6. When using a non-candidate place or activity, it MUST be a specific, existing real-world place with a concrete proper name and address. Absolutely DO NOT use ANY generic or unnamed placeholders for ANY activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "nhận phòng tại homestay/khách sạn", "chợ địa phương", "quán cà phê").
+                        6. When using a non-candidate place or activity, it MUST be a specific, existing real-world place with a concrete proper name and address. This includes restaurants, cafes, accommodations, and rental shops or pickup points when a rental is part of the plan. Absolutely DO NOT use ANY generic or unnamed placeholders for ANY activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "nhận phòng tại homestay/khách sạn", "địa điểm thuê xe", "chợ địa phương", "quán cà phê").
                         7. Anti-Bias Rule: Do NOT lazily reuse the same default chains or luxury brands. Actively suggest diverse, budget-appropriate, logically located, and context-relevant local businesses.
                         8. Do not force every candidate into the trip; choose only what makes the itinerary practical.
 
@@ -662,8 +662,9 @@ public class AiService {
                         3. Treat Local transport as the user's preference, not an absolute law. Follow that selected mode when practical; if a different mode is safer or more realistic in Vietnam, explain why in the TRANSPORT note.
                         4. %s
                         5. Each local TRANSPORT activity must include mode, route or area, estimated duration, and group cost. Rental or taxi costs must be estimatedCost on TRANSPORT, never hidden inside FOOD/CAFE/ATTRACTION notes.
-                        6. If places are close enough to walk, a clear route note that says "Đi bộ khoảng X phút" with cost 0 is enough; a separate TRANSPORT activity is optional.
-                        7. Do not put all local transport detail into one unrelated dinner or attraction note.
+                        6. If creating a rental TRANSPORT activity, name a specific rental shop, hotel/homestay pickup point, or concrete pickup area when practical. Do not use only the route as location, and do not use generic wording like "địa điểm thuê xe".
+                        7. If places are close enough to walk, a clear route note that says "Đi bộ khoảng X phút" with cost 0 is enough; a separate TRANSPORT activity is optional.
+                        8. Do not put all local transport detail into one unrelated dinner or attraction note.
 
                         Itinerary quality rules:
                         1. Return exactly %d days in the itinerary array.
@@ -997,6 +998,9 @@ public class AiService {
         }
         boolean bundledIntercityTransportCost = hasBundledIntercityTransportCost(days, req);
         Set<String> paidVehicleRentalKinds = paidVehicleRentalKinds(days);
+        String avoid = normalize(String.join("\n",
+                req.getAvoid() != null ? req.getAvoid() : "",
+                extractNegativeInstruction(req.getNotes())));
         for (TripDto.DayResponse day : days) {
             int minActivities = minimumActivitiesForDay(day, req);
             if (day.getActivities() == null || day.getActivities().size() < minActivities) {
@@ -1006,6 +1010,7 @@ public class AiService {
                 return QualityCheck.fail("day " + day.getDay() + " has too many activities");
             }
             int dayNonLogisticsActivities = 0;
+            Set<String> seenTimes = new HashSet<>();
             StringBuilder fingerprint = new StringBuilder();
             for (TripDto.ActivityResponse act : day.getActivities()) {
                 totalActivities++;
@@ -1015,8 +1020,17 @@ public class AiService {
                 String note = normalize(act.getNote());
                 fingerprint.append(name).append("|");
                 
+                if (name.isBlank()) {
+                    return QualityCheck.fail("activity has no name");
+                }
                 if (!isValidType(type)) {
                     return QualityCheck.fail("activity has invalid type: " + type + " for " + act.getName());
+                }
+                if (!isValidTime(act.getTime())) {
+                    return QualityCheck.fail("activity has invalid time: " + act.getTime());
+                }
+                if (!seenTimes.add(act.getTime())) {
+                    return QualityCheck.fail("multiple activities start at the same time: " + act.getTime());
                 }
                 
                 if (act.getEstimatedCost() < 0) {
@@ -1031,7 +1045,11 @@ public class AiService {
                         return QualityCheck.fail(costIssue);
                     }
                 }
-                String accommodationIssue = accommodationSpecificityIssue(act, name, location, type);
+                String combined = String.join(" ", name, location, note);
+                if (!avoid.isBlank() && containsAvoidedContent(combined, avoid)) {
+                    return QualityCheck.fail("activity appears to violate avoid instruction: " + act.getName());
+                }
+                String accommodationIssue = accommodationSpecificityIssue(act, req, name, location, type);
                 if (accommodationIssue != null) {
                     return QualityCheck.fail(accommodationIssue);
                 }
@@ -1039,7 +1057,7 @@ public class AiService {
                 if (foodIssue != null) {
                     return QualityCheck.fail(foodIssue);
                 }
-                if (isGenericActivity(name, location, type)) {
+                if (isGenericActivityForQuality(act, req, name, location, type)) {
                     genericActivities++;
                 }
                 if (!isLogisticsType(type)) {
@@ -1133,7 +1151,7 @@ public class AiService {
             if (!avoid.isBlank() && containsAvoidedContent(combined, avoid)) {
                 return QualityCheck.fail("activity appears to violate avoid instruction: " + act.getName());
             }
-            String accommodationIssue = accommodationSpecificityIssue(act, name, location, type);
+            String accommodationIssue = accommodationSpecificityIssue(act, req, name, location, type);
             if (accommodationIssue != null) {
                 return QualityCheck.fail(accommodationIssue);
             }
@@ -1141,7 +1159,7 @@ public class AiService {
             if (foodIssue != null) {
                 return QualityCheck.fail(foodIssue);
             }
-            if (isGenericActivity(name, location, type)) {
+            if (isGenericActivityForQuality(act, req, name, location, type)) {
                 genericActivities++;
             }
             if (!isLogisticsType(type)) {
@@ -1434,7 +1452,39 @@ public class AiService {
         if (avoidTerms.isEmpty()) {
             return false;
         }
-        return avoidTerms.stream().anyMatch(combinedActivityText::contains);
+        String searchableActivity = normalizeSearchText(combinedActivityText);
+        return avoidTerms.stream()
+                .map(this::normalizeSearchText)
+                .anyMatch(term -> matchesAvoidTerm(searchableActivity, term));
+    }
+
+    private boolean matchesAvoidTerm(String searchableActivity, String avoidTerm) {
+        if (searchableActivity.isBlank() || avoidTerm.isBlank()) {
+            return false;
+        }
+        if (isAmbiguousSingleWordAvoidTerm(avoidTerm)) {
+            return false;
+        }
+
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+                .compile("(?<![a-z0-9])" + java.util.regex.Pattern.quote(avoidTerm) + "(?![a-z0-9])")
+                .matcher(searchableActivity);
+        while (matcher.find()) {
+            if (!isNegatedAvoidMention(searchableActivity, matcher.start())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isAmbiguousSingleWordAvoidTerm(String avoidTerm) {
+        return Set.of("cua").contains(avoidTerm);
+    }
+
+    private boolean isNegatedAvoidMention(String searchableActivity, int termStart) {
+        int windowStart = Math.max(0, termStart - 40);
+        String before = searchableActivity.substring(windowStart, termStart).trim();
+        return before.matches(".*(?:^|\\s)(khong co|khong dung|khong an|khong thich|khong phuc vu|tranh|loai bo|thay bang)\\s*$");
     }
 
     private String extractNegativeInstruction(String notes) {
@@ -1600,47 +1650,6 @@ public class AiService {
         return normalizedType.equals("transport") || normalizedType.equals("accommodation");
     }
 
-    private double distanceKm(double lat1, double lon1, double lat2, double lon2) {
-        double earthRadiusKm = 6371.0;
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLon = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                        * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    }
-
-    private boolean isLocalTransportActivity(
-            String normalizedType,
-            String normalizedName,
-            String normalizedLocation,
-            String normalizedNote,
-            TripDto.GenerateRequest req) {
-        if (!normalizedType.equals("transport")) {
-            return false;
-        }
-
-        String combined = String.join(" ", normalizedName, normalizedLocation, normalizedNote);
-        if (isOutboundOrReturnTransport(combined, req)) {
-            return false;
-        }
-
-        return containsLocalTransportMode(combined)
-                || combined.contains("noi vung")
-                || combined.contains("trong " + normalize(req.getDestination()))
-                || combined.contains("giua cac diem")
-                || combined.contains("ve homestay")
-                || combined.contains("ve khach san");
-    }
-
-    private boolean containsLocalTransportMode(String normalizedText) {
-        List<String> localTransportTerms = List.of(
-                "thue xe may", "xe may", "taxi", "grab", "thue xe o to", "thue o to", "thue oto",
-                "o to rieng", "oto rieng", "xe rieng", "co tai xe", "xe hop dong", "xe dua don",
-                "xe dien", "xe dap", "di bo", "xe buyt", "xe bus", "shuttle");
-        return localTransportTerms.stream().anyMatch(normalizedText::contains);
-    }
-
     private boolean isOutboundOrReturnTransport(String normalizedText, TripDto.GenerateRequest req) {
         String departure = normalize(req.getDeparture());
         String destination = normalize(req.getDestination());
@@ -1653,6 +1662,7 @@ public class AiService {
 
     private String accommodationSpecificityIssue(
             TripDto.ActivityResponse act,
+            TripDto.GenerateRequest req,
             String normalizedName,
             String normalizedLocation,
             String normalizedType) {
@@ -1661,7 +1671,14 @@ public class AiService {
         }
 
         String searchableName = normalizeSearchText(normalizedName);
+        String searchableLocation = normalizeSearchText(normalizedLocation);
+        String searchableNote = normalizeSearchText(normalize(act.getNote()));
         String searchable = normalizeSearchText(normalizedName + " " + normalizedLocation + " " + normalize(act.getNote()));
+        boolean hasSpecificAccommodationReference = hasSpecificAccommodationReference(
+                req,
+                searchableName,
+                searchableLocation,
+                searchableNote);
         boolean genericPlaceholder = isGenericActivity(normalizedName, normalizedLocation, normalizedType)
                 || containsAny(searchableName,
                         "homestay khach san",
@@ -1679,7 +1696,54 @@ public class AiService {
                 || (containsAny(searchable, "homestay khach san", "khach san homestay")
                         && !containsAny(searchableName, "hotel", "khach san", "homestay", "hostel", "resort"));
 
-        return genericPlaceholder ? "accommodation is generic: " + act.getName() : null;
+        return genericPlaceholder && !hasSpecificAccommodationReference
+                ? "accommodation is generic: " + act.getName()
+                : null;
+    }
+
+    private boolean hasSpecificAccommodationReference(
+            TripDto.GenerateRequest req,
+            String searchableName,
+            String searchableLocation,
+            String searchableNote) {
+        String searchable = normalizeSearchText(String.join(" ", searchableName, searchableLocation, searchableNote));
+        if (!containsAny(searchable,
+                "hotel",
+                "khach san",
+                "homestay",
+                "hostel",
+                "resort",
+                "villa",
+                "bungalow",
+                "lodge",
+                "nha nghi")) {
+            return false;
+        }
+
+        String meaningful = " " + searchable + " ";
+        List<String> termsToRemove = new ArrayList<>(List.of(
+                "nhan phong", "check in", "checkin", "luu tru", "o tai", "tai",
+                "khach san", "homestay", "hotel", "hostel", "resort", "villa", "bungalow", "lodge", "nha nghi",
+                "noi luu tru", "co so luu tru", "khu vuc", "trung tam", "dia phuong", "gan",
+                "chi phi", "tong chi phi", "gia", "phi", "uoc tinh", "khoang", "vnd", "dem", "ngay",
+                "nguoi", "phong", "cho ca nhom", "cho ca doan", "cho ca chuyen"));
+        if (req.getDestination() != null && !req.getDestination().isBlank()) {
+            termsToRemove.add(normalizeSearchText(req.getDestination()));
+        }
+        if (req.getDeparture() != null && !req.getDeparture().isBlank()) {
+            termsToRemove.add(normalizeSearchText(req.getDeparture()));
+        }
+
+        for (String term : termsToRemove) {
+            if (!term.isBlank()) {
+                meaningful = meaningful.replaceAll("\\b" + java.util.regex.Pattern.quote(term) + "\\b", " ");
+            }
+        }
+        meaningful = meaningful.replaceAll("\\b\\d+[a-z]*\\b", " ")
+                .replaceAll("\\s+", "")
+                .trim();
+
+        return meaningful.length() >= 4;
     }
 
     private String foodSpecificityIssue(
@@ -1694,6 +1758,7 @@ public class AiService {
 
         String searchableName = normalizeSearchText(normalizedName);
         String searchableLocation = normalizeSearchText(normalizedLocation);
+        String searchableNote = normalizeSearchText(normalize(act.getNote()));
         String searchableNameLocation = normalizeSearchText(normalizedName + " " + normalizedLocation);
         String destination = normalizeSearchText(req.getDestination());
         boolean destinationOnlyMeal = !destination.isBlank()
@@ -1732,7 +1797,92 @@ public class AiService {
                         "hoac quan an dia phuong",
                         "hoac quan dia phuong"));
 
-        return genericPlaceholder ? "food/cafe is generic: " + act.getName() : null;
+        return genericPlaceholder
+                && !hasSpecificFoodReference(req, searchableLocation, searchableNote)
+                        ? "food/cafe is generic: " + act.getName()
+                        : null;
+    }
+
+    private boolean isGenericActivityForQuality(
+            TripDto.ActivityResponse act,
+            TripDto.GenerateRequest req,
+            String normalizedName,
+            String normalizedLocation,
+            String normalizedType) {
+        if (!isGenericActivity(normalizedName, normalizedLocation, normalizedType)) {
+            return false;
+        }
+        String searchableName = normalizeSearchText(normalizedName);
+        String searchableLocation = normalizeSearchText(normalizedLocation);
+        String searchableNote = normalizeSearchText(normalize(act.getNote()));
+        if ("accommodation".equals(normalizedType)) {
+            return !hasSpecificAccommodationReference(req, searchableName, searchableLocation, searchableNote);
+        }
+        if ("food".equals(normalizedType) || "cafe".equals(normalizedType)) {
+            return foodSpecificityIssue(act, req, normalizedName, normalizedLocation, normalizedType) != null;
+        }
+        return !hasSpecificPlaceReference(req, searchableLocation, searchableNote);
+    }
+
+    private boolean hasSpecificFoodReference(
+            TripDto.GenerateRequest req,
+            String searchableLocation,
+            String searchableNote) {
+        String searchable = normalizeSearchText(String.join(" ", searchableLocation, searchableNote));
+        String destination = normalizeSearchText(req.getDestination());
+        if (!destination.isBlank() && containsAny(searchable,
+                "cho " + destination,
+                "cho dem " + destination,
+                "pho am thuc " + destination,
+                "khu am thuc " + destination)) {
+            return true;
+        }
+        boolean hasVenueCue = containsAny(searchable,
+                "nha hang",
+                "quan",
+                "cafe",
+                "ca phe",
+                "cho",
+                "pho am thuc",
+                "food court",
+                "bep",
+                "lau",
+                "nuong");
+        return hasVenueCue && hasSpecificNamedReference(req, searchable);
+    }
+
+    private boolean hasSpecificPlaceReference(
+            TripDto.GenerateRequest req,
+            String searchableLocation,
+            String searchableNote) {
+        return hasSpecificNamedReference(req, normalizeSearchText(searchableLocation + " " + searchableNote));
+    }
+
+    private boolean hasSpecificNamedReference(TripDto.GenerateRequest req, String searchable) {
+        String meaningful = " " + searchable + " ";
+        List<String> termsToRemove = new ArrayList<>(List.of(
+                "tai", "o", "gan", "quanh", "khu vuc", "trung tam", "dia phuong", "thanh pho", "thi xa",
+                "diem", "noi", "noi bat", "chinh", "tham quan", "kham pha", "trai nghiem", "check in",
+                "nha hang", "quan an", "quan", "cafe", "ca phe", "cho", "pho am thuc", "food court",
+                "chi phi", "tong chi phi", "gia", "phi", "ve", "uoc tinh", "khoang", "vnd", "ngay",
+                "nguoi", "cho ca nhom", "cho ca doan", "cho ca chuyen", "thuong thuc", "dac san"));
+        if (req.getDestination() != null && !req.getDestination().isBlank()) {
+            termsToRemove.add(normalizeSearchText(req.getDestination()));
+        }
+        if (req.getDeparture() != null && !req.getDeparture().isBlank()) {
+            termsToRemove.add(normalizeSearchText(req.getDeparture()));
+        }
+
+        for (String term : termsToRemove) {
+            if (!term.isBlank()) {
+                meaningful = meaningful.replaceAll("\\b" + java.util.regex.Pattern.quote(term) + "\\b", " ");
+            }
+        }
+        meaningful = meaningful.replaceAll("\\b\\d+[a-z]*\\b", " ")
+                .replaceAll("\\s+", "")
+                .trim();
+
+        return meaningful.length() >= 4;
     }
 
     private String normalizeSearchText(String text) {
