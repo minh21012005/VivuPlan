@@ -517,14 +517,15 @@ public class AiService {
             TripDto.RequestFulfillment requestFulfillment = parseRequiredRequestFulfillment(
                     root.path("requestFulfillment"));
             if (day.getDay() != dayNumber) {
-                throw new RuntimeException("AI returned wrong day number: " + day.getDay());
+                throw new AiResponseFormatException(
+                        "AI returned wrong day number: expected " + dayNumber + " but got " + day.getDay());
             }
             return new RegeneratedDayResult(day, requestFulfillment);
         } catch (AiResponseFormatException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to parse AI regenerated day JSON: " + e.getMessage()
-                    + ". Raw length=" + (json != null ? json.length() : 0), e);
+            throw new AiResponseFormatException("unparseable JSON from AI: " + e.getMessage()
+                    + ". Raw length=" + (json != null ? json.length() : 0));
         }
     }
 
@@ -926,8 +927,8 @@ public class AiService {
         } catch (AiResponseFormatException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to parse AI itinerary JSON: " + e.getMessage()
-                    + ". Raw length=" + (json != null ? json.length() : 0), e);
+            throw new AiResponseFormatException("unparseable JSON from AI: " + e.getMessage()
+                    + ". Raw length=" + (json != null ? json.length() : 0));
         }
     }
 
