@@ -73,15 +73,15 @@ public class AiService {
             }
 
             if (usedRetry) {
-                if (isRecoverableCostQualityIssue(quality.reason())) {
+                if (!isStructuralFailure(quality.reason())) {
                     log.warn(
-                            "AI retry itinerary for {} still has a cost completeness issue: {}. Returning itinerary.",
+                            "AI retry itinerary for {} still has a non-structural quality issue: {}. Returning best-effort itinerary.",
                             req.getDestination(), quality.reason());
                     return result;
                 }
 
                 log.warn(
-                        "AI retry itinerary for {} still failed quality check after contract retry: {}. Returning error to user.",
+                        "AI retry itinerary for {} has a structural failure after contract retry: {}. Returning error to user.",
                         req.getDestination(), quality.reason());
                 throw new AiGenerationException(AI_GENERATION_USER_MESSAGE);
             }
@@ -96,14 +96,14 @@ public class AiService {
                 return retryResult;
             }
 
-            if (isRecoverableCostQualityIssue(retryQuality.reason())) {
+            if (!isStructuralFailure(retryQuality.reason())) {
                 log.warn(
-                        "AI retry itinerary for {} still has a cost completeness issue: {}. Returning itinerary.",
+                        "AI retry itinerary for {} still has a non-structural quality issue: {}. Returning best-effort itinerary.",
                         req.getDestination(), retryQuality.reason());
                 return retryResult;
             }
 
-            log.warn("AI retry itinerary for {} still failed quality check: {}. Returning error to user.",
+            log.warn("AI retry itinerary for {} has a structural failure: {}. Returning error to user.",
                     req.getDestination(), retryQuality.reason());
             throw new AiGenerationException(AI_GENERATION_USER_MESSAGE);
         } catch (AiGenerationException e) {
@@ -150,14 +150,14 @@ public class AiService {
             }
 
             if (usedRetry) {
-                if (isRecoverableCostQualityIssue(quality.reason())) {
+                if (!isStructuralFailure(quality.reason())) {
                     log.warn(
-                            "AI retry regenerated day {} for {} still has a cost completeness issue: {}. Returning itinerary.",
+                            "AI retry regenerated day {} for {} still has a non-structural quality issue: {}. Returning best-effort day.",
                             dayNumber, req.getDestination(), quality.reason());
                     return result;
                 }
 
-                log.warn("AI retry regenerated day {} for {} still failed quality check after contract retry: {}.",
+                log.warn("AI retry regenerated day {} for {} has a structural failure after contract retry: {}.",
                         dayNumber, req.getDestination(), quality.reason());
                 throw new AiGenerationException(
                         "AI chưa tạo được phương án chỉnh ngày này đủ tốt. Vui lòng thử lại với yêu cầu cụ thể hơn.");
@@ -174,14 +174,14 @@ public class AiService {
                 return retryResult;
             }
 
-            if (isRecoverableCostQualityIssue(retryQuality.reason())) {
+            if (!isStructuralFailure(retryQuality.reason())) {
                 log.warn(
-                        "AI retry regenerated day {} for {} still has a cost completeness issue: {}. Returning itinerary.",
+                        "AI retry regenerated day {} for {} still has a non-structural quality issue: {}. Returning best-effort day.",
                         dayNumber, req.getDestination(), retryQuality.reason());
                 return retryResult;
             }
 
-            log.warn("AI retry regenerated day {} for {} still failed quality check: {}.",
+            log.warn("AI retry regenerated day {} for {} has a structural failure: {}.",
                     dayNumber, req.getDestination(), retryQuality.reason());
             throw new AiGenerationException(
                     "AI chưa tạo được phương án chỉnh ngày này đủ tốt. Vui lòng thử lại với yêu cầu cụ thể hơn.");
@@ -946,7 +946,7 @@ public class AiService {
             act.setType(actNode.path("type").asText("ATTRACTION"));
             act.setLocation(actNode.path("location").asText());
             act.setDuration(actNode.path("duration").asText());
-            act.setEstimatedCost(actNode.path("estimatedCost").asLong(0));
+            act.setEstimatedCost(Math.max(0, actNode.path("estimatedCost").asLong(0)));
             act.setNote(actNode.path("note").asText());
             act.setRating(actNode.path("rating").asDouble(0));
             if (!actNode.path("latitude").isMissingNode()) {
@@ -1033,8 +1033,9 @@ public class AiService {
                     return QualityCheck.fail("multiple activities start at the same time: " + act.getTime());
                 }
                 
+                // estimatedCost is clamped to >= 0 at parse time; this check is a safety net only
                 if (act.getEstimatedCost() < 0) {
-                    return QualityCheck.fail("activity has negative cost: " + act.getName());
+                    act.setEstimatedCost(0);
                 }
                 String costIssue = requiredActivityCostIssue(act, req, type, name, location, note,
                         bundledIntercityTransportCost, paidVehicleRentalKinds);
@@ -1132,8 +1133,9 @@ public class AiService {
             if (!seenTimes.add(act.getTime())) {
                 return QualityCheck.fail("multiple activities start at the same time: " + act.getTime());
             }
+            // estimatedCost is clamped to >= 0 at parse time; this check is a safety net only
             if (act.getEstimatedCost() < 0) {
-                return QualityCheck.fail("activity has negative cost: " + act.getName());
+                act.setEstimatedCost(0);
             }
             String costIssue = requiredActivityCostIssue(act, req, type, name, location, note,
                     bundledIntercityTransportCost, paidVehicleRentalKinds);
@@ -1252,6 +1254,27 @@ public class AiService {
         }
         return reason.startsWith("intercity transport cost is missing:")
                 || reason.startsWith("vehicle rental cost is missing:");
+    }
+
+    /**
+     * Returns true when the quality-check failure reason indicates a structural
+     * problem that makes the itinerary unusable (e.g. wrong day count, blank
+     * activity names, invalid types/times, AI loop). Content-quality issues
+     * (generic names, avoid-instruction violations, duplicate places, cost
+     * completeness) are NOT structural — the itinerary is renderable and the
+     * user can still benefit from it.
+     */
+    private boolean isStructuralFailure(String reason) {
+        if (reason == null || reason.isBlank()) {
+            return false;
+        }
+        return reason.contains("no day")                // "response has no days" / "response has no day"
+                || reason.startsWith("expected ")        // "expected X days but got Y"
+                || reason.contains("has no name")        // "activity has no name"
+                || reason.contains("invalid type")       // "activity has invalid type"
+                || reason.contains("invalid time")       // "activity has invalid time"
+                || reason.contains("identical activity") // "all days have identical activity sequences"
+                || reason.contains("fewer than");        // "day X has fewer than Y activities"
     }
 
     private boolean hasBundledIntercityTransportCost(List<TripDto.DayResponse> days, TripDto.GenerateRequest req) {
@@ -1578,16 +1601,18 @@ public class AiService {
             if (key.isBlank())
                 continue;
             comparableCount++;
-            // Only count as duplicate when both the candidate key and the matched other
-            // are long enough (>= 6 chars) to avoid false positives on short words like
-            // "bien" or "dao" that appear in many place names.
-            if (key.length() >= 6 && otherPlaces.stream()
-                    .anyMatch(other -> other.length() >= 6 && (other.contains(key) || key.contains(other)))) {
+            // Use a minimum key length of 10 to avoid false positives on common
+            // Vietnamese terms ("ca phe"=6, "bai bien"=8, "cho dem"=7) that appear
+            // legitimately across different days with different venues.
+            if (key.length() >= 10 && otherPlaces.stream()
+                    .anyMatch(other -> other.length() >= 10 && (other.contains(key) || key.contains(other)))) {
                 duplicateCount++;
             }
         }
 
-        return comparableCount >= 3 && duplicateCount > comparableCount / 2;
+        // Require at least 3 comparable activities and more than 66% duplication
+        // to reject, so only overwhelming repetition is flagged.
+        return comparableCount >= 3 && duplicateCount * 3 > comparableCount * 2;
     }
 
     private boolean isValidTime(String time) {
@@ -1661,6 +1686,14 @@ public class AiService {
         String departure = normalize(req.getDeparture());
         String destination = normalize(req.getDestination());
         if (departure.isBlank() || destination.isBlank()) {
+            return false;
+        }
+
+        // Intra-city trips (departure equals or contains destination, or vice versa)
+        // have no concept of "intercity transport", so skip all intercity pricing checks.
+        if (departure.equals(destination)
+                || departure.contains(destination)
+                || destination.contains(departure)) {
             return false;
         }
 
