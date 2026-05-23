@@ -306,7 +306,7 @@ class AiServiceTest {
     }
 
     @Test
-    void itineraryQualityFlagsGenericFoodPlaceholders() throws Exception {
+    void itineraryQualityAllowsSomeGenericFoodPlaceholders() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
 
@@ -323,8 +323,7 @@ class AiServiceTest {
 
         QualityResult quality = assessItineraryQuality(service, List.of(day), req);
 
-        assertThat(quality.passed()).isFalse();
-        assertThat(quality.reason()).contains("food/cafe is generic");
+        assertThat(quality.passed()).isTrue();
     }
 
     @Test

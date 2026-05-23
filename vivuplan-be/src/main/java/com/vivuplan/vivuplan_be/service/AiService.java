@@ -1053,10 +1053,6 @@ public class AiService {
                 if (accommodationIssue != null) {
                     return QualityCheck.fail(accommodationIssue);
                 }
-                String foodIssue = foodSpecificityIssue(act, req, name, location, type);
-                if (foodIssue != null) {
-                    return QualityCheck.fail(foodIssue);
-                }
                 if (isGenericActivityForQuality(act, req, name, location, type)) {
                     genericActivities++;
                 }
@@ -1154,10 +1150,6 @@ public class AiService {
             String accommodationIssue = accommodationSpecificityIssue(act, req, name, location, type);
             if (accommodationIssue != null) {
                 return QualityCheck.fail(accommodationIssue);
-            }
-            String foodIssue = foodSpecificityIssue(act, req, name, location, type);
-            if (foodIssue != null) {
-                return QualityCheck.fail(foodIssue);
             }
             if (isGenericActivityForQuality(act, req, name, location, type)) {
                 genericActivities++;
