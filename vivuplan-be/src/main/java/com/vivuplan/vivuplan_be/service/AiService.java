@@ -1072,7 +1072,7 @@ public class AiService {
             return QualityCheck.fail("all days have identical activity sequences");
         }
 
-        int maxGenericAllowed = Math.max(2, totalActivities / 3);
+        int maxGenericAllowed = Math.max(2, totalActivities / 4);
         if (genericActivities > maxGenericAllowed) {
             return QualityCheck.fail("too many generic activities: " + genericActivities + "/" + totalActivities);
         }
