@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { ChevronDown, Compass, LayoutDashboard, LogIn, LogOut, Menu, Settings, X } from "lucide-react";
 import { BrandLogo } from "@/components/layout/BrandLogo";
+import { useAuth } from "@/hooks/useAuth";
 
 const links = [
   { label: "Lập kế hoạch", href: "/plan" },
@@ -14,20 +15,13 @@ const links = [
 
 const userTripsLabel = "Chuyến đi của tôi";
 
-interface StoredUser {
-  name: string;
-  avatarUrl?: string;
-  provider?: "LOCAL" | "GOOGLE";
-}
-
 export default function Navbar() {
   const pathname = usePathname();
-  const router = useRouter();
+  const { user, loading, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [user, setUser] = useState<StoredUser | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -37,22 +31,10 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem("vp_user");
-      setUser(savedUser ? JSON.parse(savedUser) : null);
-    } catch {
-      setUser(null);
-    }
-  }, [pathname]);
-
-  const logout = () => {
-    localStorage.removeItem("vp_token");
-    localStorage.removeItem("vp_user");
-    setUser(null);
+  const handleLogout = () => {
     setUserMenuOpen(false);
     setMobileOpen(false);
-    router.push("/");
+    logout();
   };
 
   const lastName = user?.name.split(" ").filter(Boolean).slice(-1)[0] ?? user?.name ?? "";
@@ -83,7 +65,7 @@ export default function Navbar() {
         </nav>
 
         <div className="site-nav-auth">
-          {mounted && (
+          {mounted && !loading && (
             user ? (
               <div className="site-user-menu-wrap">
                 <button
@@ -123,7 +105,7 @@ export default function Navbar() {
                         <Settings size={15} /> Cài đặt tài khoản
                       </Link>
                     )}
-                    <button type="button" onClick={logout} className="site-dropdown-item site-dropdown-danger" role="menuitem">
+                    <button type="button" onClick={handleLogout} className="site-dropdown-item site-dropdown-danger" role="menuitem">
                       <LogOut size={15} /> Đăng xuất
                     </button>
                   </div>
@@ -179,7 +161,7 @@ export default function Navbar() {
                       <Settings size={15} /> Cài đặt tài khoản
                     </Link>
                   )}
-                  <button type="button" onClick={logout} className="btn btn-secondary site-mobile-auth-button">
+                  <button type="button" onClick={handleLogout} className="btn btn-secondary site-mobile-auth-button">
                     <LogOut size={15} /> Đăng xuất
                   </button>
                 </>

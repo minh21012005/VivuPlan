@@ -14,9 +14,9 @@ interface AuthContextType extends AuthState {
   isLoggedIn: boolean;
   login: (email: string, password: string) => Promise<AuthResponse>;
   register: (name: string, email: string, password: string) => Promise<AuthResponse>;
+  setSession: (auth: AuthResponse) => void;
   logout: () => void;
   updateUser: (user: User) => void;
-  syncFromStorage: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,17 +31,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setToken = useCallback((token: string, user: User) => {
     localStorage.setItem("vp_token", token);
-    localStorage.setItem("vp_user", JSON.stringify(user));
     setState({ user, token, loading: false, error: null });
   }, []);
 
   const updateUser = useCallback((user: User) => {
-    localStorage.setItem("vp_user", JSON.stringify(user));
     setState((s) => ({ ...s, user }));
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem("vp_token");
+    // Clean up legacy cached user data from older builds.
     localStorage.removeItem("vp_user");
     setState({ user: null, token: null, loading: false, error: null });
     window.location.href = "/";
@@ -73,24 +72,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [setToken]);
 
-  // Called by useRequireAuth when context is out of sync with localStorage
-  // (e.g. after login page writes directly to localStorage)
-  const syncFromStorage = useCallback(() => {
-    const token = localStorage.getItem("vp_token");
-    const savedUser = localStorage.getItem("vp_user");
-    if (token && savedUser) {
-      try {
-        const user = JSON.parse(savedUser) as User;
-        setState({ user, token, loading: false, error: null });
-      } catch {
-        /* ignore parse errors */
-      }
-    }
-  }, []);
+  const setSession = useCallback((auth: AuthResponse) => {
+    setToken(auth.token, auth.user);
+  }, [setToken]);
 
   useEffect(() => {
     const token = localStorage.getItem("vp_token");
     if (!token) {
+      localStorage.removeItem("vp_user");
       setState((s) => ({ ...s, loading: false }));
       return;
     }
@@ -109,9 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoggedIn: !!state.user,
       login,
       register,
+      setSession,
       logout,
       updateUser,
-      syncFromStorage,
     }}>
       {children}
     </AuthContext.Provider>

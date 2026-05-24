@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LogIn, ArrowLeft } from "lucide-react";
 import { AuthVisualPanel } from "@/components/auth/AuthVisualPanel";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
-import { authApi } from "@/lib/api";
+import { type AuthResponse } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 
 import { BrandLogo } from "@/components/layout/BrandLogo";
 
 export default function LoginPage() {
   const router = useRouter();
+  const auth = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -22,9 +24,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await authApi.login({ email, password });
-      localStorage.setItem("vp_token", res.token);
-      localStorage.setItem("vp_user", JSON.stringify(res.user));
+      await auth.login(email, password);
       router.push("/");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Email hoặc mật khẩu không đúng");
@@ -33,9 +33,8 @@ export default function LoginPage() {
     }
   };
 
-  const handleAuthSuccess = (res: { token: string; user: unknown }) => {
-    localStorage.setItem("vp_token", res.token);
-    localStorage.setItem("vp_user", JSON.stringify(res.user));
+  const handleAuthSuccess = (res: AuthResponse) => {
+    auth.setSession(res);
     router.push("/");
   };
 

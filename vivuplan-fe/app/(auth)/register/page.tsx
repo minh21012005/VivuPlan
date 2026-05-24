@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, UserPlus, ArrowLeft } from "lucide-react";
 import { AuthVisualPanel } from "@/components/auth/AuthVisualPanel";
-import { authApi } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 
 import { BrandLogo } from "@/components/layout/BrandLogo";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const auth = useAuth();
   const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -26,9 +27,7 @@ export default function RegisterPage() {
     if (form.password.length < 8) { setError("Mật khẩu phải có ít nhất 8 ký tự"); return; }
     setError(""); setLoading(true);
     try {
-      const res = await authApi.register({ name: form.name, email: form.email, password: form.password });
-      localStorage.setItem("vp_token", res.token);
-      localStorage.setItem("vp_user", JSON.stringify(res.user));
+      await auth.register(form.name, form.email, form.password);
       router.push("/");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Đăng ký thất bại");
