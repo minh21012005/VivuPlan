@@ -23,9 +23,6 @@ public class EmailService {
     @Value("${app.email.from-name:${SMTP_FROM_NAME:VivuPlan}}")
     private String fromName;
 
-    @Value("${app.email.logo-url:${EMAIL_LOGO_URL:https://vivuplan.vn/logo.png}}")
-    private String logoUrl;
-
     @Value("${app.frontend-url:${APP_FRONTEND_URL:https://vivuplan.vn}}")
     private String frontendUrl;
 
@@ -51,7 +48,6 @@ public class EmailService {
     private String buildRegistrationOtpHtml(String name, String otp, long expiresInMinutes) {
         String safeName = HtmlUtils.htmlEscape(name == null || name.isBlank() ? "bạn" : name.trim());
         String safeOtp = HtmlUtils.htmlEscape(otp);
-        String safeLogoUrl = HtmlUtils.htmlEscape(logoUrl);
         String safeFrontendUrl = HtmlUtils.htmlEscape(frontendUrl);
 
         return """
@@ -69,19 +65,10 @@ public class EmailService {
                         <table role="presentation" width="100%%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#FFFFFF;border:1px solid #DCEBE9;border-radius:18px;overflow:hidden;box-shadow:0 18px 45px rgba(6,42,92,0.08);">
                           <tr>
                             <td style="padding:28px 32px 20px;border-bottom:1px solid #E7F2F0;">
-                              <table role="presentation" cellspacing="0" cellpadding="0">
-                                <tr>
-                                  <td style="width:48px;height:48px;border-radius:14px;background:#E9FAF7;text-align:center;vertical-align:middle;">
-                                    <img src="%s" width="40" height="40" alt="VivuPlan" style="display:block;margin:4px auto;border:0;">
-                                  </td>
-                                  <td style="padding-left:12px;">
-                                    <div style="font-size:22px;font-weight:800;letter-spacing:-0.2px;line-height:1;">
-                                      <span style="color:#20BDB4;">Vivu</span><span style="color:#062A5C;">Plan</span>
-                                    </div>
-                                    <div style="font-size:13px;color:#65758B;margin-top:6px;">Lập kế hoạch du lịch thông minh</div>
-                                  </td>
-                                </tr>
-                              </table>
+                              <div style="font-size:22px;font-weight:800;letter-spacing:-0.2px;line-height:1;">
+                                <span style="color:#20BDB4;">Vivu</span><span style="color:#062A5C;">Plan</span>
+                              </div>
+                              <div style="font-size:13px;color:#65758B;margin-top:8px;">Lập kế hoạch du lịch thông minh</div>
                             </td>
                           </tr>
                           <tr>
@@ -114,6 +101,6 @@ public class EmailService {
                   </table>
                 </body>
                 </html>
-                """.formatted(safeLogoUrl, safeName, safeOtp, expiresInMinutes, safeFrontendUrl);
+                """.formatted(safeName, safeOtp, expiresInMinutes, safeFrontendUrl);
     }
 }

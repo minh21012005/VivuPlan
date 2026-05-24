@@ -59,7 +59,6 @@ app:
   email:
     from: ${SMTP_FROM:no-reply@vivuplan.vn}
     from-name: ${SMTP_FROM_NAME:VivuPlan}
-    logo-url: ${EMAIL_LOGO_URL:http://localhost:3000/logo.png}
   data-initializer:
     enabled: ${DATA_INITIALIZER_ENABLED:true}
   billing:

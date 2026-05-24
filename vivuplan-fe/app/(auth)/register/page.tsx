@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, Eye, EyeOff, Mail, RefreshCw, ShieldCheck, UserPlus } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Mail, RefreshCw, UserPlus } from "lucide-react";
 import { AuthVisualPanel } from "@/components/auth/AuthVisualPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { BrandLogo } from "@/components/layout/BrandLogo";
@@ -17,11 +17,9 @@ export default function RegisterPage() {
   const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
   const [otp, setOtp] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
-  const [expiresIn, setExpiresIn] = useState(0);
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((p) => ({ ...p, [k]: e.target.value }));
@@ -33,22 +31,9 @@ export default function RegisterPage() {
     }
   }, [auth.loading, auth.user, router]);
 
-  useEffect(() => {
-    if (step !== "otp" || expiresIn <= 0) return;
-    const timer = window.setInterval(() => {
-      setExpiresIn((value) => Math.max(0, value - 1));
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, [step, expiresIn]);
-
   const strength = form.password.length === 0 ? 0 : form.password.length < 6 ? 1 : form.password.length < 10 ? 2 : 3;
   const strengthColors = ["", "#EF4444", "#F59E0B", "#10B981"];
   const strengthLabels = ["", "Yếu", "Trung bình", "Mạnh"];
-  const countdown = useMemo(() => {
-    const minutes = Math.floor(expiresIn / 60);
-    const seconds = expiresIn % 60;
-    return `${minutes}:${String(seconds).padStart(2, "0")}`;
-  }, [expiresIn]);
 
   const validateForm = () => {
     if (form.password !== form.confirm) {
@@ -64,18 +49,17 @@ export default function RegisterPage() {
 
   const requestOtp = async () => {
     if (!validateForm()) return;
+    const email = form.email.trim().toLowerCase();
     setError("");
-    setNotice("");
+    setPendingEmail(email);
+    setOtp("");
+    setStep("otp");
     setLoading(true);
     try {
       const res = await auth.requestRegisterOtp(form.name, form.email, form.password);
       setPendingEmail(res.email);
-      setExpiresIn(res.expiresInSeconds);
-      setOtp("");
-      setStep("otp");
-      setNotice("Mã xác nhận đã được gửi tới email của bạn.");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Đăng ký thất bại");
+      setError(err instanceof Error ? err.message : "Không thể gửi mã xác nhận. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
@@ -93,7 +77,6 @@ export default function RegisterPage() {
       return;
     }
     setError("");
-    setNotice("");
     setLoading(true);
     try {
       await auth.verifyRegisterOtp(pendingEmail || form.email, otp.trim());
@@ -109,7 +92,6 @@ export default function RegisterPage() {
     setStep("details");
     setOtp("");
     setError("");
-    setNotice("");
   };
 
   return (
@@ -142,12 +124,6 @@ export default function RegisterPage() {
           {error && (
             <div style={{ marginBottom: "16px", padding: "12px 14px", borderRadius: "var(--r-lg)", background: "#FEF2F2", border: "1px solid #FECACA", color: "#DC2626", fontSize: "14px" }}>
               {error}
-            </div>
-          )}
-
-          {notice && (
-            <div style={{ marginBottom: "16px", padding: "12px 14px", borderRadius: "var(--r-lg)", background: "#ECFDF5", border: "1px solid #BBF7D0", color: "#047857", fontSize: "14px", display: "flex", gap: 8, alignItems: "center" }}>
-              <CheckCircle2 size={16} /> {notice}
             </div>
           )}
 
@@ -194,18 +170,6 @@ export default function RegisterPage() {
             </form>
           ) : (
             <form onSubmit={handleVerify} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div style={{ padding: "14px 16px", borderRadius: "var(--r-lg)", border: "1px solid var(--border)", background: "var(--surface)", display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ width: 38, height: 38, borderRadius: "12px", display: "grid", placeItems: "center", background: "var(--primary-soft)", color: "var(--primary)" }}>
-                  <ShieldCheck size={19} />
-                </div>
-                <div>
-                  <div style={{ fontSize: "13px", color: "var(--text-3)", marginBottom: 2 }}>Mã xác nhận hết hạn sau</div>
-                  <div style={{ fontSize: "16px", fontWeight: 800, color: expiresIn > 0 ? "var(--text)" : "#DC2626" }}>
-                    {expiresIn > 0 ? countdown : "Đã hết hạn"}
-                  </div>
-                </div>
-              </div>
-
               <div>
                 <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-2)", marginBottom: "6px" }}>Mã xác nhận</label>
                 <input
@@ -222,7 +186,7 @@ export default function RegisterPage() {
                 />
               </div>
 
-              <button id="btn-register-verify" type="submit" disabled={loading || auth.loading || expiresIn <= 0} className="btn btn-primary" style={{ justifyContent: "center", padding: "13px", marginTop: "4px" }}>
+              <button id="btn-register-verify" type="submit" disabled={loading || auth.loading} className="btn btn-primary" style={{ justifyContent: "center", padding: "13px", marginTop: "4px" }}>
                 {loading ? <div className="spinner" style={{ borderTopColor: "white", borderColor: "rgba(255,255,255,0.3)" }} /> : <><UserPlus size={16} /> Hoàn tất đăng ký</>}
               </button>
 
