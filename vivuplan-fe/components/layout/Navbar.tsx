@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { ChevronDown, Compass, LayoutDashboard, LogIn, LogOut, Menu, Settings, X } from "lucide-react";
+import { ChevronDown, Compass, LayoutDashboard, LogIn, LogOut, Menu, Settings, ShieldCheck, X } from "lucide-react";
 import { BrandLogo } from "@/components/layout/BrandLogo";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -39,6 +39,7 @@ export default function Navbar() {
 
   const lastName = user?.name.split(" ").filter(Boolean).slice(-1)[0] ?? user?.name ?? "";
   const initial = user?.name.charAt(0).toUpperCase() ?? "";
+  const isAdmin = user?.role === "ADMIN" || user?.roles?.includes("ADMIN");
 
   return (
     <header className={`site-header${scrolled ? " site-header-scrolled" : ""}`}>
@@ -95,6 +96,16 @@ export default function Navbar() {
 
                 {userMenuOpen && (
                   <div className="site-user-dropdown" role="menu" aria-labelledby="btn-user-menu">
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        className="site-dropdown-item"
+                        role="menuitem"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <ShieldCheck size={15} /> Quản trị
+                      </Link>
+                    )}
                     {user.provider === "LOCAL" && (
                       <Link
                         href="/settings"
@@ -156,6 +167,11 @@ export default function Navbar() {
             <div className="site-mobile-auth">
               {user ? (
                 <>
+                  {isAdmin && (
+                    <Link href="/admin" className="btn btn-secondary site-mobile-auth-button" onClick={() => setMobileOpen(false)}>
+                      <ShieldCheck size={15} /> Quản trị
+                    </Link>
+                  )}
                   {user.provider === "LOCAL" && (
                     <Link href="/settings" className="btn btn-secondary site-mobile-auth-button" onClick={() => setMobileOpen(false)}>
                       <Settings size={15} /> Cài đặt tài khoản

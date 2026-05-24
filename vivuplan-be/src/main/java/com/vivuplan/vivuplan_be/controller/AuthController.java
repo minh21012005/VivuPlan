@@ -17,11 +17,6 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @PostMapping("/register")
-    public ResponseEntity<AuthDto.RegisterOtpResponse> register(@Valid @RequestBody AuthDto.RegisterRequest req) {
-        return ResponseEntity.ok(authService.requestRegistrationOtp(req));
-    }
-
     @PostMapping("/register/request-otp")
     public ResponseEntity<AuthDto.RegisterOtpResponse> requestRegisterOtp(@Valid @RequestBody AuthDto.RegisterRequest req) {
         return ResponseEntity.ok(authService.requestRegistrationOtp(req));

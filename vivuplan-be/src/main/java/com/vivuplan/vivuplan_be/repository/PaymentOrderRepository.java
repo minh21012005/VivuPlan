@@ -18,6 +18,10 @@ public interface PaymentOrderRepository extends JpaRepository<PaymentOrder, Long
     Optional<PaymentOrder> findByOrderCode(String orderCode);
     boolean existsByOrderCode(String orderCode);
     List<PaymentOrder> findTop8ByUserIdOrderByCreatedAtDesc(Long userId);
+    long countByStatus(PaymentOrder.Status status);
+
+    @Query("select coalesce(sum(o.paidAmount), 0) from PaymentOrder o where o.status = :status")
+    long sumPaidAmountByStatus(@Param("status") PaymentOrder.Status status);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select o from PaymentOrder o where o.orderCode = :orderCode")

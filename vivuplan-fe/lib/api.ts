@@ -38,13 +38,6 @@ async function handleResponse<T>(res: Response): Promise<T> {
 // ─── Auth API ─────────────────────────────────────────────────────────────────
 
 export const authApi = {
-  register: (data: { name: string; email: string; password: string }) =>
-    fetch(`${API_BASE}/api/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    }).then(handleResponse<RegisterOtpResponse>),
-
   requestRegisterOtp: (data: { name: string; email: string; password: string }) =>
     fetch(`${API_BASE}/api/auth/register/request-otp`, {
       method: "POST",
@@ -241,6 +234,29 @@ export const billingApi = {
     }).then(handleResponse<BillingOrder>),
 };
 
+// Admin API
+
+export const adminApi = {
+  stats: () =>
+    fetch(`${API_BASE}/api/admin/stats`, { headers: authHeaders() })
+      .then(handleResponse<AdminStats>),
+
+  users: (page = 0, size = 20) =>
+    fetch(`${API_BASE}/api/admin/users?page=${page}&size=${size}`, { headers: authHeaders() })
+      .then(handleResponse<PageResponse<AdminUserSummary>>),
+
+  trips: (page = 0, size = 20) =>
+    fetch(`${API_BASE}/api/admin/trips?page=${page}&size=${size}`, { headers: authHeaders() })
+      .then(handleResponse<PageResponse<AdminTripSummary>>),
+
+  updateUserRole: (userId: number, role: "USER" | "ADMIN") =>
+    fetch(`${API_BASE}/api/admin/users/${userId}/role`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify({ role }),
+    }).then(handleResponse<AdminUserSummary>),
+};
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface User {
@@ -294,6 +310,53 @@ export interface BillingOrder {
 export interface BillingMeResponse {
   wallet: BillingWallet;
   recentOrders: BillingOrder[];
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first?: boolean;
+  last?: boolean;
+}
+
+export interface AdminStats {
+  totalUsers: number;
+  adminUsers: number;
+  totalTrips: number;
+  publicTrips: number;
+  draftTrips: number;
+  plannedTrips: number;
+  completedTrips: number;
+  paidOrders: number;
+  totalRevenue: number;
+}
+
+export interface AdminUserSummary {
+  id: number;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  role: "USER" | "ADMIN" | string;
+  roles: string[];
+  provider: "LOCAL" | "GOOGLE";
+  emailVerified: boolean;
+  createdAt?: string;
+}
+
+export interface AdminTripSummary {
+  id: number;
+  userId: number;
+  userEmail: string;
+  departure?: string;
+  destination: string;
+  days: number;
+  status: string;
+  isPublic: boolean;
+  viewCount: number;
+  createdAt?: string;
 }
 
 export interface GenerateRequest {

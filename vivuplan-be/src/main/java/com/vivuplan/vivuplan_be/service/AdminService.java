@@ -1,9 +1,11 @@
 package com.vivuplan.vivuplan_be.service;
 
 import com.vivuplan.vivuplan_be.dto.AdminDto;
+import com.vivuplan.vivuplan_be.entity.PaymentOrder;
 import com.vivuplan.vivuplan_be.entity.Role;
 import com.vivuplan.vivuplan_be.entity.Trip;
 import com.vivuplan.vivuplan_be.entity.User;
+import com.vivuplan.vivuplan_be.repository.PaymentOrderRepository;
 import com.vivuplan.vivuplan_be.repository.RoleRepository;
 import com.vivuplan.vivuplan_be.repository.TripRepository;
 import com.vivuplan.vivuplan_be.repository.UserRepository;
@@ -21,6 +23,7 @@ public class AdminService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final TripRepository tripRepository;
+    private final PaymentOrderRepository paymentOrderRepository;
 
     @Transactional(readOnly = true)
     public AdminDto.StatsResponse getStats() {
@@ -32,6 +35,8 @@ public class AdminService {
         stats.setDraftTrips(tripRepository.countByStatus(Trip.TripStatus.DRAFT));
         stats.setPlannedTrips(tripRepository.countByStatus(Trip.TripStatus.PLANNED));
         stats.setCompletedTrips(tripRepository.countByStatus(Trip.TripStatus.COMPLETED));
+        stats.setPaidOrders(paymentOrderRepository.countByStatus(PaymentOrder.Status.PAID));
+        stats.setTotalRevenue(paymentOrderRepository.sumPaidAmountByStatus(PaymentOrder.Status.PAID));
         return stats;
     }
 
@@ -50,11 +55,16 @@ public class AdminService {
     }
 
     @Transactional
-    public AdminDto.UserSummary updateUserRole(Long userId, String role) {
+    public AdminDto.UserSummary updateUserRole(Long actorUserId, Long userId, String role) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
         Role newRole = getOrCreateRole(parseRole(role));
         Role userRole = getOrCreateRole(Role.RoleName.USER);
+        if (user.hasRole(Role.RoleName.ADMIN)
+                && newRole.getName() == Role.RoleName.USER
+                && userRepository.countByRoleName(Role.RoleName.ADMIN) <= 1) {
+            throw new IllegalArgumentException("Không thể hạ quyền admin cuối cùng của hệ thống");
+        }
         user.getRoles().clear();
         user.getRoles().add(userRole);
         if (newRole.getName() == Role.RoleName.ADMIN) {

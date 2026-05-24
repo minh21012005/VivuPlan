@@ -17,6 +17,8 @@ public class AdminDto {
         private long draftTrips;
         private long plannedTrips;
         private long completedTrips;
+        private long paidOrders;
+        private long totalRevenue;
     }
 
     @Data

@@ -5,6 +5,7 @@ import com.vivuplan.vivuplan_be.service.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -29,8 +30,10 @@ public class AdminController {
     @PatchMapping("/users/{id}/role")
     public ResponseEntity<AdminDto.UserSummary> updateUserRole(
             @PathVariable Long id,
-            @RequestBody AdminDto.UpdateUserRoleRequest req) {
-        return ResponseEntity.ok(adminService.updateUserRole(id, req.getRole()));
+            @RequestBody AdminDto.UpdateUserRoleRequest req,
+            Authentication auth) {
+        Long actorUserId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(adminService.updateUserRole(actorUserId, id, req.getRole()));
     }
 
     @GetMapping("/trips")

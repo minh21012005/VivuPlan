@@ -13,7 +13,6 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   isLoggedIn: boolean;
   login: (email: string, password: string) => Promise<AuthResponse>;
-  register: (name: string, email: string, password: string) => Promise<RegisterOtpResponse>;
   requestRegisterOtp: (name: string, email: string, password: string) => Promise<RegisterOtpResponse>;
   verifyRegisterOtp: (email: string, otp: string) => Promise<AuthResponse>;
   setSession: (auth: AuthResponse) => void;
@@ -61,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [setToken]);
 
-  const register = useCallback(async (name: string, email: string, password: string) => {
+  const requestRegisterOtp = useCallback(async (name: string, email: string, password: string) => {
     setState((s) => ({ ...s, loading: true, error: null }));
     try {
       const res = await authApi.requestRegisterOtp({ name, email, password });
@@ -73,8 +72,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw e;
     }
   }, []);
-
-  const requestRegisterOtp = register;
 
   const verifyRegisterOtp = useCallback(async (email: string, otp: string) => {
     setState((s) => ({ ...s, loading: true, error: null }));
@@ -114,7 +111,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ...state,
       isLoggedIn: !!state.user,
       login,
-      register,
       requestRegisterOtp,
       verifyRegisterOtp,
       setSession,
