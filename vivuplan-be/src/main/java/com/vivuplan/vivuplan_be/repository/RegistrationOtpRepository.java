@@ -9,5 +9,5 @@ import java.util.Optional;
 public interface RegistrationOtpRepository extends JpaRepository<RegistrationOtp, Long> {
     Optional<RegistrationOtp> findByEmail(String email);
 
-    long deleteByExpiresAtBeforeAndConsumedAtIsNotNull(LocalDateTime before);
+    long deleteByExpiresAtBefore(LocalDateTime before);
 }

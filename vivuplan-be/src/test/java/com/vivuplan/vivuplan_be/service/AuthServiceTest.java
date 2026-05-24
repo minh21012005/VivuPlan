@@ -194,7 +194,7 @@ class AuthServiceTest {
 
         assertThat(response.getToken()).isEqualTo("token");
         assertThat(response.getUser().getEmail()).isEqualTo("minh@example.com");
-        assertThat(pending.getConsumedAt()).isNotNull();
+        verify(registrationOtpRepository).delete(pending);
         verify(billingService).grantSignupCredits(any(User.class));
     }
 
@@ -268,6 +268,55 @@ class AuthServiceTest {
         verify(passwordEncoder, never()).matches(any(), any());
         verify(userRepository, never()).save(any(User.class));
         verify(billingService, never()).grantSignupCredits(any(User.class));
+    }
+
+    @Test
+    void loginNormalizesEmailBeforeLookup() {
+        AuthService service = service();
+        Role userRole = Role.builder().id(1L).name(Role.RoleName.USER).build();
+        User user = User.builder()
+                .id(9L)
+                .name("Minh")
+                .email("minh@example.com")
+                .password("encoded-password")
+                .provider(User.AuthProvider.LOCAL)
+                .roles(Set.of(userRole))
+                .build();
+        AuthDto.LoginRequest req = new AuthDto.LoginRequest();
+        req.setEmail(" Minh@Example.com ");
+        req.setPassword("password123");
+
+        when(userRepository.findByEmail("minh@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("password123", "encoded-password")).thenReturn(true);
+        when(jwtUtil.generateToken(any(), any(), any())).thenReturn("token");
+
+        AuthDto.AuthResponse response = service.login(req);
+
+        assertThat(response.getToken()).isEqualTo("token");
+        assertThat(response.getUser().getEmail()).isEqualTo("minh@example.com");
+    }
+
+    @Test
+    void loginRejectsGoogleOnlyAccountWithoutPassword() {
+        AuthService service = service();
+        User user = User.builder()
+                .id(9L)
+                .name("Minh")
+                .email("minh@example.com")
+                .googleId("google-1")
+                .provider(User.AuthProvider.GOOGLE)
+                .build();
+        AuthDto.LoginRequest req = new AuthDto.LoginRequest();
+        req.setEmail("minh@example.com");
+        req.setPassword("password123");
+
+        when(userRepository.findByEmail("minh@example.com")).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> service.login(req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Tài khoản này đang đăng nhập bằng Google. Vui lòng dùng Google để tiếp tục.");
+
+        verify(passwordEncoder, never()).matches(any(), any());
     }
 
     @Test

@@ -113,16 +113,19 @@ public class AuthService {
                 .build();
 
         user = userRepository.save(user);
-        pending.setConsumedAt(LocalDateTime.now());
-        registrationOtpRepository.save(pending);
+        registrationOtpRepository.delete(pending);
         billingService.grantSignupCredits(user);
         String token = generateToken(user);
         return new AuthDto.AuthResponse(token, AuthDto.UserDto.from(user));
     }
 
     public AuthDto.AuthResponse login(AuthDto.LoginRequest req) {
-        User user = userRepository.findByEmail(req.getEmail())
+        User user = userRepository.findByEmail(normalizeEmail(req.getEmail()))
                 .orElseThrow(() -> new IllegalArgumentException("Email hoặc mật khẩu không đúng"));
+
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Tài khoản này đang đăng nhập bằng Google. Vui lòng dùng Google để tiếp tục.");
+        }
 
         if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
             throw new IllegalArgumentException("Email hoặc mật khẩu không đúng");

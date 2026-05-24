@@ -55,6 +55,7 @@ app:
     bootstrap-email: ${ADMIN_BOOTSTRAP_EMAIL:}
   auth:
     registration-otp-expiry-minutes: ${REGISTRATION_OTP_EXPIRY_MINUTES:10}
+    registration-otp-cleanup-scan-ms: ${REGISTRATION_OTP_CLEANUP_SCAN_MS:10800000}
   frontend-url: ${APP_FRONTEND_URL:http://localhost:3000}
   email:
     from: ${SMTP_FROM:no-reply@vivuplan.vn}
