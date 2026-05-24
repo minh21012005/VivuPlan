@@ -42,6 +42,13 @@ public class BillingController {
         return ResponseEntity.ok(billingService.getOrder((Long) auth.getPrincipal(), orderCode));
     }
 
+    @PostMapping("/orders/{orderCode}/cancel")
+    public ResponseEntity<BillingDto.OrderResponse> cancelOrder(
+            @PathVariable String orderCode,
+            Authentication auth) {
+        return ResponseEntity.ok(billingService.cancelOrder((Long) auth.getPrincipal(), orderCode));
+    }
+
     @PostMapping("/sepay/webhook")
     public ResponseEntity<Map<String, String>> sepayWebhook(
             @RequestHeader(value = "X-SePay-Signature", required = false) String signature,

@@ -219,6 +219,12 @@ export const billingApi = {
   getOrder: (orderCode: string) =>
     fetch(`${API_BASE}/api/billing/orders/${orderCode}`, { headers: authHeaders() })
       .then(handleResponse<BillingOrder>),
+
+  cancelOrder: (orderCode: string) =>
+    fetch(`${API_BASE}/api/billing/orders/${orderCode}/cancel`, {
+      method: "POST",
+      headers: authHeaders(),
+    }).then(handleResponse<BillingOrder>),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────

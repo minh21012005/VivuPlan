@@ -46,6 +46,7 @@ app:
     enabled: ${DATA_INITIALIZER_ENABLED:true}
   billing:
     order-expiry-minutes: ${BILLING_ORDER_EXPIRY_MINUTES:30}
+    order-expiry-scan-ms: ${BILLING_ORDER_EXPIRY_SCAN_MS:60000}
     sepay:
       webhook-secret: ${SEPAY_WEBHOOK_SECRET:}
       qr-url-template: ${SEPAY_QR_URL_TEMPLATE:}

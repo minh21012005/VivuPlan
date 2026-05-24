@@ -184,6 +184,37 @@ class BillingServiceTest {
     }
 
     @Test
+    void cancelPendingOrderMarksItCancelledWithoutCreditingWallet() {
+        BillingService service = service();
+        PaymentOrder order = pendingOrder(sampleUser());
+        when(paymentOrderRepository.lockByOrderCode("VPTEST1234")).thenReturn(Optional.of(order));
+
+        var response = service.cancelOrder(7L, "VPTEST1234");
+
+        assertThat(order.getStatus()).isEqualTo(PaymentOrder.Status.CANCELLED);
+        assertThat(response.getStatus()).isEqualTo(PaymentOrder.Status.CANCELLED);
+        verify(userWalletRepository, never()).lockByUserId(anyLong());
+        verify(creditLedgerRepository, never()).save(any());
+    }
+
+    @Test
+    void expireOverdueOrdersMarksPendingExpired() {
+        BillingService service = service();
+        when(paymentOrderRepository.expirePendingOrdersBefore(
+                any(LocalDateTime.class),
+                eq(PaymentOrder.Status.PENDING),
+                eq(PaymentOrder.Status.EXPIRED)))
+                .thenReturn(3);
+
+        service.expireOverdueOrders();
+
+        verify(paymentOrderRepository).expirePendingOrdersBefore(
+                any(LocalDateTime.class),
+                eq(PaymentOrder.Status.PENDING),
+                eq(PaymentOrder.Status.EXPIRED));
+    }
+
+    @Test
     void invalidSepayWebhookSignatureReturnsUnauthorizedBillingException() {
         BillingService service = service();
 

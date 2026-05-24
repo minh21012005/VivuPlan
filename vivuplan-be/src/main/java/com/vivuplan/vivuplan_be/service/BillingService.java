@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriUtils;
@@ -125,6 +126,32 @@ public class BillingService {
                 .filter(item -> item.getUser().getId().equals(userId))
                 .orElseThrow(() -> new RuntimeException("Khong tim thay don thanh toan"));
         return BillingDto.OrderResponse.from(order);
+    }
+
+    @Transactional
+    public BillingDto.OrderResponse cancelOrder(Long userId, String orderCode) {
+        PaymentOrder order = paymentOrderRepository.lockByOrderCode(orderCode)
+                .filter(item -> item.getUser().getId().equals(userId))
+                .orElseThrow(() -> new RuntimeException("Khong tim thay don thanh toan"));
+
+        if (order.getStatus() == PaymentOrder.Status.PENDING) {
+            order.setStatus(order.getExpiresAt().isBefore(LocalDateTime.now())
+                    ? PaymentOrder.Status.EXPIRED
+                    : PaymentOrder.Status.CANCELLED);
+        }
+        return BillingDto.OrderResponse.from(order);
+    }
+
+    @Scheduled(fixedDelayString = "${app.billing.order-expiry-scan-ms:${BILLING_ORDER_EXPIRY_SCAN_MS:60000}}")
+    @Transactional
+    public void expireOverdueOrders() {
+        int expired = paymentOrderRepository.expirePendingOrdersBefore(
+                LocalDateTime.now(),
+                PaymentOrder.Status.PENDING,
+                PaymentOrder.Status.EXPIRED);
+        if (expired > 0) {
+            log.info("Expired {} overdue payment orders", expired);
+        }
     }
 
     @Transactional(readOnly = true)

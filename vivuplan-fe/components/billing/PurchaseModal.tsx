@@ -175,6 +175,16 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
 
   if (!open) return null;
 
+  const chooseDifferentPackage = async () => {
+    const currentOrder = order;
+    setPickerManuallyOpened(true);
+    setOrder(null);
+    autoCreatedCodeRef.current = initialPackageCode ?? null;
+    if (currentOrder?.status === "PENDING") {
+      await billingApi.cancelOrder(currentOrder.orderCode).catch(() => undefined);
+    }
+  };
+
   return (
     <div style={{
       position: "fixed",
@@ -306,11 +316,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
                   <button
                     type="button"
                     className="btn btn-secondary"
-                    onClick={() => {
-                      autoCreatedCodeRef.current = initialPackageCode ?? null;
-                      setPickerManuallyOpened(true);
-                      setOrder(null);
-                    }}
+                    onClick={() => void chooseDifferentPackage()}
                   >
                     Chọn gói khác
                   </button>
