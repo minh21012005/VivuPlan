@@ -4812,16 +4812,16 @@ textarea.input.textarea-compact {
 }
 
 .pricing-hero {
-  padding: 104px 0 44px;
-  background: var(--surface);
+  padding: 104px 0 42px;
+  background: var(--bg);
   border-bottom: 1px solid var(--border);
 }
 
 .pricing-hero-inner {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
-  gap: 28px;
-  align-items: end;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 280px);
+  gap: 32px;
+  align-items: center;
 }
 
 .pricing-hero-copy {
@@ -4843,9 +4843,9 @@ textarea.input.textarea-compact {
 
 .pricing-hero h1 {
   font-family: var(--font-heading);
-  font-size: clamp(28px, 3vw, 38px);
-  font-weight: 900;
-  line-height: 1.08;
+  font-size: clamp(28px, 3vw, 36px);
+  font-weight: 800;
+  line-height: 1.12;
   color: var(--text);
   margin: 0 0 12px;
 }
@@ -4858,17 +4858,18 @@ textarea.input.textarea-compact {
 }
 
 .pricing-balance-panel {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface-2);
-  padding: 12px;
+  border: 1px solid rgba(15, 159, 156, 0.16);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, rgba(240, 253, 250, 0.72) 100%);
+  padding: 14px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 }
 
 .pricing-balance-title {
-  color: var(--text-2);
+  color: var(--text-3);
   font-size: 12px;
-  font-weight: 800;
-  margin-bottom: 10px;
+  font-weight: 700;
+  margin-bottom: 12px;
 }
 
 .pricing-balance-grid {
@@ -4878,8 +4879,14 @@ textarea.input.textarea-compact {
 }
 
 .pricing-balance-item {
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  display: grid;
+  grid-template-rows: auto auto;
+  align-items: start;
+  justify-items: start;
+  gap: 6px;
+  min-height: 72px;
+  border: 1px solid rgba(15, 159, 156, 0.12);
+  border-radius: 10px;
   background: var(--surface);
   padding: 10px;
 }
@@ -4887,10 +4894,13 @@ textarea.input.textarea-compact {
 .pricing-balance-item span {
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 6px;
   color: var(--text-3);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
+  line-height: 1.25;
 }
 
 .pricing-balance-item svg {
@@ -4899,10 +4909,11 @@ textarea.input.textarea-compact {
 
 .pricing-balance-item strong {
   display: block;
-  margin-top: 7px;
+  text-align: left;
   color: var(--text);
-  font-size: 20px;
-  font-weight: 900;
+  font-family: var(--font-body);
+  font-size: 24px;
+  font-weight: 650;
   line-height: 1;
 }
 

@@ -89,8 +89,7 @@ export default function PricingPage() {
             <h1>Chọn gói cho chuyến đi tiếp theo</h1>
             <p>
               Tạo lịch trình chi tiết trong vài phút, rồi chỉnh lại từng ngày nếu
-              muốn đổi nhịp đi, ngân sách hoặc trải nghiệm. Bắt đầu miễn phí và
-              chỉ mua thêm khi bạn cần lên chuyến mới.
+              muốn đổi nhịp đi, ngân sách hoặc trải nghiệm.
             </p>
           </div>
 
