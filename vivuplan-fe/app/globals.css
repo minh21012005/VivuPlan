@@ -4940,7 +4940,7 @@ textarea.input.textarea-compact {
   justify-content: space-between;
   gap: 12px;
   min-height: 54px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .pricing-card-head > div {
@@ -4979,22 +4979,34 @@ textarea.input.textarea-compact {
 }
 
 .pricing-price {
-  margin: 4px 0 18px;
+  margin: 5px 0 18px;
 }
 
 .pricing-price strong {
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  gap: 3px;
   color: var(--text);
-  font-size: 30px;
-  font-weight: 800;
-  line-height: 1;
+  font-family: var(--font-body);
+  font-size: 36px;
+  font-weight: 650;
+  line-height: 0.92;
+  letter-spacing: 0;
 }
 
-.pricing-price span {
+.pricing-price strong span {
+  color: var(--text-3);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.pricing-price > span {
   display: block;
   color: var(--text-4);
   font-size: 13px;
-  margin-top: 6px;
+  margin-top: 10px;
 }
 
 .pricing-divider {

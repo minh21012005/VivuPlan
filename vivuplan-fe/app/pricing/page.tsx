@@ -16,7 +16,7 @@ const fallbackPackages: BillingPackage[] = [
 ];
 
 function fmtVnd(value: number) {
-  return `${value.toLocaleString("vi-VN")}đ`;
+  return value.toLocaleString("vi-VN");
 }
 
 function packageCopy(item: BillingPackage) {
@@ -132,7 +132,7 @@ export default function PricingPage() {
               </div>
 
               <div className="pricing-price">
-                <strong>0đ</strong>
+                <strong>0<span>đ</span></strong>
                 <span>Dành cho tài khoản mới</span>
               </div>
 
@@ -163,7 +163,7 @@ export default function PricingPage() {
                   </div>
 
                   <div className="pricing-price">
-                    <strong>{fmtVnd(item.amount)}</strong>
+                    <strong>{fmtVnd(item.amount)}<span>đ</span></strong>
                     <span>Thanh toán một lần</span>
                   </div>
 
