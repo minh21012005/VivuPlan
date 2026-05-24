@@ -20,27 +20,24 @@ function fmtVnd(value: number) {
 }
 
 function packageCopy(item: BillingPackage) {
-  const copy: Record<string, { name: string; eyebrow: string; description: string; bestFor: string }> = {
+  const copy: Record<string, { name: string; eyebrow: string; bestFor: string }> = {
     PLAN_1: {
-      name: "Một chuyến",
-      eyebrow: "Cho chuyến đi sắp tới",
-      description: "Phù hợp khi bạn đã có điểm đến và muốn VivuPlan lên một lịch trình hoàn chỉnh.",
-      bestFor: "Một chuyến đi cá nhân hoặc cuối tuần ngắn.",
+      name: "Cơ bản",
+      eyebrow: "Cho một chuyến đi",
+      bestFor: "Phù hợp khi bạn cần lên lịch trình cho một chuyến cụ thể.",
     },
     PLAN_3: {
-      name: "Linh hoạt",
-      eyebrow: "Được chọn nhiều",
-      description: "Dành cho lúc bạn muốn thử vài phương án, đổi điểm đến, hoặc chuẩn bị nhiều chuyến gần nhau.",
-      bestFor: "So sánh 2-3 lịch trình trước khi chốt.",
+      name: "Tiêu chuẩn",
+      eyebrow: "Phổ biến",
+      bestFor: "Dành cho vài chuyến ngắn hoặc khi bạn muốn có thêm lựa chọn.",
     },
     PLAN_10: {
-      name: "Thường xuyên",
-      eyebrow: "Tiết kiệm hơn",
-      description: "Hợp với người hay đi, lên kế hoạch cho nhóm, hoặc muốn có sẵn lượt để dùng dần.",
-      bestFor: "Nhóm bạn, gia đình hoặc người lập kế hoạch nhiều.",
+      name: "Tiết kiệm",
+      eyebrow: "Giá tốt nhất",
+      bestFor: "Tối ưu cho người thường xuyên lên kế hoạch du lịch.",
     },
   };
-  return copy[item.code] ?? { name: item.name, eyebrow: "Gói lịch trình", description: item.description, bestFor: "Tạo lịch trình bằng AI." };
+  return copy[item.code] ?? { name: item.name, eyebrow: "Gói lịch trình", bestFor: "Tạo lịch trình bằng AI." };
 }
 
 export default function PricingPage() {
@@ -134,35 +131,23 @@ export default function PricingPage() {
                 <span className="pricing-pill">Miễn phí</span>
               </div>
 
-              <p className="pricing-card-desc">
-                Tài khoản mới có sẵn 1 lượt tạo lịch trình và 1 lượt chỉnh ngày bằng AI.
-              </p>
-
               <div className="pricing-price">
                 <strong>0đ</strong>
                 <span>Dành cho tài khoản mới</span>
               </div>
 
-              <div className="pricing-quota">
-                <div>
-                  <strong>1</strong>
-                  <span>lịch trình mới</span>
-                </div>
-                <div>
-                  <strong>1</strong>
-                  <span>lần chỉnh ngày</span>
-                </div>
-              </div>
-
-              <ul className="pricing-benefits">
-                <li><Check size={14} /> Tạo 1 lịch trình bằng AI</li>
-                <li><Check size={14} /> Chỉnh lại 1 ngày bằng AI</li>
-                <li><Check size={14} /> Các tính năng trong lịch trình vẫn mở đầy đủ</li>
-              </ul>
-
               <Link href={isLoggedIn ? "/plan" : "/register"} className="btn btn-secondary pricing-card-cta">
                 {isLoggedIn ? "Tạo lịch trình" : "Đăng ký miễn phí"}
               </Link>
+
+              <div className="pricing-divider" />
+              <div className="pricing-includes-title">Bao gồm</div>
+
+              <ul className="pricing-benefits">
+                <li><Check size={14} /> 1 lịch trình mới</li>
+                <li><Check size={14} /> 1 lần chỉnh ngày bằng AI</li>
+                <li><Check size={14} /> Đầy đủ tính năng trong lịch trình</li>
+              </ul>
             </article>
 
             {packages.map((item) => {
@@ -177,37 +162,27 @@ export default function PricingPage() {
                     {item.highlighted && <span className="pricing-pill pricing-pill-primary">Phù hợp nhất</span>}
                   </div>
 
-                  <p className="pricing-card-desc">{copy.description}</p>
-
                   <div className="pricing-price">
                     <strong>{fmtVnd(item.amount)}</strong>
-                    <span>Thanh toán một lần, dùng cho đến khi hết lượt</span>
+                    <span>Thanh toán một lần</span>
                   </div>
-
-                  <div className="pricing-quota">
-                    <div>
-                      <strong>{item.planCredits}</strong>
-                      <span>lịch trình mới</span>
-                    </div>
-                    <div>
-                      <strong>{item.editCredits}</strong>
-                      <span>lần chỉnh ngày</span>
-                    </div>
-                  </div>
-
-                  <ul className="pricing-benefits">
-                    <li><Check size={14} /> {copy.bestFor}</li>
-                    <li><Check size={14} /> Có thể chỉnh tay miễn phí sau khi tạo lịch trình</li>
-                    <li><Check size={14} /> Chỉ tính lượt khi AI tạo xong</li>
-                  </ul>
 
                   <button
                     type="button"
                     className={item.highlighted ? "btn btn-primary pricing-card-cta" : "btn btn-secondary pricing-card-cta"}
                     onClick={startPurchase}
                   >
-                    Chọn gói này
+                    Chọn gói
                   </button>
+
+                  <div className="pricing-divider" />
+                  <div className="pricing-includes-title">Bao gồm</div>
+
+                  <ul className="pricing-benefits">
+                    <li><Check size={14} /> {item.planCredits} lịch trình mới</li>
+                    <li><Check size={14} /> {item.editCredits} lần chỉnh ngày bằng AI</li>
+                    <li><Check size={14} /> Chỉ trừ lượt khi AI tạo thành công</li>
+                  </ul>
                 </article>
               );
             })}
