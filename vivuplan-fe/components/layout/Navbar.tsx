@@ -4,10 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { ChevronDown, Compass, CreditCard, LayoutDashboard, LogIn, LogOut, Menu, Settings, Sparkles, X } from "lucide-react";
+import { ChevronDown, Compass, LayoutDashboard, LogIn, LogOut, Menu, Settings, X } from "lucide-react";
 import { BrandLogo } from "@/components/layout/BrandLogo";
 import { useAuth } from "@/hooks/useAuth";
-import { useBilling } from "@/hooks/useBilling";
 
 const links = [
   { label: "Lập kế hoạch", href: "/plan" },
@@ -23,7 +22,6 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { wallet } = useBilling();
 
   useEffect(() => {
     setMounted(true);
@@ -97,18 +95,6 @@ export default function Navbar() {
 
                 {userMenuOpen && (
                   <div className="site-user-dropdown" role="menu" aria-labelledby="btn-user-menu">
-                    {wallet && (
-                      <div className="site-wallet-summary" aria-label="Số lượt hiện có">
-                        <div>
-                          <span><Sparkles size={13} /> Lịch trình</span>
-                          <strong>{wallet.planCredits}</strong>
-                        </div>
-                        <div>
-                          <span><CreditCard size={13} /> Chỉnh ngày</span>
-                          <strong>{wallet.editCredits}</strong>
-                        </div>
-                      </div>
-                    )}
                     {user.provider === "LOCAL" && (
                       <Link
                         href="/settings"
@@ -170,12 +156,6 @@ export default function Navbar() {
             <div className="site-mobile-auth">
               {user ? (
                 <>
-                  {wallet && (
-                    <div className="site-mobile-wallet-summary">
-                      <span><Sparkles size={14} /> Còn {wallet.planCredits} lượt tạo lịch trình</span>
-                      <span><CreditCard size={14} /> Còn {wallet.editCredits} lần chỉnh ngày</span>
-                    </div>
-                  )}
                   {user.provider === "LOCAL" && (
                     <Link href="/settings" className="btn btn-secondary site-mobile-auth-button" onClick={() => setMobileOpen(false)}>
                       <Settings size={15} /> Cài đặt tài khoản
