@@ -76,6 +76,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [remaining, setRemaining] = useState(0);
+  const [pickerManuallyOpened, setPickerManuallyOpened] = useState(false);
   const autoCreatedCodeRef = useRef<string | null>(null);
 
   const recommended = useMemo(() => new Set(["PLAN_1", "PLAN_3", "PLAN_10"]), []);
@@ -88,6 +89,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
       return ar - br || a.amount - b.amount;
     });
   }, [packages, recommended]);
+  const packagePickerVisible = !initialPackageCode || pickerManuallyOpened;
 
   const createOrder = useCallback(async (packageCode: string) => {
     if (!isLoggedIn) {
@@ -95,6 +97,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
       return;
     }
     setSelectedCode(packageCode);
+    setPickerManuallyOpened(false);
     setLoading(true);
     setMessage("");
     try {
@@ -104,6 +107,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Không thể tạo mã thanh toán. Vui lòng thử lại.");
       autoCreatedCodeRef.current = null;
+      setPickerManuallyOpened(true);
     } finally {
       setLoading(false);
     }
@@ -114,6 +118,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
     setOrder(null);
     setMessage("");
     setSelectedCode(initialPackageCode ?? "PLAN_3");
+    setPickerManuallyOpened(false);
     billingApi.packages()
       .then(setPackages)
       .catch(() => setPackages(fallbackPackages));
@@ -130,11 +135,11 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
   }, [open]);
 
   useEffect(() => {
-    if (!open || !initialPackageCode || authLoading || !isLoggedIn) return;
+    if (!open || !initialPackageCode || authLoading || !isLoggedIn || packagePickerVisible) return;
     if (autoCreatedCodeRef.current === initialPackageCode) return;
     autoCreatedCodeRef.current = initialPackageCode;
     void createOrder(initialPackageCode);
-  }, [open, initialPackageCode, authLoading, isLoggedIn, createOrder]);
+  }, [open, initialPackageCode, authLoading, isLoggedIn, packagePickerVisible, createOrder]);
 
   useEffect(() => {
     if (!order || order.status !== "PENDING") return;
@@ -220,7 +225,17 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
             </div>
           )}
 
-          {!order && (
+          {!order && !packagePickerVisible && (
+            <div style={{ display: "grid", placeItems: "center", minHeight: 280, color: "var(--text-3)", textAlign: "center", gap: 12 }}>
+              <Clock size={34} />
+              <div>
+                <strong style={{ display: "block", color: "var(--text)", fontSize: 16, marginBottom: 4 }}>Đang tạo mã thanh toán</strong>
+                <span>VivuPlan đang chuẩn bị mã QR cho gói bạn đã chọn.</span>
+              </div>
+            </div>
+          )}
+
+          {!order && packagePickerVisible && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 14 }}>
               {visiblePackages.map((item) => {
                 const active = selectedCode === item.code;
@@ -293,6 +308,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
                     className="btn btn-secondary"
                     onClick={() => {
                       autoCreatedCodeRef.current = initialPackageCode ?? null;
+                      setPickerManuallyOpened(true);
                       setOrder(null);
                     }}
                   >

@@ -70,6 +70,7 @@ export default function PricingPage() {
   }, [isLoggedIn]);
 
   const startPurchase = (packageCode: string) => {
+    if (authLoading) return;
     if (!isLoggedIn && !authLoading) {
       router.push("/login");
       return;
@@ -171,6 +172,7 @@ export default function PricingPage() {
                   <button
                     type="button"
                     className={item.highlighted ? "btn btn-primary pricing-card-cta" : "btn btn-secondary pricing-card-cta"}
+                    disabled={authLoading}
                     onClick={() => startPurchase(item.code)}
                   >
                     Chọn gói
