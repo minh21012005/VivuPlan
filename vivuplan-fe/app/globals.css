@@ -4949,8 +4949,8 @@ textarea.input.textarea-compact {
 
 .pricing-card h2 {
   color: var(--text);
-  font-size: 21px;
-  font-weight: 900;
+  font-size: 20px;
+  font-weight: 750;
   margin: 8px 0 0;
   white-space: nowrap;
 }
@@ -4965,7 +4965,7 @@ textarea.input.textarea-compact {
   background: var(--surface-2);
   color: var(--text-3);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   padding: 5px 10px;
 }
 
@@ -4982,8 +4982,8 @@ textarea.input.textarea-compact {
 .pricing-price strong {
   display: block;
   color: var(--text);
-  font-size: 32px;
-  font-weight: 900;
+  font-size: 30px;
+  font-weight: 800;
   line-height: 1;
 }
 
@@ -5003,7 +5003,7 @@ textarea.input.textarea-compact {
 .pricing-includes-title {
   color: var(--text);
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 750;
   margin-bottom: 12px;
 }
 
