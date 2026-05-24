@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ApiError, tripApi } from "@/lib/api";
+import { useBilling } from "@/hooks/useBilling";
 import { findDestinationByName, getDestinationImage, heroImages, normalizeVietnameseSearch, vietnamProvinces, type Destination } from "@/lib/travel-data";
 import { useDestinations } from "@/lib/use-destinations";
 import {
@@ -265,6 +266,7 @@ function PlanContent() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [error, setError] = useState("");
   const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const { wallet, refreshWallet } = useBilling();
   const [focusedField, setFocusedField] = useState<"departure" | "destination" | null>(null);
   const blurTimer = useRef<number | null>(null);
 
@@ -415,6 +417,7 @@ function PlanContent() {
       if (creationWarnings.length > 0 && typeof window !== "undefined") {
         window.sessionStorage.setItem(`vivuplan:trip:${trip.id}:warnings`, JSON.stringify(creationWarnings));
       }
+      void refreshWallet();
       router.push(`/itinerary/${trip.id}`);
     } catch (e) {
       if (e instanceof ApiError && e.status === 402) {
@@ -782,6 +785,13 @@ function PlanContent() {
                   <p>{generationStep}</p>
                   <span>Quá trình này thường mất khoảng 30 giây đến 1 phút, bạn vui lòng chờ một chút nhé.</span>
                 </div>
+              </div>
+            )}
+
+            {wallet && (
+              <div className="credit-inline-note">
+                <Sparkles size={14} />
+                <span>Còn <strong>{wallet.planCredits}</strong> lượt tạo lịch trình</span>
               </div>
             )}
 

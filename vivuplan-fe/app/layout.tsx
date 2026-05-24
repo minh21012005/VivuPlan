@@ -22,6 +22,7 @@ export const metadata: Metadata = {
 };
 
 import { AuthProvider } from "@/context/AuthContext";
+import { BillingProvider } from "@/context/BillingContext";
 
 export default function RootLayout({
   children,
@@ -31,7 +32,9 @@ export default function RootLayout({
   return (
     <html lang="vi" className="h-full">
       <body className="min-h-full flex flex-col antialiased">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <BillingProvider>{children}</BillingProvider>
+        </AuthProvider>
       </body>
     </html>
   );

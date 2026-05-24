@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import { PurchaseModal } from "@/components/billing/PurchaseModal";
-import { billingApi, type BillingPackage, type BillingWallet } from "@/lib/api";
+import { billingApi, type BillingPackage } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useBilling } from "@/hooks/useBilling";
 import { Check, CreditCard, Sparkles, Zap } from "lucide-react";
 
 const fallbackPackages: BillingPackage[] = [
@@ -43,31 +44,16 @@ function packageCopy(item: BillingPackage) {
 export default function PricingPage() {
   const router = useRouter();
   const { isLoggedIn, loading: authLoading } = useAuth();
+  const { wallet } = useBilling();
   const [packages, setPackages] = useState<BillingPackage[]>(fallbackPackages);
-  const [wallet, setWallet] = useState<BillingWallet | null>(null);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
   const [purchasePackageCode, setPurchasePackageCode] = useState<string | undefined>();
-
-  const refreshWallet = () => {
-    if (!isLoggedIn) {
-      setWallet(null);
-      return;
-    }
-    billingApi.me()
-      .then((data) => setWallet(data.wallet))
-      .catch(() => setWallet(null));
-  };
 
   useEffect(() => {
     billingApi.packages()
       .then(setPackages)
       .catch(() => setPackages(fallbackPackages));
   }, []);
-
-  useEffect(() => {
-    refreshWallet();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoggedIn]);
 
   const startPurchase = (packageCode: string) => {
     if (authLoading) return;
@@ -198,7 +184,6 @@ export default function PricingPage() {
         reason="PLAN"
         initialPackageCode={purchasePackageCode}
         onClose={() => setPurchaseOpen(false)}
-        onPaid={refreshWallet}
       />
     </div>
   );

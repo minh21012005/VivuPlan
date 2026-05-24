@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ItineraryLoadingState } from "@/components/travel/ItineraryLoadingState";
 import { ApiError, tripApi, type ActivityMutationRequest, type ActivityResponse, type RegenerateDayPreviewResponse, type RegenerateDayRequest, type TripResponse } from "@/lib/api";
+import { useBilling } from "@/hooks/useBilling";
 import { copyTextToClipboard, getTripShareUrl } from "@/lib/share";
 import { findDestinationByName, getDestinationImage } from "@/lib/travel-data";
 import { useDestinations } from "@/lib/use-destinations";
@@ -297,6 +298,7 @@ export default function ItineraryPage() {
   const [regeneratingDay, setRegeneratingDay] = useState(false);
   const [applyingRegeneration, setApplyingRegeneration] = useState(false);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const { wallet, refreshWallet } = useBilling();
   const [clientWarnings, setClientWarnings] = useState<string[]>([]);
   const [aiWarningsCollapsed, setAiWarningsCollapsed] = useState(false);
   const [weatherAdvisoryDismissed, setWeatherAdvisoryDismissed] = useState(false);
@@ -511,6 +513,7 @@ export default function ItineraryPage() {
     setSelectedRegenerateIndexes([]);
     try {
       const preview = await tripApi.previewRegenerateDay(trip.id, day.day, request);
+      refreshWallet();
       setRegeneratePreview(preview);
       setSelectedRegenerateIndexes(preview.day.activities.map((_, index) => index));
       const requestWarning = preview.warnings.find((warning) => warning.includes("Yêu cầu"));
@@ -1010,6 +1013,7 @@ export default function ItineraryPage() {
           applying={applyingRegeneration}
           selectedIndexes={selectedRegenerateIndexes}
           onSelectedIndexesChange={setSelectedRegenerateIndexes}
+          editCredits={wallet?.editCredits}
           onPreview={previewRegenerateDay}
           onApply={applyRegeneratedDay}
           onCancel={() => {
@@ -1089,6 +1093,7 @@ function RegenerateDayModal({
   loading,
   applying,
   selectedIndexes,
+  editCredits,
   onSelectedIndexesChange,
   onPreview,
   onApply,
@@ -1099,6 +1104,7 @@ function RegenerateDayModal({
   loading: boolean;
   applying: boolean;
   selectedIndexes: number[];
+  editCredits?: number;
   onSelectedIndexesChange: (indexes: number[]) => void;
   onPreview: (request: RegenerateDayRequest) => Promise<void>;
   onApply: () => Promise<void>;
@@ -1213,6 +1219,13 @@ function RegenerateDayModal({
             <p className="regenerate-chat-hint">
               Bạn có thể nói rất cụ thể: muốn ăn gì, tránh gì, giảm chi phí, đổi địa điểm, bớt di chuyển, thêm trải nghiệm địa phương hoặc giữ lại một điểm đang thích.
             </p>
+
+            {editCredits !== undefined && (
+              <div className="credit-inline-note">
+                <Sparkles size={14} />
+                <span>Còn <strong>{editCredits}</strong> lần chỉnh ngày bằng AI</span>
+              </div>
+            )}
 
             {localError && <div className="form-error">{localError}</div>}
 

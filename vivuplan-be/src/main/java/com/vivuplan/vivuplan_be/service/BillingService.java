@@ -142,7 +142,7 @@ public class BillingService {
         return BillingDto.OrderResponse.from(order);
     }
 
-    @Scheduled(fixedDelayString = "${app.billing.order-expiry-scan-ms:${BILLING_ORDER_EXPIRY_SCAN_MS:60000}}")
+    @Scheduled(fixedDelayString = "${app.billing.order-expiry-scan-ms:${BILLING_ORDER_EXPIRY_SCAN_MS:10800000}}")
     @Transactional
     public void expireOverdueOrders() {
         int expired = paymentOrderRepository.expirePendingOrdersBefore(
@@ -255,8 +255,8 @@ public class BillingService {
         order.setPaidAmount(paidAmount);
         order.setPaidAt(LocalDateTime.now());
 
-        UserWallet wallet = userWalletRepository.lockByUserId(order.getUser().getId()).orElseGet(() ->
-                userWalletRepository.save(UserWallet.builder()
+        UserWallet wallet = userWalletRepository.lockByUserId(order.getUser().getId())
+                .orElseGet(() -> userWalletRepository.save(UserWallet.builder()
                         .user(order.getUser())
                         .planCredits(0L)
                         .editCredits(0L)
@@ -274,7 +274,8 @@ public class BillingService {
 
     private Optional<PaymentOrder> findMatchingOrder(String code, String content) {
         if (code != null && !code.isBlank()) {
-            Optional<PaymentOrder> byCode = paymentOrderRepository.lockByOrderCode(code.trim().toUpperCase(Locale.ROOT));
+            Optional<PaymentOrder> byCode = paymentOrderRepository
+                    .lockByOrderCode(code.trim().toUpperCase(Locale.ROOT));
             if (byCode.isPresent()) {
                 return byCode;
             }
@@ -296,29 +297,35 @@ public class BillingService {
 
     private void validateWebhookSignature(String signature, String timestamp, String rawBody) {
         if (sepayWebhookSecret == null || sepayWebhookSecret.isBlank()) {
-            throw new BillingException("SEPAY_WEBHOOK_NOT_CONFIGURED", "SePay webhook authentication is not configured", HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new BillingException("SEPAY_WEBHOOK_NOT_CONFIGURED", "SePay webhook authentication is not configured",
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
         if (signature == null || signature.isBlank() || timestamp == null || timestamp.isBlank()) {
-            throw new BillingException("INVALID_SEPAY_SIGNATURE", "Missing SePay webhook signature", HttpStatus.UNAUTHORIZED);
+            throw new BillingException("INVALID_SEPAY_SIGNATURE", "Missing SePay webhook signature",
+                    HttpStatus.UNAUTHORIZED);
         }
 
         long signedAt;
         try {
             signedAt = Long.parseLong(timestamp.trim());
         } catch (NumberFormatException e) {
-            throw new BillingException("INVALID_SEPAY_SIGNATURE", "Invalid SePay webhook timestamp", HttpStatus.UNAUTHORIZED);
+            throw new BillingException("INVALID_SEPAY_SIGNATURE", "Invalid SePay webhook timestamp",
+                    HttpStatus.UNAUTHORIZED);
         }
 
         long now = Instant.now().getEpochSecond();
         if (Math.abs(now - signedAt) > WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS) {
-            throw new BillingException("INVALID_SEPAY_SIGNATURE", "Expired SePay webhook signature", HttpStatus.UNAUTHORIZED);
+            throw new BillingException("INVALID_SEPAY_SIGNATURE", "Expired SePay webhook signature",
+                    HttpStatus.UNAUTHORIZED);
         }
 
-        String expected = "sha256=" + hmacSha256Hex(sepayWebhookSecret.trim(), timestamp.trim() + "." + nullToBlank(rawBody));
+        String expected = "sha256="
+                + hmacSha256Hex(sepayWebhookSecret.trim(), timestamp.trim() + "." + nullToBlank(rawBody));
         if (!MessageDigest.isEqual(
                 expected.getBytes(StandardCharsets.UTF_8),
                 signature.trim().getBytes(StandardCharsets.UTF_8))) {
-            throw new BillingException("INVALID_SEPAY_SIGNATURE", "Invalid SePay webhook signature", HttpStatus.UNAUTHORIZED);
+            throw new BillingException("INVALID_SEPAY_SIGNATURE", "Invalid SePay webhook signature",
+                    HttpStatus.UNAUTHORIZED);
         }
     }
 
@@ -341,7 +348,8 @@ public class BillingService {
         try {
             return objectMapper.readTree(rawBody);
         } catch (Exception e) {
-            throw new BillingException("INVALID_SEPAY_PAYLOAD", "Invalid SePay webhook payload", HttpStatus.BAD_REQUEST);
+            throw new BillingException("INVALID_SEPAY_PAYLOAD", "Invalid SePay webhook payload",
+                    HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -368,7 +376,8 @@ public class BillingService {
     }
 
     private String generateUniqueOrderCode() {
-        String prefix = orderPrefix == null || orderPrefix.isBlank() ? "VP" : orderPrefix.trim().toUpperCase(Locale.ROOT);
+        String prefix = orderPrefix == null || orderPrefix.isBlank() ? "VP"
+                : orderPrefix.trim().toUpperCase(Locale.ROOT);
         for (int attempt = 0; attempt < 8; attempt++) {
             StringBuilder builder = new StringBuilder(prefix);
             for (int i = 0; i < 10; i++) {

@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { billingApi, type BillingOrder, type BillingPackage, type BillingWallet } from "@/lib/api";
+import { billingApi, type BillingOrder, type BillingPackage } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useBilling } from "@/hooks/useBilling";
 import { CheckCircle2, Clock, CreditCard, QrCode, Sparkles, X } from "lucide-react";
 
 type PurchaseReason = "PLAN" | "EDIT";
@@ -69,8 +70,8 @@ function statusLabel(status: BillingOrder["status"]) {
 export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClose, onPaid }: PurchaseModalProps) {
   const router = useRouter();
   const { isLoggedIn, loading: authLoading } = useAuth();
+  const { wallet, refreshWallet } = useBilling();
   const [packages, setPackages] = useState<BillingPackage[]>(fallbackPackages);
-  const [wallet, setWallet] = useState<BillingWallet | null>(null);
   const [selectedCode, setSelectedCode] = useState(initialPackageCode ?? "PLAN_3");
   const [order, setOrder] = useState<BillingOrder | null>(null);
   const [loading, setLoading] = useState(false);
@@ -122,11 +123,6 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
     billingApi.packages()
       .then(setPackages)
       .catch(() => setPackages(fallbackPackages));
-    if (isLoggedIn) {
-      billingApi.me()
-        .then((data) => setWallet(data.wallet))
-        .catch(() => setWallet(null));
-    }
   }, [open, reason, initialPackageCode, isLoggedIn]);
 
   useEffect(() => {
@@ -152,8 +148,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
         const latest = await billingApi.getOrder(order.orderCode);
         setOrder(latest);
         if (latest.status === "PAID") {
-          const data = await billingApi.me();
-          setWallet(data.wallet);
+          await refreshWallet();
           setMessage("Thanh toán thành công. Lượt mới đã được cộng vào tài khoản của bạn.");
           onPaid?.();
         }
@@ -171,7 +166,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
       window.clearInterval(countdown);
       window.clearInterval(poll);
     };
-  }, [order, onPaid]);
+  }, [order, onPaid, refreshWallet]);
 
   if (!open) return null;
 

@@ -31,7 +31,7 @@ server:
 app:
   jwt:
     secret: ${JWT_SECRET:vivuplan-super-secret-key-change-in-production-2026}
-    expiration: 604800000   # 7 days ms
+    expiration: 604800000 # 7 days ms
   ai:
     gemini:
       api-key: ${GEMINI_API_KEY:}
@@ -46,7 +46,7 @@ app:
     enabled: ${DATA_INITIALIZER_ENABLED:true}
   billing:
     order-expiry-minutes: ${BILLING_ORDER_EXPIRY_MINUTES:30}
-    order-expiry-scan-ms: ${BILLING_ORDER_EXPIRY_SCAN_MS:60000}
+    order-expiry-scan-ms: ${BILLING_ORDER_EXPIRY_SCAN_MS:10800000}
     sepay:
       webhook-secret: ${SEPAY_WEBHOOK_SECRET:}
       qr-url-template: ${SEPAY_QR_URL_TEMPLATE:}
