@@ -140,7 +140,7 @@ public class AuthService {
         }
 
         String googleId = payload.getSubject();
-        String email = payload.getEmail();
+        String email = normalizeEmail(payload.getEmail());
         String name = readStringClaim(payload, "name");
         String avatarUrl = readStringClaim(payload, "picture");
 
@@ -157,6 +157,7 @@ public class AuthService {
 
     @Transactional
     public AuthDto.AuthResponse loginWithGoogle(String googleId, String email, String name, String avatarUrl) {
+        String normalizedEmail = normalizeEmail(email);
         User user = userRepository.findByGoogleId(googleId).orElse(null);
         if (user != null) {
             if (avatarUrl != null) {
@@ -164,17 +165,19 @@ public class AuthService {
                 user = userRepository.save(user);
             }
         } else {
-            user = userRepository.findByEmail(email).orElse(null);
+            user = userRepository.findByEmail(normalizedEmail).orElse(null);
             if (user != null) {
                 user.setGoogleId(googleId);
-                user.setProvider(User.AuthProvider.GOOGLE);
-                // Always sync avatar from Google on every login
+                user.setEmailVerified(true);
+                if (user.getPassword() == null || user.getPassword().isBlank()) {
+                    user.setProvider(User.AuthProvider.GOOGLE);
+                }
                 if (avatarUrl != null) user.setAvatarUrl(avatarUrl);
                 user = userRepository.save(user);
             } else {
                 user = User.builder()
                         .name(name)
-                        .email(email)
+                        .email(normalizedEmail)
                         .googleId(googleId)
                         .avatarUrl(avatarUrl)
                         .provider(User.AuthProvider.GOOGLE)
@@ -249,12 +252,8 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
 
-        if (user.getProvider() == User.AuthProvider.GOOGLE) {
-            throw new IllegalArgumentException("Tài khoản đăng nhập bằng Google không sử dụng mật khẩu");
-        }
-
         if (user.getPassword() == null || user.getPassword().isBlank()) {
-            throw new IllegalArgumentException("Tài khoản này chưa thiết lập mật khẩu");
+            throw new IllegalArgumentException("Tài khoản đăng nhập bằng Google không sử dụng mật khẩu");
         }
 
         if (!passwordEncoder.matches(req.getCurrentPassword(), user.getPassword())) {

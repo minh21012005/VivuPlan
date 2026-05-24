@@ -18,6 +18,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -145,6 +146,24 @@ class AuthServiceTest {
     }
 
     @Test
+    void requestRegistrationOtpThrowsWhenEmailAlreadyBelongsToGoogleAccount() {
+        AuthService service = service();
+        AuthDto.RegisterRequest req = new AuthDto.RegisterRequest();
+        req.setName("Minh");
+        req.setEmail("Minh@Example.com ");
+        req.setPassword("password123");
+
+        when(userRepository.existsByEmail("minh@example.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.requestRegistrationOtp(req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Email đã được sử dụng");
+
+        verify(registrationOtpRepository, never()).save(any());
+        verify(emailService, never()).sendRegistrationOtpAsync(any(), any(), any(), any(Long.class));
+    }
+
+    @Test
     void verifyRegistrationOtpCreatesWalletAndGrantsSignupCredits() {
         AuthService service = service();
         Role userRole = Role.builder().id(1L).name(Role.RoleName.USER).build();
@@ -249,5 +268,90 @@ class AuthServiceTest {
         verify(passwordEncoder, never()).matches(any(), any());
         verify(userRepository, never()).save(any(User.class));
         verify(billingService, never()).grantSignupCredits(any(User.class));
+    }
+
+    @Test
+    void loginWithGoogleLinksExistingPasswordAccountWithoutChangingProvider() {
+        AuthService service = service();
+        Role userRole = Role.builder().id(1L).name(Role.RoleName.USER).build();
+        User existing = User.builder()
+                .id(9L)
+                .name("Minh")
+                .email("minh@example.com")
+                .password("encoded-password")
+                .provider(User.AuthProvider.LOCAL)
+                .emailVerified(false)
+                .roles(Set.of(userRole))
+                .build();
+
+        when(userRepository.findByGoogleId("google-1")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("minh@example.com")).thenReturn(Optional.of(existing));
+        when(userRepository.save(existing)).thenReturn(existing);
+        when(jwtUtil.generateToken(any(), any(), any())).thenReturn("token");
+
+        AuthDto.AuthResponse response = service.loginWithGoogle(
+                "google-1",
+                "Minh@Example.com ",
+                "Google Minh",
+                "https://example.com/avatar.png");
+
+        assertThat(response.getToken()).isEqualTo("token");
+        assertThat(response.getUser().getProvider()).isEqualTo("LOCAL");
+        assertThat(existing.getGoogleId()).isEqualTo("google-1");
+        assertThat(existing.getProvider()).isEqualTo(User.AuthProvider.LOCAL);
+        assertThat(existing.getEmailVerified()).isTrue();
+        assertThat(existing.getAvatarUrl()).isEqualTo("https://example.com/avatar.png");
+        verify(billingService, never()).grantSignupCredits(any(User.class));
+    }
+
+    @Test
+    void changePasswordAllowsPasswordAccountLinkedToGoogle() {
+        AuthService service = service();
+        User user = User.builder()
+                .id(9L)
+                .name("Minh")
+                .email("minh@example.com")
+                .password("encoded-password")
+                .googleId("google-1")
+                .provider(User.AuthProvider.LOCAL)
+                .build();
+        AuthDto.ChangePasswordRequest req = new AuthDto.ChangePasswordRequest();
+        req.setCurrentPassword("old-password");
+        req.setNewPassword("new-password");
+
+        when(userRepository.findById(9L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("old-password", "encoded-password")).thenReturn(true);
+        when(passwordEncoder.matches("new-password", "encoded-password")).thenReturn(false);
+        when(passwordEncoder.encode("new-password")).thenReturn("new-encoded-password");
+        when(userRepository.save(user)).thenReturn(user);
+
+        AuthDto.UserDto response = service.changePassword(9L, req);
+
+        assertThat(response.getEmail()).isEqualTo("minh@example.com");
+        assertThat(user.getPassword()).isEqualTo("new-encoded-password");
+    }
+
+    @Test
+    void changePasswordRejectsGoogleOnlyAccountWithoutPassword() {
+        AuthService service = service();
+        User user = User.builder()
+                .id(9L)
+                .name("Minh")
+                .email("minh@example.com")
+                .googleId("google-1")
+                .provider(User.AuthProvider.GOOGLE)
+                .build();
+        AuthDto.ChangePasswordRequest req = new AuthDto.ChangePasswordRequest();
+        req.setCurrentPassword("old-password");
+        req.setNewPassword("new-password");
+
+        when(userRepository.findById(9L)).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> service.changePassword(9L, req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Tài khoản đăng nhập bằng Google không sử dụng mật khẩu");
+
+        verify(passwordEncoder, never()).matches(any(), any());
+        verify(userRepository, never()).save(any(User.class));
     }
 }
