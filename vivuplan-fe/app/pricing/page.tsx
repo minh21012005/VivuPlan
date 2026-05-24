@@ -20,21 +20,27 @@ function fmtVnd(value: number) {
 }
 
 function packageCopy(item: BillingPackage) {
-  const copy: Record<string, { name: string; description: string }> = {
+  const copy: Record<string, { name: string; eyebrow: string; description: string; bestFor: string }> = {
     PLAN_1: {
-      name: "Gói một chuyến",
-      description: "Vừa đủ để tạo một lịch trình mới và chỉnh lại vài ngày nếu cần.",
+      name: "Một chuyến",
+      eyebrow: "Cho chuyến đi sắp tới",
+      description: "Phù hợp khi bạn đã có điểm đến và muốn VivuPlan lên một lịch trình hoàn chỉnh.",
+      bestFor: "Một chuyến đi cá nhân hoặc cuối tuần ngắn.",
     },
     PLAN_3: {
-      name: "Gói cuối tuần",
-      description: "Hợp với người hay so sánh vài điểm đến hoặc chuẩn bị nhiều chuyến ngắn.",
+      name: "Linh hoạt",
+      eyebrow: "Được chọn nhiều",
+      description: "Dành cho lúc bạn muốn thử vài phương án, đổi điểm đến, hoặc chuẩn bị nhiều chuyến gần nhau.",
+      bestFor: "So sánh 2-3 lịch trình trước khi chốt.",
     },
     PLAN_10: {
-      name: "Gói mê đi",
-      description: "Dành cho người lập kế hoạch thường xuyên, nhóm bạn hoặc gia đình.",
+      name: "Thường xuyên",
+      eyebrow: "Tiết kiệm hơn",
+      description: "Hợp với người hay đi, lên kế hoạch cho nhóm, hoặc muốn có sẵn lượt để dùng dần.",
+      bestFor: "Nhóm bạn, gia đình hoặc người lập kế hoạch nhiều.",
     },
   };
-  return copy[item.code] ?? { name: item.name, description: item.description };
+  return copy[item.code] ?? { name: item.name, eyebrow: "Gói lịch trình", description: item.description, bestFor: "Tạo lịch trình bằng AI." };
 }
 
 export default function PricingPage() {
@@ -74,82 +80,137 @@ export default function PricingPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+    <div className="pricing-page">
       <Navbar />
 
-      <section style={{ paddingTop: 96, paddingBottom: 34, background: "#F8FAFC", borderBottom: "1px solid var(--border)" }}>
-        <div className="container" style={{ display: "grid", gap: 16 }}>
-          <span className="badge badge-teal" style={{ width: "fit-content" }}>
-            <Sparkles size={13} /> Lượt AI
-          </span>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 20, alignItems: "end", flexWrap: "wrap" }}>
-            <div>
-              <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(30px,4vw,48px)", fontWeight: 900, color: "var(--text)", margin: "0 0 10px" }}>
-                Mua lượt AI khi bạn cần
-              </h1>
-              <p style={{ fontSize: 16, color: "var(--text-3)", maxWidth: 640, margin: 0, lineHeight: 1.65 }}>
-                VivuPlan không chia tính năng thành nhiều tầng khó hiểu. Bạn chỉ mua lượt để tạo lịch trình mới hoặc nhờ AI chỉnh lại từng ngày; thời tiết, ngân sách, chia sẻ và chỉnh tay vẫn dùng bình thường trong lịch trình.
+      <section className="pricing-hero">
+        <div className="container pricing-hero-inner">
+          <div className="pricing-hero-copy">
+            <span className="badge badge-teal pricing-hero-badge">
+              <Sparkles size={13} /> Gói lập lịch trình
+            </span>
+            <h1>Chọn gói cho chuyến đi tiếp theo</h1>
+            <p>
+              Tạo lịch trình chi tiết trong vài phút, rồi chỉnh lại từng ngày nếu
+              muốn đổi nhịp đi, ngân sách hoặc trải nghiệm. Bắt đầu miễn phí và
+              chỉ mua thêm khi bạn cần lên chuyến mới.
+            </p>
+          </div>
+
+          <div className="pricing-balance-panel">
+            {wallet ? (
+              <>
+                <div className="pricing-balance-title">Số lượt hiện có</div>
+                <div className="pricing-balance-grid">
+                  <div className="pricing-balance-item">
+                    <span><Zap size={13} /> Tạo lịch trình</span>
+                    <strong>{wallet.planCredits}</strong>
+                  </div>
+                  <div className="pricing-balance-item">
+                    <span><CreditCard size={13} /> Chỉnh ngày</span>
+                    <strong>{wallet.editCredits}</strong>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p>
+                Tài khoản mới được tặng sẵn lượt dùng thử để bạn trải nghiệm trước
+                khi mua thêm.
               </p>
-            </div>
-            {wallet && (
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <span className="badge badge-teal"><Zap size={13} /> Còn {wallet.planCredits} lượt tạo</span>
-                <span className="badge badge-blue"><CreditCard size={13} /> Còn {wallet.editCredits} lượt chỉnh AI</span>
-              </div>
             )}
           </div>
         </div>
       </section>
 
-      <section style={{ padding: "38px 0 80px" }}>
+      <section className="pricing-plans">
         <div className="container">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 18 }}>
-            <div style={{
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderRadius: 12,
-              padding: 22,
-              boxShadow: "var(--shadow-sm)",
-            }}>
-              <span className="badge badge-green">Dùng thử</span>
-              <h2 style={{ fontSize: 24, margin: "16px 0 6px", color: "var(--text)" }}>0đ</h2>
-              <p style={{ color: "var(--text-3)", fontSize: 14, lineHeight: 1.55, minHeight: 44 }}>
+          <div className="pricing-grid">
+            <article className="pricing-card">
+              <div className="pricing-card-head">
+                <div>
+                  <span className="pricing-card-eyebrow">Bắt đầu</span>
+                  <h2>Dùng thử</h2>
+                </div>
+                <span className="pricing-pill">Miễn phí</span>
+              </div>
+
+              <p className="pricing-card-desc">
                 Tài khoản mới có sẵn 1 lượt tạo lịch trình và 1 lượt chỉnh ngày bằng AI.
               </p>
-              <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10, margin: "18px 0 22px", color: "var(--text-2)", fontSize: 14 }}>
+
+              <div className="pricing-price">
+                <strong>0đ</strong>
+                <span>Dành cho tài khoản mới</span>
+              </div>
+
+              <div className="pricing-quota">
+                <div>
+                  <strong>1</strong>
+                  <span>lịch trình mới</span>
+                </div>
+                <div>
+                  <strong>1</strong>
+                  <span>lần chỉnh ngày</span>
+                </div>
+              </div>
+
+              <ul className="pricing-benefits">
                 <li><Check size={14} /> Tạo 1 lịch trình bằng AI</li>
                 <li><Check size={14} /> Chỉnh lại 1 ngày bằng AI</li>
                 <li><Check size={14} /> Các tính năng trong lịch trình vẫn mở đầy đủ</li>
               </ul>
-              <Link href={isLoggedIn ? "/plan" : "/register"} className="btn btn-secondary" style={{ width: "100%", justifyContent: "center" }}>
+
+              <Link href={isLoggedIn ? "/plan" : "/register"} className="btn btn-secondary pricing-card-cta">
                 {isLoggedIn ? "Tạo lịch trình" : "Đăng ký miễn phí"}
               </Link>
-            </div>
+            </article>
 
-            {packages.map((item) => (
-              <div key={item.code} style={{
-                background: "var(--surface)",
-                border: `2px solid ${item.highlighted ? "var(--primary)" : "var(--border)"}`,
-                borderRadius: 12,
-                padding: 22,
-                boxShadow: item.highlighted ? "0 12px 34px rgba(15,159,156,0.16)" : "var(--shadow-sm)",
-                position: "relative",
-              }}>
-                {item.highlighted && <span className="badge badge-teal" style={{ position: "absolute", top: 14, right: 14 }}>Phù hợp nhất</span>}
-                <span className="badge badge-blue">{item.planCredits > 0 ? "Tạo lịch trình" : "Chỉnh ngày"}</span>
-                <h2 style={{ fontSize: 24, margin: "16px 0 6px", color: "var(--text)" }}>{fmtVnd(item.amount)}</h2>
-                <h3 style={{ fontSize: 18, margin: "0 0 8px", color: "var(--text)" }}>{packageCopy(item).name}</h3>
-                <p style={{ color: "var(--text-3)", fontSize: 14, lineHeight: 1.55, minHeight: 54 }}>{packageCopy(item).description}</p>
-                <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10, margin: "18px 0 22px", color: "var(--text-2)", fontSize: 14 }}>
-                  {item.planCredits > 0 && <li><Check size={14} /> {item.planCredits} lượt tạo lịch trình</li>}
-                  {item.editCredits > 0 && <li><Check size={14} /> {item.editCredits} lượt chỉnh ngày bằng AI</li>}
-                  <li><Check size={14} /> Chỉ trừ lượt khi AI tạo xong</li>
-                </ul>
-                <button type="button" className={item.highlighted ? "btn btn-primary" : "btn btn-secondary"} style={{ width: "100%", justifyContent: "center" }} onClick={startPurchase}>
-                  Mua gói này
-                </button>
-              </div>
-            ))}
+            {packages.map((item) => {
+              const copy = packageCopy(item);
+              return (
+                <article key={item.code} className={item.highlighted ? "pricing-card pricing-card-featured" : "pricing-card"}>
+                  <div className="pricing-card-head">
+                    <div>
+                      <span className="pricing-card-eyebrow">{copy.eyebrow}</span>
+                      <h2>{copy.name}</h2>
+                    </div>
+                    {item.highlighted && <span className="pricing-pill pricing-pill-primary">Phù hợp nhất</span>}
+                  </div>
+
+                  <p className="pricing-card-desc">{copy.description}</p>
+
+                  <div className="pricing-price">
+                    <strong>{fmtVnd(item.amount)}</strong>
+                    <span>Thanh toán một lần, dùng cho đến khi hết lượt</span>
+                  </div>
+
+                  <div className="pricing-quota">
+                    <div>
+                      <strong>{item.planCredits}</strong>
+                      <span>lịch trình mới</span>
+                    </div>
+                    <div>
+                      <strong>{item.editCredits}</strong>
+                      <span>lần chỉnh ngày</span>
+                    </div>
+                  </div>
+
+                  <ul className="pricing-benefits">
+                    <li><Check size={14} /> {copy.bestFor}</li>
+                    <li><Check size={14} /> Có thể chỉnh tay miễn phí sau khi tạo lịch trình</li>
+                    <li><Check size={14} /> Chỉ tính lượt khi AI tạo xong</li>
+                  </ul>
+
+                  <button
+                    type="button"
+                    className={item.highlighted ? "btn btn-primary pricing-card-cta" : "btn btn-secondary pricing-card-cta"}
+                    onClick={startPurchase}
+                  >
+                    Chọn gói này
+                  </button>
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>
