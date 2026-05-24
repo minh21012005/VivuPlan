@@ -39,6 +39,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/google").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/billing/packages").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/billing/sepay/webhook").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/trips/public/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/destinations/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")

@@ -4,6 +4,7 @@ import React, { type FormEvent, useEffect, useMemo, useRef, useState } from "rea
 import { useParams, useRouter } from "next/navigation";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import Navbar from "@/components/layout/Navbar";
+import { PurchaseModal } from "@/components/billing/PurchaseModal";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -295,6 +296,7 @@ export default function ItineraryPage() {
   const [selectedRegenerateIndexes, setSelectedRegenerateIndexes] = useState<number[]>([]);
   const [regeneratingDay, setRegeneratingDay] = useState(false);
   const [applyingRegeneration, setApplyingRegeneration] = useState(false);
+  const [purchaseOpen, setPurchaseOpen] = useState(false);
   const [clientWarnings, setClientWarnings] = useState<string[]>([]);
   const [aiWarningsCollapsed, setAiWarningsCollapsed] = useState(false);
   const [weatherAdvisoryDismissed, setWeatherAdvisoryDismissed] = useState(false);
@@ -516,7 +518,12 @@ export default function ItineraryPage() {
         showToast(requestWarning, "info", 9000);
       }
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Không thể tạo phương án mới cho ngày này", "error", 6000);
+      if (e instanceof ApiError && e.status === 402) {
+        setPurchaseOpen(true);
+        showToast("Bạn đã hết lượt chỉnh ngày bằng AI. Mua thêm lượt để tiếp tục nhé.", "info", 7000);
+      } else {
+        showToast(e instanceof Error ? e.message : "Không thể tạo phương án mới cho ngày này", "error", 6000);
+      }
     } finally {
       setRegeneratingDay(false);
     }
@@ -1013,6 +1020,11 @@ export default function ItineraryPage() {
           }}
         />
       )}
+      <PurchaseModal
+        open={purchaseOpen}
+        reason="EDIT"
+        onClose={() => setPurchaseOpen(false)}
+      />
     </div>
   );
 }

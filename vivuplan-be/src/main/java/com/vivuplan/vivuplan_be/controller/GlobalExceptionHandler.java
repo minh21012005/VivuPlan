@@ -1,6 +1,7 @@
 package com.vivuplan.vivuplan_be.controller;
 
 import com.vivuplan.vivuplan_be.exception.AiGenerationException;
+import com.vivuplan.vivuplan_be.exception.BillingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleAiGeneration(AiGenerationException e) {
         log.warn("AI generation error: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of("error", e.getMessage()));
+    }
+
+    @ExceptionHandler(BillingException.class)
+    public ResponseEntity<Map<String, String>> handleBilling(BillingException e) {
+        return ResponseEntity.status(e.getStatus()).body(Map.of(
+                "error", e.getMessage(),
+                "code", e.getCode()
+        ));
     }
 
     @ExceptionHandler(RuntimeException.class)

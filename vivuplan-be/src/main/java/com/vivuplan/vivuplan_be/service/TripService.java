@@ -40,6 +40,7 @@ public class TripService {
     private final AiService aiService;
     private final WeatherService weatherService;
     private final PlacePlanningService placePlanningService;
+    private final BillingService billingService;
     private final Map<String, DayRegenerationProposal> dayRegenerationProposals = new ConcurrentHashMap<>();
     private static final int REGENERATION_PROPOSAL_TTL_MINUTES = 30;
     private static final long REGENERATION_COST_INCREASE_WARNING_MIN_DELTA = 200_000L;
@@ -73,6 +74,8 @@ public class TripService {
         if (tripDays > 30) {
             throw new IllegalArgumentException("Thời gian chuyến đi tối đa là 30 ngày");
         }
+
+        billingService.requirePlanCredit(userId);
 
         // 1. Call AI to generate itinerary
         TripDto.GenerateRequest aiReq = new TripDto.GenerateRequest();
@@ -178,6 +181,7 @@ public class TripService {
         trip.setAiWarnings(serializeWarnings(persistentWarnings));
 
         trip = tripRepository.saveAndFlush(trip);
+        billingService.consumePlanCredit(userId, trip);
 
         TripDto.TripResponse response = toTripResponse(trip);
         response.setBudget(budget);
@@ -278,7 +282,7 @@ public class TripService {
         return toTripResponse(trip);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public TripDto.RegenerateDayPreviewResponse previewRegenerateDay(
             Long tripId,
             Long userId,
@@ -286,6 +290,7 @@ public class TripService {
             TripDto.RegenerateDayRequest req) {
         cleanupExpiredRegenerationProposals();
         Trip trip = getOwnedTrip(tripId, userId);
+        billingService.requireEditCredit(userId);
         ItineraryDay existingDay = findDay(trip, dayNumber);
         List<TripDto.DayResponse> currentSchedule = mapDays(trip.getItineraryDays());
         TripDto.GenerateRequest aiReq = toGenerateRequest(trip);
@@ -315,6 +320,7 @@ public class TripService {
                 proposedDay,
                 persistentWarnings);
         String proposalId = UUID.randomUUID().toString();
+        billingService.consumeEditCredit(userId, trip);
         dayRegenerationProposals.put(proposalId, new DayRegenerationProposal(
                 proposalId,
                 tripId,

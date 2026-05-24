@@ -2,11 +2,13 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export class ApiError extends Error {
   status: number;
+  code?: string;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, code?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -28,7 +30,7 @@ function authHeaders(): HeadersInit {
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new ApiError(body.error || "Có lỗi xảy ra", res.status);
+    throw new ApiError(body.error || "Co loi xay ra", res.status, body.code);
   }
   return res.json();
 }
@@ -196,6 +198,29 @@ export const destinationApi = {
   },
 };
 
+// Billing API
+
+export const billingApi = {
+  packages: () =>
+    fetch(`${API_BASE}/api/billing/packages`)
+      .then(handleResponse<BillingPackage[]>),
+
+  me: () =>
+    fetch(`${API_BASE}/api/billing/me`, { headers: authHeaders() })
+      .then(handleResponse<BillingMeResponse>),
+
+  createOrder: (packageCode: string) =>
+    fetch(`${API_BASE}/api/billing/orders`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ packageCode }),
+    }).then(handleResponse<BillingOrder>),
+
+  getOrder: (orderCode: string) =>
+    fetch(`${API_BASE}/api/billing/orders/${orderCode}`, { headers: authHeaders() })
+      .then(handleResponse<BillingOrder>),
+};
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface User {
@@ -211,6 +236,39 @@ export interface User {
 export interface AuthResponse {
   token: string;
   user: User;
+}
+
+export interface BillingPackage {
+  code: "PLAN_1" | "PLAN_3" | "PLAN_10" | "EDIT_5" | string;
+  name: string;
+  description: string;
+  amount: number;
+  planCredits: number;
+  editCredits: number;
+  highlighted?: boolean;
+}
+
+export interface BillingWallet {
+  planCredits: number;
+  editCredits: number;
+}
+
+export interface BillingOrder {
+  orderCode: string;
+  packageCode: string;
+  amount: number;
+  planCredits: number;
+  editCredits: number;
+  status: "PENDING" | "PAID" | "UNDERPAID" | "EXPIRED" | "CANCELLED";
+  qrUrl?: string;
+  expiresAt: string;
+  paidAt?: string;
+  paidAmount?: number;
+}
+
+export interface BillingMeResponse {
+  wallet: BillingWallet;
+  recentOrders: BillingOrder[];
 }
 
 export interface GenerateRequest {

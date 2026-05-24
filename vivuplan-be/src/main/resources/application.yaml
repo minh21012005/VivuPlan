@@ -44,6 +44,15 @@ app:
     bootstrap-email: ${ADMIN_BOOTSTRAP_EMAIL:}
   data-initializer:
     enabled: ${DATA_INITIALIZER_ENABLED:true}
+  billing:
+    order-expiry-minutes: ${BILLING_ORDER_EXPIRY_MINUTES:30}
+    sepay:
+      webhook-api-key: ${SEPAY_WEBHOOK_API_KEY:}
+      qr-url-template: ${SEPAY_QR_URL_TEMPLATE:}
+      bank-code: ${SEPAY_BANK_CODE:}
+      account-number: ${SEPAY_ACCOUNT_NUMBER:}
+      account-name: ${SEPAY_ACCOUNT_NAME:}
+      order-prefix: ${SEPAY_ORDER_PREFIX:VP}
 
 logging:
   level:

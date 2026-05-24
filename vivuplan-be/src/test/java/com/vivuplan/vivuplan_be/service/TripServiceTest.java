@@ -6,6 +6,7 @@ import com.vivuplan.vivuplan_be.entity.ItineraryDay;
 import com.vivuplan.vivuplan_be.entity.Place;
 import com.vivuplan.vivuplan_be.entity.Trip;
 import com.vivuplan.vivuplan_be.entity.User;
+import com.vivuplan.vivuplan_be.exception.BillingException;
 import com.vivuplan.vivuplan_be.repository.DestinationRepository;
 import com.vivuplan.vivuplan_be.repository.TripRepository;
 import com.vivuplan.vivuplan_be.repository.UserRepository;
@@ -25,8 +26,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,6 +56,9 @@ class TripServiceTest {
     @Mock
     private PlacePlanningService placePlanningService;
 
+    @Mock
+    private BillingService billingService;
+
     private TripService service() {
         return new TripService(
                 tripRepository,
@@ -57,7 +66,8 @@ class TripServiceTest {
                 destinationRepository,
                 aiService,
                 weatherService,
-                placePlanningService);
+                placePlanningService,
+                billingService);
     }
 
     @Test
@@ -143,6 +153,58 @@ class TripServiceTest {
         assertThat(response.getWarnings())
                 .containsExactly(
                         "Yêu cầu chèo sup chưa được áp dụng vì trời mưa.");
+    }
+
+    @Test
+    void generateAndSaveStopsBeforeAiWhenPlanCreditsAreMissing() {
+        TripService service = service();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(sampleUser()));
+        doThrow(BillingException.insufficientPlanCredits()).when(billingService).requirePlanCredit(7L);
+
+        assertThatThrownBy(() -> service.generateAndSave(7L, generateRequest("", "")))
+                .isInstanceOf(BillingException.class);
+
+        verify(aiService, never()).generateItinerary(any());
+        verify(billingService, never()).consumePlanCredit(any(), any());
+    }
+
+    @Test
+    void generateAndSaveConsumesPlanCreditOnlyAfterSuccessfulSave() {
+        TripService service = service();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(sampleUser()));
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        mockRainForecast();
+        when(tripRepository.existsByShareCode(anyString())).thenReturn(false);
+        when(aiService.generateItinerary(any())).thenReturn(new AiService.GeneratedItineraryResult(
+                List.of(proposedDayWithoutRequestedActivity()),
+                noRequestFulfillment()));
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> {
+            Trip saved = invocation.getArgument(0);
+            saved.setId(1L);
+            return saved;
+        });
+
+        service.generateAndSave(7L, generateRequest("", ""));
+
+        verify(billingService).requirePlanCredit(7L);
+        verify(billingService).consumePlanCredit(eq(7L), any(Trip.class));
+    }
+
+    @Test
+    void generateAndSaveDoesNotConsumePlanCreditWhenAiFails() {
+        TripService service = service();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(sampleUser()));
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        mockRainForecast();
+        when(aiService.generateItinerary(any())).thenThrow(new RuntimeException("AI failed"));
+
+        assertThatThrownBy(() -> service.generateAndSave(7L, generateRequest("", "")))
+                .hasMessageContaining("AI failed");
+
+        verify(billingService).requirePlanCredit(7L);
+        verify(billingService, never()).consumePlanCredit(any(), any());
     }
 
     @Test
@@ -528,6 +590,44 @@ class TripServiceTest {
 
         assertThat(response.getBudget().getTotal()).isGreaterThan(3_000_000L);
         assertThat(response.getWarnings()).noneMatch(warning -> warning.contains("vượt ngân sách"));
+    }
+
+    @Test
+    void previewRegenerateDayConsumesEditCreditAfterSuccessfulAiPreview() {
+        Trip trip = sampleTrip();
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class)))
+                .thenReturn(new AiService.RegeneratedDayResult(proposedDayWithoutRequestedActivity(), noRequestFulfillment()));
+
+        TripDto.RegenerateDayRequest req = new TripDto.RegenerateDayRequest();
+        req.setIntent("REGENERATE");
+        service.previewRegenerateDay(1L, 7L, 1, req);
+
+        verify(billingService).requireEditCredit(7L);
+        verify(billingService).consumeEditCredit(7L, trip);
+    }
+
+    @Test
+    void applyRegeneratedDayDoesNotConsumeAdditionalEditCredit() {
+        Trip trip = sampleTrip();
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class)))
+                .thenReturn(new AiService.RegeneratedDayResult(proposedDayWithoutRequestedActivity(), noRequestFulfillment()));
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TripDto.RegenerateDayRequest previewReq = new TripDto.RegenerateDayRequest();
+        previewReq.setIntent("REGENERATE");
+        TripDto.RegenerateDayPreviewResponse preview =
+                service.previewRegenerateDay(1L, 7L, 1, previewReq);
+        clearInvocations(billingService);
+
+        TripDto.ApplyRegenerateDayRequest req = new TripDto.ApplyRegenerateDayRequest();
+        req.setProposalId(preview.getProposalId());
+        service.applyRegeneratedDay(1L, 7L, 1, req);
+
+        verify(billingService, never()).consumeEditCredit(any(), any());
     }
 
     @Test

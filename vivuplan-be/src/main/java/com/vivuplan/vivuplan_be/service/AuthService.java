@@ -30,6 +30,7 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final BillingService billingService;
 
     @Value("${app.admin.bootstrap-email:}")
     private String bootstrapAdminEmail;
@@ -53,6 +54,7 @@ public class AuthService {
                 .build();
 
         user = userRepository.save(user);
+        billingService.grantSignupCredits(user);
         String token = generateToken(user);
         return new AuthDto.AuthResponse(token, AuthDto.UserDto.from(user));
     }
@@ -94,26 +96,34 @@ public class AuthService {
 
     @Transactional
     public AuthDto.AuthResponse loginWithGoogle(String googleId, String email, String name, String avatarUrl) {
-        User user = userRepository.findByGoogleId(googleId).orElseGet(() ->
-                userRepository.findByEmail(email).map(u -> {
-                    u.setGoogleId(googleId);
-                    u.setProvider(User.AuthProvider.GOOGLE);
-                    // Always sync avatar from Google on every login
-                    if (avatarUrl != null) u.setAvatarUrl(avatarUrl);
-                    return userRepository.save(u);
-                }).orElseGet(() -> {
-                    User newUser = User.builder()
-                            .name(name)
-                            .email(email)
-                            .googleId(googleId)
-                            .avatarUrl(avatarUrl)
-                            .provider(User.AuthProvider.GOOGLE)
-                            .emailVerified(true)
-                            .roles(resolveInitialRoles(email))
-                            .build();
-                    return userRepository.save(newUser);
-                })
-        );
+        User user = userRepository.findByGoogleId(googleId).orElse(null);
+        if (user != null) {
+            if (avatarUrl != null) {
+                user.setAvatarUrl(avatarUrl);
+                user = userRepository.save(user);
+            }
+        } else {
+            user = userRepository.findByEmail(email).orElse(null);
+            if (user != null) {
+                user.setGoogleId(googleId);
+                user.setProvider(User.AuthProvider.GOOGLE);
+                // Always sync avatar from Google on every login
+                if (avatarUrl != null) user.setAvatarUrl(avatarUrl);
+                user = userRepository.save(user);
+            } else {
+                user = User.builder()
+                        .name(name)
+                        .email(email)
+                        .googleId(googleId)
+                        .avatarUrl(avatarUrl)
+                        .provider(User.AuthProvider.GOOGLE)
+                        .emailVerified(true)
+                        .roles(resolveInitialRoles(email))
+                        .build();
+                user = userRepository.save(user);
+                billingService.grantSignupCredits(user);
+            }
+        }
 
         String token = generateToken(user);
         return new AuthDto.AuthResponse(token, AuthDto.UserDto.from(user));

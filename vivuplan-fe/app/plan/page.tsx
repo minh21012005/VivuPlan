@@ -3,10 +3,11 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
+import { PurchaseModal } from "@/components/billing/PurchaseModal";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { tripApi } from "@/lib/api";
+import { ApiError, tripApi } from "@/lib/api";
 import { findDestinationByName, getDestinationImage, heroImages, normalizeVietnameseSearch, vietnamProvinces, type Destination } from "@/lib/travel-data";
 import { useDestinations } from "@/lib/use-destinations";
 import {
@@ -263,6 +264,7 @@ function PlanContent() {
   const [generating, setGenerating] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [error, setError] = useState("");
+  const [purchaseOpen, setPurchaseOpen] = useState(false);
   const [focusedField, setFocusedField] = useState<"departure" | "destination" | null>(null);
   const blurTimer = useRef<number | null>(null);
 
@@ -415,7 +417,12 @@ function PlanContent() {
       }
       router.push(`/itinerary/${trip.id}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Không thể tạo lịch trình. Hãy kiểm tra đăng nhập hoặc backend.");
+      if (e instanceof ApiError && e.status === 402) {
+        setError("Bạn đã hết lượt tạo lịch trình bằng AI. Mua thêm lượt để tiếp tục nhé.");
+        setPurchaseOpen(true);
+      } else {
+        setError(e instanceof Error ? e.message : "Không thể tạo lịch trình. Hãy kiểm tra đăng nhập hoặc thử lại sau.");
+      }
     } finally {
       setGenerating(false);
     }
@@ -793,6 +800,11 @@ function PlanContent() {
           </Card>
         </section>
       </main>
+      <PurchaseModal
+        open={purchaseOpen}
+        reason="PLAN"
+        onClose={() => setPurchaseOpen(false)}
+      />
     </div>
   );
 }
