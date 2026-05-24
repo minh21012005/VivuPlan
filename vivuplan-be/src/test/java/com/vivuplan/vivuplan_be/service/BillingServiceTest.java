@@ -14,6 +14,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -49,7 +53,7 @@ class BillingServiceTest {
                 sepayTransactionRepository,
                 new BillingPackageCatalog(),
                 new ObjectMapper());
-        ReflectionTestUtils.setField(service, "sepayWebhookApiKey", "secret");
+        ReflectionTestUtils.setField(service, "sepayWebhookSecret", "hmac-secret");
         ReflectionTestUtils.setField(service, "sepayQrUrlTemplate", "https://qr.example/{bank}/{account}?amount={amount}&des={description}&name={accountName}");
         ReflectionTestUtils.setField(service, "sepayBankCode", "MBBANK");
         ReflectionTestUtils.setField(service, "sepayAccountNumber", "123456");
@@ -120,12 +124,15 @@ class BillingServiceTest {
         when(sepayTransactionRepository.existsBySepayId("999")).thenReturn(false);
         when(paymentOrderRepository.lockByOrderCode("VPTEST1234")).thenReturn(Optional.of(order));
         when(userWalletRepository.lockByUserId(7L)).thenReturn(Optional.of(wallet));
+        String rawBody = """
+                {"id":999,"code":"VPTEST1234","content":"VPTEST1234","transferType":"in","transferAmount":10000,"referenceCode":"ABC"}
+                """;
 
+        String timestamp = String.valueOf(Instant.now().getEpochSecond());
         String status = service.handleSepayWebhook(
-                "Apikey secret",
-                new ObjectMapper().readTree("""
-                        {"id":999,"code":"VPTEST1234","content":"VPTEST1234","transferType":"in","transferAmount":10000,"referenceCode":"ABC"}
-                        """));
+                signature(timestamp, rawBody),
+                timestamp,
+                rawBody);
 
         assertThat(status).isEqualTo("CREDITED");
         assertThat(order.getStatus()).isEqualTo(PaymentOrder.Status.PAID);
@@ -139,12 +146,15 @@ class BillingServiceTest {
     void duplicateSepayWebhookReturnsSuccessWithoutReprocessing() throws Exception {
         BillingService service = service();
         when(sepayTransactionRepository.existsBySepayId("999")).thenReturn(true);
+        String rawBody = """
+                {"id":999,"code":"VPTEST1234","transferType":"in","transferAmount":10000}
+                """;
 
+        String timestamp = String.valueOf(Instant.now().getEpochSecond());
         String status = service.handleSepayWebhook(
-                "Apikey secret",
-                new ObjectMapper().readTree("""
-                        {"id":999,"code":"VPTEST1234","transferType":"in","transferAmount":10000}
-                        """));
+                signature(timestamp, rawBody),
+                timestamp,
+                rawBody);
 
         assertThat(status).isEqualTo("duplicate");
         verify(paymentOrderRepository, never()).lockByOrderCode(anyString());
@@ -157,12 +167,15 @@ class BillingServiceTest {
         PaymentOrder order = pendingOrder(sampleUser());
         when(sepayTransactionRepository.existsBySepayId("999")).thenReturn(false);
         when(paymentOrderRepository.lockByOrderCode("VPTEST1234")).thenReturn(Optional.of(order));
+        String rawBody = """
+                {"id":999,"code":"VPTEST1234","transferType":"in","transferAmount":5000}
+                """;
 
+        String timestamp = String.valueOf(Instant.now().getEpochSecond());
         String status = service.handleSepayWebhook(
-                "Apikey secret",
-                new ObjectMapper().readTree("""
-                        {"id":999,"code":"VPTEST1234","transferType":"in","transferAmount":5000}
-                        """));
+                signature(timestamp, rawBody),
+                timestamp,
+                rawBody);
 
         assertThat(status).isEqualTo("UNDERPAID");
         assertThat(order.getStatus()).isEqualTo(PaymentOrder.Status.UNDERPAID);
@@ -171,16 +184,43 @@ class BillingServiceTest {
     }
 
     @Test
-    void invalidSepayWebhookApiKeyReturnsUnauthorizedBillingException() throws Exception {
+    void invalidSepayWebhookSignatureReturnsUnauthorizedBillingException() {
         BillingService service = service();
 
         assertThatThrownBy(() -> service.handleSepayWebhook(
-                "Apikey wrong",
-                new ObjectMapper().readTree("""
+                "sha256=wrong",
+                String.valueOf(Instant.now().getEpochSecond()),
+                """
                         {"id":999}
-                        """)))
+                        """))
                 .isInstanceOf(BillingException.class)
                 .satisfies(error -> assertThat(((BillingException) error).getStatus().value()).isEqualTo(401));
+    }
+
+    @Test
+    void hmacSepayWebhookSignatureIsAcceptedWhenSecretIsConfigured() throws Exception {
+        BillingService service = service();
+        User user = sampleUser();
+        PaymentOrder order = pendingOrder(user);
+        UserWallet wallet = UserWallet.builder()
+                .user(user)
+                .planCredits(0L)
+                .editCredits(0L)
+                .build();
+        when(sepayTransactionRepository.existsBySepayId("999")).thenReturn(false);
+        when(paymentOrderRepository.lockByOrderCode("VPTEST1234")).thenReturn(Optional.of(order));
+        when(userWalletRepository.lockByUserId(7L)).thenReturn(Optional.of(wallet));
+        String rawBody = """
+                {"id":999,"code":"VPTEST1234","content":"VPTEST1234","transferType":"in","transferAmount":10000}
+                """;
+        String timestamp = String.valueOf(Instant.now().getEpochSecond());
+
+        String status = service.handleSepayWebhook(
+                "sha256=" + hmacSha256Hex("hmac-secret", timestamp + "." + rawBody),
+                timestamp,
+                rawBody);
+
+        assertThat(status).isEqualTo("CREDITED");
     }
 
     private User sampleUser() {
@@ -202,5 +242,20 @@ class BillingServiceTest {
                 .status(PaymentOrder.Status.PENDING)
                 .expiresAt(LocalDateTime.now().plusMinutes(20))
                 .build();
+    }
+
+    private String hmacSha256Hex(String secret, String payload) throws Exception {
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+        byte[] digest = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+        StringBuilder hex = new StringBuilder(digest.length * 2);
+        for (byte b : digest) {
+            hex.append(String.format("%02x", b));
+        }
+        return hex.toString();
+    }
+
+    private String signature(String timestamp, String rawBody) throws Exception {
+        return "sha256=" + hmacSha256Hex("hmac-secret", timestamp + "." + rawBody);
     }
 }

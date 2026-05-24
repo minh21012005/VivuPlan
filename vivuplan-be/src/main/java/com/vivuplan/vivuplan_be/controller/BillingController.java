@@ -1,6 +1,5 @@
 package com.vivuplan.vivuplan_be.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.vivuplan.vivuplan_be.dto.BillingDto;
 import com.vivuplan.vivuplan_be.service.BillingService;
 import jakarta.validation.Valid;
@@ -45,9 +44,10 @@ public class BillingController {
 
     @PostMapping("/sepay/webhook")
     public ResponseEntity<Map<String, String>> sepayWebhook(
-            @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestBody JsonNode payload) {
-        String status = billingService.handleSepayWebhook(authorization, payload);
+            @RequestHeader(value = "X-SePay-Signature", required = false) String signature,
+            @RequestHeader(value = "X-SePay-Timestamp", required = false) String timestamp,
+            @RequestBody String rawBody) {
+        String status = billingService.handleSepayWebhook(signature, timestamp, rawBody);
         return ResponseEntity.ok(Map.of("status", status));
     }
 }

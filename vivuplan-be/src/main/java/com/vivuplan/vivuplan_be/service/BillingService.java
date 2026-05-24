@@ -14,9 +14,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriUtils;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.security.MessageDigest;
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -29,6 +33,7 @@ public class BillingService {
 
     private static final long FREE_SIGNUP_PLAN_CREDITS = 1L;
     private static final long FREE_SIGNUP_EDIT_CREDITS = 1L;
+    private static final long WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS = 300L;
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final char[] ORDER_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".toCharArray();
 
@@ -40,8 +45,8 @@ public class BillingService {
     private final BillingPackageCatalog packageCatalog;
     private final ObjectMapper objectMapper;
 
-    @Value("${app.billing.sepay.webhook-api-key:${SEPAY_WEBHOOK_API_KEY:}}")
-    private String sepayWebhookApiKey;
+    @Value("${app.billing.sepay.webhook-secret:${SEPAY_WEBHOOK_SECRET:}}")
+    private String sepayWebhookSecret;
 
     @Value("${app.billing.sepay.qr-url-template:${SEPAY_QR_URL_TEMPLATE:}}")
     private String sepayQrUrlTemplate;
@@ -161,8 +166,9 @@ public class BillingService {
     }
 
     @Transactional
-    public String handleSepayWebhook(String authorization, JsonNode payload) {
-        validateWebhookAuthorization(authorization);
+    public String handleSepayWebhook(String signature, String timestamp, String rawBody) {
+        validateWebhookSignature(signature, timestamp, rawBody);
+        JsonNode payload = parsePayload(rawBody);
 
         String sepayId = readString(payload, "id");
         if (sepayId == null || sepayId.isBlank()) {
@@ -177,7 +183,7 @@ public class BillingService {
         String transferType = readString(payload, "transferType");
         Long transferAmount = readLong(payload, "transferAmount");
         String referenceCode = readString(payload, "referenceCode");
-        String rawPayload = toJson(payload);
+        String rawPayload = rawBody;
 
         PaymentOrder order = findMatchingOrder(code, content).orElse(null);
         String transactionStatus = "UNMATCHED";
@@ -261,13 +267,54 @@ public class BillingService {
         return Optional.empty();
     }
 
-    private void validateWebhookAuthorization(String authorization) {
-        if (sepayWebhookApiKey == null || sepayWebhookApiKey.isBlank()) {
-            throw new BillingException("SEPAY_WEBHOOK_NOT_CONFIGURED", "SePay webhook API key is not configured", HttpStatus.INTERNAL_SERVER_ERROR);
+    private void validateWebhookSignature(String signature, String timestamp, String rawBody) {
+        if (sepayWebhookSecret == null || sepayWebhookSecret.isBlank()) {
+            throw new BillingException("SEPAY_WEBHOOK_NOT_CONFIGURED", "SePay webhook authentication is not configured", HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        String expected = "Apikey " + sepayWebhookApiKey.trim();
-        if (authorization == null || !authorization.trim().equals(expected)) {
-            throw new BillingException("INVALID_SEPAY_API_KEY", "Invalid SePay API key", HttpStatus.UNAUTHORIZED);
+        if (signature == null || signature.isBlank() || timestamp == null || timestamp.isBlank()) {
+            throw new BillingException("INVALID_SEPAY_SIGNATURE", "Missing SePay webhook signature", HttpStatus.UNAUTHORIZED);
+        }
+
+        long signedAt;
+        try {
+            signedAt = Long.parseLong(timestamp.trim());
+        } catch (NumberFormatException e) {
+            throw new BillingException("INVALID_SEPAY_SIGNATURE", "Invalid SePay webhook timestamp", HttpStatus.UNAUTHORIZED);
+        }
+
+        long now = Instant.now().getEpochSecond();
+        if (Math.abs(now - signedAt) > WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS) {
+            throw new BillingException("INVALID_SEPAY_SIGNATURE", "Expired SePay webhook signature", HttpStatus.UNAUTHORIZED);
+        }
+
+        String expected = "sha256=" + hmacSha256Hex(sepayWebhookSecret.trim(), timestamp.trim() + "." + nullToBlank(rawBody));
+        if (!MessageDigest.isEqual(
+                expected.getBytes(StandardCharsets.UTF_8),
+                signature.trim().getBytes(StandardCharsets.UTF_8))) {
+            throw new BillingException("INVALID_SEPAY_SIGNATURE", "Invalid SePay webhook signature", HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+    private String hmacSha256Hex(String secret, String payload) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] digest = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                hex.append(String.format("%02x", b));
+            }
+            return hex.toString();
+        } catch (Exception e) {
+            throw new IllegalStateException("Cannot verify SePay webhook signature", e);
+        }
+    }
+
+    private JsonNode parsePayload(String rawBody) {
+        try {
+            return objectMapper.readTree(rawBody);
+        } catch (Exception e) {
+            throw new BillingException("INVALID_SEPAY_PAYLOAD", "Invalid SePay webhook payload", HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -342,14 +389,6 @@ public class BillingService {
         }
         String value = node.asText("").replaceAll("[^0-9]", "");
         return value.isBlank() ? null : Long.parseLong(value);
-    }
-
-    private String toJson(JsonNode payload) {
-        try {
-            return objectMapper.writeValueAsString(payload);
-        } catch (Exception e) {
-            return payload.toString();
-        }
     }
 
     private String nullToBlank(String value) {
