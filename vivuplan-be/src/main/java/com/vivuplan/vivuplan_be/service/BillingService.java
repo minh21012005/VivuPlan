@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 public class BillingService {
 
     private static final long FREE_SIGNUP_PLAN_CREDITS = 1L;
-    private static final long FREE_SIGNUP_EDIT_CREDITS = 1L;
+    private static final long FREE_SIGNUP_EDIT_CREDITS = 2L;
     private static final long WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS = 300L;
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final char[] ORDER_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".toCharArray();

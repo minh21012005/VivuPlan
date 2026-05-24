@@ -11,9 +11,9 @@ import { useBilling } from "@/hooks/useBilling";
 import { Check, CreditCard, Sparkles, Zap } from "lucide-react";
 
 const fallbackPackages: BillingPackage[] = [
-  { code: "PLAN_1", name: "Gói một chuyến", description: "1 lượt tạo lịch trình + 2 lượt chỉnh ngày bằng AI", amount: 10_000, planCredits: 1, editCredits: 2 },
-  { code: "PLAN_3", name: "Gói cuối tuần", description: "3 lượt tạo lịch trình + 9 lượt chỉnh ngày bằng AI", amount: 29_000, planCredits: 3, editCredits: 9, highlighted: true },
-  { code: "PLAN_10", name: "Gói mê đi", description: "10 lượt tạo lịch trình + 35 lượt chỉnh ngày bằng AI", amount: 89_000, planCredits: 10, editCredits: 35 },
+  { code: "PLAN_1", name: "Gói cơ bản", description: "3 lượt tạo lịch trình + 5 lượt chỉnh ngày bằng AI", amount: 19_000, planCredits: 3, editCredits: 5 },
+  { code: "PLAN_3", name: "Gói tiêu chuẩn", description: "7 lượt tạo lịch trình + 15 lượt chỉnh ngày bằng AI", amount: 39_000, planCredits: 7, editCredits: 15, highlighted: true },
+  { code: "PLAN_10", name: "Gói tiết kiệm", description: "15 lượt tạo lịch trình + 35 lượt chỉnh ngày bằng AI", amount: 79_000, planCredits: 15, editCredits: 35 },
 ];
 
 function fmtVnd(value: number) {
@@ -24,13 +24,13 @@ function packageCopy(item: BillingPackage) {
   const copy: Record<string, { name: string; eyebrow: string; bestFor: string }> = {
     PLAN_1: {
       name: "Cơ bản",
-      eyebrow: "Cho một chuyến đi",
-      bestFor: "Phù hợp khi bạn cần lên lịch trình cho một chuyến cụ thể.",
+      eyebrow: "Linh hoạt",
+      bestFor: "Phù hợp khi bạn muốn lên vài phương án đầu tiên.",
     },
     PLAN_3: {
       name: "Tiêu chuẩn",
       eyebrow: "Phổ biến",
-      bestFor: "Dành cho vài chuyến ngắn hoặc khi bạn muốn có thêm lựa chọn.",
+      bestFor: "Dành cho nhiều chuyến ngắn hoặc nhóm cần thêm lựa chọn.",
     },
     PLAN_10: {
       name: "Tiết kiệm",
@@ -133,7 +133,7 @@ export default function PricingPage() {
 
               <ul className="pricing-benefits">
                 <li><Check size={14} /> 1 lịch trình mới</li>
-                <li><Check size={14} /> 1 lần chỉnh ngày bằng AI</li>
+                <li><Check size={14} /> 2 lần chỉnh ngày bằng AI</li>
                 <li><Check size={14} /> Đầy đủ tính năng trong lịch trình</li>
               </ul>
             </article>
