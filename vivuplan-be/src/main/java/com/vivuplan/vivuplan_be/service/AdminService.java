@@ -60,6 +60,12 @@ public class AdminService {
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
         Role newRole = getOrCreateRole(parseRole(role));
         Role userRole = getOrCreateRole(Role.RoleName.USER);
+        if (actorUserId != null
+                && actorUserId.equals(userId)
+                && user.hasRole(Role.RoleName.ADMIN)
+                && newRole.getName() == Role.RoleName.USER) {
+            throw new IllegalArgumentException("Không thể tự hạ quyền tài khoản admin đang đăng nhập");
+        }
         if (user.hasRole(Role.RoleName.ADMIN)
                 && newRole.getName() == Role.RoleName.USER
                 && userRepository.countByRoleName(Role.RoleName.ADMIN) <= 1) {
