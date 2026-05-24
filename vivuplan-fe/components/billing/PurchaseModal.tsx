@@ -16,9 +16,9 @@ interface PurchaseModalProps {
 }
 
 const fallbackPackages: BillingPackage[] = [
-  { code: "PLAN_1", name: "Gói một chuyến", description: "1 lượt tạo lịch trình + 2 lượt chỉnh ngày bằng AI", amount: 10_000, planCredits: 1, editCredits: 2 },
-  { code: "PLAN_3", name: "Gói cuối tuần", description: "3 lượt tạo lịch trình + 9 lượt chỉnh ngày bằng AI", amount: 29_000, planCredits: 3, editCredits: 9, highlighted: true },
-  { code: "PLAN_10", name: "Gói mê đi", description: "10 lượt tạo lịch trình + 35 lượt chỉnh ngày bằng AI", amount: 89_000, planCredits: 10, editCredits: 35 },
+  { code: "PLAN_1", name: "Cơ bản", description: "1 lịch trình mới + 2 lần chỉnh ngày", amount: 10_000, planCredits: 1, editCredits: 2 },
+  { code: "PLAN_3", name: "Tiêu chuẩn", description: "3 lịch trình mới + 9 lần chỉnh ngày", amount: 29_000, planCredits: 3, editCredits: 9, highlighted: true },
+  { code: "PLAN_10", name: "Tiết kiệm", description: "10 lịch trình mới + 35 lần chỉnh ngày", amount: 89_000, planCredits: 10, editCredits: 35 },
 ];
 
 function fmtVnd(value: number) {
@@ -39,16 +39,16 @@ function fmtCountdown(totalSeconds: number) {
 function packageCopy(item: BillingPackage) {
   const copy: Record<string, { name: string; description: string }> = {
     PLAN_1: {
-      name: "Gói một chuyến",
-      description: "1 lượt tạo lịch trình, kèm 2 lượt chỉnh ngày bằng AI.",
+      name: "Cơ bản",
+      description: "1 lịch trình mới, kèm 2 lần chỉnh ngày.",
     },
     PLAN_3: {
-      name: "Gói cuối tuần",
-      description: "3 lượt tạo lịch trình, kèm 9 lượt chỉnh ngày bằng AI.",
+      name: "Tiêu chuẩn",
+      description: "3 lịch trình mới, kèm 9 lần chỉnh ngày.",
     },
     PLAN_10: {
-      name: "Gói mê đi",
-      description: "10 lượt tạo lịch trình, kèm 35 lượt chỉnh ngày bằng AI.",
+      name: "Tiết kiệm",
+      description: "10 lịch trình mới, kèm 35 lần chỉnh ngày.",
     },
   };
   return copy[item.code] ?? { name: item.name, description: item.description };
@@ -176,11 +176,11 @@ export function PurchaseModal({ open, reason = "PLAN", onClose, onPaid }: Purcha
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 22px", borderBottom: "1px solid var(--border)" }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "var(--text)" }}>
-              {reason === "EDIT" ? "Thêm lượt chỉnh ngày" : "Thêm lượt tạo lịch trình"}
+            <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "var(--text)" }}>
+              {reason === "EDIT" ? "Thêm lượt chỉnh ngày" : "Chọn gói cho chuyến đi"}
             </h2>
             <p style={{ margin: "6px 0 0", color: "var(--text-3)", fontSize: 14 }}>
-              Quét QR để chuyển khoản qua SePay. Bạn chỉ mua thêm lượt dùng AI; các tính năng trong lịch trình vẫn giữ nguyên.
+              Chọn gói phù hợp, quét mã để thanh toán và VivuPlan sẽ tự cộng lượt vào tài khoản của bạn.
             </p>
           </div>
           <button type="button" onClick={onClose} aria-label="Đóng" style={{ border: 0, background: "transparent", cursor: "pointer", color: "var(--text-3)" }}>
@@ -225,13 +225,13 @@ export function PurchaseModal({ open, reason = "PLAN", onClose, onPaid }: Purcha
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
                       <strong style={{ fontSize: 16, color: "var(--text)" }}>{packageCopy(item).name}</strong>
-                      {recommended.has(item.code) && <span className="badge badge-green">Gợi ý</span>}
+                      {item.highlighted && <span className="badge badge-green">Phù hợp nhất</span>}
                     </div>
                     <div style={{ fontSize: 28, fontWeight: 900, color: "var(--primary)", margin: "14px 0 8px" }}>{fmtVnd(item.amount)}</div>
                     <p style={{ margin: 0, color: "var(--text-3)", fontSize: 13, lineHeight: 1.5 }}>{packageCopy(item).description}</p>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-                      {item.planCredits > 0 && <span className="badge badge-teal">+{item.planCredits} lượt tạo</span>}
-                      {item.editCredits > 0 && <span className="badge badge-blue">+{item.editCredits} lượt chỉnh</span>}
+                      {item.planCredits > 0 && <span className="badge badge-teal">+{item.planCredits} lịch trình</span>}
+                      {item.editCredits > 0 && <span className="badge badge-blue">+{item.editCredits} lần chỉnh</span>}
                     </div>
                   </button>
                 );
