@@ -18,9 +18,9 @@ interface PurchaseModalProps {
 }
 
 const fallbackPackages: BillingPackage[] = [
-  { code: "PLAN_1", name: "Cơ bản", description: "3 lịch trình mới + 5 lần chỉnh ngày", amount: 19_000, planCredits: 3, editCredits: 5 },
-  { code: "PLAN_3", name: "Tiêu chuẩn", description: "7 lịch trình mới + 15 lần chỉnh ngày", amount: 39_000, planCredits: 7, editCredits: 15, highlighted: true },
-  { code: "PLAN_10", name: "Tiết kiệm", description: "15 lịch trình mới + 35 lần chỉnh ngày", amount: 79_000, planCredits: 15, editCredits: 35 },
+  { code: "PLAN_1", name: "Cơ bản", description: "2 lịch trình mới + 3 lần chỉnh ngày", amount: 10_000, planCredits: 2, editCredits: 3 },
+  { code: "PLAN_3", name: "Tiêu chuẩn", description: "5 lịch trình mới + 10 lần chỉnh ngày", amount: 19_000, planCredits: 5, editCredits: 10, highlighted: true },
+  { code: "PLAN_10", name: "Tiết kiệm", description: "15 lịch trình mới + 30 lần chỉnh ngày", amount: 39_000, planCredits: 15, editCredits: 30 },
 ];
 
 function fmtVnd(value: number) {
@@ -42,15 +42,15 @@ function packageCopy(item: BillingPackage) {
   const copy: Record<string, { name: string; description: string }> = {
     PLAN_1: {
       name: "Cơ bản",
-      description: "3 lịch trình mới, kèm 5 lần chỉnh ngày.",
+      description: "2 lịch trình mới, kèm 3 lần chỉnh ngày.",
     },
     PLAN_3: {
       name: "Tiêu chuẩn",
-      description: "7 lịch trình mới, kèm 15 lần chỉnh ngày.",
+      description: "5 lịch trình mới, kèm 10 lần chỉnh ngày.",
     },
     PLAN_10: {
       name: "Tiết kiệm",
-      description: "15 lịch trình mới, kèm 35 lần chỉnh ngày.",
+      description: "15 lịch trình mới, kèm 30 lần chỉnh ngày.",
     },
   };
   return copy[item.code] ?? { name: item.name, description: item.description };

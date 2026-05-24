@@ -11,9 +11,9 @@ import { useBilling } from "@/hooks/useBilling";
 import { Check, CreditCard, Sparkles, Zap } from "lucide-react";
 
 const fallbackPackages: BillingPackage[] = [
-  { code: "PLAN_1", name: "Gói cơ bản", description: "3 lượt tạo lịch trình + 5 lượt chỉnh ngày bằng AI", amount: 19_000, planCredits: 3, editCredits: 5 },
-  { code: "PLAN_3", name: "Gói tiêu chuẩn", description: "7 lượt tạo lịch trình + 15 lượt chỉnh ngày bằng AI", amount: 39_000, planCredits: 7, editCredits: 15, highlighted: true },
-  { code: "PLAN_10", name: "Gói tiết kiệm", description: "15 lượt tạo lịch trình + 35 lượt chỉnh ngày bằng AI", amount: 79_000, planCredits: 15, editCredits: 35 },
+  { code: "PLAN_1", name: "Gói cơ bản", description: "2 lượt tạo lịch trình + 3 lượt chỉnh ngày bằng AI", amount: 10_000, planCredits: 2, editCredits: 3 },
+  { code: "PLAN_3", name: "Gói tiêu chuẩn", description: "5 lượt tạo lịch trình + 10 lượt chỉnh ngày bằng AI", amount: 19_000, planCredits: 5, editCredits: 10, highlighted: true },
+  { code: "PLAN_10", name: "Gói tiết kiệm", description: "15 lượt tạo lịch trình + 30 lượt chỉnh ngày bằng AI", amount: 39_000, planCredits: 15, editCredits: 30 },
 ];
 
 function fmtVnd(value: number) {
@@ -133,7 +133,7 @@ export default function PricingPage() {
 
               <ul className="pricing-benefits">
                 <li><Check size={14} /> 1 lịch trình mới</li>
-                <li><Check size={14} /> 2 lần chỉnh ngày bằng AI</li>
+                <li><Check size={14} /> 1 lần chỉnh ngày bằng AI</li>
                 <li><Check size={14} /> Đầy đủ tính năng trong lịch trình</li>
               </ul>
             </article>

@@ -74,7 +74,7 @@ class BillingServiceTest {
         ArgumentCaptor<UserWallet> walletCaptor = ArgumentCaptor.forClass(UserWallet.class);
         verify(userWalletRepository).save(walletCaptor.capture());
         assertThat(walletCaptor.getValue().getPlanCredits()).isEqualTo(1);
-        assertThat(walletCaptor.getValue().getEditCredits()).isEqualTo(2);
+        assertThat(walletCaptor.getValue().getEditCredits()).isEqualTo(1);
         verify(creditLedgerRepository, times(2)).save(any());
     }
 
@@ -125,7 +125,7 @@ class BillingServiceTest {
         when(paymentOrderRepository.lockByOrderCode("VPTEST1234")).thenReturn(Optional.of(order));
         when(userWalletRepository.lockByUserId(7L)).thenReturn(Optional.of(wallet));
         String rawBody = """
-                {"id":999,"code":"VPTEST1234","content":"VPTEST1234","transferType":"in","transferAmount":19000,"referenceCode":"ABC"}
+                {"id":999,"code":"VPTEST1234","content":"VPTEST1234","transferType":"in","transferAmount":10000,"referenceCode":"ABC"}
                 """;
 
         String timestamp = String.valueOf(Instant.now().getEpochSecond());
@@ -136,8 +136,8 @@ class BillingServiceTest {
 
         assertThat(status).isEqualTo("CREDITED");
         assertThat(order.getStatus()).isEqualTo(PaymentOrder.Status.PAID);
-        assertThat(wallet.getPlanCredits()).isEqualTo(3);
-        assertThat(wallet.getEditCredits()).isEqualTo(5);
+        assertThat(wallet.getPlanCredits()).isEqualTo(2);
+        assertThat(wallet.getEditCredits()).isEqualTo(3);
         verify(creditLedgerRepository, times(2)).save(any());
         verify(sepayTransactionRepository).save(any(SepayTransaction.class));
     }
@@ -147,7 +147,7 @@ class BillingServiceTest {
         BillingService service = service();
         when(sepayTransactionRepository.existsBySepayId("999")).thenReturn(true);
         String rawBody = """
-                {"id":999,"code":"VPTEST1234","transferType":"in","transferAmount":19000}
+                {"id":999,"code":"VPTEST1234","transferType":"in","transferAmount":10000}
                 """;
 
         String timestamp = String.valueOf(Instant.now().getEpochSecond());
@@ -242,7 +242,7 @@ class BillingServiceTest {
         when(paymentOrderRepository.lockByOrderCode("VPTEST1234")).thenReturn(Optional.of(order));
         when(userWalletRepository.lockByUserId(7L)).thenReturn(Optional.of(wallet));
         String rawBody = """
-                {"id":999,"code":"VPTEST1234","content":"VPTEST1234","transferType":"in","transferAmount":19000}
+                {"id":999,"code":"VPTEST1234","content":"VPTEST1234","transferType":"in","transferAmount":10000}
                 """;
         String timestamp = String.valueOf(Instant.now().getEpochSecond());
 
@@ -267,9 +267,9 @@ class BillingServiceTest {
                 .orderCode("VPTEST1234")
                 .user(user)
                 .packageCode("PLAN_1")
-                .amount(19_000L)
-                .planCredits(3L)
-                .editCredits(5L)
+                .amount(10_000L)
+                .planCredits(2L)
+                .editCredits(3L)
                 .status(PaymentOrder.Status.PENDING)
                 .expiresAt(LocalDateTime.now().plusMinutes(20))
                 .build();

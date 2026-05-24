@@ -9,9 +9,9 @@ import java.util.List;
 public class BillingPackageCatalog {
 
     private final List<CreditPackage> packages = List.of(
-            new CreditPackage("PLAN_1", "Go co ban", "3 lich trinh AI + 5 luot chinh ngay", 19_000L, 3L, 5L, false),
-            new CreditPackage("PLAN_3", "Go tieu chuan", "7 lich trinh AI + 15 luot chinh ngay", 39_000L, 7L, 15L, true),
-            new CreditPackage("PLAN_10", "Go tiet kiem", "15 lich trinh AI + 35 luot chinh ngay", 79_000L, 15L, 35L, false)
+            new CreditPackage("PLAN_1", "Go co ban", "2 lich trinh AI + 3 luot chinh ngay", 10_000L, 2L, 3L, false),
+            new CreditPackage("PLAN_3", "Go tieu chuan", "5 lich trinh AI + 10 luot chinh ngay", 19_000L, 5L, 10L, true),
+            new CreditPackage("PLAN_10", "Go tiet kiem", "15 lich trinh AI + 30 luot chinh ngay", 39_000L, 15L, 30L, false)
     );
 
     public List<CreditPackage> list() {
