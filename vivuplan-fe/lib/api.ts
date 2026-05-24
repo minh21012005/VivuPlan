@@ -239,7 +239,7 @@ export interface AuthResponse {
 }
 
 export interface BillingPackage {
-  code: "PLAN_1" | "PLAN_3" | "PLAN_10" | "EDIT_5" | string;
+  code: "PLAN_1" | "PLAN_3" | "PLAN_10" | string;
   name: string;
   description: string;
   amount: number;

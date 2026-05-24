@@ -19,7 +19,6 @@ const fallbackPackages: BillingPackage[] = [
   { code: "PLAN_1", name: "Gói một chuyến", description: "1 lượt tạo lịch trình + 2 lượt chỉnh ngày bằng AI", amount: 10_000, planCredits: 1, editCredits: 2 },
   { code: "PLAN_3", name: "Gói cuối tuần", description: "3 lượt tạo lịch trình + 9 lượt chỉnh ngày bằng AI", amount: 29_000, planCredits: 3, editCredits: 9, highlighted: true },
   { code: "PLAN_10", name: "Gói mê đi", description: "10 lượt tạo lịch trình + 35 lượt chỉnh ngày bằng AI", amount: 89_000, planCredits: 10, editCredits: 35 },
-  { code: "EDIT_5", name: "Gói chỉnh ngày", description: "5 lượt chỉnh lại từng ngày bằng AI", amount: 5_000, planCredits: 0, editCredits: 5 },
 ];
 
 function fmtVnd(value: number) {
@@ -51,10 +50,6 @@ function packageCopy(item: BillingPackage) {
       name: "Gói mê đi",
       description: "10 lượt tạo lịch trình, kèm 35 lượt chỉnh ngày bằng AI.",
     },
-    EDIT_5: {
-      name: "Gói chỉnh ngày",
-      description: "5 lượt nhờ AI làm lại từng ngày trong lịch trình.",
-    },
   };
   return copy[item.code] ?? { name: item.name, description: item.description };
 }
@@ -75,16 +70,13 @@ export function PurchaseModal({ open, reason = "PLAN", onClose, onPaid }: Purcha
   const { isLoggedIn, loading: authLoading } = useAuth();
   const [packages, setPackages] = useState<BillingPackage[]>(fallbackPackages);
   const [wallet, setWallet] = useState<BillingWallet | null>(null);
-  const [selectedCode, setSelectedCode] = useState(reason === "EDIT" ? "EDIT_5" : "PLAN_3");
+  const [selectedCode, setSelectedCode] = useState("PLAN_3");
   const [order, setOrder] = useState<BillingOrder | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [remaining, setRemaining] = useState(0);
 
-  const recommended = useMemo(() => {
-    if (reason === "EDIT") return new Set(["EDIT_5", "PLAN_1", "PLAN_3"]);
-    return new Set(["PLAN_1", "PLAN_3", "PLAN_10"]);
-  }, [reason]);
+  const recommended = useMemo(() => new Set(["PLAN_1", "PLAN_3", "PLAN_10"]), []);
 
   const visiblePackages = useMemo(() => {
     const list = packages.length ? packages : fallbackPackages;
@@ -99,7 +91,7 @@ export function PurchaseModal({ open, reason = "PLAN", onClose, onPaid }: Purcha
     if (!open) return;
     setOrder(null);
     setMessage("");
-    setSelectedCode(reason === "EDIT" ? "EDIT_5" : "PLAN_3");
+    setSelectedCode("PLAN_3");
     billingApi.packages()
       .then(setPackages)
       .catch(() => setPackages(fallbackPackages));

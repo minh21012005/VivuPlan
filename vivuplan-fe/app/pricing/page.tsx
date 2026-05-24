@@ -13,7 +13,6 @@ const fallbackPackages: BillingPackage[] = [
   { code: "PLAN_1", name: "Gói một chuyến", description: "1 lượt tạo lịch trình + 2 lượt chỉnh ngày bằng AI", amount: 10_000, planCredits: 1, editCredits: 2 },
   { code: "PLAN_3", name: "Gói cuối tuần", description: "3 lượt tạo lịch trình + 9 lượt chỉnh ngày bằng AI", amount: 29_000, planCredits: 3, editCredits: 9, highlighted: true },
   { code: "PLAN_10", name: "Gói mê đi", description: "10 lượt tạo lịch trình + 35 lượt chỉnh ngày bằng AI", amount: 89_000, planCredits: 10, editCredits: 35 },
-  { code: "EDIT_5", name: "Gói chỉnh ngày", description: "5 lượt chỉnh lại từng ngày bằng AI", amount: 5_000, planCredits: 0, editCredits: 5 },
 ];
 
 function fmtVnd(value: number) {
@@ -34,10 +33,6 @@ function packageCopy(item: BillingPackage) {
       name: "Gói mê đi",
       description: "Dành cho người lập kế hoạch thường xuyên, nhóm bạn hoặc gia đình.",
     },
-    EDIT_5: {
-      name: "Gói chỉnh ngày",
-      description: "Thêm lượt nhờ AI làm lại từng ngày, còn chỉnh tay thì luôn miễn phí.",
-    },
   };
   return copy[item.code] ?? { name: item.name, description: item.description };
 }
@@ -48,7 +43,6 @@ export default function PricingPage() {
   const [packages, setPackages] = useState<BillingPackage[]>(fallbackPackages);
   const [wallet, setWallet] = useState<BillingWallet | null>(null);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
-  const [purchaseReason, setPurchaseReason] = useState<"PLAN" | "EDIT">("PLAN");
 
   const refreshWallet = () => {
     if (!isLoggedIn) {
@@ -71,12 +65,11 @@ export default function PricingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn]);
 
-  const startPurchase = (code: string) => {
+  const startPurchase = () => {
     if (!isLoggedIn && !authLoading) {
       router.push("/login");
       return;
     }
-    setPurchaseReason(code === "EDIT_5" ? "EDIT" : "PLAN");
     setPurchaseOpen(true);
   };
 
@@ -152,7 +145,7 @@ export default function PricingPage() {
                   {item.editCredits > 0 && <li><Check size={14} /> {item.editCredits} lượt chỉnh ngày bằng AI</li>}
                   <li><Check size={14} /> Chỉ trừ lượt khi AI tạo xong</li>
                 </ul>
-                <button type="button" className={item.highlighted ? "btn btn-primary" : "btn btn-secondary"} style={{ width: "100%", justifyContent: "center" }} onClick={() => startPurchase(item.code)}>
+                <button type="button" className={item.highlighted ? "btn btn-primary" : "btn btn-secondary"} style={{ width: "100%", justifyContent: "center" }} onClick={startPurchase}>
                   Mua gói này
                 </button>
               </div>
@@ -163,7 +156,7 @@ export default function PricingPage() {
 
       <PurchaseModal
         open={purchaseOpen}
-        reason={purchaseReason}
+        reason="PLAN"
         onClose={() => setPurchaseOpen(false)}
         onPaid={refreshWallet}
       />
