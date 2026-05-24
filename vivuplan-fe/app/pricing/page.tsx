@@ -46,6 +46,7 @@ export default function PricingPage() {
   const [packages, setPackages] = useState<BillingPackage[]>(fallbackPackages);
   const [wallet, setWallet] = useState<BillingWallet | null>(null);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [purchasePackageCode, setPurchasePackageCode] = useState<string | undefined>();
 
   const refreshWallet = () => {
     if (!isLoggedIn) {
@@ -68,11 +69,12 @@ export default function PricingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn]);
 
-  const startPurchase = () => {
+  const startPurchase = (packageCode: string) => {
     if (!isLoggedIn && !authLoading) {
       router.push("/login");
       return;
     }
+    setPurchasePackageCode(packageCode);
     setPurchaseOpen(true);
   };
 
@@ -169,7 +171,7 @@ export default function PricingPage() {
                   <button
                     type="button"
                     className={item.highlighted ? "btn btn-primary pricing-card-cta" : "btn btn-secondary pricing-card-cta"}
-                    onClick={startPurchase}
+                    onClick={() => startPurchase(item.code)}
                   >
                     Chọn gói
                   </button>
@@ -192,6 +194,7 @@ export default function PricingPage() {
       <PurchaseModal
         open={purchaseOpen}
         reason="PLAN"
+        initialPackageCode={purchasePackageCode}
         onClose={() => setPurchaseOpen(false)}
         onPaid={refreshWallet}
       />

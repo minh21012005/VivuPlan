@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { billingApi, type BillingOrder, type BillingPackage, type BillingWallet } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +11,7 @@ type PurchaseReason = "PLAN" | "EDIT";
 interface PurchaseModalProps {
   open: boolean;
   reason?: PurchaseReason;
+  initialPackageCode?: string;
   onClose: () => void;
   onPaid?: () => void;
 }
@@ -65,16 +66,17 @@ function statusLabel(status: BillingOrder["status"]) {
   return labels[status];
 }
 
-export function PurchaseModal({ open, reason = "PLAN", onClose, onPaid }: PurchaseModalProps) {
+export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClose, onPaid }: PurchaseModalProps) {
   const router = useRouter();
   const { isLoggedIn, loading: authLoading } = useAuth();
   const [packages, setPackages] = useState<BillingPackage[]>(fallbackPackages);
   const [wallet, setWallet] = useState<BillingWallet | null>(null);
-  const [selectedCode, setSelectedCode] = useState("PLAN_3");
+  const [selectedCode, setSelectedCode] = useState(initialPackageCode ?? "PLAN_3");
   const [order, setOrder] = useState<BillingOrder | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [remaining, setRemaining] = useState(0);
+  const autoCreatedCodeRef = useRef<string | null>(null);
 
   const recommended = useMemo(() => new Set(["PLAN_1", "PLAN_3", "PLAN_10"]), []);
 
@@ -87,11 +89,31 @@ export function PurchaseModal({ open, reason = "PLAN", onClose, onPaid }: Purcha
     });
   }, [packages, recommended]);
 
+  const createOrder = useCallback(async (packageCode: string) => {
+    if (!isLoggedIn) {
+      router.push("/login");
+      return;
+    }
+    setSelectedCode(packageCode);
+    setLoading(true);
+    setMessage("");
+    try {
+      const nextOrder = await billingApi.createOrder(packageCode);
+      setOrder(nextOrder);
+      setRemaining(secondsLeft(nextOrder.expiresAt));
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Không thể tạo mã thanh toán. Vui lòng thử lại.");
+      autoCreatedCodeRef.current = null;
+    } finally {
+      setLoading(false);
+    }
+  }, [isLoggedIn, router]);
+
   useEffect(() => {
     if (!open) return;
     setOrder(null);
     setMessage("");
-    setSelectedCode("PLAN_3");
+    setSelectedCode(initialPackageCode ?? "PLAN_3");
     billingApi.packages()
       .then(setPackages)
       .catch(() => setPackages(fallbackPackages));
@@ -100,7 +122,19 @@ export function PurchaseModal({ open, reason = "PLAN", onClose, onPaid }: Purcha
         .then((data) => setWallet(data.wallet))
         .catch(() => setWallet(null));
     }
-  }, [open, reason, isLoggedIn]);
+  }, [open, reason, initialPackageCode, isLoggedIn]);
+
+  useEffect(() => {
+    if (open) return;
+    autoCreatedCodeRef.current = null;
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !initialPackageCode || authLoading || !isLoggedIn) return;
+    if (autoCreatedCodeRef.current === initialPackageCode) return;
+    autoCreatedCodeRef.current = initialPackageCode;
+    void createOrder(initialPackageCode);
+  }, [open, initialPackageCode, authLoading, isLoggedIn, createOrder]);
 
   useEffect(() => {
     if (!order || order.status !== "PENDING") return;
@@ -136,25 +170,6 @@ export function PurchaseModal({ open, reason = "PLAN", onClose, onPaid }: Purcha
 
   if (!open) return null;
 
-  const createOrder = async (packageCode: string) => {
-    if (!isLoggedIn) {
-      router.push("/login");
-      return;
-    }
-    setSelectedCode(packageCode);
-    setLoading(true);
-    setMessage("");
-    try {
-      const nextOrder = await billingApi.createOrder(packageCode);
-      setOrder(nextOrder);
-      setRemaining(secondsLeft(nextOrder.expiresAt));
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Không thể tạo mã thanh toán. Vui lòng thử lại.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div style={{
       position: "fixed",
@@ -177,10 +192,12 @@ export function PurchaseModal({ open, reason = "PLAN", onClose, onPaid }: Purcha
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 22px", borderBottom: "1px solid var(--border)" }}>
           <div>
             <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "var(--text)" }}>
-              {reason === "EDIT" ? "Thêm lượt chỉnh ngày" : "Chọn gói cho chuyến đi"}
+              {order ? "Hoàn tất thanh toán" : reason === "EDIT" ? "Thêm lượt chỉnh ngày" : "Chọn gói cho chuyến đi"}
             </h2>
             <p style={{ margin: "6px 0 0", color: "var(--text-3)", fontSize: 14 }}>
-              Chọn gói phù hợp, quét mã để thanh toán và VivuPlan sẽ tự cộng lượt vào tài khoản của bạn.
+              {order
+                ? "Quét mã và chuyển khoản đúng nội dung để VivuPlan tự cộng lượt vào tài khoản của bạn."
+                : "Chọn gói phù hợp, quét mã để thanh toán và VivuPlan sẽ tự cộng lượt vào tài khoản của bạn."}
             </p>
           </div>
           <button type="button" onClick={onClose} aria-label="Đóng" style={{ border: 0, background: "transparent", cursor: "pointer", color: "var(--text-3)" }}>
@@ -271,7 +288,16 @@ export function PurchaseModal({ open, reason = "PLAN", onClose, onPaid }: Purcha
                   </div>
                 )}
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 18 }}>
-                  <button type="button" className="btn btn-secondary" onClick={() => setOrder(null)}>Chọn gói khác</button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      autoCreatedCodeRef.current = initialPackageCode ?? null;
+                      setOrder(null);
+                    }}
+                  >
+                    Chọn gói khác
+                  </button>
                   <button type="button" className="btn btn-primary" onClick={onClose}>Đóng</button>
                 </div>
               </div>
