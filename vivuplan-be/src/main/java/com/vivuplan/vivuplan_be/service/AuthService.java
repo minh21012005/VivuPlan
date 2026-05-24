@@ -32,6 +32,8 @@ import java.util.Locale;
 public class AuthService {
 
     private static final int REGISTRATION_OTP_MAX_ATTEMPTS = 5;
+    private static final int REGISTRATION_OTP_MAX_SENDS = 5;
+    private static final int REGISTRATION_OTP_RESEND_COOLDOWN_SECONDS = 60;
     private static final SecureRandom OTP_RANDOM = new SecureRandom();
 
     private final UserRepository userRepository;
@@ -59,20 +61,24 @@ public class AuthService {
             throw new IllegalArgumentException("Email đã được sử dụng");
         }
 
+        LocalDateTime now = LocalDateTime.now();
         String otp = generateOtp();
-        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(registrationOtpExpiryMinutes);
+        LocalDateTime expiresAt = now.plusMinutes(registrationOtpExpiryMinutes);
         RegistrationOtp pending = registrationOtpRepository.findByEmail(email)
                 .orElseGet(RegistrationOtp::new);
+        validateRegistrationOtpSendLimit(pending, now);
         pending.setEmail(email);
         pending.setName(name);
         pending.setPasswordHash(passwordEncoder.encode(req.getPassword()));
         pending.setOtpHash(passwordEncoder.encode(otp));
         pending.setExpiresAt(expiresAt);
         pending.setAttempts(0);
+        pending.setResendCount(nextResendCount(pending, now));
+        pending.setLastSentAt(now);
         pending.setConsumedAt(null);
         registrationOtpRepository.save(pending);
 
-        emailService.sendRegistrationOtp(email, name, otp, registrationOtpExpiryMinutes);
+        emailService.sendRegistrationOtpAsync(email, name, otp, registrationOtpExpiryMinutes);
         return new AuthDto.RegisterOtpResponse(email, registrationOtpExpiryMinutes * 60);
     }
 
@@ -130,7 +136,7 @@ public class AuthService {
     public AuthDto.AuthResponse loginWithGoogleToken(String idTokenValue) {
         GoogleIdToken.Payload payload = verifyGoogleToken(idTokenValue);
         if (!Boolean.TRUE.equals(payload.getEmailVerified())) {
-            throw new IllegalArgumentException("Email Google chua duoc xac minh");
+            throw new IllegalArgumentException("Email Google chưa được xác minh");
         }
 
         String googleId = payload.getSubject();
@@ -139,7 +145,7 @@ public class AuthService {
         String avatarUrl = readStringClaim(payload, "picture");
 
         if (googleId == null || googleId.isBlank() || email == null || email.isBlank()) {
-            throw new IllegalArgumentException("Token Google khong hop le");
+            throw new IllegalArgumentException("Token Google không hợp lệ");
         }
         if (name == null || name.isBlank()) {
             int atIndex = email.indexOf("@");
@@ -186,7 +192,7 @@ public class AuthService {
 
     private GoogleIdToken.Payload verifyGoogleToken(String idTokenValue) {
         if (googleClientId == null || googleClientId.isBlank()) {
-            throw new IllegalStateException("Chua cau hinh GOOGLE_CLIENT_ID");
+            throw new IllegalStateException("Chưa cấu hình GOOGLE_CLIENT_ID");
         }
 
         try {
@@ -199,12 +205,12 @@ public class AuthService {
 
             GoogleIdToken idToken = verifier.verify(idTokenValue);
             if (idToken == null) {
-                throw new IllegalArgumentException("Token Google khong hop le");
+                throw new IllegalArgumentException("Token Google không hợp lệ");
             }
             return idToken.getPayload();
         } catch (GeneralSecurityException | IOException e) {
             log.warn("Google token verification failed: {}", e.getMessage());
-            throw new IllegalArgumentException("Khong the xac thuc token Google");
+            throw new IllegalArgumentException("Không thể xác thực token Google");
         }
     }
 
@@ -274,6 +280,28 @@ public class AuthService {
 
     private String generateOtp() {
         return String.format("%06d", OTP_RANDOM.nextInt(1_000_000));
+    }
+
+    private void validateRegistrationOtpSendLimit(RegistrationOtp pending, LocalDateTime now) {
+        if (pending.getId() == null || pending.getLastSentAt() == null) {
+            return;
+        }
+        if (pending.getExpiresAt() != null && pending.getExpiresAt().isBefore(now)) {
+            return;
+        }
+        if (pending.getLastSentAt().plusSeconds(REGISTRATION_OTP_RESEND_COOLDOWN_SECONDS).isAfter(now)) {
+            throw new IllegalArgumentException("Vui lòng chờ một chút trước khi gửi lại mã xác nhận.");
+        }
+        if (pending.getResendCount() != null && pending.getResendCount() >= REGISTRATION_OTP_MAX_SENDS) {
+            throw new IllegalArgumentException("Bạn đã gửi mã quá nhiều lần. Vui lòng thử lại sau.");
+        }
+    }
+
+    private int nextResendCount(RegistrationOtp pending, LocalDateTime now) {
+        if (pending.getId() == null || pending.getExpiresAt() == null || pending.getExpiresAt().isBefore(now)) {
+            return 1;
+        }
+        return (pending.getResendCount() == null ? 0 : pending.getResendCount()) + 1;
     }
 
     private java.util.Set<Role> resolveInitialRoles(String email) {

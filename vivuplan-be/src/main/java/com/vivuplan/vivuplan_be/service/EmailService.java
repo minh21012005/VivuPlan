@@ -3,9 +3,11 @@ package com.vivuplan.vivuplan_be.service;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
 
@@ -13,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EmailService {
 
     private final JavaMailSender mailSender;
@@ -26,7 +29,16 @@ public class EmailService {
     @Value("${app.frontend-url:${APP_FRONTEND_URL:https://vivuplan.vn}}")
     private String frontendUrl;
 
-    public void sendRegistrationOtp(String toEmail, String name, String otp, long expiresInMinutes) {
+    @Async
+    public void sendRegistrationOtpAsync(String toEmail, String name, String otp, long expiresInMinutes) {
+        try {
+            sendRegistrationOtp(toEmail, name, otp, expiresInMinutes);
+        } catch (Exception e) {
+            log.error("Failed to send registration OTP email to {}: {}", toEmail, e.getMessage(), e);
+        }
+    }
+
+    private void sendRegistrationOtp(String toEmail, String name, String otp, long expiresInMinutes) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(
@@ -39,9 +51,9 @@ public class EmailService {
             helper.setText(buildRegistrationOtpHtml(name, otp, expiresInMinutes), true);
             mailSender.send(message);
         } catch (MessagingException e) {
-            throw new IllegalStateException("Khong the gui email xac nhan", e);
+            throw new IllegalStateException("Không thể gửi email xác nhận", e);
         } catch (Exception e) {
-            throw new IllegalStateException("Khong the gui email xac nhan", e);
+            throw new IllegalStateException("Không thể gửi email xác nhận", e);
         }
     }
 

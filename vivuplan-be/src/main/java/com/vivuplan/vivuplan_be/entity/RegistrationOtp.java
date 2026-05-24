@@ -45,6 +45,12 @@ public class RegistrationOtp {
     @Builder.Default
     private Integer attempts = 0;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer resendCount = 0;
+
+    private LocalDateTime lastSentAt;
+
     private LocalDateTime consumedAt;
 
     @CreationTimestamp
