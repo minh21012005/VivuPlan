@@ -49,15 +49,13 @@ export default function RegisterPage() {
 
   const requestOtp = async () => {
     if (!validateForm()) return;
-    const email = form.email.trim().toLowerCase();
     setError("");
-    setPendingEmail(email);
-    setOtp("");
-    setStep("otp");
     setLoading(true);
     try {
       const res = await auth.requestRegisterOtp(form.name, form.email, form.password);
       setPendingEmail(res.email);
+      setOtp("");
+      setStep("otp");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không thể gửi mã xác nhận. Vui lòng thử lại.");
     } finally {
