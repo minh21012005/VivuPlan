@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, UserPlus, ArrowLeft } from "lucide-react";
@@ -16,6 +16,12 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((p) => ({ ...p, [k]: e.target.value }));
+
+  useEffect(() => {
+    if (!auth.loading && auth.user) {
+      router.replace("/");
+    }
+  }, [auth.loading, auth.user, router]);
 
   const strength = form.password.length === 0 ? 0 : form.password.length < 6 ? 1 : form.password.length < 10 ? 2 : 3;
   const strengthColors = ["", "#EF4444", "#F59E0B", "#10B981"];
@@ -99,7 +105,7 @@ export default function RegisterPage() {
               <input id="input-confirm" type="password" value={form.confirm} onChange={set("confirm")} placeholder="Nhập lại mật khẩu" required className="input" />
             </div>
 
-            <button id="btn-register-submit" type="submit" disabled={loading} className="btn btn-primary" style={{ justifyContent: "center", padding: "13px", marginTop: "4px" }}>
+            <button id="btn-register-submit" type="submit" disabled={loading || auth.loading} className="btn btn-primary" style={{ justifyContent: "center", padding: "13px", marginTop: "4px" }}>
               {loading ? <div className="spinner" style={{ borderTopColor: "white", borderColor: "rgba(255,255,255,0.3)" }} /> : <><UserPlus size={16} /> Tạo tài khoản miễn phí</>}
             </button>
           </form>

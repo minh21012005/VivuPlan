@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LogIn, ArrowLeft } from "lucide-react";
@@ -18,6 +18,12 @@ export default function LoginPage() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!auth.loading && auth.user) {
+      router.replace("/");
+    }
+  }, [auth.loading, auth.user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,7 +104,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <button id="btn-login-submit" type="submit" disabled={loading}
+            <button id="btn-login-submit" type="submit" disabled={loading || auth.loading}
               className="btn btn-primary" style={{ justifyContent: "center", padding: "13px", marginTop: "4px" }}>
               {loading ? <div className="spinner" style={{ borderTopColor: "white", borderColor: "rgba(255,255,255,0.3)" }} /> : <><LogIn size={16} /> Đăng nhập</>}
             </button>
