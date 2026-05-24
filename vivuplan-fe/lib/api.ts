@@ -43,6 +43,20 @@ export const authApi = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
+    }).then(handleResponse<RegisterOtpResponse>),
+
+  requestRegisterOtp: (data: { name: string; email: string; password: string }) =>
+    fetch(`${API_BASE}/api/auth/register/request-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }).then(handleResponse<RegisterOtpResponse>),
+
+  verifyRegisterOtp: (data: { email: string; otp: string }) =>
+    fetch(`${API_BASE}/api/auth/register/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
     }).then(handleResponse<AuthResponse>),
 
   login: (data: { email: string; password: string }) =>
@@ -242,6 +256,11 @@ export interface User {
 export interface AuthResponse {
   token: string;
   user: User;
+}
+
+export interface RegisterOtpResponse {
+  email: string;
+  expiresInSeconds: number;
 }
 
 export interface BillingPackage {

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
-import { authApi, type AuthResponse, type User } from "@/lib/api";
+import { authApi, type AuthResponse, type RegisterOtpResponse, type User } from "@/lib/api";
 
 interface AuthState {
   user: User | null;
@@ -13,7 +13,9 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   isLoggedIn: boolean;
   login: (email: string, password: string) => Promise<AuthResponse>;
-  register: (name: string, email: string, password: string) => Promise<AuthResponse>;
+  register: (name: string, email: string, password: string) => Promise<RegisterOtpResponse>;
+  requestRegisterOtp: (name: string, email: string, password: string) => Promise<RegisterOtpResponse>;
+  verifyRegisterOtp: (email: string, otp: string) => Promise<AuthResponse>;
   setSession: (auth: AuthResponse) => void;
   logout: () => void;
   updateUser: (user: User) => void;
@@ -62,7 +64,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback(async (name: string, email: string, password: string) => {
     setState((s) => ({ ...s, loading: true, error: null }));
     try {
-      const res = await authApi.register({ name, email, password });
+      const res = await authApi.requestRegisterOtp({ name, email, password });
+      setState((s) => ({ ...s, loading: false, error: null }));
+      return res;
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Đăng ký thất bại";
+      setState((s) => ({ ...s, loading: false, error: msg }));
+      throw e;
+    }
+  }, []);
+
+  const requestRegisterOtp = register;
+
+  const verifyRegisterOtp = useCallback(async (email: string, otp: string) => {
+    setState((s) => ({ ...s, loading: true, error: null }));
+    try {
+      const res = await authApi.verifyRegisterOtp({ email, otp });
       setToken(res.token, res.user);
       return res;
     } catch (e: unknown) {
@@ -98,6 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoggedIn: !!state.user,
       login,
       register,
+      requestRegisterOtp,
+      verifyRegisterOtp,
       setSession,
       logout,
       updateUser,

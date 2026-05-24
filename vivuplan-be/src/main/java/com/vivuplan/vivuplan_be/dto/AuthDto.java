@@ -20,6 +20,27 @@ public class AuthDto {
     }
 
     @Data
+    public static class VerifyRegisterOtpRequest {
+        @NotBlank @Email(message = "Email không hợp lệ")
+        private String email;
+
+        @NotBlank(message = "Mã xác nhận không được để trống")
+        @Pattern(regexp = "\\d{6}", message = "Mã xác nhận gồm 6 chữ số")
+        private String otp;
+    }
+
+    @Data
+    public static class RegisterOtpResponse {
+        private String email;
+        private Long expiresInSeconds;
+
+        public RegisterOtpResponse(String email, Long expiresInSeconds) {
+            this.email = email;
+            this.expiresInSeconds = expiresInSeconds;
+        }
+    }
+
+    @Data
     public static class LoginRequest {
         @NotBlank @Email
         private String email;

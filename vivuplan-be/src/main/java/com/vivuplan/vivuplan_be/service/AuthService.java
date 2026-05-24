@@ -5,8 +5,10 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.vivuplan.vivuplan_be.dto.AuthDto;
+import com.vivuplan.vivuplan_be.entity.RegistrationOtp;
 import com.vivuplan.vivuplan_be.entity.Role;
 import com.vivuplan.vivuplan_be.entity.User;
+import com.vivuplan.vivuplan_be.repository.RegistrationOtpRepository;
 import com.vivuplan.vivuplan_be.repository.RoleRepository;
 import com.vivuplan.vivuplan_be.repository.UserRepository;
 import com.vivuplan.vivuplan_be.security.JwtUtil;
@@ -19,18 +21,26 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AuthService {
 
+    private static final int REGISTRATION_OTP_MAX_ATTEMPTS = 5;
+    private static final SecureRandom OTP_RANDOM = new SecureRandom();
+
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final RegistrationOtpRepository registrationOtpRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final BillingService billingService;
+    private final EmailService emailService;
 
     @Value("${app.admin.bootstrap-email:}")
     private String bootstrapAdminEmail;
@@ -38,22 +48,67 @@ public class AuthService {
     @Value("${spring.security.oauth2.client.registration.google.client-id:}")
     private String googleClientId;
 
+    @Value("${app.auth.registration-otp-expiry-minutes:${REGISTRATION_OTP_EXPIRY_MINUTES:10}}")
+    private Long registrationOtpExpiryMinutes;
+
     @Transactional
-    public AuthDto.AuthResponse register(AuthDto.RegisterRequest req) {
-        if (userRepository.existsByEmail(req.getEmail())) {
+    public AuthDto.RegisterOtpResponse requestRegistrationOtp(AuthDto.RegisterRequest req) {
+        String email = normalizeEmail(req.getEmail());
+        String name = req.getName() == null ? "" : req.getName().trim();
+        if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email đã được sử dụng");
         }
 
+        String otp = generateOtp();
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(registrationOtpExpiryMinutes);
+        RegistrationOtp pending = registrationOtpRepository.findByEmail(email)
+                .orElseGet(RegistrationOtp::new);
+        pending.setEmail(email);
+        pending.setName(name);
+        pending.setPasswordHash(passwordEncoder.encode(req.getPassword()));
+        pending.setOtpHash(passwordEncoder.encode(otp));
+        pending.setExpiresAt(expiresAt);
+        pending.setAttempts(0);
+        pending.setConsumedAt(null);
+        registrationOtpRepository.save(pending);
+
+        emailService.sendRegistrationOtp(email, name, otp, registrationOtpExpiryMinutes);
+        return new AuthDto.RegisterOtpResponse(email, registrationOtpExpiryMinutes * 60);
+    }
+
+    @Transactional
+    public AuthDto.AuthResponse verifyRegistrationOtp(AuthDto.VerifyRegisterOtpRequest req) {
+        String email = normalizeEmail(req.getEmail());
+        if (userRepository.existsByEmail(email)) {
+            throw new IllegalArgumentException("Email đã được sử dụng");
+        }
+
+        RegistrationOtp pending = registrationOtpRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Mã xác nhận không hợp lệ hoặc đã hết hạn"));
+        if (pending.getConsumedAt() != null || pending.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Mã xác nhận không hợp lệ hoặc đã hết hạn");
+        }
+        if (pending.getAttempts() != null && pending.getAttempts() >= REGISTRATION_OTP_MAX_ATTEMPTS) {
+            throw new IllegalArgumentException("Bạn đã nhập sai quá số lần cho phép. Vui lòng gửi lại mã mới.");
+        }
+        if (!passwordEncoder.matches(req.getOtp(), pending.getOtpHash())) {
+            pending.setAttempts((pending.getAttempts() == null ? 0 : pending.getAttempts()) + 1);
+            registrationOtpRepository.save(pending);
+            throw new IllegalArgumentException("Mã xác nhận không đúng");
+        }
+
         User user = User.builder()
-                .name(req.getName())
-                .email(req.getEmail())
-                .password(passwordEncoder.encode(req.getPassword()))
+                .name(pending.getName())
+                .email(email)
+                .password(pending.getPasswordHash())
                 .provider(User.AuthProvider.LOCAL)
                 .emailVerified(true)
-                .roles(resolveInitialRoles(req.getEmail()))
+                .roles(resolveInitialRoles(email))
                 .build();
 
         user = userRepository.save(user);
+        pending.setConsumedAt(LocalDateTime.now());
+        registrationOtpRepository.save(pending);
         billingService.grantSignupCredits(user);
         String token = generateToken(user);
         return new AuthDto.AuthResponse(token, AuthDto.UserDto.from(user));
@@ -211,6 +266,14 @@ public class AuthService {
 
     private String generateToken(User user) {
         return jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRoleNames());
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String generateOtp() {
+        return String.format("%06d", OTP_RANDOM.nextInt(1_000_000));
     }
 
     private java.util.Set<Role> resolveInitialRoles(String email) {
