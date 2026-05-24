@@ -31,6 +31,7 @@ import {
   ChevronDown,
   ChevronUp,
   Coffee,
+  BedDouble,
   Edit3,
   ExternalLink,
   Lightbulb,
@@ -178,6 +179,32 @@ function buildDayDirectionsUrl(activities: ActivityResponse[], destination?: str
   const waypoints = places.slice(1, -1).slice(0, 8);
   if (waypoints.length > 0) query.set("waypoints", waypoints.join("|"));
   return `https://www.google.com/maps/dir/?${query.toString()}`;
+}
+
+function buildHotelAffiliateUrl(
+  activity: ActivityResponse,
+  context: {
+    destination?: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    travelerCount?: number | null;
+  },
+) {
+  const template = process.env.NEXT_PUBLIC_HOTEL_AFFILIATE_URL_TEMPLATE?.trim();
+  if (!template || activity.type !== "ACCOMMODATION") return null;
+
+  const tokens: Record<string, string> = {
+    hotel: activity.name ?? "",
+    location: activity.location ?? "",
+    destination: context.destination ?? "",
+    checkin: context.startDate ?? "",
+    checkout: context.endDate ?? "",
+    guests: String(Math.max(1, context.travelerCount ?? 1)),
+  };
+
+  return template.replace(/\{(hotel|location|destination|checkin|checkout|guests)\}/g, (_, key: string) =>
+    encodeURIComponent(tokens[key] ?? ""),
+  );
 }
 
 function getDayTimeRange(activities: ActivityResponse[]) {
@@ -860,6 +887,12 @@ export default function ItineraryPage() {
                     <ActivityItem
                       key={activity.id ?? `${activity.time}-${activity.name}`}
                       activity={activity}
+                      tripContext={{
+                        destination: trip.destination,
+                        startDate: trip.startDate,
+                        endDate: trip.endDate,
+                        travelerCount: trip.travelerCount,
+                      }}
                       warning={warning}
                       expanded={expanded === `${activeDay}-${index}`}
                       onToggle={() => setExpanded(expanded === `${activeDay}-${index}` ? null : `${activeDay}-${index}`)}
@@ -1510,6 +1543,7 @@ function ActivityEditor({
 
 function ActivityItem({
   activity,
+  tripContext,
   warning,
   expanded,
   onToggle,
@@ -1517,6 +1551,12 @@ function ActivityItem({
   onDelete,
 }: {
   activity: ActivityResponse;
+  tripContext: {
+    destination?: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    travelerCount?: number | null;
+  };
   warning?: { icon: "wind" | "rain" | "fog"; message: string } | null;
   expanded: boolean;
   onToggle: () => void;
@@ -1529,6 +1569,7 @@ function ActivityItem({
     activity.latitude && activity.longitude
       ? `https://www.google.com/maps/search/?api=1&query=${activity.latitude},${activity.longitude}`
       : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${activity.name} ${activity.location}`)}`;
+  const hotelAffiliateUrl = buildHotelAffiliateUrl(activity, tripContext);
 
   return (
     <div style={{ display: "flex", gap: 16, alignItems: "flex-start", paddingLeft: 8 }}>
@@ -1656,6 +1697,11 @@ function ActivityItem({
               </p>
             )}
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              {hotelAffiliateUrl && (
+                <a href={hotelAffiliateUrl} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">
+                  <BedDouble size={12} /> Kiểm tra phòng
+                </a>
+              )}
               <a href={mapUrl} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">
                 <ExternalLink size={12} /> Mở bản đồ
               </a>
