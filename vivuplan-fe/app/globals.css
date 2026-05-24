@@ -4949,9 +4949,11 @@ textarea.input.textarea-compact {
 
 .pricing-card h2 {
   color: var(--text);
-  font-size: 20px;
-  font-weight: 750;
-  margin: 8px 0 0;
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.18;
+  margin: 9px 0 0;
   white-space: nowrap;
 }
 
@@ -4967,6 +4969,7 @@ textarea.input.textarea-compact {
   font-size: 12px;
   font-weight: 700;
   padding: 5px 10px;
+  margin-top: -2px;
 }
 
 .pricing-pill-primary {
