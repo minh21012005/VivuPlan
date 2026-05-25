@@ -318,7 +318,7 @@
 
 .admin-table {
   width: 100%;
-  min-width: 820px;
+  min-width: 780px;
   border-collapse: separate;
   border-spacing: 0;
 }
@@ -337,6 +337,12 @@
   font-size: 11px;
   font-weight: 850;
   text-transform: uppercase;
+}
+
+.admin-table th:last-child,
+.admin-table td:last-child {
+  width: 190px;
+  min-width: 190px;
 }
 
 .admin-table td {
@@ -522,15 +528,21 @@
 }
 
 .admin-row-actions {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  width: max-content;
+  white-space: nowrap;
 }
 
 .admin-action-control {
   position: relative;
   display: inline-flex;
+}
+
+.admin-row-actions .admin-row-action {
+  flex: 0 0 auto;
 }
 
 .admin-row-action:disabled {
@@ -562,7 +574,28 @@
 }
 
 .admin-popconfirm-action {
+  top: auto;
+  bottom: calc(100% + 10px);
   right: 0;
+}
+
+.admin-popconfirm-action::before {
+  top: auto;
+  bottom: -7px;
+  right: 24px;
+  border: 0;
+  border-right: 1px solid rgba(15, 159, 156, 0.18);
+  border-bottom: 1px solid rgba(15, 159, 156, 0.18);
+}
+
+.admin-popconfirm-top-left {
+  right: auto;
+  left: 0;
+}
+
+.admin-popconfirm-top-left::before {
+  right: auto;
+  left: 24px;
 }
 
 .admin-pagination {

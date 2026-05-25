@@ -287,8 +287,8 @@ export default function AdminPage() {
   const [savingUserId, setSavingUserId] = useState<number | null>(null);
   const [lockingUserId, setLockingUserId] = useState<number | null>(null);
   const [error, setError] = useState("");
-  const [pendingRoleChange, setPendingRoleChange] = useState<{ user: AdminUserSummary; role: "USER" | "ADMIN" } | null>(null);
-  const [pendingLockChange, setPendingLockChange] = useState<{ user: AdminUserSummary; locked: boolean } | null>(null);
+  const [pendingRoleChange, setPendingRoleChange] = useState<{ user: AdminUserSummary; role: "USER" | "ADMIN"; placement: "top-left" | "top-right" } | null>(null);
+  const [pendingLockChange, setPendingLockChange] = useState<{ user: AdminUserSummary; locked: boolean; placement: "top-left" | "top-right" } | null>(null);
 
   useEffect(() => {
     setUserPage(0);
@@ -355,10 +355,12 @@ export default function AdminPage() {
     transactionStatusFilter,
   ]);
 
-  const requestRoleChange = (adminUser: AdminUserSummary, role: "USER" | "ADMIN") => {
+  const requestRoleChange = (adminUser: AdminUserSummary, role: "USER" | "ADMIN", trigger: HTMLElement) => {
     if (adminUser.role === role) return;
+    const rect = trigger.getBoundingClientRect();
+    const placement = rect.left < window.innerWidth / 2 ? "top-left" : "top-right";
     setPendingLockChange(null);
-    setPendingRoleChange({ user: adminUser, role });
+    setPendingRoleChange({ user: adminUser, role, placement });
   };
 
   const handleRoleChange = async (adminUser: AdminUserSummary, role: "USER" | "ADMIN") => {
@@ -381,10 +383,12 @@ export default function AdminPage() {
     }
   };
 
-  const requestLockChange = (adminUser: AdminUserSummary, locked: boolean) => {
+  const requestLockChange = (adminUser: AdminUserSummary, locked: boolean, trigger: HTMLElement) => {
     if (adminUser.accountLocked === locked) return;
+    const rect = trigger.getBoundingClientRect();
+    const placement = rect.left < window.innerWidth / 2 ? "top-left" : "top-right";
     setPendingRoleChange(null);
-    setPendingLockChange({ user: adminUser, locked });
+    setPendingLockChange({ user: adminUser, locked, placement });
   };
 
   const handleLockChange = async (adminUser: AdminUserSummary, locked: boolean) => {
@@ -500,8 +504,6 @@ export default function AdminPage() {
                       <th>STT</th>
                       <th>Người dùng</th>
                       <th>Đăng nhập</th>
-                      <th>Trạng thái</th>
-                      <th>Tài khoản</th>
                       <th>Ngày tạo</th>
                       <th>Quyền</th>
                       <th>Hành động</th>
@@ -520,16 +522,6 @@ export default function AdminPage() {
                             {item.provider === "GOOGLE" ? "Google" : "Email"}
                           </StatusBadge>
                         </td>
-                        <td>
-                          <StatusBadge tone={item.emailVerified ? "success" : "warning"}>
-                            {item.emailVerified ? "Đã xác minh" : "Chưa xác minh"}
-                          </StatusBadge>
-                        </td>
-                        <td>
-                          <StatusBadge tone={item.accountLocked ? "warning" : "success"}>
-                            {item.accountLocked ? "Đã khóa" : "Hoạt động"}
-                          </StatusBadge>
-                        </td>
                         <td>{formatDate(item.createdAt)}</td>
                         <td>
                           <div className="admin-role-control">
@@ -537,13 +529,13 @@ export default function AdminPage() {
                               className="admin-role-select"
                               value={item.role === "ADMIN" ? "ADMIN" : "USER"}
                               disabled={savingUserId === item.id}
-                              onChange={(e) => requestRoleChange(item, e.target.value as "USER" | "ADMIN")}
+                              onChange={(e) => requestRoleChange(item, e.target.value as "USER" | "ADMIN", e.currentTarget)}
                             >
                               <option value="USER">User</option>
                               <option value="ADMIN">Admin</option>
                             </select>
                             {pendingRoleChange?.user.id === item.id && (
-                              <div className="admin-popconfirm" role="dialog" aria-label="Xác nhận đổi quyền">
+                              <div className={`admin-popconfirm admin-popconfirm-action admin-popconfirm-${pendingRoleChange.placement}`} role="dialog" aria-label="Xác nhận đổi quyền">
                                 <strong>Đổi quyền người dùng?</strong>
                                 <p>
                                   {item.email} sẽ được chuyển sang {pendingRoleChange.role === "ADMIN" ? "Admin" : "User"}.
@@ -577,14 +569,14 @@ export default function AdminPage() {
                                 type="button"
                                 className={`admin-row-action ${item.accountLocked ? "admin-row-action-success" : "admin-row-action-danger"}`}
                                 disabled={lockingUserId === item.id}
-                                onClick={() => requestLockChange(item, !item.accountLocked)}
+                                onClick={(event) => requestLockChange(item, !item.accountLocked, event.currentTarget)}
                                 aria-label={`${item.accountLocked ? "Mở khóa" : "Khóa"} tài khoản ${item.email}`}
                               >
                                 {item.accountLocked ? <Unlock size={15} /> : <Lock size={15} />}
                                 {item.accountLocked ? "Mở khóa" : "Khóa"}
                               </button>
                               {pendingLockChange?.user.id === item.id && (
-                                <div className="admin-popconfirm admin-popconfirm-action" role="dialog" aria-label="Xác nhận khóa tài khoản">
+                                <div className={`admin-popconfirm admin-popconfirm-action admin-popconfirm-${pendingLockChange.placement}`} role="dialog" aria-label="Xác nhận khóa tài khoản">
                                   <strong>{pendingLockChange.locked ? "Khóa tài khoản này?" : "Mở khóa tài khoản này?"}</strong>
                                   <p>
                                     {pendingLockChange.locked
