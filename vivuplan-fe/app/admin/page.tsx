@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import {
@@ -15,6 +15,7 @@ import {
   Search,
   ShieldCheck,
   Users,
+  X,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -23,6 +24,7 @@ import {
   adminApi,
   type AdminStats,
   type AdminTripSummary,
+  type AdminTransactionStatus,
   type AdminTransactionSummary,
   type AdminUserSummary,
   type PageResponse,
@@ -30,7 +32,7 @@ import {
 
 type AdminTab = "users" | "trips" | "transactions";
 
-const pageSize = 12;
+const pageSize = 10;
 
 function formatDate(value?: string) {
   if (!value) return "-";
@@ -59,6 +61,31 @@ function StatusBadge({ children, tone = "neutral" }: { children: ReactNode; tone
   return <span className={`admin-badge admin-badge-${tone}`}>{children}</span>;
 }
 
+const transactionStatusLabels: Record<AdminTransactionStatus, string> = {
+  PENDING: "Đang chờ",
+  PAID: "Đã thanh toán",
+  UNDERPAID: "Thiếu tiền",
+  EXPIRED: "Hết hạn",
+  CANCELLED: "Đã hủy",
+};
+
+const transactionStatusOptions = Object.keys(transactionStatusLabels) as AdminTransactionStatus[];
+
+function transactionStatusLabel(status: string) {
+  return transactionStatusLabels[status as AdminTransactionStatus] ?? status;
+}
+
+function transactionStatusTone(status: string): "neutral" | "success" | "admin" | "warning" {
+  if (status === "PAID") return "success";
+  if (status === "UNDERPAID") return "warning";
+  if (status === "PENDING") return "admin";
+  return "neutral";
+}
+
+function rowNumber(page: number, index: number) {
+  return page * pageSize + index + 1;
+}
+
 function StatCard({
   label,
   value,
@@ -75,6 +102,114 @@ function StatCard({
         <span>{label}</span>
         <strong>{value}</strong>
       </div>
+    </div>
+  );
+}
+
+function TransactionDrawer({
+  transaction,
+  onClose,
+}: {
+  transaction: AdminTransactionSummary;
+  onClose: () => void;
+}) {
+  const paidAmount = transaction.paidAmount ?? 0;
+
+  return (
+    <div className="admin-drawer-backdrop" onClick={(event) => event.target === event.currentTarget && onClose()}>
+      <aside className="admin-drawer-panel" aria-label="Chi tiết giao dịch">
+        <div className="admin-drawer-header">
+          <div>
+            <span>Chi tiết giao dịch</span>
+            <h3>{transaction.orderCode}</h3>
+            <div className="admin-drawer-header-meta">
+              <StatusBadge tone={transactionStatusTone(transaction.status)}>
+                {transactionStatusLabel(transaction.status)}
+              </StatusBadge>
+              <span>#{transaction.id}</span>
+            </div>
+          </div>
+          <button type="button" className="admin-drawer-close" onClick={onClose} aria-label="Đóng">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="admin-drawer-body">
+          <section className="admin-drawer-section">
+            <h4>Người mua</h4>
+            <dl className="admin-drawer-list">
+              <div>
+                <dt>Email</dt>
+                <dd>{transaction.userEmail}</dd>
+              </div>
+              <div>
+                <dt>Tài khoản</dt>
+                <dd>
+                  <Link href={`/admin/users/${transaction.userId}`} className="admin-drawer-link">
+                    Xem người dùng
+                  </Link>
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          <section className="admin-drawer-section">
+            <h4>Thanh toán</h4>
+            <dl className="admin-drawer-list">
+              <div>
+                <dt>Gói</dt>
+                <dd>{transaction.packageCode}</dd>
+              </div>
+              <div>
+                <dt>Số tiền cần thanh toán</dt>
+                <dd>{formatCurrency(transaction.amount)}</dd>
+              </div>
+              {paidAmount > 0 && (
+                <div>
+                  <dt>Số tiền đã nhận</dt>
+                  <dd>{formatCurrency(paidAmount)}</dd>
+                </div>
+              )}
+            </dl>
+          </section>
+
+          <section className="admin-drawer-section">
+            <h4>Lượt được cộng</h4>
+            <div className="admin-drawer-credit-grid">
+              <div>
+                <span>Lịch trình</span>
+                <strong>{transaction.planCredits}</strong>
+              </div>
+              <div>
+                <span>Chỉnh AI</span>
+                <strong>{transaction.editCredits}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section className="admin-drawer-section">
+            <h4>Thời gian</h4>
+            <dl className="admin-drawer-list">
+              <div>
+                <dt>Tạo đơn</dt>
+                <dd>{formatDate(transaction.createdAt)}</dd>
+              </div>
+              {transaction.paidAt && (
+                <div>
+                  <dt>Thanh toán</dt>
+                  <dd>{formatDate(transaction.paidAt)}</dd>
+                </div>
+              )}
+              {transaction.expiresAt && (
+                <div>
+                  <dt>Hết hạn</dt>
+                  <dd>{formatDate(transaction.expiresAt)}</dd>
+                </div>
+              )}
+            </dl>
+          </section>
+        </div>
+      </aside>
     </div>
   );
 }
@@ -135,6 +270,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<PageResponse<AdminUserSummary> | null>(null);
   const [trips, setTrips] = useState<PageResponse<AdminTripSummary> | null>(null);
   const [transactions, setTransactions] = useState<PageResponse<AdminTransactionSummary> | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<AdminTransactionSummary | null>(null);
   const [activeTab, setActiveTab] = useState<AdminTab>("users");
   const [userPage, setUserPage] = useState(0);
   const [tripPage, setTripPage] = useState(0);
@@ -148,6 +284,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [savingUserId, setSavingUserId] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [pendingRoleChange, setPendingRoleChange] = useState<{ user: AdminUserSummary; role: "USER" | "ADMIN" } | null>(null);
 
   useEffect(() => {
     setUserPage(0);
@@ -214,8 +351,12 @@ export default function AdminPage() {
     transactionStatusFilter,
   ]);
 
-  const handleRoleChange = async (adminUser: AdminUserSummary, role: "USER" | "ADMIN") => {
+  const requestRoleChange = (adminUser: AdminUserSummary, role: "USER" | "ADMIN") => {
     if (adminUser.role === role) return;
+    setPendingRoleChange({ user: adminUser, role });
+  };
+
+  const handleRoleChange = async (adminUser: AdminUserSummary, role: "USER" | "ADMIN") => {
     setSavingUserId(adminUser.id);
     setError("");
     try {
@@ -227,6 +368,7 @@ export default function AdminPage() {
         }
         : current);
       setStats(await adminApi.stats());
+      setPendingRoleChange(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể cập nhật quyền người dùng.");
     } finally {
@@ -324,17 +466,19 @@ export default function AdminPage() {
                 <table className="admin-table">
                   <thead>
                     <tr>
+                      <th>STT</th>
                       <th>Người dùng</th>
                       <th>Đăng nhập</th>
                       <th>Trạng thái</th>
                       <th>Ngày tạo</th>
                       <th>Quyền</th>
-                      <th></th>
+                      <th>Hành động</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {users?.content.map((item) => (
+                    {users?.content.map((item, index) => (
                       <tr key={item.id}>
+                        <td>{rowNumber(userPage, index)}</td>
                         <td>
                           <strong>{item.name}</strong>
                           <span>{item.email}</span>
@@ -351,15 +495,36 @@ export default function AdminPage() {
                         </td>
                         <td>{formatDate(item.createdAt)}</td>
                         <td>
-                          <select
-                            className="admin-role-select"
-                            value={item.role === "ADMIN" ? "ADMIN" : "USER"}
-                            disabled={savingUserId === item.id}
-                            onChange={(e) => handleRoleChange(item, e.target.value as "USER" | "ADMIN")}
-                          >
-                            <option value="USER">User</option>
-                            <option value="ADMIN">Admin</option>
-                          </select>
+                          <div className="admin-role-control">
+                            <select
+                              className="admin-role-select"
+                              value={item.role === "ADMIN" ? "ADMIN" : "USER"}
+                              disabled={savingUserId === item.id}
+                              onChange={(e) => requestRoleChange(item, e.target.value as "USER" | "ADMIN")}
+                            >
+                              <option value="USER">User</option>
+                              <option value="ADMIN">Admin</option>
+                            </select>
+                            {pendingRoleChange?.user.id === item.id && (
+                              <div className="admin-popconfirm" role="dialog" aria-label="Xác nhận đổi quyền">
+                                <strong>Đổi quyền người dùng?</strong>
+                                <p>
+                                  {item.email} sẽ được chuyển sang {pendingRoleChange.role === "ADMIN" ? "Admin" : "User"}.
+                                </p>
+                                <div>
+                                  <button type="button" onClick={() => setPendingRoleChange(null)}>Hủy</button>
+                                  <button
+                                    type="button"
+                                    className="primary"
+                                    disabled={savingUserId === item.id}
+                                    onClick={() => handleRoleChange(pendingRoleChange.user, pendingRoleChange.role)}
+                                  >
+                                    Xác nhận
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td>
                           <Link
@@ -402,16 +567,18 @@ export default function AdminPage() {
                 <table className="admin-table">
                   <thead>
                     <tr>
+                      <th>STT</th>
                       <th>Điểm đến</th>
                       <th>Người tạo</th>
                       <th>Số ngày</th>
                       <th>Ngày tạo</th>
-                      <th></th>
+                      <th>Hành động</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {trips?.content.map((item) => (
+                    {trips?.content.map((item, index) => (
                       <tr key={item.id}>
+                        <td>{rowNumber(tripPage, index)}</td>
                         <td>
                           <strong>{item.destination}</strong>
                           <span><MapPin size={12} /> {item.departure ? `Từ ${item.departure}` : `#${item.id}`}</span>
@@ -456,11 +623,9 @@ export default function AdminPage() {
                 </label>
                 <select className="admin-filter-select" value={transactionStatusFilter} onChange={(e) => setTransactionStatusFilter(e.target.value as typeof transactionStatusFilter)}>
                   <option value="ALL">Tất cả trạng thái</option>
-                  <option value="PENDING">Đang chờ</option>
-                  <option value="PAID">Đã thanh toán</option>
-                  <option value="UNDERPAID">Thiếu tiền</option>
-                  <option value="EXPIRED">Hết hạn</option>
-                  <option value="CANCELLED">Đã hủy</option>
+                  {transactionStatusOptions.map((status) => (
+                    <option key={status} value={status}>{transactionStatusLabel(status)}</option>
+                  ))}
                 </select>
               </div>
 
@@ -468,47 +633,39 @@ export default function AdminPage() {
                 <table className="admin-table admin-transaction-table">
                   <thead>
                     <tr>
+                      <th>STT</th>
                       <th>Mã đơn</th>
                       <th>Người mua</th>
-                      <th>Gói</th>
                       <th>Số tiền</th>
-                      <th>Lượt cộng</th>
                       <th>Trạng thái</th>
-                      <th>Thời gian</th>
+                      <th>Hành động</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {transactions?.content.map((item) => {
-                      const paid = item.paidAmount ?? 0;
-                      const statusTone =
-                        item.status === "PAID" ? "success"
-                          : item.status === "UNDERPAID" ? "warning"
-                            : item.status === "PENDING" ? "admin"
-                              : "neutral";
-                      const statusLabel =
-                        item.status === "PAID" ? "Đã thanh toán"
-                          : item.status === "PENDING" ? "Đang chờ"
-                            : item.status === "UNDERPAID" ? "Thiếu tiền"
-                              : item.status === "EXPIRED" ? "Hết hạn"
-                                : item.status === "CANCELLED" ? "Đã hủy"
-                                  : item.status;
+                    {transactions?.content.map((item, index) => {
                       return (
                         <tr key={item.id}>
+                          <td>{rowNumber(transactionPage, index)}</td>
                           <td>
                             <strong>{item.orderCode}</strong>
-                            <span>#{item.id}</span>
                           </td>
                           <td>{item.userEmail}</td>
-                          <td>{item.packageCode}</td>
                           <td>
                             <strong>{formatCurrency(item.amount)}</strong>
-                            <span>{paid > 0 ? `Đã nhận ${formatCurrency(paid)}` : "Chưa nhận tiền"}</span>
                           </td>
-                          <td>{item.planCredits} lịch trình · {item.editCredits} chỉnh AI</td>
-                          <td><StatusBadge tone={statusTone}>{statusLabel}</StatusBadge></td>
+                          <td><StatusBadge tone={transactionStatusTone(item.status)}>{transactionStatusLabel(item.status)}</StatusBadge></td>
                           <td>
-                            <strong>{formatDate(item.createdAt)}</strong>
-                            <span>{item.paidAt ? `Thanh toán ${formatDate(item.paidAt)}` : `Hết hạn ${formatDate(item.expiresAt)}`}</span>
+                            <button
+                              type="button"
+                              className="admin-row-action"
+                              aria-label={`Xem giao dịch ${item.orderCode}`}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setSelectedTransaction(item);
+                              }}
+                            >
+                              <Eye size={15} /> Xem
+                            </button>
                           </td>
                         </tr>
                       );
@@ -523,6 +680,12 @@ export default function AdminPage() {
         </section>
       </main>
       <Footer />
+      {selectedTransaction && (
+        <TransactionDrawer
+          transaction={selectedTransaction}
+          onClose={() => setSelectedTransaction(null)}
+        />
+      )}
     </>
   );
 }

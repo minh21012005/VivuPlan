@@ -419,6 +419,83 @@
   opacity: 0.6;
 }
 
+.admin-role-control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.admin-popconfirm {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 286px;
+  border: 1px solid rgba(15, 159, 156, 0.18);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 16px 42px rgba(15, 23, 42, 0.16);
+  padding: 14px;
+}
+
+.admin-popconfirm::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  right: 24px;
+  width: 12px;
+  height: 12px;
+  border-left: 1px solid rgba(15, 159, 156, 0.18);
+  border-top: 1px solid rgba(15, 159, 156, 0.18);
+  background: #ffffff;
+  transform: rotate(45deg);
+}
+
+.admin-popconfirm strong {
+  display: block;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.admin-popconfirm p {
+  margin: 6px 0 12px;
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.admin-popconfirm div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-popconfirm button {
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #ffffff;
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 850;
+  padding: 0 11px;
+}
+
+.admin-popconfirm button.primary {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.admin-popconfirm button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .admin-row-action {
   display: inline-flex;
   align-items: center;
@@ -500,6 +577,162 @@
 
 .admin-page-btn-icon {
   color: var(--text-4);
+}
+
+.admin-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(15, 23, 42, 0.34);
+  pointer-events: auto;
+}
+
+.admin-drawer-panel {
+  width: min(440px, 100%);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: -20px 0 52px rgba(15, 23, 42, 0.18);
+}
+
+.admin-drawer-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 36px;
+  align-items: start;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #ffffff, #fbfefd);
+  padding: 22px;
+}
+
+.admin-drawer-header > div {
+  min-width: 0;
+}
+
+.admin-drawer-header > div > span {
+  display: block;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 850;
+  margin-bottom: 7px;
+}
+
+.admin-drawer-header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 21px;
+  font-weight: 850;
+  line-height: 1.25;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.admin-drawer-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 11px;
+  min-width: 0;
+}
+
+.admin-drawer-header-meta > span:not(.admin-badge) {
+  color: var(--text-4);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-drawer-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  background: #ffffff;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.admin-drawer-body {
+  display: grid;
+  gap: 14px;
+  overflow-y: auto;
+  padding: 18px;
+}
+
+.admin-drawer-section {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 16px;
+}
+
+.admin-drawer-section h4 {
+  margin: 0 0 13px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.admin-drawer-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.admin-drawer-list div {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-drawer-list dt,
+.admin-drawer-credit-grid span {
+  color: var(--text-4);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-drawer-list dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 800;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.admin-drawer-link {
+  color: var(--primary);
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.admin-drawer-credit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.admin-drawer-credit-grid div {
+  border: 1px solid rgba(15, 159, 156, 0.14);
+  border-radius: 12px;
+  background: var(--primary-light);
+  padding: 12px;
+}
+
+.admin-drawer-credit-grid strong {
+  display: block;
+  color: var(--text);
+  font-size: 24px;
+  font-weight: 850;
+  line-height: 1;
+  margin-top: 7px;
 }
 
 @media (max-width: 1180px) {

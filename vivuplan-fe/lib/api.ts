@@ -378,6 +378,8 @@ export interface AdminTransactionFilters {
   status?: "ALL" | "PENDING" | "PAID" | "UNDERPAID" | "EXPIRED" | "CANCELLED";
 }
 
+export type AdminTransactionStatus = "PENDING" | "PAID" | "UNDERPAID" | "EXPIRED" | "CANCELLED";
+
 export interface AdminUserSummary {
   id: number;
   name: string;
@@ -428,7 +430,7 @@ export interface AdminTransactionSummary {
   paidAmount?: number;
   planCredits: number;
   editCredits: number;
-  status: "PENDING" | "PAID" | "UNDERPAID" | "EXPIRED" | "CANCELLED" | string;
+  status: AdminTransactionStatus | string;
   createdAt?: string;
   paidAt?: string;
   expiresAt?: string;
