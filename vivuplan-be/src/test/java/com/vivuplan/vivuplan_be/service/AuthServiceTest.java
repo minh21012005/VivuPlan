@@ -297,6 +297,31 @@ class AuthServiceTest {
     }
 
     @Test
+    void loginRejectsLockedAccount() {
+        AuthService service = service();
+        User user = User.builder()
+                .id(9L)
+                .name("Minh")
+                .email("minh@example.com")
+                .password("encoded-password")
+                .provider(User.AuthProvider.LOCAL)
+                .accountLocked(true)
+                .build();
+        AuthDto.LoginRequest req = new AuthDto.LoginRequest();
+        req.setEmail("minh@example.com");
+        req.setPassword("password123");
+
+        when(userRepository.findByEmail("minh@example.com")).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> service.login(req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ hỗ trợ.");
+
+        verify(passwordEncoder, never()).matches(any(), any());
+        verify(jwtUtil, never()).generateToken(any(), any(), any());
+    }
+
+    @Test
     void loginRejectsGoogleOnlyAccountWithoutPassword() {
         AuthService service = service();
         User user = User.builder()
@@ -317,6 +342,33 @@ class AuthServiceTest {
                 .hasMessage("Tài khoản này đang đăng nhập bằng Google. Vui lòng dùng Google để tiếp tục.");
 
         verify(passwordEncoder, never()).matches(any(), any());
+    }
+
+    @Test
+    void loginWithGoogleRejectsLockedExistingAccountWithoutUpdatingProfile() {
+        AuthService service = service();
+        User existing = User.builder()
+                .id(9L)
+                .name("Minh")
+                .email("minh@example.com")
+                .googleId("google-1")
+                .provider(User.AuthProvider.GOOGLE)
+                .accountLocked(true)
+                .build();
+
+        when(userRepository.findByGoogleId("google-1")).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> service.loginWithGoogle(
+                "google-1",
+                "minh@example.com",
+                "Google Minh",
+                "https://example.com/new-avatar.png"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ hỗ trợ.");
+
+        assertThat(existing.getAvatarUrl()).isNull();
+        verify(userRepository, never()).save(any(User.class));
+        verify(jwtUtil, never()).generateToken(any(), any(), any());
     }
 
     @Test

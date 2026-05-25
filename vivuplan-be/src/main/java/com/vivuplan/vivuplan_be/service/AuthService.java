@@ -164,6 +164,7 @@ public class AuthService {
         String normalizedEmail = normalizeEmail(email);
         User user = userRepository.findByGoogleId(googleId).orElse(null);
         if (user != null) {
+            ensureAccountNotLocked(user);
             if (avatarUrl != null) {
                 user.setAvatarUrl(avatarUrl);
                 user = userRepository.save(user);
@@ -171,6 +172,7 @@ public class AuthService {
         } else {
             user = userRepository.findByEmail(normalizedEmail).orElse(null);
             if (user != null) {
+                ensureAccountNotLocked(user);
                 user.setGoogleId(googleId);
                 user.setEmailVerified(true);
                 if (user.getPassword() == null || user.getPassword().isBlank()) {
@@ -193,7 +195,6 @@ public class AuthService {
             }
         }
 
-        ensureAccountNotLocked(user);
         String token = generateToken(user);
         return new AuthDto.AuthResponse(token, AuthDto.UserDto.from(user));
     }
