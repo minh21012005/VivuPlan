@@ -33,6 +33,11 @@ public class AdminController {
         return ResponseEntity.ok(adminService.listUsers(page, size, q, role, provider));
     }
 
+    @GetMapping("/users/{id}")
+    public ResponseEntity<AdminDto.UserDetail> userDetail(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.getUserDetail(id));
+    }
+
     @PatchMapping("/users/{id}/role")
     public ResponseEntity<AdminDto.UserSummary> updateUserRole(
             @PathVariable Long id,

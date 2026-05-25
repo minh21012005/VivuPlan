@@ -9,6 +9,7 @@ import com.vivuplan.vivuplan_be.repository.PaymentOrderRepository;
 import com.vivuplan.vivuplan_be.repository.RoleRepository;
 import com.vivuplan.vivuplan_be.repository.TripRepository;
 import com.vivuplan.vivuplan_be.repository.UserRepository;
+import com.vivuplan.vivuplan_be.repository.UserWalletRepository;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class AdminService {
     private final RoleRepository roleRepository;
     private final TripRepository tripRepository;
     private final PaymentOrderRepository paymentOrderRepository;
+    private final UserWalletRepository userWalletRepository;
 
     @Transactional(readOnly = true)
     public AdminDto.StatsResponse getStats() {
@@ -53,6 +55,25 @@ public class AdminService {
                 userSpec(q, parseRoleOrNull(role), parseProviderOrNull(provider)),
                 PageRequest.of(page, clampPageSize(size), Sort.by(Sort.Direction.DESC, "createdAt"))
         ).map(AdminDto.UserSummary::from);
+    }
+
+    @Transactional(readOnly = true)
+    public AdminDto.UserDetail getUserDetail(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+        AdminDto.UserDetail detail = new AdminDto.UserDetail();
+        detail.setUser(AdminDto.UserSummary.from(user));
+        detail.setWallet(AdminDto.WalletSummary.from(userWalletRepository.findByUserId(userId).orElse(null)));
+        detail.setTotalTrips(tripRepository.countByUserId(userId));
+        detail.setPaidOrders(paymentOrderRepository.countByUserIdAndStatus(userId, PaymentOrder.Status.PAID));
+        detail.setTotalPaid(paymentOrderRepository.sumPaidAmountByUserIdAndStatus(userId, PaymentOrder.Status.PAID));
+        detail.setRecentTrips(tripRepository.findTop8ByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(AdminDto.TripSummary::from)
+                .toList());
+        detail.setRecentOrders(paymentOrderRepository.findTop8ByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(AdminDto.TransactionSummary::from)
+                .toList());
+        return detail;
     }
 
     @Transactional(readOnly = true)

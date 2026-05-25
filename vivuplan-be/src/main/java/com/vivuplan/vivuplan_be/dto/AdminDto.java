@@ -2,6 +2,7 @@ package com.vivuplan.vivuplan_be.dto;
 
 import com.vivuplan.vivuplan_be.entity.Trip;
 import com.vivuplan.vivuplan_be.entity.User;
+import com.vivuplan.vivuplan_be.entity.UserWallet;
 import lombok.Data;
 
 import java.util.List;
@@ -88,6 +89,30 @@ public class AdminDto {
             dto.setUser(UserSummary.from(user));
             return dto;
         }
+    }
+
+    @Data
+    public static class WalletSummary {
+        private Long planCredits;
+        private Long editCredits;
+
+        public static WalletSummary from(UserWallet wallet) {
+            WalletSummary dto = new WalletSummary();
+            dto.setPlanCredits(wallet != null ? wallet.getPlanCredits() : 0L);
+            dto.setEditCredits(wallet != null ? wallet.getEditCredits() : 0L);
+            return dto;
+        }
+    }
+
+    @Data
+    public static class UserDetail {
+        private UserSummary user;
+        private WalletSummary wallet;
+        private long totalTrips;
+        private long paidOrders;
+        private long totalPaid;
+        private List<TripSummary> recentTrips;
+        private List<TransactionSummary> recentOrders;
     }
 
     @Data

@@ -247,6 +247,10 @@ export const adminApi = {
       .then(handleResponse<PageResponse<AdminUserSummary>>);
   },
 
+  userDetail: (userId: number) =>
+    fetch(`${API_BASE}/api/admin/users/${userId}`, { headers: authHeaders() })
+      .then(handleResponse<AdminUserDetail>),
+
   trips: (page = 0, size = 20, filters: AdminTripFilters = {}) => {
     const query = adminQuery({ page, size, ...filters });
     return fetch(`${API_BASE}/api/admin/trips?${query}`, { headers: authHeaders() })
@@ -384,6 +388,16 @@ export interface AdminUserSummary {
   provider: "LOCAL" | "GOOGLE";
   emailVerified: boolean;
   createdAt?: string;
+}
+
+export interface AdminUserDetail {
+  user: AdminUserSummary;
+  wallet: BillingWallet;
+  totalTrips: number;
+  paidOrders: number;
+  totalPaid: number;
+  recentTrips: AdminTripSummary[];
+  recentOrders: AdminTransactionSummary[];
 }
 
 export interface AdminTripSummary {

@@ -16,6 +16,8 @@ public interface TripRepository extends JpaRepository<Trip, Long>, JpaSpecificat
 
     List<Trip> findByUserIdOrderByCreatedAtDesc(Long userId);
 
+    List<Trip> findTop8ByUserIdOrderByCreatedAtDesc(Long userId);
+
     Page<Trip> findByIsPublicTrueOrderByViewCountDesc(Pageable pageable);
 
     Optional<Trip> findByShareCode(String shareCode);

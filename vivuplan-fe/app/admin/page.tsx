@@ -329,6 +329,7 @@ export default function AdminPage() {
                       <th>Trạng thái</th>
                       <th>Ngày tạo</th>
                       <th>Quyền</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -359,6 +360,15 @@ export default function AdminPage() {
                             <option value="USER">User</option>
                             <option value="ADMIN">Admin</option>
                           </select>
+                        </td>
+                        <td>
+                          <Link
+                            href={`/admin/users/${item.id}`}
+                            className="admin-row-action"
+                            aria-label={`Xem người dùng ${item.email}`}
+                          >
+                            <Eye size={15} /> Xem
+                          </Link>
                         </td>
                       </tr>
                     ))}
