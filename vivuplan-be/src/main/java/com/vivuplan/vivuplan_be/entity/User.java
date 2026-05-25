@@ -66,6 +66,10 @@ public class User {
     @Builder.Default
     private Boolean emailVerified = false;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean accountLocked = false;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
     private List<Trip> trips = new ArrayList<>();
@@ -92,5 +96,9 @@ public class User {
 
     public boolean hasRole(Role.RoleName roleName) {
         return getRoleNames().contains(roleName.name());
+    }
+
+    public boolean isAccountLocked() {
+        return Boolean.TRUE.equals(accountLocked);
     }
 }

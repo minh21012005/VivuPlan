@@ -1,5 +1,6 @@
 package com.vivuplan.vivuplan_be.security;
 
+import com.vivuplan.vivuplan_be.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,6 +23,7 @@ import java.util.List;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -32,6 +34,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(token) && jwtUtil.isValid(token)) {
             try {
                 Long userId = jwtUtil.getUserId(token);
+                if (!userRepository.existsActiveById(userId)) {
+                    chain.doFilter(request, response);
+                    return;
+                }
+
                 String email = jwtUtil.getEmail(token);
                 List<SimpleGrantedAuthority> authorities = jwtUtil.getRoles(token).stream()
                         .map(role -> new SimpleGrantedAuthority("ROLE_" + role))

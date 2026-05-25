@@ -11,9 +11,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  Lock,
   MapPin,
   Search,
   ShieldCheck,
+  Unlock,
   Users,
   X,
 } from "lucide-react";
@@ -283,8 +285,10 @@ export default function AdminPage() {
   const [transactionStatusFilter, setTransactionStatusFilter] = useState<"ALL" | "PENDING" | "PAID" | "UNDERPAID" | "EXPIRED" | "CANCELLED">("ALL");
   const [loading, setLoading] = useState(true);
   const [savingUserId, setSavingUserId] = useState<number | null>(null);
+  const [lockingUserId, setLockingUserId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [pendingRoleChange, setPendingRoleChange] = useState<{ user: AdminUserSummary; role: "USER" | "ADMIN" } | null>(null);
+  const [pendingLockChange, setPendingLockChange] = useState<{ user: AdminUserSummary; locked: boolean } | null>(null);
 
   useEffect(() => {
     setUserPage(0);
@@ -353,6 +357,7 @@ export default function AdminPage() {
 
   const requestRoleChange = (adminUser: AdminUserSummary, role: "USER" | "ADMIN") => {
     if (adminUser.role === role) return;
+    setPendingLockChange(null);
     setPendingRoleChange({ user: adminUser, role });
   };
 
@@ -373,6 +378,32 @@ export default function AdminPage() {
       setError(err instanceof Error ? err.message : "Không thể cập nhật quyền người dùng.");
     } finally {
       setSavingUserId(null);
+    }
+  };
+
+  const requestLockChange = (adminUser: AdminUserSummary, locked: boolean) => {
+    if (adminUser.accountLocked === locked) return;
+    setPendingRoleChange(null);
+    setPendingLockChange({ user: adminUser, locked });
+  };
+
+  const handleLockChange = async (adminUser: AdminUserSummary, locked: boolean) => {
+    setLockingUserId(adminUser.id);
+    setError("");
+    try {
+      const updated = await adminApi.updateUserLock(adminUser.id, locked);
+      setUsers((current) => current
+        ? {
+          ...current,
+          content: current.content.map((item) => item.id === updated.id ? updated : item),
+        }
+        : current);
+      setStats(await adminApi.stats());
+      setPendingLockChange(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể cập nhật trạng thái tài khoản.");
+    } finally {
+      setLockingUserId(null);
     }
   };
 
@@ -470,6 +501,7 @@ export default function AdminPage() {
                       <th>Người dùng</th>
                       <th>Đăng nhập</th>
                       <th>Trạng thái</th>
+                      <th>Tài khoản</th>
                       <th>Ngày tạo</th>
                       <th>Quyền</th>
                       <th>Hành động</th>
@@ -491,6 +523,11 @@ export default function AdminPage() {
                         <td>
                           <StatusBadge tone={item.emailVerified ? "success" : "warning"}>
                             {item.emailVerified ? "Đã xác minh" : "Chưa xác minh"}
+                          </StatusBadge>
+                        </td>
+                        <td>
+                          <StatusBadge tone={item.accountLocked ? "warning" : "success"}>
+                            {item.accountLocked ? "Đã khóa" : "Hoạt động"}
                           </StatusBadge>
                         </td>
                         <td>{formatDate(item.createdAt)}</td>
@@ -527,13 +564,48 @@ export default function AdminPage() {
                           </div>
                         </td>
                         <td>
-                          <Link
-                            href={`/admin/users/${item.id}`}
-                            className="admin-row-action"
-                            aria-label={`Xem người dùng ${item.email}`}
-                          >
-                            <Eye size={15} /> Xem
-                          </Link>
+                          <div className="admin-row-actions">
+                            <Link
+                              href={`/admin/users/${item.id}`}
+                              className="admin-row-action"
+                              aria-label={`Xem người dùng ${item.email}`}
+                            >
+                              <Eye size={15} /> Xem
+                            </Link>
+                            <div className="admin-action-control">
+                              <button
+                                type="button"
+                                className={`admin-row-action ${item.accountLocked ? "admin-row-action-success" : "admin-row-action-danger"}`}
+                                disabled={lockingUserId === item.id}
+                                onClick={() => requestLockChange(item, !item.accountLocked)}
+                                aria-label={`${item.accountLocked ? "Mở khóa" : "Khóa"} tài khoản ${item.email}`}
+                              >
+                                {item.accountLocked ? <Unlock size={15} /> : <Lock size={15} />}
+                                {item.accountLocked ? "Mở khóa" : "Khóa"}
+                              </button>
+                              {pendingLockChange?.user.id === item.id && (
+                                <div className="admin-popconfirm admin-popconfirm-action" role="dialog" aria-label="Xác nhận khóa tài khoản">
+                                  <strong>{pendingLockChange.locked ? "Khóa tài khoản này?" : "Mở khóa tài khoản này?"}</strong>
+                                  <p>
+                                    {pendingLockChange.locked
+                                      ? `${item.email} sẽ không thể đăng nhập hoặc tiếp tục sử dụng hệ thống.`
+                                      : `${item.email} sẽ có thể đăng nhập lại bình thường.`}
+                                  </p>
+                                  <div>
+                                    <button type="button" onClick={() => setPendingLockChange(null)}>Hủy</button>
+                                    <button
+                                      type="button"
+                                      className="primary"
+                                      disabled={lockingUserId === item.id}
+                                      onClick={() => handleLockChange(pendingLockChange.user, pendingLockChange.locked)}
+                                    >
+                                      Xác nhận
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </td>
                       </tr>
                     ))}

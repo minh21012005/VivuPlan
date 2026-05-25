@@ -75,6 +75,7 @@ public class AuthDto {
         private String role;
         private List<String> roles;
         private String provider;
+        private Boolean accountLocked;
 
         public static UserDto from(com.vivuplan.vivuplan_be.entity.User u) {
             UserDto dto = new UserDto();
@@ -85,6 +86,7 @@ public class AuthDto {
             dto.setRole(u.getPrimaryRoleName());
             dto.setRoles(u.getRoleNames().stream().sorted().toList());
             dto.setProvider(u.getProvider() != null ? u.getProvider().name() : "LOCAL");
+            dto.setAccountLocked(u.isAccountLocked());
             return dto;
         }
     }

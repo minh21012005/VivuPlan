@@ -47,6 +47,15 @@ public class AdminController {
         return ResponseEntity.ok(adminService.updateUserRole(actorUserId, id, req.getRole()));
     }
 
+    @PatchMapping("/users/{id}/lock")
+    public ResponseEntity<AdminDto.UserSummary> updateUserLock(
+            @PathVariable Long id,
+            @RequestBody AdminDto.UpdateUserLockRequest req,
+            Authentication auth) {
+        Long actorUserId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(adminService.updateUserLock(actorUserId, id, req.getLocked()));
+    }
+
     @GetMapping("/trips")
     public ResponseEntity<Page<AdminDto.TripSummary>> trips(
             @RequestParam(defaultValue = "0") int page,

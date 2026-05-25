@@ -273,6 +273,13 @@ export const adminApi = {
       headers: authHeaders(),
       body: JSON.stringify({ role }),
     }).then(handleResponse<AdminUserSummary>),
+
+  updateUserLock: (userId: number, locked: boolean) =>
+    fetch(`${API_BASE}/api/admin/users/${userId}/lock`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify({ locked }),
+    }).then(handleResponse<AdminUserSummary>),
 };
 
 function adminQuery(params: Record<string, string | number | undefined>) {
@@ -294,6 +301,7 @@ export interface User {
   role: string;
   roles?: string[];
   provider: "LOCAL" | "GOOGLE";
+  accountLocked?: boolean;
 }
 
 export interface AuthResponse {
@@ -389,6 +397,7 @@ export interface AdminUserSummary {
   roles: string[];
   provider: "LOCAL" | "GOOGLE";
   emailVerified: boolean;
+  accountLocked: boolean;
   createdAt?: string;
 }
 

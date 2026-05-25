@@ -122,6 +122,7 @@ public class AuthService {
     public AuthDto.AuthResponse login(AuthDto.LoginRequest req) {
         User user = userRepository.findByEmail(normalizeEmail(req.getEmail()))
                 .orElseThrow(() -> new IllegalArgumentException("Email hoặc mật khẩu không đúng"));
+        ensureAccountNotLocked(user);
 
         if (user.getPassword() == null || user.getPassword().isBlank()) {
             throw new IllegalArgumentException("Tài khoản này đang đăng nhập bằng Google. Vui lòng dùng Google để tiếp tục.");
@@ -192,6 +193,7 @@ public class AuthService {
             }
         }
 
+        ensureAccountNotLocked(user);
         String token = generateToken(user);
         return new AuthDto.AuthResponse(token, AuthDto.UserDto.from(user));
     }
@@ -228,6 +230,7 @@ public class AuthService {
     public AuthDto.UserDto getProfile(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+        ensureAccountNotLocked(user);
         return AuthDto.UserDto.from(user);
     }
 
@@ -235,6 +238,7 @@ public class AuthService {
     public AuthDto.UserDto updateProfile(Long userId, AuthDto.UpdateProfileRequest req) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+        ensureAccountNotLocked(user);
 
         if (user.getProvider() == User.AuthProvider.GOOGLE) {
             throw new IllegalArgumentException("Tài khoản Google không được phép cập nhật thông tin thủ công");
@@ -254,6 +258,7 @@ public class AuthService {
     public AuthDto.UserDto changePassword(Long userId, AuthDto.ChangePasswordRequest req) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+        ensureAccountNotLocked(user);
 
         if (user.getPassword() == null || user.getPassword().isBlank()) {
             throw new IllegalArgumentException("Tài khoản đăng nhập bằng Google không sử dụng mật khẩu");
@@ -274,6 +279,12 @@ public class AuthService {
 
     private String generateToken(User user) {
         return jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRoleNames());
+    }
+
+    private void ensureAccountNotLocked(User user) {
+        if (user.isAccountLocked()) {
+            throw new IllegalArgumentException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ hỗ trợ.");
+        }
     }
 
     private String normalizeEmail(String email) {

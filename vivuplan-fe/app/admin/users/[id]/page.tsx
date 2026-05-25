@@ -125,7 +125,7 @@ export default function AdminUserDetailPage() {
                   <h1>{detail.user.name}</h1>
                 </div>
                 <div className="admin-trip-detail-status">
-                  <span>{detail.user.emailVerified ? "Đã xác minh" : "Chưa xác minh"}</span>
+                  <span>{detail.user.accountLocked ? "Đã khóa" : "Hoạt động"}</span>
                   <strong>{detail.user.role}</strong>
                 </div>
               </header>
@@ -237,6 +237,7 @@ export default function AdminUserDetailPage() {
                       <div><dt>Tên</dt><dd>{detail.user.name}</dd></div>
                       <div><dt>Email</dt><dd>{detail.user.email}</dd></div>
                       <div><dt>Đăng nhập</dt><dd>{providerLabel(detail.user.provider)}</dd></div>
+                      <div><dt>Tài khoản</dt><dd>{detail.user.accountLocked ? "Đã khóa" : "Hoạt động"}</dd></div>
                       <div><dt>Trạng thái email</dt><dd>{detail.user.emailVerified ? "Đã xác minh" : "Chưa xác minh"}</dd></div>
                       <div><dt>Quyền</dt><dd>{detail.user.roles.join(", ")}</dd></div>
                       <div><dt>Ngày tạo</dt><dd>{formatDate(detail.user.createdAt)}</dd></div>

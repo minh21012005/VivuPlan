@@ -521,6 +521,50 @@
   transform: translateY(-1px);
 }
 
+.admin-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-action-control {
+  position: relative;
+  display: inline-flex;
+}
+
+.admin-row-action:disabled {
+  cursor: wait;
+  opacity: 0.65;
+  transform: none;
+}
+
+.admin-row-action-danger {
+  border-color: rgba(220, 38, 38, 0.16);
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.admin-row-action-danger:hover:not(:disabled) {
+  border-color: rgba(220, 38, 38, 0.28);
+  background: #fee2e2;
+}
+
+.admin-row-action-success {
+  border-color: rgba(16, 185, 129, 0.22);
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.admin-row-action-success:hover:not(:disabled) {
+  border-color: rgba(16, 185, 129, 0.34);
+  background: #d1fae5;
+}
+
+.admin-popconfirm-action {
+  right: 0;
+}
+
 .admin-pagination {
   display: flex;
   align-items: center;

@@ -124,6 +124,29 @@ public class AdminService {
         return AdminDto.UserSummary.from(userRepository.save(user));
     }
 
+    @Transactional
+    public AdminDto.UserSummary updateUserLock(Long actorUserId, Long userId, Boolean locked) {
+        if (locked == null) {
+            throw new IllegalArgumentException("Trạng thái khóa không hợp lệ");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+
+        if (actorUserId != null && actorUserId.equals(userId) && locked) {
+            throw new IllegalArgumentException("Không thể tự khóa tài khoản admin đang đăng nhập");
+        }
+
+        if (locked
+                && user.hasRole(Role.RoleName.ADMIN)
+                && userRepository.countUnlockedByRoleName(Role.RoleName.ADMIN) <= 1) {
+            throw new IllegalArgumentException("Không thể khóa admin cuối cùng của hệ thống");
+        }
+
+        user.setAccountLocked(locked);
+        return AdminDto.UserSummary.from(userRepository.save(user));
+    }
+
     private Role.RoleName parseRole(String role) {
         if (role == null || role.isBlank()) {
             throw new IllegalArgumentException("Role không được để trống");

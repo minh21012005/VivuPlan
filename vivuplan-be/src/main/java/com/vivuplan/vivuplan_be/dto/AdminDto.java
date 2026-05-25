@@ -32,6 +32,7 @@ public class AdminDto {
         private List<String> roles;
         private String provider;
         private Boolean emailVerified;
+        private Boolean accountLocked;
         private String createdAt;
 
         public static UserSummary from(User user) {
@@ -44,6 +45,7 @@ public class AdminDto {
             dto.setRoles(user.getRoleNames().stream().sorted().toList());
             dto.setProvider(user.getProvider().name());
             dto.setEmailVerified(user.getEmailVerified());
+            dto.setAccountLocked(user.isAccountLocked());
             dto.setCreatedAt(user.getCreatedAt() != null ? user.getCreatedAt().toString() : null);
             return dto;
         }
@@ -153,5 +155,10 @@ public class AdminDto {
     @Data
     public static class UpdateUserRoleRequest {
         private String role;
+    }
+
+    @Data
+    public static class UpdateUserLockRequest {
+        private Boolean locked;
     }
 }
