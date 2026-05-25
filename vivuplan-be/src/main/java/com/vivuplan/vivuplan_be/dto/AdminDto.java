@@ -78,6 +78,54 @@ public class AdminDto {
     }
 
     @Data
+    public static class TripDetail {
+        private TripDto.TripResponse trip;
+        private UserSummary user;
+
+        public static TripDetail of(TripDto.TripResponse trip, User user) {
+            TripDetail dto = new TripDetail();
+            dto.setTrip(trip);
+            dto.setUser(UserSummary.from(user));
+            return dto;
+        }
+    }
+
+    @Data
+    public static class TransactionSummary {
+        private Long id;
+        private String orderCode;
+        private Long userId;
+        private String userEmail;
+        private String packageCode;
+        private Long amount;
+        private Long paidAmount;
+        private Long planCredits;
+        private Long editCredits;
+        private String status;
+        private String createdAt;
+        private String paidAt;
+        private String expiresAt;
+
+        public static TransactionSummary from(com.vivuplan.vivuplan_be.entity.PaymentOrder order) {
+            TransactionSummary dto = new TransactionSummary();
+            dto.setId(order.getId());
+            dto.setOrderCode(order.getOrderCode());
+            dto.setUserId(order.getUser().getId());
+            dto.setUserEmail(order.getUser().getEmail());
+            dto.setPackageCode(order.getPackageCode());
+            dto.setAmount(order.getAmount());
+            dto.setPaidAmount(order.getPaidAmount());
+            dto.setPlanCredits(order.getPlanCredits());
+            dto.setEditCredits(order.getEditCredits());
+            dto.setStatus(order.getStatus().name());
+            dto.setCreatedAt(order.getCreatedAt() != null ? order.getCreatedAt().toString() : null);
+            dto.setPaidAt(order.getPaidAt() != null ? order.getPaidAt().toString() : null);
+            dto.setExpiresAt(order.getExpiresAt() != null ? order.getExpiresAt().toString() : null);
+            return dto;
+        }
+    }
+
+    @Data
     public static class UpdateUserRoleRequest {
         private String role;
     }

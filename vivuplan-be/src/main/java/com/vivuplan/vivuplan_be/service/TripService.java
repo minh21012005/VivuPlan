@@ -219,6 +219,13 @@ public class TripService {
         return toTripResponse(trip);
     }
 
+    @Transactional(readOnly = true)
+    public TripDto.TripResponse getTripForAdmin(Long tripId) {
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("Lịch trình không tồn tại"));
+        return toTripResponse(trip);
+    }
+
     @Transactional
     public TripDto.TripResponse updateTripStatus(Long tripId, Long userId, String status) {
         Trip trip = getOwnedTrip(tripId, userId);

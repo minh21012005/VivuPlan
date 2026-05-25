@@ -241,13 +241,27 @@ export const adminApi = {
     fetch(`${API_BASE}/api/admin/stats`, { headers: authHeaders() })
       .then(handleResponse<AdminStats>),
 
-  users: (page = 0, size = 20) =>
-    fetch(`${API_BASE}/api/admin/users?page=${page}&size=${size}`, { headers: authHeaders() })
-      .then(handleResponse<PageResponse<AdminUserSummary>>),
+  users: (page = 0, size = 20, filters: AdminUserFilters = {}) => {
+    const query = adminQuery({ page, size, ...filters });
+    return fetch(`${API_BASE}/api/admin/users?${query}`, { headers: authHeaders() })
+      .then(handleResponse<PageResponse<AdminUserSummary>>);
+  },
 
-  trips: (page = 0, size = 20) =>
-    fetch(`${API_BASE}/api/admin/trips?page=${page}&size=${size}`, { headers: authHeaders() })
-      .then(handleResponse<PageResponse<AdminTripSummary>>),
+  trips: (page = 0, size = 20, filters: AdminTripFilters = {}) => {
+    const query = adminQuery({ page, size, ...filters });
+    return fetch(`${API_BASE}/api/admin/trips?${query}`, { headers: authHeaders() })
+      .then(handleResponse<PageResponse<AdminTripSummary>>);
+  },
+
+  tripDetail: (tripId: number) =>
+    fetch(`${API_BASE}/api/admin/trips/${tripId}`, { headers: authHeaders() })
+      .then(handleResponse<AdminTripDetail>),
+
+  transactions: (page = 0, size = 20, filters: AdminTransactionFilters = {}) => {
+    const query = adminQuery({ page, size, ...filters });
+    return fetch(`${API_BASE}/api/admin/transactions?${query}`, { headers: authHeaders() })
+      .then(handleResponse<PageResponse<AdminTransactionSummary>>);
+  },
 
   updateUserRole: (userId: number, role: "USER" | "ADMIN") =>
     fetch(`${API_BASE}/api/admin/users/${userId}/role`, {
@@ -256,6 +270,15 @@ export const adminApi = {
       body: JSON.stringify({ role }),
     }).then(handleResponse<AdminUserSummary>),
 };
+
+function adminQuery(params: Record<string, string | number | undefined>) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === "" || value === "ALL") return;
+    query.set(key, String(value));
+  });
+  return query.toString();
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -334,6 +357,23 @@ export interface AdminStats {
   totalRevenue: number;
 }
 
+export interface AdminUserFilters {
+  q?: string;
+  role?: "ALL" | "USER" | "ADMIN";
+  provider?: "ALL" | "LOCAL" | "GOOGLE";
+}
+
+export interface AdminTripFilters {
+  q?: string;
+  status?: "ALL" | "DRAFT" | "PLANNED" | "COMPLETED";
+  visibility?: "ALL" | "PUBLIC" | "PRIVATE";
+}
+
+export interface AdminTransactionFilters {
+  q?: string;
+  status?: "ALL" | "PENDING" | "PAID" | "UNDERPAID" | "EXPIRED" | "CANCELLED";
+}
+
 export interface AdminUserSummary {
   id: number;
   name: string;
@@ -357,6 +397,27 @@ export interface AdminTripSummary {
   isPublic: boolean;
   viewCount: number;
   createdAt?: string;
+}
+
+export interface AdminTripDetail {
+  trip: TripResponse;
+  user: AdminUserSummary;
+}
+
+export interface AdminTransactionSummary {
+  id: number;
+  orderCode: string;
+  userId: number;
+  userEmail: string;
+  packageCode: string;
+  amount: number;
+  paidAmount?: number;
+  planCredits: number;
+  editCredits: number;
+  status: "PENDING" | "PAID" | "UNDERPAID" | "EXPIRED" | "CANCELLED" | string;
+  createdAt?: string;
+  paidAt?: string;
+  expiresAt?: string;
 }
 
 export interface GenerateRequest {
@@ -399,6 +460,7 @@ export interface TripResponse {
   destinationSuggested?: boolean;
   mustVisit?: string;
   avoid?: string;
+  notes?: string;
   status: string;
   isPublic: boolean;
   shareCode: string;

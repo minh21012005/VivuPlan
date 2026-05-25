@@ -3,6 +3,7 @@ package com.vivuplan.vivuplan_be.repository;
 import com.vivuplan.vivuplan_be.entity.PaymentOrder;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface PaymentOrderRepository extends JpaRepository<PaymentOrder, Long> {
+public interface PaymentOrderRepository extends JpaRepository<PaymentOrder, Long>, JpaSpecificationExecutor<PaymentOrder> {
     Optional<PaymentOrder> findByOrderCode(String orderCode);
     boolean existsByOrderCode(String orderCode);
     List<PaymentOrder> findTop8ByUserIdOrderByCreatedAtDesc(Long userId);

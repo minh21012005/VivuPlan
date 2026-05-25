@@ -9,12 +9,19 @@ import com.vivuplan.vivuplan_be.repository.PaymentOrderRepository;
 import com.vivuplan.vivuplan_be.repository.RoleRepository;
 import com.vivuplan.vivuplan_be.repository.TripRepository;
 import com.vivuplan.vivuplan_be.repository.UserRepository;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -41,17 +48,34 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
-    public Page<AdminDto.UserSummary> listUsers(int page, int size) {
+    public Page<AdminDto.UserSummary> listUsers(int page, int size, String q, String role, String provider) {
         return userRepository.findAll(
+                userSpec(q, parseRoleOrNull(role), parseProviderOrNull(provider)),
                 PageRequest.of(page, clampPageSize(size), Sort.by(Sort.Direction.DESC, "createdAt"))
         ).map(AdminDto.UserSummary::from);
     }
 
     @Transactional(readOnly = true)
-    public Page<AdminDto.TripSummary> listTrips(int page, int size) {
+    public Page<AdminDto.TripSummary> listTrips(int page, int size, String q, String status, String visibility) {
         return tripRepository.findAll(
+                tripSpec(q, parseTripStatusOrNull(status), parseVisibilityOrNull(visibility)),
                 PageRequest.of(page, clampPageSize(size), Sort.by(Sort.Direction.DESC, "createdAt"))
         ).map(AdminDto.TripSummary::from);
+    }
+
+    @Transactional(readOnly = true)
+    public User getTripOwner(Long tripId) {
+        return tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("Lịch trình không tồn tại"))
+                .getUser();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AdminDto.TransactionSummary> listTransactions(int page, int size, String q, String status) {
+        return paymentOrderRepository.findAll(
+                transactionSpec(q, parsePaymentStatusOrNull(status)),
+                PageRequest.of(page, clampPageSize(size), Sort.by(Sort.Direction.DESC, "createdAt"))
+        ).map(AdminDto.TransactionSummary::from);
     }
 
     @Transactional
@@ -88,6 +112,114 @@ public class AdminService {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Role không hợp lệ. Chỉ hỗ trợ USER hoặc ADMIN");
         }
+    }
+
+    private Role.RoleName parseRoleOrNull(String role) {
+        if (role == null || role.isBlank() || "ALL".equalsIgnoreCase(role)) return null;
+        return parseRole(role);
+    }
+
+    private User.AuthProvider parseProviderOrNull(String provider) {
+        if (provider == null || provider.isBlank() || "ALL".equalsIgnoreCase(provider)) return null;
+        try {
+            return User.AuthProvider.valueOf(provider.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Provider không hợp lệ. Chỉ hỗ trợ LOCAL hoặc GOOGLE");
+        }
+    }
+
+    private Trip.TripStatus parseTripStatusOrNull(String status) {
+        if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) return null;
+        try {
+            return Trip.TripStatus.valueOf(status.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái lịch trình không hợp lệ");
+        }
+    }
+
+    private Boolean parseVisibilityOrNull(String visibility) {
+        if (visibility == null || visibility.isBlank() || "ALL".equalsIgnoreCase(visibility)) return null;
+        return switch (visibility.trim().toUpperCase(Locale.ROOT)) {
+            case "PUBLIC" -> true;
+            case "PRIVATE" -> false;
+            default -> throw new IllegalArgumentException("Bộ lọc hiển thị không hợp lệ");
+        };
+    }
+
+    private PaymentOrder.Status parsePaymentStatusOrNull(String status) {
+        if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) return null;
+        try {
+            return PaymentOrder.Status.valueOf(status.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái giao dịch không hợp lệ");
+        }
+    }
+
+    private Specification<User> userSpec(String q, Role.RoleName role, User.AuthProvider provider) {
+        return (root, query, cb) -> {
+            query.distinct(true);
+            List<Predicate> predicates = new ArrayList<>();
+            String keyword = normalizeKeyword(q);
+            if (keyword != null) {
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("name")), keyword),
+                        cb.like(cb.lower(root.get("email")), keyword)
+                ));
+            }
+            if (role != null) {
+                predicates.add(cb.equal(root.join("roles", JoinType.LEFT).get("name"), role));
+            }
+            if (provider != null) {
+                predicates.add(cb.equal(root.get("provider"), provider));
+            }
+            return cb.and(predicates.toArray(Predicate[]::new));
+        };
+    }
+
+    private Specification<Trip> tripSpec(String q, Trip.TripStatus status, Boolean visibility) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            String keyword = normalizeKeyword(q);
+            if (keyword != null) {
+                var userJoin = root.join("user", JoinType.LEFT);
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("destination")), keyword),
+                        cb.like(cb.lower(root.get("departure")), keyword),
+                        cb.like(cb.lower(userJoin.get("email")), keyword)
+                ));
+            }
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+            if (visibility != null) {
+                predicates.add(cb.equal(root.get("isPublic"), visibility));
+            }
+            return cb.and(predicates.toArray(Predicate[]::new));
+        };
+    }
+
+    private Specification<PaymentOrder> transactionSpec(String q, PaymentOrder.Status status) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            String keyword = normalizeKeyword(q);
+            if (keyword != null) {
+                var userJoin = root.join("user", JoinType.LEFT);
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("orderCode")), keyword),
+                        cb.like(cb.lower(root.get("packageCode")), keyword),
+                        cb.like(cb.lower(userJoin.get("email")), keyword)
+                ));
+            }
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+            return cb.and(predicates.toArray(Predicate[]::new));
+        };
+    }
+
+    private String normalizeKeyword(String q) {
+        if (q == null || q.isBlank()) return null;
+        return "%" + q.trim().toLowerCase(Locale.ROOT) + "%";
     }
 
     private Role getOrCreateRole(Role.RoleName roleName) {

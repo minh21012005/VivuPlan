@@ -63,6 +63,7 @@ public class TripDto {
         private Boolean destinationSuggested;
         private String mustVisit;
         private String avoid;
+        private String notes;
         private String status;
         private boolean isPublic;
         private String shareCode;
@@ -93,6 +94,7 @@ public class TripDto {
             r.setDestinationSuggested(trip.getDestinationSuggested());
             r.setMustVisit(trip.getMustVisit());
             r.setAvoid(trip.getAvoid());
+            r.setNotes(trip.getNotes());
             r.setStatus(trip.getStatus().name());
             r.setPublic(trip.getIsPublic());
             r.setShareCode(trip.getShareCode());
