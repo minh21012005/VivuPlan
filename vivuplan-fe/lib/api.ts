@@ -30,7 +30,7 @@ function authHeaders(): HeadersInit {
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new ApiError(body.error || "Co loi xay ra", res.status, body.code);
+    throw new ApiError(body.error || "Có lỗi xảy ra", res.status, body.code);
   }
   return res.json();
 }

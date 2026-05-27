@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ApiError, tripApi } from "@/lib/api";
 import { useBilling } from "@/hooks/useBilling";
+import { useAuth } from "@/hooks/useAuth";
 import { findDestinationByName, getDestinationImage, heroImages, normalizeVietnameseSearch, vietnamProvinces, type Destination } from "@/lib/travel-data";
 import { useDestinations } from "@/lib/use-destinations";
 import {
@@ -267,6 +268,7 @@ function PlanContent() {
   const [error, setError] = useState("");
   const [purchaseOpen, setPurchaseOpen] = useState(false);
   const { wallet, refreshWallet } = useBilling();
+  const auth = useAuth();
   const [focusedField, setFocusedField] = useState<"departure" | "destination" | null>(null);
   const blurTimer = useRef<number | null>(null);
 
@@ -337,6 +339,14 @@ function PlanContent() {
 
   const handleGenerate = async () => {
     setError("");
+    if (auth.loading) {
+      setError("Vui lòng chờ một chút để VivuPlan kiểm tra phiên đăng nhập.");
+      return;
+    }
+    if (!auth.isLoggedIn) {
+      router.push("/login");
+      return;
+    }
     if (!form.departure.trim()) {
       setError("Vui lòng nhập điểm xuất phát.");
       return;
@@ -423,6 +433,8 @@ function PlanContent() {
       if (e instanceof ApiError && e.status === 402) {
         setError("Bạn đã hết lượt tạo lịch trình bằng AI. Mua thêm lượt để tiếp tục nhé.");
         setPurchaseOpen(true);
+      } else if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
+        router.push("/login");
       } else {
         setError(e instanceof Error ? e.message : "Không thể tạo lịch trình. Hãy kiểm tra đăng nhập hoặc thử lại sau.");
       }

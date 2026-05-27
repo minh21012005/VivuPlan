@@ -24,7 +24,6 @@ export default function LoginPage() {
       router.replace("/");
     }
   }, [auth.loading, auth.user, router]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
