@@ -27,6 +27,19 @@ public class AuthController {
         return ResponseEntity.ok(authService.verifyRegistrationOtp(req));
     }
 
+    @PostMapping("/password/forgot/request-otp")
+    public ResponseEntity<AuthDto.ForgotPasswordOtpResponse> requestPasswordResetOtp(
+            @Valid @RequestBody AuthDto.ForgotPasswordRequest req) {
+        return ResponseEntity.ok(authService.requestPasswordResetOtp(req));
+    }
+
+    @PostMapping("/password/forgot/verify")
+    public ResponseEntity<Map<String, String>> resetPasswordWithOtp(
+            @Valid @RequestBody AuthDto.ResetPasswordRequest req) {
+        authService.resetPasswordWithOtp(req);
+        return ResponseEntity.ok(Map.of("message", "Đã đặt lại mật khẩu thành công"));
+    }
+
     @PostMapping("/login")
     public ResponseEntity<AuthDto.AuthResponse> login(@Valid @RequestBody AuthDto.LoginRequest req) {
         return ResponseEntity.ok(authService.login(req));

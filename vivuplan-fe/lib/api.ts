@@ -52,6 +52,20 @@ export const authApi = {
       body: JSON.stringify(data),
     }).then(handleResponse<AuthResponse>),
 
+  requestPasswordResetOtp: (data: { email: string }) =>
+    fetch(`${API_BASE}/api/auth/password/forgot/request-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }).then(handleResponse<ForgotPasswordOtpResponse>),
+
+  resetPasswordWithOtp: (data: { email: string; otp: string; newPassword: string }) =>
+    fetch(`${API_BASE}/api/auth/password/forgot/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }).then(handleResponse<{ message: string }>),
+
   login: (data: { email: string; password: string }) =>
     fetch(`${API_BASE}/api/auth/login`, {
       method: "POST",
@@ -310,6 +324,11 @@ export interface AuthResponse {
 }
 
 export interface RegisterOtpResponse {
+  email: string;
+  expiresInSeconds: number;
+}
+
+export interface ForgotPasswordOtpResponse {
   email: string;
   expiresInSeconds: number;
 }

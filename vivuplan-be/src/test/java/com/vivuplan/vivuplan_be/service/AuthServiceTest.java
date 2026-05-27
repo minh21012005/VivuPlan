@@ -1,9 +1,11 @@
 package com.vivuplan.vivuplan_be.service;
 
 import com.vivuplan.vivuplan_be.dto.AuthDto;
+import com.vivuplan.vivuplan_be.entity.PasswordResetOtp;
 import com.vivuplan.vivuplan_be.entity.RegistrationOtp;
 import com.vivuplan.vivuplan_be.entity.Role;
 import com.vivuplan.vivuplan_be.entity.User;
+import com.vivuplan.vivuplan_be.repository.PasswordResetOtpRepository;
 import com.vivuplan.vivuplan_be.repository.RegistrationOtpRepository;
 import com.vivuplan.vivuplan_be.repository.RoleRepository;
 import com.vivuplan.vivuplan_be.repository.UserRepository;
@@ -40,6 +42,9 @@ class AuthServiceTest {
     private RegistrationOtpRepository registrationOtpRepository;
 
     @Mock
+    private PasswordResetOtpRepository passwordResetOtpRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
@@ -56,6 +61,7 @@ class AuthServiceTest {
                 userRepository,
                 roleRepository,
                 registrationOtpRepository,
+                passwordResetOtpRepository,
                 passwordEncoder,
                 jwtUtil,
                 billingService,
@@ -268,6 +274,99 @@ class AuthServiceTest {
         verify(passwordEncoder, never()).matches(any(), any());
         verify(userRepository, never()).save(any(User.class));
         verify(billingService, never()).grantSignupCredits(any(User.class));
+    }
+
+    @Test
+    void requestPasswordResetOtpStoresPendingOtpAndSendsEmail() {
+        AuthService service = service();
+        User user = User.builder()
+                .id(9L)
+                .name("Minh")
+                .email("minh@example.com")
+                .password("encoded-password")
+                .provider(User.AuthProvider.LOCAL)
+                .build();
+        AuthDto.ForgotPasswordRequest req = new AuthDto.ForgotPasswordRequest();
+        req.setEmail("Minh@Example.com ");
+
+        when(userRepository.findByEmail("minh@example.com")).thenReturn(Optional.of(user));
+        when(passwordResetOtpRepository.findByEmail("minh@example.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(any())).thenReturn("encoded-otp");
+
+        AuthDto.ForgotPasswordOtpResponse response = service.requestPasswordResetOtp(req);
+
+        assertThat(response.getEmail()).isEqualTo("minh@example.com");
+        ArgumentCaptor<PasswordResetOtp> otpCaptor = ArgumentCaptor.forClass(PasswordResetOtp.class);
+        verify(passwordResetOtpRepository).save(otpCaptor.capture());
+        assertThat(otpCaptor.getValue().getEmail()).isEqualTo("minh@example.com");
+        verify(emailService).sendPasswordResetOtpAsync(any(), any(), any(), any(Long.class));
+    }
+
+    @Test
+    void resetPasswordWithOtpUpdatesPasswordAndDeletesOtp() {
+        AuthService service = service();
+        User user = User.builder()
+                .id(9L)
+                .name("Minh")
+                .email("minh@example.com")
+                .password("old-encoded-password")
+                .provider(User.AuthProvider.LOCAL)
+                .build();
+        PasswordResetOtp pending = PasswordResetOtp.builder()
+                .email("minh@example.com")
+                .otpHash("encoded-otp")
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .attempts(0)
+                .build();
+        AuthDto.ResetPasswordRequest req = new AuthDto.ResetPasswordRequest();
+        req.setEmail("minh@example.com");
+        req.setOtp("123456");
+        req.setNewPassword("new-password");
+
+        when(userRepository.findByEmail("minh@example.com")).thenReturn(Optional.of(user));
+        when(passwordResetOtpRepository.findByEmail("minh@example.com")).thenReturn(Optional.of(pending));
+        when(passwordEncoder.matches("123456", "encoded-otp")).thenReturn(true);
+        when(passwordEncoder.matches("new-password", "old-encoded-password")).thenReturn(false);
+        when(passwordEncoder.encode("new-password")).thenReturn("new-encoded-password");
+
+        service.resetPasswordWithOtp(req);
+
+        assertThat(user.getPassword()).isEqualTo("new-encoded-password");
+        verify(userRepository).save(user);
+        verify(passwordResetOtpRepository).delete(pending);
+    }
+
+    @Test
+    void resetPasswordWithOtpThrowsWhenOtpWrongAndIncrementsAttempts() {
+        AuthService service = service();
+        User user = User.builder()
+                .id(9L)
+                .name("Minh")
+                .email("minh@example.com")
+                .password("old-encoded-password")
+                .provider(User.AuthProvider.LOCAL)
+                .build();
+        PasswordResetOtp pending = PasswordResetOtp.builder()
+                .email("minh@example.com")
+                .otpHash("encoded-otp")
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .attempts(1)
+                .build();
+        AuthDto.ResetPasswordRequest req = new AuthDto.ResetPasswordRequest();
+        req.setEmail("minh@example.com");
+        req.setOtp("000000");
+        req.setNewPassword("new-password");
+
+        when(userRepository.findByEmail("minh@example.com")).thenReturn(Optional.of(user));
+        when(passwordResetOtpRepository.findByEmail("minh@example.com")).thenReturn(Optional.of(pending));
+        when(passwordEncoder.matches("000000", "encoded-otp")).thenReturn(false);
+
+        assertThatThrownBy(() -> service.resetPasswordWithOtp(req))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(pending.getAttempts()).isEqualTo(2);
+        verify(passwordResetOtpRepository).save(pending);
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test

@@ -5,9 +5,11 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.vivuplan.vivuplan_be.dto.AuthDto;
+import com.vivuplan.vivuplan_be.entity.PasswordResetOtp;
 import com.vivuplan.vivuplan_be.entity.RegistrationOtp;
 import com.vivuplan.vivuplan_be.entity.Role;
 import com.vivuplan.vivuplan_be.entity.User;
+import com.vivuplan.vivuplan_be.repository.PasswordResetOtpRepository;
 import com.vivuplan.vivuplan_be.repository.RegistrationOtpRepository;
 import com.vivuplan.vivuplan_be.repository.RoleRepository;
 import com.vivuplan.vivuplan_be.repository.UserRepository;
@@ -39,6 +41,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final RegistrationOtpRepository registrationOtpRepository;
+    private final PasswordResetOtpRepository passwordResetOtpRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final BillingService billingService;
@@ -117,6 +120,67 @@ public class AuthService {
         billingService.grantSignupCredits(user);
         String token = generateToken(user);
         return new AuthDto.AuthResponse(token, AuthDto.UserDto.from(user));
+    }
+
+    @Transactional
+    public AuthDto.ForgotPasswordOtpResponse requestPasswordResetOtp(AuthDto.ForgotPasswordRequest req) {
+        String email = normalizeEmail(req.getEmail());
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Email chưa được đăng ký"));
+        ensureAccountNotLocked(user);
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Tài khoản này đang đăng nhập bằng Google. Vui lòng dùng Google để tiếp tục.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        String otp = generateOtp();
+        LocalDateTime expiresAt = now.plusMinutes(registrationOtpExpiryMinutes);
+        PasswordResetOtp pending = passwordResetOtpRepository.findByEmail(email)
+                .orElseGet(PasswordResetOtp::new);
+        validatePasswordResetOtpSendLimit(pending, now);
+        pending.setEmail(email);
+        pending.setOtpHash(passwordEncoder.encode(otp));
+        pending.setExpiresAt(expiresAt);
+        pending.setAttempts(0);
+        pending.setResendCount(nextPasswordResetResendCount(pending, now));
+        pending.setLastSentAt(now);
+        pending.setConsumedAt(null);
+        passwordResetOtpRepository.save(pending);
+
+        emailService.sendPasswordResetOtpAsync(email, user.getName(), otp, registrationOtpExpiryMinutes);
+        return new AuthDto.ForgotPasswordOtpResponse(email, registrationOtpExpiryMinutes * 60);
+    }
+
+    @Transactional
+    public void resetPasswordWithOtp(AuthDto.ResetPasswordRequest req) {
+        String email = normalizeEmail(req.getEmail());
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Yêu cầu đặt lại mật khẩu không hợp lệ hoặc đã hết hạn"));
+        ensureAccountNotLocked(user);
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Tài khoản này đang đăng nhập bằng Google. Vui lòng dùng Google để tiếp tục.");
+        }
+
+        PasswordResetOtp pending = passwordResetOtpRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Yêu cầu đặt lại mật khẩu không hợp lệ hoặc đã hết hạn"));
+        if (pending.getConsumedAt() != null || pending.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Yêu cầu đặt lại mật khẩu không hợp lệ hoặc đã hết hạn");
+        }
+        if (pending.getAttempts() != null && pending.getAttempts() >= REGISTRATION_OTP_MAX_ATTEMPTS) {
+            throw new IllegalArgumentException("Bạn đã nhập sai quá số lần cho phép. Vui lòng gửi lại mã mới.");
+        }
+        if (!passwordEncoder.matches(req.getOtp(), pending.getOtpHash())) {
+            pending.setAttempts((pending.getAttempts() == null ? 0 : pending.getAttempts()) + 1);
+            passwordResetOtpRepository.save(pending);
+            throw new IllegalArgumentException("Mã xác nhận không đúng");
+        }
+        if (passwordEncoder.matches(req.getNewPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Mật khẩu mới phải khác mật khẩu hiện tại");
+        }
+
+        user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+        userRepository.save(user);
+        passwordResetOtpRepository.delete(pending);
     }
 
     public AuthDto.AuthResponse login(AuthDto.LoginRequest req) {
@@ -312,6 +376,28 @@ public class AuthService {
     }
 
     private int nextResendCount(RegistrationOtp pending, LocalDateTime now) {
+        if (pending.getId() == null || pending.getExpiresAt() == null || pending.getExpiresAt().isBefore(now)) {
+            return 1;
+        }
+        return (pending.getResendCount() == null ? 0 : pending.getResendCount()) + 1;
+    }
+
+    private void validatePasswordResetOtpSendLimit(PasswordResetOtp pending, LocalDateTime now) {
+        if (pending.getId() == null || pending.getLastSentAt() == null) {
+            return;
+        }
+        if (pending.getExpiresAt() != null && pending.getExpiresAt().isBefore(now)) {
+            return;
+        }
+        if (pending.getLastSentAt().plusSeconds(REGISTRATION_OTP_RESEND_COOLDOWN_SECONDS).isAfter(now)) {
+            throw new IllegalArgumentException("Vui lòng chờ một chút trước khi gửi lại mã xác nhận.");
+        }
+        if (pending.getResendCount() != null && pending.getResendCount() >= REGISTRATION_OTP_MAX_SENDS) {
+            throw new IllegalArgumentException("Bạn đã gửi mã quá nhiều lần. Vui lòng thử lại sau.");
+        }
+    }
+
+    private int nextPasswordResetResendCount(PasswordResetOtp pending, LocalDateTime now) {
         if (pending.getId() == null || pending.getExpiresAt() == null || pending.getExpiresAt().isBefore(now)) {
             return 1;
         }

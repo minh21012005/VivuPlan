@@ -40,6 +40,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST,
                         "/api/auth/register/request-otp",
                         "/api/auth/register/verify",
+                        "/api/auth/password/forgot/request-otp",
+                        "/api/auth/password/forgot/verify",
                         "/api/auth/login",
                         "/api/auth/google").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()

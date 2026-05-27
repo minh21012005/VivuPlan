@@ -41,6 +41,37 @@ public class AuthDto {
     }
 
     @Data
+    public static class ForgotPasswordRequest {
+        @NotBlank @Email(message = "Email không hợp lệ")
+        private String email;
+    }
+
+    @Data
+    public static class ForgotPasswordOtpResponse {
+        private String email;
+        private Long expiresInSeconds;
+
+        public ForgotPasswordOtpResponse(String email, Long expiresInSeconds) {
+            this.email = email;
+            this.expiresInSeconds = expiresInSeconds;
+        }
+    }
+
+    @Data
+    public static class ResetPasswordRequest {
+        @NotBlank @Email(message = "Email không hợp lệ")
+        private String email;
+
+        @NotBlank(message = "Mã xác nhận không được để trống")
+        @Pattern(regexp = "\\d{6}", message = "Mã xác nhận gồm 6 chữ số")
+        private String otp;
+
+        @NotBlank(message = "Mật khẩu mới không được để trống")
+        @Size(min = 8, message = "Mật khẩu mới tối thiểu 8 ký tự")
+        private String newPassword;
+    }
+
+    @Data
     public static class LoginRequest {
         @NotBlank @Email
         private String email;
