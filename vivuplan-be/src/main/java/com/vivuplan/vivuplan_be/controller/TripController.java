@@ -104,7 +104,7 @@ public class TripController {
     public ResponseEntity<TripDto.RegenerateDayPreviewResponse> previewRegenerateDay(
             @PathVariable Long id,
             @PathVariable Integer dayNumber,
-            @RequestBody TripDto.RegenerateDayRequest req,
+            @Valid @RequestBody TripDto.RegenerateDayRequest req,
             Authentication auth) {
         return ResponseEntity.ok(tripService.previewRegenerateDay(id, (Long) auth.getPrincipal(), dayNumber, req));
     }

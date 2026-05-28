@@ -65,6 +65,10 @@ const localTransportOptions = [
 ];
 
 const departureSuggestions = vietnamProvinces;
+const MUST_VISIT_MAX_LENGTH = 300;
+const AVOID_MAX_LENGTH = 300;
+const NOTES_MAX_LENGTH = 800;
+
 function fmtBudget(value: number) {
   return value >= 1_000_000 ? `${(value / 1_000_000).toFixed(1)}tr ₫` : `${Math.round(value / 1000)}k ₫`;
 }
@@ -393,6 +397,19 @@ function PlanContent() {
     }
     if (!form.localTransport) {
       setError("Vui lòng chọn phương tiện di chuyển trong chuyến đi hoặc chọn Để AI chọn.");
+      return;
+    }
+
+    if (form.mustVisit.trim().length > MUST_VISIT_MAX_LENGTH) {
+      setError(`Nơi muốn ghé tối đa ${MUST_VISIT_MAX_LENGTH} ký tự.`);
+      return;
+    }
+    if (form.avoid.trim().length > AVOID_MAX_LENGTH) {
+      setError(`Điều muốn tránh tối đa ${AVOID_MAX_LENGTH} ký tự.`);
+      return;
+    }
+    if (form.notes.trim().length > NOTES_MAX_LENGTH) {
+      setError(`Ghi chú tối đa ${NOTES_MAX_LENGTH} ký tự.`);
       return;
     }
 
@@ -758,6 +775,7 @@ function PlanContent() {
                 <textarea
                   className="input textarea-compact"
                   value={form.mustVisit}
+                  maxLength={MUST_VISIT_MAX_LENGTH}
                   onChange={(event) => setForm((prev) => ({ ...prev, mustVisit: event.target.value }))}
                   placeholder="VD: Đồi chè trái tim, thác Dải Yếm, rừng thông Bản Áng..."
                 />
@@ -768,6 +786,7 @@ function PlanContent() {
                 <textarea
                   className="input textarea-compact"
                   value={form.avoid}
+                  maxLength={AVOID_MAX_LENGTH}
                   onChange={(event) => setForm((prev) => ({ ...prev, avoid: event.target.value }))}
                   placeholder="VD: tránh đi bộ nhiều, không ăn cay, không đi xe máy..."
                 />
@@ -780,6 +799,7 @@ function PlanContent() {
                 id="input-notes"
                 className="input"
                 value={form.notes}
+                maxLength={NOTES_MAX_LENGTH}
                 onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
                 placeholder="VD: đi cùng người lớn tuổi, muốn lịch nhẹ nhàng, cần về trước 18h..."
               />

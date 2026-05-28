@@ -59,6 +59,7 @@ import {
 
 // ─── Lightweight toast system ────────────────────────────────────────────────
 type ToastItem = { id: number; message: string; type: "error" | "success" | "info" };
+const REGENERATE_INSTRUCTION_MAX_LENGTH = 500;
 
 function useToast() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -1167,6 +1168,10 @@ function RegenerateDayModal({
       setLocalError("Bạn hãy nhập điều muốn thay đổi để VivuPlan tạo phương án phù hợp hơn.");
       return;
     }
+    if (trimmedInstruction.length > REGENERATE_INSTRUCTION_MAX_LENGTH) {
+      setLocalError(`Yêu cầu chỉnh ngày tối đa ${REGENERATE_INSTRUCTION_MAX_LENGTH} ký tự.`);
+      return;
+    }
     setLocalError("");
     void onPreview({ intent: "REGENERATE", instruction: trimmedInstruction });
   };
@@ -1207,6 +1212,7 @@ function RegenerateDayModal({
               <textarea
                 className="input textarea-compact"
                 value={instruction}
+                maxLength={REGENERATE_INSTRUCTION_MAX_LENGTH}
                 onChange={(event) => {
                   setInstruction(event.target.value);
                   if (localError) setLocalError("");
@@ -1361,6 +1367,10 @@ function RegenerateDayModal({
                     const trimmedInstruction = instruction.trim();
                     if (!trimmedInstruction) {
                       setLocalError("Bạn hãy nhập điều muốn thay đổi để VivuPlan tạo phương án phù hợp hơn.");
+                      return;
+                    }
+                    if (trimmedInstruction.length > REGENERATE_INSTRUCTION_MAX_LENGTH) {
+                      setLocalError(`Yêu cầu chỉnh ngày tối đa ${REGENERATE_INSTRUCTION_MAX_LENGTH} ký tự.`);
                       return;
                     }
                     setLocalError("");

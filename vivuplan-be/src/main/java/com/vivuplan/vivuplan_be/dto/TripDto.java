@@ -38,8 +38,11 @@ public class TripDto {
         private String outboundTransport = "MIXED";
         private String localTransport = "MIXED";
         private Boolean destinationSuggested = false;
+        @Size(max = 300, message = "Nơi muốn ghé tối đa 300 ký tự")
         private String mustVisit;
+        @Size(max = 300, message = "Điều muốn tránh tối đa 300 ký tự")
         private String avoid;
+        @Size(max = 800, message = "Ghi chú tối đa 800 ký tự")
         private String notes;
     }
 
@@ -203,6 +206,8 @@ public class TripDto {
     @Data
     public static class RegenerateDayRequest {
         private String intent = "REGENERATE";
+        @NotBlank(message = "Vui lòng nhập điều bạn muốn chỉnh trong lịch trình")
+        @Size(max = 500, message = "Yêu cầu chỉnh ngày tối đa 500 ký tự")
         private String instruction;
     }
 
@@ -267,8 +272,11 @@ public class TripDto {
         private String outboundTransport;
         private String localTransport;
         private Boolean destinationSuggested;
+        @Size(max = 300, message = "Nơi muốn ghé tối đa 300 ký tự")
         private String mustVisit;
+        @Size(max = 300, message = "Điều muốn tránh tối đa 300 ký tự")
         private String avoid;
+        @Size(max = 800, message = "Ghi chú tối đa 800 ký tự")
         private String notes;
         private String weatherForecast;
         private String verifiedPlacesContext;

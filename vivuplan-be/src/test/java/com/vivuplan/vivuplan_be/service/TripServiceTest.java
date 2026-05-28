@@ -59,6 +59,8 @@ class TripServiceTest {
     @Mock
     private BillingService billingService;
 
+    private final UserPromptGuardService userPromptGuardService = new UserPromptGuardService();
+
     private TripService service() {
         return new TripService(
                 tripRepository,
@@ -67,7 +69,8 @@ class TripServiceTest {
                 aiService,
                 weatherService,
                 placePlanningService,
-                billingService);
+                billingService,
+                userPromptGuardService);
     }
 
     @Test
@@ -602,6 +605,7 @@ class TripServiceTest {
 
         TripDto.RegenerateDayRequest req = new TripDto.RegenerateDayRequest();
         req.setIntent("REGENERATE");
+        req.setInstruction("Thêm quán ăn địa phương và giảm đi bộ");
         service.previewRegenerateDay(1L, 7L, 1, req);
 
         verify(billingService).requireEditCredit(7L);
@@ -619,6 +623,7 @@ class TripServiceTest {
 
         TripDto.RegenerateDayRequest previewReq = new TripDto.RegenerateDayRequest();
         previewReq.setIntent("REGENERATE");
+        previewReq.setInstruction("Thêm quán ăn địa phương và giảm đi bộ");
         TripDto.RegenerateDayPreviewResponse preview =
                 service.previewRegenerateDay(1L, 7L, 1, previewReq);
         clearInvocations(billingService);

@@ -41,6 +41,7 @@ public class TripService {
     private final WeatherService weatherService;
     private final PlacePlanningService placePlanningService;
     private final BillingService billingService;
+    private final UserPromptGuardService userPromptGuardService;
     private final Map<String, DayRegenerationProposal> dayRegenerationProposals = new ConcurrentHashMap<>();
     private static final int REGENERATION_PROPOSAL_TTL_MINUTES = 30;
     private static final long REGENERATION_COST_INCREASE_WARNING_MIN_DELTA = 200_000L;
@@ -56,6 +57,8 @@ public class TripService {
     public TripDto.TripResponse generateAndSave(Long userId, TripDto.GenerateRequest req) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+
+        userPromptGuardService.validateAndSanitizeGenerateRequest(req);
 
         if (req.getStartDate() == null || req.getEndDate() == null) {
             throw new IllegalArgumentException("Ngày đi và ngày về không được để trống");
@@ -302,7 +305,8 @@ public class TripService {
         List<TripDto.DayResponse> currentSchedule = mapDays(trip.getItineraryDays());
         TripDto.GenerateRequest aiReq = toGenerateRequest(trip);
 
-        String instruction = req != null ? req.getInstruction() : null;
+        String instruction = userPromptGuardService.validateAndSanitizeRegenerateInstruction(
+                req != null ? req.getInstruction() : null);
         AiService.RegeneratedDayResult regeneratedDay = aiService.regenerateDay(
                 aiReq,
                 currentSchedule,
