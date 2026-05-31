@@ -80,6 +80,7 @@ public class TripService {
         if (tripDays > 30) {
             throw new IllegalArgumentException("Thời gian chuyến đi tối đa là 30 ngày");
         }
+        validateBudgetPerPerson(req.getBudgetPerPerson(), tripDays);
 
         billingService.requirePlanCredit(userId);
 
@@ -1396,6 +1397,24 @@ public class TripService {
             throw new IllegalArgumentException("Số người phải từ 1 đến 30");
         }
         return travelers;
+    }
+
+    private void validateBudgetPerPerson(long budgetPerPerson, int days) {
+        if (budgetPerPerson <= 0) {
+            throw new IllegalArgumentException("Vui lòng nhập ngân sách.");
+        }
+
+        long absurdMaximum = Math.max(200_000_000L, days * 50_000_000L);
+        long unrealisticDailyMinimum = days >= 4 ? 350_000L : 300_000L;
+        long absoluteMinimum = days <= 1 ? 300_000L : 500_000L;
+        long minimum = Math.max(absoluteMinimum, unrealisticDailyMinimum * Math.max(1, days));
+
+        if (budgetPerPerson < minimum) {
+            throw new IllegalArgumentException("Ngân sách quá thấp cho thời gian chuyến đi. Vui lòng kiểm tra lại.");
+        }
+        if (budgetPerPerson > absurdMaximum) {
+            throw new IllegalArgumentException("Ngân sách đang quá cao so với thời gian chuyến đi. Vui lòng kiểm tra lại.");
+        }
     }
 
     private String generateUniqueShareCode() {

@@ -112,6 +112,20 @@ class DestinationSuggestionServiceTest {
     }
 
     @Test
+    void suggestRejectsUnrealisticBudgetBeforeCreditAndAiCall() {
+        DestinationSuggestionService service = service();
+        TripDto.DestinationSuggestionRequest req = request("biển");
+        req.setBudgetPerPerson(50_000L);
+
+        assertThatThrownBy(() -> service.suggest(7L, req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Ngân sách");
+
+        verify(billingService, never()).requirePlanCredit(any());
+        verify(aiService, never()).suggestDestinations(any(), anyString());
+    }
+
+    @Test
     void suggestStopsBeforeAiWhenPlanCreditsAreMissing() {
         DestinationSuggestionService service = service();
         doThrow(BillingException.insufficientPlanCredits()).when(billingService).requirePlanCredit(7L);

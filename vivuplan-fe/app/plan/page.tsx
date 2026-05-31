@@ -1013,7 +1013,6 @@ function PlanContent() {
                   >
                     <div className="destination-suggestion-card-top">
                       <span>{suggestion.region || "Điểm đến"}</span>
-                      <em>{suggestion.fromCatalog ? "VivuPlan đề xuất" : "Gợi ý mở rộng"}</em>
                     </div>
                     <h4>{suggestion.name}</h4>
                     <div className="destination-suggestion-reason">

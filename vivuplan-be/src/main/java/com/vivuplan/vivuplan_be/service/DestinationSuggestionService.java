@@ -132,6 +132,7 @@ public class DestinationSuggestionService {
         if (req.getBudgetPerPerson() <= 0) {
             throw new IllegalArgumentException("Vui lòng nhập ngân sách.");
         }
+        validateBudgetPerPerson(req.getBudgetPerPerson(), tripDays);
 
         int travelers = req.getTravelerCount() != null ? req.getTravelerCount() : 1;
         if (travelers < 1 || travelers > 30) {
@@ -150,6 +151,20 @@ public class DestinationSuggestionService {
             return (int) days;
         }
         return req.getDays();
+    }
+
+    private void validateBudgetPerPerson(long budgetPerPerson, int days) {
+        long absurdMaximum = Math.max(200_000_000L, days * 50_000_000L);
+        long unrealisticDailyMinimum = days >= 4 ? 350_000L : 300_000L;
+        long absoluteMinimum = days <= 1 ? 300_000L : 500_000L;
+        long minimum = Math.max(absoluteMinimum, unrealisticDailyMinimum * Math.max(1, days));
+
+        if (budgetPerPerson < minimum) {
+            throw new IllegalArgumentException("Ngân sách quá thấp cho thời gian chuyến đi. Vui lòng kiểm tra lại.");
+        }
+        if (budgetPerPerson > absurdMaximum) {
+            throw new IllegalArgumentException("Ngân sách đang quá cao so với thời gian chuyến đi. Vui lòng kiểm tra lại.");
+        }
     }
 
     private String buildCatalogContext(TripDto.DestinationSuggestionRequest req, List<Destination> destinations) {

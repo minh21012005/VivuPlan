@@ -2521,34 +2521,20 @@ textarea.input.textarea-compact {
 }
 
 .destination-suggestion-card-top {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
 }
 
-.destination-suggestion-card-top span,
-.destination-suggestion-card-top em {
+.destination-suggestion-card-top span {
   display: inline-flex;
   align-items: center;
   min-width: 0;
   border-radius: var(--r-full);
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 800;
-  line-height: 1.3;
-}
-
-.destination-suggestion-card-top span {
   color: var(--primary);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.3;
   text-transform: uppercase;
-}
-
-.destination-suggestion-card-top em {
-  flex-shrink: 0;
-  padding: 5px 8px;
-  background: var(--surface-2);
-  color: var(--text-3);
 }
 
 .destination-suggestion-modal-card h4 {

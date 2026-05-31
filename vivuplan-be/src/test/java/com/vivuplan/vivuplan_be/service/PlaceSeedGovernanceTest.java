@@ -19,14 +19,17 @@ class PlaceSeedGovernanceTest {
 
     private static final Set<String> TAG_TAXONOMY = Set.of(
             "accommodation", "activity", "adventure", "attraction", "beach", "boat", "cafe", "cave", "couple",
-            "family", "food", "heritage", "indoor", "island", "mixed", "mountain", "museum",
-            "nightlife", "outdoor", "spiritual", "theme-park", "transport", "viewpoint", "waterfall");
+            "family", "food", "heritage", "indoor", "island", "lake", "market", "mixed", "mountain", "museum",
+            "nature", "nightlife", "outdoor", "seasonal", "shopping", "spiritual", "sport", "theme-park",
+            "transport", "viewpoint", "waterfall", "wellness");
     private static final Set<String> ISLAND_DESTINATIONS = Set.of(
             "Phú Quốc", "Cát Bà", "Lý Sơn", "Nam Du", "Côn Đảo", "Đảo Phú Quý");
     private static final List<String> HIGH_WEATHER_SIGNALS = List.of(
             "sup", "kayak", "cano", "ca no", "thuyen", "boat", "du thuyen", "tour tau", "tau cao toc",
             "tau", "tuyen tau", "tuyen tham quan", "thoi tiet",
-            "lan bien", "tam bien", "trekking", "thac", "leo nui", "zipline", "du luon", "nhay du");
+            "lan bien", "tam bien", "trekking", "thac", "leo nui", "zipline", "du luon", "nhay du",
+            "deo", "gio", "bien", "dao", "hang", "nui", "doi cat", "vuon quoc gia", "rung", "song",
+            "cang", "turbine");
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -172,7 +175,6 @@ class PlaceSeedGovernanceTest {
                 "depends on",
                 "subject to",
                 "operating hours",
-                "check ",
                 "official sightseeing",
                 "does not include",
                 "route stop",

@@ -610,6 +610,22 @@ class TripServiceTest {
     }
 
     @Test
+    void generateAndSaveRejectsUnrealisticBudgetBeforeCreditAndAiCall() {
+        TripService service = service();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(sampleUser()));
+
+        TripDto.GenerateRequest req = generateRequest("", "");
+        req.setBudgetPerPerson(50_000L);
+
+        assertThatThrownBy(() -> service.generateAndSave(7L, req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Ngân sách");
+
+        verify(billingService, never()).requirePlanCredit(any());
+        verify(aiService, never()).generateItinerary(any());
+    }
+
+    @Test
     void previewRegenerateDayConsumesEditCreditAfterSuccessfulAiPreview() {
         Trip trip = sampleTrip();
         TripService service = service();

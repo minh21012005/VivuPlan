@@ -584,6 +584,25 @@ class AiServiceTest {
     }
 
     @Test
+    void generatedPromptAddsBalancedFallbackGuidanceWhenVerifiedPlacesAreUnavailable() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDestination("Vuon quoc gia Pu Mat");
+        req.setVerifiedPlacesContext("none");
+
+        String prompt = buildPrompt(service, req);
+
+        assertThat(prompt)
+                .contains("Verified place candidates are unavailable")
+                .contains("still create a confident, destination-specific itinerary")
+                .contains("include real signature experiences for the destination")
+                .contains("Avoid generic filler")
+                .contains("Do not invent obscure business names")
+                .contains("use a concrete neighborhood, market, food street, public venue, or lodging area")
+                .doesNotContain("still create a confident, practical itinerary");
+    }
+
+    @Test
     void regenerationPromptTreatsVerifiedPlacesAsTrustedSuggestionsNotAllowedOnlyList() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
