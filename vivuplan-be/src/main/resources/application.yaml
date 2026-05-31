@@ -47,6 +47,11 @@ app:
     gemini:
       api-key: ${GEMINI_API_KEY:}
       model: ${GEMINI_MODEL:gemini-2.5-flash}
+    destination-suggest:
+      limit: ${AI_DESTINATION_SUGGEST_LIMIT:2}
+      window-minutes: ${AI_DESTINATION_SUGGEST_WINDOW_MINUTES:1440}
+      cooldown-seconds: ${AI_DESTINATION_SUGGEST_COOLDOWN_SECONDS:60}
+      cache-ttl-hours: ${AI_DESTINATION_SUGGEST_CACHE_TTL_HOURS:24}
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:3000,https://vivuplan.vn}
   admin:

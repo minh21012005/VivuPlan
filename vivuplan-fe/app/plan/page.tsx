@@ -7,7 +7,7 @@ import { PurchaseModal } from "@/components/billing/PurchaseModal";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { ApiError, tripApi } from "@/lib/api";
+import { ApiError, tripApi, type DestinationSuggestion } from "@/lib/api";
 import { useBilling } from "@/hooks/useBilling";
 import { useAuth } from "@/hooks/useAuth";
 import { findDestinationByName, getDestinationImage, heroImages, normalizeVietnameseSearch, vietnamProvinces, type Destination } from "@/lib/travel-data";
@@ -29,6 +29,8 @@ import {
   Users,
   Wallet,
   Waves,
+  CheckCircle2,
+  X,
   Zap,
 } from "lucide-react";
 
@@ -65,6 +67,8 @@ const localTransportOptions = [
 ];
 
 const departureSuggestions = vietnamProvinces;
+const DEPARTURE_MAX_LENGTH = 100;
+const DESTINATION_MAX_LENGTH = 100;
 const MUST_VISIT_MAX_LENGTH = 300;
 const AVOID_MAX_LENGTH = 300;
 const NOTES_MAX_LENGTH = 800;
@@ -200,35 +204,6 @@ function getBudgetAdvisory({
   return `Ngân sách ${fmtBudget(budgetPerPerson)} / người khá thấp${destinationLabel} trong ${days} ngày. VivuPlan vẫn sẽ thử lập lịch trình tiết kiệm, ưu tiên hoạt động chi phí thấp và sẽ báo nếu ước tính thực tế vượt ngân sách.`;
 }
 
-function suggestDestination(form: { departure: string; budget: number; style: string; startDate: string; endDate: string }, destinations: Destination[]) {
-  if (destinations.length === 0) return "";
-
-  const days = getTripDays(form.startDate, form.endDate);
-  const departure = normalizeVietnameseSearch(form.departure);
-  const style = form.style || "relaxing";
-
-  const scored = destinations.map((destination) => {
-    const tags = destination.tags.join(" ");
-    let score = destination.rating * 10 + (destination.featured ? 12 : 0);
-
-    if ((style === "foodie" || style === "cultural") && /(food|culture|heritage|old-town|unesco)/.test(tags)) score += 28;
-    if (style === "adventure" && /(mountain|adventure|cave|roadtrip|trekking|national-park)/.test(tags)) score += 30;
-    if (style === "relaxing" && /(beach|island|resort|quiet|cool-weather)/.test(tags)) score += 24;
-
-    if (form.budget >= 6_000_000 && /(island|resort|beach)/.test(tags)) score += 16;
-    if (form.budget < 2_000_000 && (destination.estimatedBudgetMin ?? 0) <= 1_500_000) score += 10;
-    if (days > 0 && days <= 3 && destination.recommendedDays.includes("1-2")) score += 8;
-    if (days > 0 && days <= 4 && destination.recommendedDays.includes("2-3")) score += 6;
-    if (departure.includes("ha noi") && destination.region === "Miền Bắc") score += 10;
-    if ((departure.includes("tp.hcm") || departure.includes("ho chi minh") || departure.includes("sai gon")) && destination.region === "Miền Nam") score += 10;
-    if (departure.includes("da nang") && destination.region === "Miền Trung") score += 10;
-
-    return { destination, score };
-  });
-
-  return scored.sort((a, b) => b.score - a.score)[0]?.destination.name ?? "";
-}
-
 function toApiGroupType(group: string, travelers: number) {
   if (group === "solo" || travelers === 1) return "SOLO";
   if (group === "couple" || travelers === 2) return "COUPLE";
@@ -268,13 +243,20 @@ function PlanContent() {
     notes: "",
   });
   const [generating, setGenerating] = useState(false);
+  const [suggestingDestinations, setSuggestingDestinations] = useState(false);
+  const [destinationSuggestions, setDestinationSuggestions] = useState<DestinationSuggestion[]>([]);
+  const [destinationSuggestedByAi, setDestinationSuggestedByAi] = useState(false);
+  const [destinationSuggestionModalOpen, setDestinationSuggestionModalOpen] = useState(false);
+  const [destinationSuggestionError, setDestinationSuggestionError] = useState("");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [suggestionElapsedSeconds, setSuggestionElapsedSeconds] = useState(0);
   const [error, setError] = useState("");
   const [purchaseOpen, setPurchaseOpen] = useState(false);
   const { wallet, refreshWallet } = useBilling();
   const auth = useAuth();
   const [focusedField, setFocusedField] = useState<"departure" | "destination" | null>(null);
   const blurTimer = useRef<number | null>(null);
+  const destinationSuggestionRequestId = useRef(0);
 
   const image = useMemo(() => getDestinationImage(form.destination, destinations), [destinations, form.destination]);
   const destination = findDestinationByName(form.destination, destinations);
@@ -317,6 +299,13 @@ function PlanContent() {
           ? "Đang tinh chỉnh chi phí, địa điểm ăn uống và hoạt động phù hợp."
           : "Vẫn đang xử lý. Một số lịch trình dài có thể mất hơn 1 phút.";
 
+  const destinationSuggestionStep =
+    suggestionElapsedSeconds < 6
+      ? "Đang đọc điểm xuất phát, thời gian và ngân sách chuyến đi."
+      : suggestionElapsedSeconds < 14
+        ? "Đang so khớp phong cách du lịch với các điểm đến phù hợp."
+        : "Đang chọn 3 phương án rõ ràng nhất để bạn dễ quyết định.";
+
   useEffect(() => {
     if (!generating) return;
     const timer = window.setInterval(() => {
@@ -324,6 +313,37 @@ function PlanContent() {
     }, 1000);
     return () => window.clearInterval(timer);
   }, [generating]);
+
+  useEffect(() => {
+    if (!suggestingDestinations) return;
+    const timer = window.setInterval(() => {
+      setSuggestionElapsedSeconds((current) => current + 1);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [suggestingDestinations]);
+
+  useEffect(() => {
+    setDestinationSuggestedByAi(false);
+    setDestinationSuggestions([]);
+    setDestinationSuggestionError("");
+    setDestinationSuggestionModalOpen(false);
+    destinationSuggestionRequestId.current += 1;
+    setSuggestingDestinations(false);
+  }, [
+    form.departure,
+    form.startDate,
+    form.endDate,
+    form.budget,
+    form.budgetMode,
+    form.travelers,
+    form.style,
+    form.group,
+    form.outboundTransport,
+    form.localTransport,
+    form.mustVisit,
+    form.avoid,
+    form.notes,
+  ]);
 
   const focusField = (field: "departure" | "destination") => {
     if (blurTimer.current) {
@@ -341,6 +361,126 @@ function PlanContent() {
     }, 140);
   };
 
+  const validatePlannerForm = () => {
+    if (!form.departure.trim()) return "Vui lòng nhập điểm xuất phát.";
+    if (form.departure.trim().length > DEPARTURE_MAX_LENGTH) return `Điểm xuất phát tối đa ${DEPARTURE_MAX_LENGTH} ký tự.`;
+    if (form.destination.trim().length > DESTINATION_MAX_LENGTH) return `Điểm đến tối đa ${DESTINATION_MAX_LENGTH} ký tự.`;
+    if (!form.startDate || !form.endDate || computedDays <= 0) return "Vui lòng chọn ngày đi và ngày về hợp lệ.";
+    if (isBeforeToday(form.startDate)) return "Ngày đi không được ở trong quá khứ.";
+    if (isAfterOneYear(form.startDate)) return "Ngày đi không được quá 1 năm kể từ hôm nay.";
+    if (computedDays > 30) return "MVP hiện hỗ trợ lịch trình tối đa 30 ngày.";
+    if (form.budget <= 0) return "Vui lòng nhập ngân sách.";
+    if (form.travelers < 1) return "Vui lòng nhập số người đi.";
+    if (form.travelers > 30) return "Số người tối đa hiện hỗ trợ là 30.";
+
+    const budgetValidationError = getBudgetHardBlockError({
+      budgetPerPerson,
+      days: computedDays,
+    });
+    if (budgetValidationError) return budgetValidationError;
+
+    if (!form.outboundTransport) return "Vui lòng chọn phương tiện di chuyển đến điểm đến hoặc chọn Để AI chọn.";
+    if (!form.localTransport) return "Vui lòng chọn phương tiện di chuyển trong chuyến đi hoặc chọn Để AI chọn.";
+    if (form.mustVisit.trim().length > MUST_VISIT_MAX_LENGTH) return `Nơi muốn ghé tối đa ${MUST_VISIT_MAX_LENGTH} ký tự.`;
+    if (form.avoid.trim().length > AVOID_MAX_LENGTH) return `Điều muốn tránh tối đa ${AVOID_MAX_LENGTH} ký tự.`;
+    if (form.notes.trim().length > NOTES_MAX_LENGTH) return `Ghi chú tối đa ${NOTES_MAX_LENGTH} ký tự.`;
+    return "";
+  };
+
+  const buildPlanningPayload = () => ({
+    departure: form.departure.trim(),
+    startDate: form.startDate,
+    endDate: form.endDate,
+    days: computedDays,
+    budgetPerPerson,
+    budgetTotal: form.budgetMode === "total" ? form.budget : undefined,
+    budgetMode: form.budgetMode === "total" ? "TOTAL" : "PER_PERSON",
+    travelerCount: form.travelers,
+    style: (form.style || "relaxing").toUpperCase(),
+    groupType: toApiGroupType(form.group, form.travelers),
+    transport: toApiTransport(form.outboundTransport, form.localTransport),
+    outboundTransport: toApiTransport(form.outboundTransport, ""),
+    localTransport: toApiTransport("", form.localTransport),
+    mustVisit: form.mustVisit.trim() || undefined,
+    avoid: form.avoid.trim() || undefined,
+    notes: form.notes.trim() || undefined,
+  });
+
+  const closeDestinationSuggestionModal = () => {
+    if (suggestingDestinations) {
+      destinationSuggestionRequestId.current += 1;
+      setSuggestingDestinations(false);
+    }
+    setDestinationSuggestionModalOpen(false);
+  };
+
+  const selectDestinationSuggestion = (suggestion: DestinationSuggestion) => {
+    setForm((prev) => ({ ...prev, destination: suggestion.name }));
+    setDestinationSuggestedByAi(true);
+    setDestinationSuggestionError("");
+    setDestinationSuggestionModalOpen(false);
+    setFocusedField(null);
+  };
+
+  const handleSuggestDestinations = async () => {
+    setError("");
+    setDestinationSuggestionError("");
+    if (auth.loading) {
+      setError("Vui lòng chờ một chút để VivuPlan kiểm tra phiên đăng nhập.");
+      return;
+    }
+    if (!auth.isLoggedIn) {
+      router.push("/login");
+      return;
+    }
+
+    const validationError = validatePlannerForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    if (destinationSuggestions.length > 0) {
+      setDestinationSuggestionModalOpen(true);
+      return;
+    }
+
+    const requestId = destinationSuggestionRequestId.current + 1;
+    destinationSuggestionRequestId.current = requestId;
+    setDestinationSuggestionModalOpen(true);
+    setSuggestingDestinations(true);
+    setSuggestionElapsedSeconds(0);
+    try {
+      const response = await tripApi.suggestDestinations(buildPlanningPayload());
+      if (destinationSuggestionRequestId.current !== requestId) return;
+      const suggestions = response.suggestions ?? [];
+      if (suggestions.length === 0) {
+        setDestinationSuggestionError("VivuPlan chưa tìm được điểm đến phù hợp. Bạn có thể thử lại hoặc nhập điểm đến thủ công.");
+        return;
+      }
+      setDestinationSuggestions(suggestions);
+      setDestinationSuggestedByAi(false);
+    } catch (e) {
+      if (destinationSuggestionRequestId.current !== requestId) return;
+      if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
+        setDestinationSuggestionModalOpen(false);
+        router.push("/login");
+      } else if (e instanceof ApiError && e.status === 402) {
+        setDestinationSuggestionModalOpen(false);
+        setError("Bạn cần có lượt tạo lịch trình để dùng gợi ý điểm đến bằng AI.");
+        setPurchaseOpen(true);
+      } else if (e instanceof ApiError && e.status === 429) {
+        setDestinationSuggestionError(e.message || "Bạn đã yêu cầu gợi ý quá nhiều lần. Vui lòng thử lại sau ít phút.");
+      } else {
+        setDestinationSuggestionError(e instanceof Error ? e.message : "Chưa thể gợi ý điểm đến phù hợp. Vui lòng thử lại.");
+      }
+    } finally {
+      if (destinationSuggestionRequestId.current === requestId) {
+        setSuggestingDestinations(false);
+      }
+    }
+  };
+
   const handleGenerate = async () => {
     setError("");
     if (auth.loading) {
@@ -351,94 +491,23 @@ function PlanContent() {
       router.push("/login");
       return;
     }
-    if (!form.departure.trim()) {
-      setError("Vui lòng nhập điểm xuất phát.");
+    const validationError = validatePlannerForm();
+    if (validationError) {
+      setError(validationError);
       return;
     }
-    if (!form.startDate || !form.endDate || computedDays <= 0) {
-      setError("Vui lòng chọn ngày đi và ngày về hợp lệ.");
+    if (!form.destination.trim()) {
+      await handleSuggestDestinations();
       return;
     }
-    if (isBeforeToday(form.startDate)) {
-      setError("Ngày đi không được ở trong quá khứ.");
-      return;
-    }
-    if (isAfterOneYear(form.startDate)) {
-      setError("Ngày đi không được quá 1 năm kể từ hôm nay.");
-      return;
-    }
-    if (computedDays > 30) {
-      setError("MVP hiện hỗ trợ lịch trình tối đa 30 ngày.");
-      return;
-    }
-    if (form.budget <= 0) {
-      setError("Vui lòng nhập ngân sách.");
-      return;
-    }
-    if (form.travelers < 1) {
-      setError("Vui lòng nhập số người đi.");
-      return;
-    }
-    if (form.travelers > 30) {
-      setError("Số người tối đa hiện hỗ trợ là 30.");
-      return;
-    }
-    const budgetValidationError = getBudgetHardBlockError({
-      budgetPerPerson,
-      days: computedDays,
-    });
-    if (budgetValidationError) {
-      setError(budgetValidationError);
-      return;
-    }
-    if (!form.outboundTransport) {
-      setError("Vui lòng chọn phương tiện di chuyển đến điểm đến hoặc chọn Để AI chọn.");
-      return;
-    }
-    if (!form.localTransport) {
-      setError("Vui lòng chọn phương tiện di chuyển trong chuyến đi hoặc chọn Để AI chọn.");
-      return;
-    }
-
-    if (form.mustVisit.trim().length > MUST_VISIT_MAX_LENGTH) {
-      setError(`Nơi muốn ghé tối đa ${MUST_VISIT_MAX_LENGTH} ký tự.`);
-      return;
-    }
-    if (form.avoid.trim().length > AVOID_MAX_LENGTH) {
-      setError(`Điều muốn tránh tối đa ${AVOID_MAX_LENGTH} ký tự.`);
-      return;
-    }
-    if (form.notes.trim().length > NOTES_MAX_LENGTH) {
-      setError(`Ghi chú tối đa ${NOTES_MAX_LENGTH} ký tự.`);
-      return;
-    }
-
     setGenerating(true);
     setElapsedSeconds(0);
     try {
-      const finalDestination = form.destination.trim() || suggestDestination({ ...form, budget: budgetPerPerson }, destinations);
-      if (!finalDestination) {
-        throw new Error("Không thể gợi ý điểm đến vì dữ liệu điểm đến chưa sẵn sàng. Vui lòng nhập điểm đến cụ thể hoặc thử lại.");
-      }
+      const finalDestination = form.destination.trim();
       const trip = await tripApi.generate({
         destination: finalDestination,
-        departure: form.departure.trim(),
-        startDate: form.startDate,
-        endDate: form.endDate,
-        days: computedDays,
-        budgetPerPerson,
-        budgetTotal: form.budgetMode === "total" ? form.budget : undefined,
-        budgetMode: form.budgetMode === "total" ? "TOTAL" : "PER_PERSON",
-        travelerCount: form.travelers,
-        style: (form.style || "relaxing").toUpperCase(),
-        groupType: toApiGroupType(form.group, form.travelers),
-        transport: toApiTransport(form.outboundTransport, form.localTransport),
-        outboundTransport: toApiTransport(form.outboundTransport, ""),
-        localTransport: toApiTransport("", form.localTransport),
-        destinationSuggested: !form.destination.trim(),
-        mustVisit: form.mustVisit.trim() || undefined,
-        avoid: form.avoid.trim() || undefined,
-        notes: form.notes.trim() || undefined,
+        ...buildPlanningPayload(),
+        destinationSuggested: destinationSuggestedByAi,
       });
       const creationWarnings = trip.warnings?.filter((warning) => warning.trim().length > 0) ?? [];
       if (creationWarnings.length > 0 && typeof window !== "undefined") {
@@ -528,6 +597,7 @@ function PlanContent() {
                 <input
                   className="input"
                   value={form.departure}
+                  maxLength={DEPARTURE_MAX_LENGTH}
                   onChange={(event) => setForm((prev) => ({ ...prev, departure: event.target.value }))}
                   onFocus={() => focusField("departure")}
                   onBlur={closeSuggestionsSoon}
@@ -563,7 +633,12 @@ function PlanContent() {
                   id="input-destination"
                   className="input"
                   value={form.destination}
-                  onChange={(event) => setForm((prev) => ({ ...prev, destination: event.target.value }))}
+                  maxLength={DESTINATION_MAX_LENGTH}
+                  onChange={(event) => {
+                    setForm((prev) => ({ ...prev, destination: event.target.value }));
+                    setDestinationSuggestedByAi(false);
+                    setDestinationSuggestions([]);
+                  }}
                   onFocus={() => focusField("destination")}
                   onBlur={closeSuggestionsSoon}
                   placeholder="VD: Đà Lạt, Quy Nhơn... hoặc để trống để VivuPlan gợi ý"
@@ -576,6 +651,8 @@ function PlanContent() {
                         type="button"
                         onMouseDown={() => {
                           setForm((prev) => ({ ...prev, destination: item }));
+                          setDestinationSuggestedByAi(false);
+                          setDestinationSuggestions([]);
                           setFocusedField(null);
                         }}
                       >
@@ -586,6 +663,16 @@ function PlanContent() {
                 )}
               </div>
               <p className="field-hint">Nếu chưa biết đi đâu, hãy để trống. VivuPlan sẽ gợi ý điểm đến dựa trên điểm xuất phát, thời gian, ngân sách và sở thích.</p>
+              {destinationSuggestedByAi && form.destination.trim() && (
+                <div className="destination-ai-selected-note">
+                  <span><CheckCircle2 size={14} /> Đã chọn từ gợi ý AI</span>
+                  {destinationSuggestions.length > 0 && (
+                    <button type="button" onClick={() => setDestinationSuggestionModalOpen(true)}>
+                      Xem lại gợi ý
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="field-group planner-date-block">
@@ -827,11 +914,20 @@ function PlanContent() {
               </div>
             )}
 
-            <Button id="btn-generate" onClick={handleGenerate} disabled={generating} className="planner-submit">
+            <Button id="btn-generate" onClick={handleGenerate} disabled={generating || suggestingDestinations} className="planner-submit">
               {generating ? (
                 <>
                   <div className="spinner" style={{ borderColor: "rgba(255,255,255,0.3)", borderTopColor: "#fff" }} />
                   Đang tạo lịch trình...
+                </>
+              ) : suggestingDestinations ? (
+                <>
+                  <div className="spinner" style={{ borderColor: "rgba(255,255,255,0.3)", borderTopColor: "#fff" }} />
+                  Đang gợi ý điểm đến...
+                </>
+              ) : !form.destination.trim() ? (
+                <>
+                  <Sparkles size={17} /> Gợi ý điểm đến <ArrowRight size={16} />
                 </>
               ) : (
                 <>
@@ -842,6 +938,112 @@ function PlanContent() {
           </Card>
         </section>
       </main>
+      {destinationSuggestionModalOpen && (
+        <div className="destination-suggestion-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="destination-suggestion-title">
+          <div className="destination-suggestion-modal-panel">
+            <button
+              type="button"
+              className="destination-suggestion-modal-close"
+              onClick={closeDestinationSuggestionModal}
+              aria-label="Đóng gợi ý điểm đến"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="destination-suggestion-modal-head">
+              <div className="destination-suggestion-modal-icon">
+                <Sparkles size={20} />
+              </div>
+              <div>
+                <span>Gợi ý điểm đến</span>
+                <h3 id="destination-suggestion-title">
+                  {suggestingDestinations ? "Đang tìm điểm đến phù hợp" : destinationSuggestionError ? "Chưa thể gợi ý điểm đến" : "Chọn điểm đến cho chuyến đi"}
+                </h3>
+                <p>
+                  {suggestingDestinations
+                    ? "VivuPlan đang so sánh yêu cầu của bạn để chọn ra vài phương án đáng cân nhắc."
+                    : destinationSuggestionError
+                      ? "Bạn vẫn có thể nhập điểm đến thủ công và tạo lịch trình như bình thường."
+                      : "Chọn một điểm đến để quay lại form và tiếp tục tạo lịch trình."}
+                </p>
+              </div>
+            </div>
+
+            {suggestingDestinations ? (
+              <div className="destination-suggestion-loading" role="status" aria-live="polite">
+                <div className="destination-suggestion-loading-main">
+                  <div className="spinner" />
+                  <div>
+                    <strong>AI đang gợi ý điểm đến...</strong>
+                    <p>{destinationSuggestionStep}</p>
+                  </div>
+                </div>
+                <div className="destination-suggestion-skeleton-grid" aria-hidden="true">
+                  {[0, 1, 2].map((item) => (
+                    <div className="destination-suggestion-skeleton-card" key={item}>
+                      <span />
+                      <strong />
+                      <p />
+                      <p />
+                      <div />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : destinationSuggestionError ? (
+              <div className="destination-suggestion-modal-error">
+                <p>{destinationSuggestionError}</p>
+                <div className="destination-suggestion-modal-actions">
+                  <button type="button" className="destination-suggestion-secondary" onClick={closeDestinationSuggestionModal}>
+                    Nhập thủ công
+                  </button>
+                  <button type="button" className="destination-suggestion-primary" onClick={handleSuggestDestinations}>
+                    Thử lại
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="destination-suggestion-modal-grid">
+                {destinationSuggestions.map((suggestion) => (
+                  <button
+                    key={`${suggestion.name}-${suggestion.region}`}
+                    type="button"
+                    className="destination-suggestion-modal-card"
+                    onClick={() => selectDestinationSuggestion(suggestion)}
+                  >
+                    <div className="destination-suggestion-card-top">
+                      <span>{suggestion.region || "Điểm đến"}</span>
+                      <em>{suggestion.fromCatalog ? "VivuPlan đề xuất" : "Gợi ý mở rộng"}</em>
+                    </div>
+                    <h4>{suggestion.name}</h4>
+                    <div className="destination-suggestion-reason">
+                      <span>Vì sao phù hợp</span>
+                      <p>{suggestion.reason}</p>
+                    </div>
+                    <dl className="destination-suggestion-fit-list">
+                      <div>
+                        <dt>Ngân sách</dt>
+                        <dd>{suggestion.budgetFit}</dd>
+                      </div>
+                      <div>
+                        <dt>Thời gian</dt>
+                        <dd>{suggestion.durationFit}</dd>
+                      </div>
+                      <div>
+                        <dt>Phong cách</dt>
+                        <dd>{suggestion.styleFit}</dd>
+                      </div>
+                    </dl>
+                    <span className="destination-suggestion-select-label">
+                      <CheckCircle2 size={15} /> Chọn điểm này
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       <PurchaseModal
         open={purchaseOpen}
         reason="PLAN"

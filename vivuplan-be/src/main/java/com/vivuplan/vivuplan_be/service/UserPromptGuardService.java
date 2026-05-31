@@ -10,6 +10,8 @@ import java.util.Locale;
 @Service
 public class UserPromptGuardService {
 
+    public static final int MAX_DESTINATION_LENGTH = 100;
+    public static final int MAX_DEPARTURE_LENGTH = 100;
     public static final int MAX_MUST_VISIT_LENGTH = 300;
     public static final int MAX_AVOID_LENGTH = 300;
     public static final int MAX_NOTES_LENGTH = 800;
@@ -48,6 +50,15 @@ public class UserPromptGuardService {
     );
 
     public void validateAndSanitizeGenerateRequest(TripDto.GenerateRequest req) {
+        req.setDestination(validateOptionalTravelText("Điểm đến", req.getDestination(), MAX_DESTINATION_LENGTH));
+        req.setDeparture(validateRequiredTravelText("Điểm xuất phát", req.getDeparture(), MAX_DEPARTURE_LENGTH));
+        req.setMustVisit(validateOptionalTravelText("Nơi muốn ghé", req.getMustVisit(), MAX_MUST_VISIT_LENGTH));
+        req.setAvoid(validateOptionalTravelText("Điều muốn tránh", req.getAvoid(), MAX_AVOID_LENGTH));
+        req.setNotes(validateOptionalTravelText("Ghi chú", req.getNotes(), MAX_NOTES_LENGTH));
+    }
+
+    public void validateAndSanitizeDestinationSuggestionRequest(TripDto.DestinationSuggestionRequest req) {
+        req.setDeparture(validateRequiredTravelText("Điểm xuất phát", req.getDeparture(), MAX_DEPARTURE_LENGTH));
         req.setMustVisit(validateOptionalTravelText("Nơi muốn ghé", req.getMustVisit(), MAX_MUST_VISIT_LENGTH));
         req.setAvoid(validateOptionalTravelText("Điều muốn tránh", req.getAvoid(), MAX_AVOID_LENGTH));
         req.setNotes(validateOptionalTravelText("Ghi chú", req.getNotes(), MAX_NOTES_LENGTH));
@@ -59,6 +70,16 @@ public class UserPromptGuardService {
             throw new IllegalArgumentException("Vui lòng nhập điều bạn muốn chỉnh trong lịch trình.");
         }
         validateLength("Yêu cầu chỉnh ngày", sanitized, MAX_REGENERATE_INSTRUCTION_LENGTH);
+        validateTravelScope(sanitized);
+        return sanitized;
+    }
+
+    private String validateRequiredTravelText(String label, String value, int maxLength) {
+        String sanitized = sanitize(value);
+        if (sanitized == null || sanitized.isBlank()) {
+            throw new IllegalArgumentException(label + " không được để trống.");
+        }
+        validateLength(label, sanitized, maxLength);
         validateTravelScope(sanitized);
         return sanitized;
     }

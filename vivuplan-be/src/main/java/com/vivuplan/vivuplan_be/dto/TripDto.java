@@ -14,9 +14,11 @@ public class TripDto {
     @Data
     public static class CreateRequest {
         @NotBlank(message = "Điểm đến không được để trống")
+        @Size(max = 100, message = "Điểm đến tối đa 100 ký tự")
         private String destination;
 
         @NotBlank(message = "Điểm xuất phát không được để trống")
+        @Size(max = 100, message = "Điểm xuất phát tối đa 100 ký tự")
         private String departure;
 
         @Min(1) @Max(30)
@@ -255,9 +257,10 @@ public class TripDto {
 
     @Data
     public static class GenerateRequest {
-        @NotBlank
+        @Size(max = 100, message = "Điểm đến tối đa 100 ký tự")
         private String destination;
         @NotBlank
+        @Size(max = 100, message = "Điểm xuất phát tối đa 100 ký tự")
         private String departure;
         private LocalDate startDate;
         private LocalDate endDate;
@@ -280,5 +283,45 @@ public class TripDto {
         private String notes;
         private String weatherForecast;
         private String verifiedPlacesContext;
+    }
+
+    @Data
+    public static class DestinationSuggestionRequest {
+        @Size(max = 100, message = "Điểm xuất phát tối đa 100 ký tự")
+        private String departure;
+        private LocalDate startDate;
+        private LocalDate endDate;
+        private int days;
+        private long budgetPerPerson;
+        private Long budgetTotal;
+        private String budgetMode;
+        private Integer travelerCount;
+        private String style;
+        private String groupType;
+        private String transport;
+        private String outboundTransport;
+        private String localTransport;
+        @Size(max = 300, message = "Nơi muốn ghé tối đa 300 ký tự")
+        private String mustVisit;
+        @Size(max = 300, message = "Điều muốn tránh tối đa 300 ký tự")
+        private String avoid;
+        @Size(max = 800, message = "Ghi chú tối đa 800 ký tự")
+        private String notes;
+    }
+
+    @Data
+    public static class DestinationSuggestionResponse {
+        private List<DestinationSuggestion> suggestions;
+    }
+
+    @Data
+    public static class DestinationSuggestion {
+        private String name;
+        private String region;
+        private String reason;
+        private String budgetFit;
+        private String durationFit;
+        private String styleFit;
+        private Boolean fromCatalog;
     }
 }

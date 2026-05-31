@@ -30,7 +30,14 @@ function authHeaders(): HeadersInit {
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new ApiError(body.error || "Có lỗi xảy ra", res.status, body.code);
+    const detailMessage = body.details && typeof body.details === "object"
+      ? Object.values(body.details).find((message) => typeof message === "string" && message.trim().length > 0)
+      : undefined;
+    throw new ApiError(
+      (typeof detailMessage === "string" ? detailMessage : undefined) || body.error || "Có lỗi xảy ra",
+      res.status,
+      body.code,
+    );
   }
   return res.json();
 }
@@ -108,6 +115,13 @@ export const tripApi = {
       headers: authHeaders(),
       body: JSON.stringify(data),
     }).then(handleResponse<TripResponse>),
+
+  suggestDestinations: (data: DestinationSuggestionRequest) =>
+    fetch(`${API_BASE}/api/trips/destination-suggestions`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    }).then(handleResponse<DestinationSuggestionResponse>),
 
   myTrips: () =>
     fetch(`${API_BASE}/api/trips`, { headers: authHeaders() })
@@ -483,6 +497,39 @@ export interface GenerateRequest {
   mustVisit?: string;
   avoid?: string;
   notes?: string;
+}
+
+export interface DestinationSuggestionRequest {
+  departure: string;
+  startDate?: string;
+  endDate?: string;
+  days: number;
+  budgetPerPerson: number;
+  budgetTotal?: number;
+  budgetMode?: string;
+  travelerCount?: number;
+  style: string;
+  groupType: string;
+  transport: string;
+  outboundTransport?: string;
+  localTransport?: string;
+  mustVisit?: string;
+  avoid?: string;
+  notes?: string;
+}
+
+export interface DestinationSuggestion {
+  name: string;
+  region: string;
+  reason: string;
+  budgetFit: string;
+  durationFit: string;
+  styleFit: string;
+  fromCatalog: boolean;
+}
+
+export interface DestinationSuggestionResponse {
+  suggestions: DestinationSuggestion[];
 }
 
 export interface TripResponse {

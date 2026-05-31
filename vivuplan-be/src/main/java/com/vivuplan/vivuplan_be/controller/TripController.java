@@ -1,6 +1,7 @@
 package com.vivuplan.vivuplan_be.controller;
 
 import com.vivuplan.vivuplan_be.dto.TripDto;
+import com.vivuplan.vivuplan_be.service.DestinationSuggestionService;
 import com.vivuplan.vivuplan_be.service.TripService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import java.util.Map;
 public class TripController {
 
     private final TripService tripService;
+    private final DestinationSuggestionService destinationSuggestionService;
 
     /** Generate + Save a new AI itinerary */
     @PostMapping("/generate")
@@ -26,6 +28,15 @@ public class TripController {
             Authentication auth) {
         Long userId = (Long) auth.getPrincipal();
         return ResponseEntity.ok(tripService.generateAndSave(userId, req));
+    }
+
+    /** Suggest destinations before generating a plan when the user leaves destination blank */
+    @PostMapping("/destination-suggestions")
+    public ResponseEntity<TripDto.DestinationSuggestionResponse> suggestDestinations(
+            @Valid @RequestBody TripDto.DestinationSuggestionRequest req,
+            Authentication auth) {
+        Long userId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(destinationSuggestionService.suggest(userId, req));
     }
 
     /** Get all trips for current user */

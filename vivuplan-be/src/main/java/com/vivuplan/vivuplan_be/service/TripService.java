@@ -59,6 +59,9 @@ public class TripService {
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
 
         userPromptGuardService.validateAndSanitizeGenerateRequest(req);
+        if (req.getDestination() == null || req.getDestination().isBlank()) {
+            throw new IllegalArgumentException("Không thể gợi ý điểm đến phù hợp. Vui lòng nhập điểm đến cụ thể hoặc thử lại.");
+        }
 
         if (req.getStartDate() == null || req.getEndDate() == null) {
             throw new IllegalArgumentException("Ngày đi và ngày về không được để trống");
@@ -298,6 +301,8 @@ public class TripService {
             Long userId,
             Integer dayNumber,
             TripDto.RegenerateDayRequest req) {
+        String instruction = userPromptGuardService.validateAndSanitizeRegenerateInstruction(
+                req != null ? req.getInstruction() : null);
         cleanupExpiredRegenerationProposals();
         Trip trip = getOwnedTrip(tripId, userId);
         billingService.requireEditCredit(userId);
@@ -305,8 +310,6 @@ public class TripService {
         List<TripDto.DayResponse> currentSchedule = mapDays(trip.getItineraryDays());
         TripDto.GenerateRequest aiReq = toGenerateRequest(trip);
 
-        String instruction = userPromptGuardService.validateAndSanitizeRegenerateInstruction(
-                req != null ? req.getInstruction() : null);
         AiService.RegeneratedDayResult regeneratedDay = aiService.regenerateDay(
                 aiReq,
                 currentSchedule,
