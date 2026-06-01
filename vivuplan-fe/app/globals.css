@@ -2636,17 +2636,42 @@ textarea.input.textarea-compact {
 }
 
 .destination-suggestion-reason {
+  position: relative;
   display: grid;
+  gap: 7px;
   min-height: 0;
-  padding: 0 0 2px;
+  padding: 12px 13px 12px 15px;
+  border: 1px solid rgba(15, 159, 156, 0.12);
+  border-radius: var(--r-md);
+  background: #f8fbfa;
   align-content: start;
+}
+
+.destination-suggestion-reason::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--primary);
+}
+
+.destination-suggestion-reason span {
+  margin: 0;
+  color: var(--primary);
+  font-size: 10.5px;
+  font-weight: 850;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 
 .destination-suggestion-reason p {
   margin: 0;
   color: var(--text-2);
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: 12.75px;
+  line-height: 1.58;
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;

@@ -1084,6 +1084,7 @@ function PlanContent() {
                       </dl>
                       {showDestinationSuggestionDetails && (
                         <div className="destination-suggestion-reason">
+                          <span>Điểm nổi bật</span>
                           <p>{suggestion.reason}</p>
                         </div>
                       )}
