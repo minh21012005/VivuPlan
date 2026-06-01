@@ -1245,7 +1245,7 @@ function RegenerateDayModal({
             <div>
               <Badge tone="teal">Ngày {day.day}</Badge>
               <h3>Bạn muốn chỉnh ngày này như thế nào?</h3>
-              <p>AI sẽ tạo preview cho riêng ngày này và chỉ ghi đè sau khi bạn bấm áp dụng.</p>
+              <p>VivuPlan sẽ tạo một phương án mới cho riêng ngày này và chỉ thay đổi lịch trình khi bạn áp dụng.</p>
             </div>
             <button type="button" className="btn btn-ghost btn-icon" onClick={onCancel} disabled={loading || applying} aria-label="Đóng tạo lại ngày">
               <X size={16} />
@@ -1288,7 +1288,7 @@ function RegenerateDayModal({
                 <div className="spinner" />
                 <div>
                   <strong>AI đang tạo phương án mới cho ngày {day.day}...</strong>
-                  <p>VivuPlan đang đọc lịch trình hiện tại, giữ các ràng buộc chuyến đi và tạo bản preview để bạn đối chiếu trước khi áp dụng.</p>
+                  <p>VivuPlan đang xem lại ngày hiện tại và tạo một phương án mới để bạn so sánh trước khi áp dụng.</p>
                   <span>Quá trình này có thể mất khoảng 30 giây đến 1 phút, bạn vui lòng chờ một chút nhé.</span>
                 </div>
               </div>

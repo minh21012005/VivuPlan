@@ -178,7 +178,7 @@ function getBudgetHardBlockError({
   const unrealisticMinimum = Math.max(absoluteMinimum, Math.round(unrealisticDailyMinimum * Math.max(1, days)));
 
   if (days > 0 && budgetPerPerson < unrealisticMinimum) {
-    return `Ngân sách ${fmtBudget(budgetPerPerson)} / người quá thấp cho chuyến đi ${days} ngày. Vui lòng nhập tối thiểu khoảng ${fmtBudget(unrealisticMinimum)} / người để AI có đủ cơ sở lập lịch trình thực tế.`;
+    return `Ngân sách này hơi thấp cho chuyến đi ${days} ngày. Bạn nên nâng lên khoảng ${fmtBudget(unrealisticMinimum)} / người để lịch trình thực tế hơn.`;
   }
 
   if (budgetPerPerson > absurdMaximum) {
@@ -308,17 +308,17 @@ function PlanContent() {
     elapsedSeconds < 12
       ? "Đang phân tích điểm đến, ngày đi và ngân sách của bạn."
       : elapsedSeconds < 35
-        ? "AI đang sắp xếp lịch trình theo từng ngày và nhịp di chuyển."
+        ? "VivuPlan đang ghép các điểm đến, thời gian và nhịp di chuyển cho chuyến đi của bạn."
         : elapsedSeconds < 60
-          ? "Đang tinh chỉnh chi phí, địa điểm ăn uống và hoạt động phù hợp."
-          : "Vẫn đang xử lý. Một số lịch trình dài có thể mất hơn 1 phút.";
+          ? "Đang cân đối chi phí, quán ăn và trải nghiệm để lịch trình dễ đi hơn."
+          : "Chuyến đi này cần thêm một chút thời gian để VivuPlan sắp xếp kỹ hơn.";
 
   const destinationSuggestionStep =
     suggestionElapsedSeconds < 6
       ? "Đang đọc điểm xuất phát, thời gian và ngân sách chuyến đi."
       : suggestionElapsedSeconds < 14
-        ? "Đang so khớp phong cách du lịch với các điểm đến phù hợp."
-        : "Đang chọn 3 phương án rõ ràng nhất để bạn dễ quyết định.";
+        ? "Đang tìm những nơi hợp với gu du lịch của bạn."
+        : "Đang chọn ra 3 gợi ý đáng để bạn cân nhắc.";
 
   useEffect(() => {
     if (!generating) return;

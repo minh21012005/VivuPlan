@@ -9,9 +9,9 @@ import java.util.List;
 public class BillingPackageCatalog {
 
     private final List<CreditPackage> packages = List.of(
-            new CreditPackage("PLAN_1", "Go co ban", "2 lich trinh AI + 3 luot chinh ngay", 10_000L, 2L, 3L, false),
-            new CreditPackage("PLAN_3", "Go tieu chuan", "5 lich trinh AI + 10 luot chinh ngay", 19_000L, 5L, 10L, true),
-            new CreditPackage("PLAN_10", "Go tiet kiem", "15 lich trinh AI + 30 luot chinh ngay", 39_000L, 15L, 30L, false)
+            new CreditPackage("PLAN_1", "Gói cơ bản", "2 lịch trình AI + 3 lượt chỉnh ngày", 10_000L, 2L, 3L, false),
+            new CreditPackage("PLAN_3", "Gói tiêu chuẩn", "5 lịch trình AI + 10 lượt chỉnh ngày", 19_000L, 5L, 10L, true),
+            new CreditPackage("PLAN_10", "Gói tiết kiệm", "15 lịch trình AI + 30 lượt chỉnh ngày", 39_000L, 15L, 30L, false)
     );
 
     public List<CreditPackage> list() {
@@ -22,7 +22,7 @@ public class BillingPackageCatalog {
         return packages.stream()
                 .filter(item -> item.code().equalsIgnoreCase(code))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Goi credit khong hop le"));
+                .orElseThrow(() -> new IllegalArgumentException("Gói lượt dùng không hợp lệ"));
     }
 
     public record CreditPackage(

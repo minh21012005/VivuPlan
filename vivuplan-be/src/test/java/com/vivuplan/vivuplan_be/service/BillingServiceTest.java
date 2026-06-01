@@ -107,7 +107,7 @@ class BillingServiceTest {
 
         assertThatThrownBy(() -> service.consumeEditCredit(7L, null))
                 .isInstanceOf(BillingException.class)
-                .hasMessageContaining("chinh ngay");
+                .hasMessageContaining("hết lượt chỉnh ngày");
         verify(creditLedgerRepository, never()).save(any());
     }
 

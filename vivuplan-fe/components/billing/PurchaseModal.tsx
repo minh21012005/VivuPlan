@@ -207,7 +207,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
             <p style={{ margin: "6px 0 0", color: "var(--text-3)", fontSize: 14 }}>
               {order
                 ? "Quét mã và chuyển khoản đúng nội dung để VivuPlan tự cộng lượt vào tài khoản của bạn."
-                : "Chọn gói phù hợp, quét mã để thanh toán và VivuPlan sẽ tự cộng lượt vào tài khoản của bạn."}
+                : "Chọn gói bạn cần, quét mã để thanh toán và VivuPlan sẽ cộng lượt vào tài khoản ngay khi giao dịch hoàn tất."}
             </p>
           </div>
           <button type="button" onClick={onClose} aria-label="Đóng" style={{ border: 0, background: "transparent", cursor: "pointer", color: "var(--text-3)" }}>
