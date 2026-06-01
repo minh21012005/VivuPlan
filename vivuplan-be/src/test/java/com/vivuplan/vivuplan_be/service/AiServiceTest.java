@@ -598,7 +598,9 @@ class AiServiceTest {
                 .contains("include real signature experiences for the destination")
                 .contains("Avoid generic filler")
                 .contains("Do not invent obscure business names")
-                .contains("use a concrete neighborhood, market, food street, public venue, or lodging area")
+                .contains("use specific real named options only when you are confident they exist")
+                .contains("use a concrete neighborhood, market, food street, public venue, pickup area, or lodging area")
+                .doesNotContain("concrete proper name and address")
                 .doesNotContain("still create a confident, practical itinerary");
     }
 
@@ -655,10 +657,11 @@ class AiServiceTest {
         String mixedPrompt = buildPrompt(service, mixedReq);
 
         assertThat(mixedPrompt)
-                .contains("Outbound transport choice: AI should choose the most practical way")
-                .contains("based on departure, distance, trip length, budget, group type, weather, and traveler safety")
-                .contains("Local transport choice: AI should choose a practical mix inside the destination")
-                .contains("Do not treat MIXED as a request to use every mode");
+                .contains("Outbound transport choice: choose the simplest practical way")
+                .contains("based on departure, distance, trip length, budget, group type, weather, and safety")
+                .contains("Local transport choice: choose a practical mix inside the destination")
+                .contains("Do not treat MIXED as a request to use every mode")
+                .contains("prefer the fewest realistic modes");
 
         TripDto.GenerateRequest walkingReq = generateRequest();
         walkingReq.setLocalTransport("WALKING");
@@ -668,8 +671,37 @@ class AiServiceTest {
         assertThat(walkingPrompt)
                 .contains("Local transport: WALKING")
                 .contains("Local transport choice: walking-first")
-                .contains("still add taxi/Grab, shuttle, public transport, or another safe paid transfer")
+                .contains("Do not force far-apart places into a walking route")
+                .contains("add taxi/Grab, shuttle, public transport, or another safe paid transfer")
                 .contains("when distance, weather, terrain, children, seniors, luggage, or safety makes walking unrealistic");
+    }
+
+    @Test
+    void generatedPromptExplainsOutboundTransportAndPersonalVehicleLocalFallback() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest planeReq = generateRequest();
+        planeReq.setOutboundTransport("PLANE");
+        planeReq.setLocalTransport("TAXI_GRAB");
+
+        String planePrompt = buildPrompt(service, planeReq);
+
+        assertThat(planePrompt)
+                .contains("Outbound transport choice: plane")
+                .contains("round-trip flight cost")
+                .contains("airport transfers")
+                .contains("do not replace it with train, bus, or private car");
+
+        TripDto.GenerateRequest personalCarReq = generateRequest();
+        personalCarReq.setOutboundTransport("PERSONAL_CAR");
+        personalCarReq.setLocalTransport("MIXED");
+
+        String personalCarPrompt = buildPrompt(service, personalCarReq);
+
+        assertThat(personalCarPrompt)
+                .contains("Outbound transport ownership: the traveler reaches the destination with their own car")
+                .contains("Do not create intercity bus/train/flight tickets or car rental for the outbound leg")
+                .contains("the traveler already has a personal car")
+                .contains("Prefer continuing to use it locally when parking, road access, and route make sense");
     }
 
     @Test
@@ -684,7 +716,7 @@ class AiServiceTest {
         assertThat(prompt)
                 .contains("Outbound transport: MIXED")
                 .contains("Local transport: WALKING")
-                .contains("Outbound transport choice: AI should choose the most practical way")
+                .contains("Outbound transport choice: choose the simplest practical way")
                 .contains("Local transport choice: walking-first");
     }
 
