@@ -126,6 +126,35 @@ class DestinationSuggestionServiceTest {
     }
 
     @Test
+    void suggestRejectsTripsLongerThanMvpLimitBeforeCreditAndAiCall() {
+        DestinationSuggestionService service = service();
+        TripDto.DestinationSuggestionRequest req = request("biển");
+        req.setEndDate(req.getStartDate().plusDays(TripDto.MAX_TRIP_DAYS));
+        req.setDays(TripDto.MAX_TRIP_DAYS + 1);
+
+        assertThatThrownBy(() -> service.suggest(7L, req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(String.valueOf(TripDto.MAX_TRIP_DAYS));
+
+        verify(billingService, never()).requirePlanCredit(any());
+        verify(aiService, never()).suggestDestinations(any(), anyString());
+    }
+
+    @Test
+    void suggestRejectsTravelerCountAboveMvpLimitBeforeCreditAndAiCall() {
+        DestinationSuggestionService service = service();
+        TripDto.DestinationSuggestionRequest req = request("biển");
+        req.setTravelerCount(TripDto.MAX_TRAVELERS + 1);
+
+        assertThatThrownBy(() -> service.suggest(7L, req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(String.valueOf(TripDto.MAX_TRAVELERS));
+
+        verify(billingService, never()).requirePlanCredit(any());
+        verify(aiService, never()).suggestDestinations(any(), anyString());
+    }
+
+    @Test
     void suggestStopsBeforeAiWhenPlanCreditsAreMissing() {
         DestinationSuggestionService service = service();
         doThrow(BillingException.insufficientPlanCredits()).when(billingService).requirePlanCredit(7L);

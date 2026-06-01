@@ -48,6 +48,24 @@ public class AiService {
     @Value("${app.ai.gemini.model:gemini-2.5-flash}")
     private String geminiModel;
 
+    @Value("${app.ai.gemini.plan-max-output-tokens:32768}")
+    private int geminiPlanMaxOutputTokens;
+
+    @Value("${app.ai.gemini.plan-thinking-budget:8192}")
+    private int geminiPlanThinkingBudget;
+
+    @Value("${app.ai.gemini.regenerate-max-output-tokens:24576}")
+    private int geminiRegenerateMaxOutputTokens;
+
+    @Value("${app.ai.gemini.regenerate-thinking-budget:4096}")
+    private int geminiRegenerateThinkingBudget;
+
+    @Value("${app.ai.gemini.suggestion-max-output-tokens:8192}")
+    private int geminiSuggestionMaxOutputTokens;
+
+    @Value("${app.ai.gemini.suggestion-thinking-budget:1024}")
+    private int geminiSuggestionThinkingBudget;
+
     private final ObjectMapper objectMapper;
 
     private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
@@ -990,23 +1008,15 @@ public class AiService {
     }
 
     private String callGemini(String prompt) {
-        return callGeminiWithRetry(prompt, 20000);
+        return callGeminiWithRetry(prompt, geminiPlanMaxOutputTokens, geminiPlanThinkingBudget);
     }
 
     private String callGeminiForSuggestion(String prompt) {
-        return callGeminiWithRetry(prompt, 4096);
+        return callGeminiWithRetry(prompt, geminiSuggestionMaxOutputTokens, geminiSuggestionThinkingBudget);
     }
 
-    /**
-     * Dedicated Gemini call for single-day regeneration.
-     * Uses a higher maxOutputTokens budget because gemini-2.5-flash consumes
-     * thinking tokens
-     * that count against the same limit, easily exhausting the 20 000-token default
-     * when
-     * the full schedule JSON is included in the prompt.
-     */
     private String callGeminiForSingleDay(String prompt) {
-        return callGeminiWithRetry(prompt, 65536);
+        return callGeminiWithRetry(prompt, geminiRegenerateMaxOutputTokens, geminiRegenerateThinkingBudget);
     }
 
     /**
@@ -1015,6 +1025,10 @@ public class AiService {
      * Retries up to 2 times (delays: 2 s, 4 s) before giving up.
      */
     private String callGeminiWithRetry(String prompt, int maxOutputTokens) {
+        return callGeminiWithRetry(prompt, maxOutputTokens, null);
+    }
+
+    private String callGeminiWithRetry(String prompt, int maxOutputTokens, Integer thinkingBudget) {
         if (geminiApiKey == null || geminiApiKey.isBlank()) {
             throw new IllegalStateException("Gemini API key is not configured");
         }
@@ -1022,13 +1036,18 @@ public class AiService {
         RestTemplate restTemplate = new RestTemplate();
         String url = String.format(GEMINI_URL, geminiModel, geminiApiKey);
 
+        Map<String, Object> generationConfig = new LinkedHashMap<>();
+        generationConfig.put("temperature", 0.3);
+        generationConfig.put("maxOutputTokens", maxOutputTokens);
+        generationConfig.put("responseMimeType", "application/json");
+        if (thinkingBudget != null && thinkingBudget >= 0 && supportsThinkingConfig()) {
+            generationConfig.put("thinkingConfig", Map.of("thinkingBudget", thinkingBudget));
+        }
+
         Map<String, Object> body = Map.of(
                 "contents", List.of(Map.of(
                         "parts", List.of(Map.of("text", prompt)))),
-                "generationConfig", Map.of(
-                        "temperature", 0.3,
-                        "maxOutputTokens", maxOutputTokens,
-                        "responseMimeType", "application/json"));
+                "generationConfig", generationConfig);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -1065,6 +1084,10 @@ public class AiService {
         throw new AiGenerationException(
                 "Dịch vụ AI đang quá tải, vui lòng thử lại sau vài giây.",
                 lastTransientError);
+    }
+
+    private boolean supportsThinkingConfig() {
+        return geminiModel != null && geminiModel.toLowerCase(Locale.ROOT).contains("2.5");
     }
 
     private String parseGeminiResponse(String responseBody, int maxOutputTokens) {

@@ -77,8 +77,8 @@ public class TripService {
         if (tripDays <= 0) {
             throw new IllegalArgumentException("Thời gian chuyến đi không hợp lệ");
         }
-        if (tripDays > 30) {
-            throw new IllegalArgumentException("Thời gian chuyến đi tối đa là 30 ngày");
+        if (tripDays > TripDto.MAX_TRIP_DAYS) {
+            throw new IllegalArgumentException("Thời gian chuyến đi tối đa là " + TripDto.MAX_TRIP_DAYS + " ngày");
         }
         validateBudgetPerPerson(req.getBudgetPerPerson(), tripDays);
 
@@ -1365,13 +1365,15 @@ public class TripService {
                 throw new IllegalArgumentException("Ngày về phải sau hoặc bằng ngày đi");
             }
             long days = ChronoUnit.DAYS.between(req.getStartDate(), req.getEndDate()) + 1;
-            if (days < 1 || days > 30) {
-                throw new IllegalArgumentException("Thời gian chuyến đi phải từ 1 đến 30 ngày");
+            if (days < 1 || days > TripDto.MAX_TRIP_DAYS) {
+                throw new IllegalArgumentException(
+                        "Thời gian chuyến đi phải từ 1 đến " + TripDto.MAX_TRIP_DAYS + " ngày");
             }
             return (int) days;
         }
-        if (req.getDays() < 1 || req.getDays() > 30) {
-            throw new IllegalArgumentException("Thời gian chuyến đi phải từ 1 đến 30 ngày");
+        if (req.getDays() < 1 || req.getDays() > TripDto.MAX_TRIP_DAYS) {
+            throw new IllegalArgumentException(
+                    "Thời gian chuyến đi phải từ 1 đến " + TripDto.MAX_TRIP_DAYS + " ngày");
         }
         return req.getDays();
     }
@@ -1390,8 +1392,8 @@ public class TripService {
         Integer travelers = req.getTravelerCount();
         if (travelers == null)
             return 1;
-        if (travelers < 1 || travelers > 30) {
-            throw new IllegalArgumentException("Số người phải từ 1 đến 30");
+        if (travelers < 1 || travelers > TripDto.MAX_TRAVELERS) {
+            throw new IllegalArgumentException("Số người phải từ 1 đến " + TripDto.MAX_TRAVELERS);
         }
         return travelers;
     }

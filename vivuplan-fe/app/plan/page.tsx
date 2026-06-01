@@ -59,8 +59,8 @@ const outboundTransportOptions = [
 ];
 
 const localTransportOptions = [
-  { id: "personal-motorbike", label: "Dùng xe máy cá nhân", icon: Bike, requiresOutbound: "personal-motorbike" },
-  { id: "personal-car", label: "Dùng ô tô cá nhân", icon: Car, requiresOutbound: "personal-car" },
+  { id: "personal-motorbike", label: "Xe máy cá nhân", icon: Bike, requiresOutbound: "personal-motorbike" },
+  { id: "personal-car", label: "Ô tô cá nhân", icon: Car, requiresOutbound: "personal-car" },
   { id: "rental-motorbike", label: "Thuê xe máy", icon: Bike },
   { id: "taxi-grab", label: "Taxi/Grab", icon: Car },
   { id: "rental-car", label: "Thuê ô tô", icon: Car },
@@ -74,6 +74,8 @@ const DESTINATION_MAX_LENGTH = 100;
 const MUST_VISIT_MAX_LENGTH = 300;
 const AVOID_MAX_LENGTH = 300;
 const NOTES_MAX_LENGTH = 800;
+const MAX_TRIP_DAYS = 7;
+const MAX_TRAVELERS = 10;
 
 function fmtBudget(value: number) {
   return value >= 1_000_000 ? `${(value / 1_000_000).toFixed(1)}tr ₫` : `${Math.round(value / 1000)}k ₫`;
@@ -287,6 +289,8 @@ function PlanContent() {
   const oneYearLaterInput = getOneYearLaterDateInput();
   const compatibleGroupOptions = getGroupOptions(form.travelers);
   const compatibleLocalTransportOptions = useMemo(() => localTransportOptions.filter((item) => {
+    if (item.id === "rental-motorbike" && form.outboundTransport === "personal-motorbike") return false;
+    if (item.id === "rental-car" && form.outboundTransport === "personal-car") return false;
     if (!("requiresOutbound" in item)) return true;
     return item.requiresOutbound === form.outboundTransport;
   }), [form.outboundTransport]);
@@ -385,10 +389,10 @@ function PlanContent() {
     if (!form.startDate || !form.endDate || computedDays <= 0) return "Vui lòng chọn ngày đi và ngày về hợp lệ.";
     if (isBeforeToday(form.startDate)) return "Ngày đi không được ở trong quá khứ.";
     if (isAfterOneYear(form.startDate)) return "Ngày đi không được quá 1 năm kể từ hôm nay.";
-    if (computedDays > 30) return "MVP hiện hỗ trợ lịch trình tối đa 30 ngày.";
+    if (computedDays > MAX_TRIP_DAYS) return `VivuPlan hiện hỗ trợ lịch trình tối đa ${MAX_TRIP_DAYS} ngày cho mỗi điểm đến.`;
     if (form.budget <= 0) return "Vui lòng nhập ngân sách.";
     if (form.travelers < 1) return "Vui lòng nhập số người đi.";
-    if (form.travelers > 30) return "Số người tối đa hiện hỗ trợ là 30.";
+    if (form.travelers > MAX_TRAVELERS) return `Số người tối đa hiện hỗ trợ là ${MAX_TRAVELERS}.`;
 
     const budgetValidationError = getBudgetHardBlockError({
       budgetPerPerson,
@@ -678,7 +682,10 @@ function PlanContent() {
                   </div>
                 )}
               </div>
-              <p className="field-hint">Nếu chưa biết đi đâu, hãy để trống. VivuPlan sẽ gợi ý điểm đến dựa trên điểm xuất phát, thời gian, ngân sách và sở thích.</p>
+              <p className="field-hint field-hint-icon">
+                <Sparkles size={14} aria-hidden="true" />
+                <span>Chưa biết đi đâu? Để trống điểm đến, VivuPlan sẽ gợi ý nơi phù hợp với thời gian, ngân sách và sở thích của bạn.</span>
+              </p>
               {destinationSuggestedByAi && form.destination.trim() && (
                 <div className="destination-ai-selected-note">
                   <span><CheckCircle2 size={14} /> Đã chọn từ gợi ý AI</span>
@@ -785,7 +792,7 @@ function PlanContent() {
                     className="input"
                     type="number"
                     min={1}
-                    max={30}
+                    max={MAX_TRAVELERS}
                     value={form.travelers || ""}
                     onChange={(event) => {
                       const travelers = Number(event.target.value);
@@ -816,8 +823,8 @@ function PlanContent() {
                   {budgetAdvisory
                     ? "AI sẽ ưu tiên phương án tiết kiệm và không ép chi phí xuống thấp hơn thực tế."
                     : form.budget > 0 && form.travelers > 0
-                    ? `AI sẽ lập lịch trình trong khoảng ${fmtBudget(budgetPerPerson)} / người.`
-                    : "Số người giúp AI ước tính phòng, ăn uống và phương án di chuyển."}
+                      ? `AI sẽ lập lịch trình trong khoảng ${fmtBudget(budgetPerPerson)} / người.`
+                      : "Số người giúp AI ước tính phòng, ăn uống và phương án di chuyển."}
                 </p>
               </div>
             </div>
@@ -904,7 +911,7 @@ function PlanContent() {
                 value={form.notes}
                 maxLength={NOTES_MAX_LENGTH}
                 onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
-                placeholder="VD: đi cùng người lớn tuổi, muốn lịch nhẹ nhàng, cần về trước 18h..."
+                placeholder="VD: Thích chilling, chụp ảnh, khám phá vẻ đẹp thiên nhiên, ăn những món ăn đặc sản địa phương, cần về trước 18h..."
               />
             </div>
 

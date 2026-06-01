@@ -10,6 +10,8 @@ import java.util.Arrays;
 import java.util.List;
 
 public class TripDto {
+    public static final int MAX_TRIP_DAYS = 7;
+    public static final int MAX_TRAVELERS = 10;
 
     @Data
     public static class CreateRequest {
@@ -21,7 +23,7 @@ public class TripDto {
         @Size(max = 100, message = "Điểm xuất phát tối đa 100 ký tự")
         private String departure;
 
-        @Min(1) @Max(30)
+        @Min(1) @Max(MAX_TRIP_DAYS)
         private int days;
 
         private LocalDate startDate;
@@ -31,7 +33,7 @@ public class TripDto {
         private long budgetPerPerson;
         private Long budgetTotal;
         private String budgetMode = "PER_PERSON";
-        @Min(1) @Max(30)
+        @Min(1) @Max(MAX_TRAVELERS)
         private Integer travelerCount = 1;
 
         private String style = "RELAXING";

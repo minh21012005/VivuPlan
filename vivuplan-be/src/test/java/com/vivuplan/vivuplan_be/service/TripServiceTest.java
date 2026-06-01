@@ -186,6 +186,37 @@ class TripServiceTest {
     }
 
     @Test
+    void generateAndSaveRejectsTripsLongerThanMvpLimitBeforeCreditAndAiCall() {
+        TripService service = service();
+        TripDto.GenerateRequest req = generateRequest("", "");
+        req.setEndDate(req.getStartDate().plusDays(TripDto.MAX_TRIP_DAYS));
+        req.setDays(TripDto.MAX_TRIP_DAYS + 1);
+        when(userRepository.findById(7L)).thenReturn(Optional.of(sampleUser()));
+
+        assertThatThrownBy(() -> service.generateAndSave(7L, req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(String.valueOf(TripDto.MAX_TRIP_DAYS));
+
+        verify(billingService, never()).requirePlanCredit(any());
+        verify(aiService, never()).generateItinerary(any());
+    }
+
+    @Test
+    void generateAndSaveRejectsTravelerCountAboveMvpLimitBeforeAiCall() {
+        TripService service = service();
+        TripDto.GenerateRequest req = generateRequest("", "");
+        req.setTravelerCount(TripDto.MAX_TRAVELERS + 1);
+        when(userRepository.findById(7L)).thenReturn(Optional.of(sampleUser()));
+
+        assertThatThrownBy(() -> service.generateAndSave(7L, req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(String.valueOf(TripDto.MAX_TRAVELERS));
+
+        verify(aiService, never()).generateItinerary(any());
+        verify(billingService, never()).consumePlanCredit(any(), any());
+    }
+
+    @Test
     void generateAndSaveConsumesPlanCreditOnlyAfterSuccessfulSave() {
         TripService service = service();
         when(userRepository.findById(7L)).thenReturn(Optional.of(sampleUser()));

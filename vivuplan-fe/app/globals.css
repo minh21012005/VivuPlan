@@ -2226,8 +2226,20 @@ textarea.input.textarea-compact {
 
 .field-hint {
   color: var(--text-3);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.55;
+}
+
+.field-hint-icon {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.field-hint-icon svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--primary);
 }
 
 .input-with-icon {

@@ -125,8 +125,8 @@ public class DestinationSuggestionService {
         if (tripDays <= 0) {
             throw new IllegalArgumentException("Thời gian chuyến đi không hợp lệ");
         }
-        if (tripDays > 30) {
-            throw new IllegalArgumentException("Thời gian chuyến đi tối đa là 30 ngày");
+        if (tripDays > TripDto.MAX_TRIP_DAYS) {
+            throw new IllegalArgumentException("Thời gian chuyến đi tối đa là " + TripDto.MAX_TRIP_DAYS + " ngày");
         }
 
         if (req.getBudgetPerPerson() <= 0) {
@@ -135,8 +135,8 @@ public class DestinationSuggestionService {
         validateBudgetPerPerson(req.getBudgetPerPerson(), tripDays);
 
         int travelers = req.getTravelerCount() != null ? req.getTravelerCount() : 1;
-        if (travelers < 1 || travelers > 30) {
-            throw new IllegalArgumentException("Số người phải từ 1 đến 30");
+        if (travelers < 1 || travelers > TripDto.MAX_TRAVELERS) {
+            throw new IllegalArgumentException("Số người phải từ 1 đến " + TripDto.MAX_TRAVELERS);
         }
         req.setDays(tripDays);
         req.setTravelerCount(travelers);
