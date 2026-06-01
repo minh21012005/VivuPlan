@@ -30,7 +30,6 @@ import {
   Wallet,
   Waves,
   CheckCircle2,
-  ChevronDown,
   X,
   Zap,
 } from "lucide-react";
@@ -253,7 +252,7 @@ function PlanContent() {
   const [generating, setGenerating] = useState(false);
   const [suggestingDestinations, setSuggestingDestinations] = useState(false);
   const [destinationSuggestions, setDestinationSuggestions] = useState<DestinationSuggestion[]>([]);
-  const [expandedDestinationSuggestionKeys, setExpandedDestinationSuggestionKeys] = useState<string[]>([]);
+  const [showDestinationSuggestionDetails, setShowDestinationSuggestionDetails] = useState(false);
   const [destinationSuggestedByAi, setDestinationSuggestedByAi] = useState(false);
   const [destinationSuggestionModalOpen, setDestinationSuggestionModalOpen] = useState(false);
   const [destinationSuggestionError, setDestinationSuggestionError] = useState("");
@@ -348,7 +347,7 @@ function PlanContent() {
   useEffect(() => {
     setDestinationSuggestedByAi(false);
     setDestinationSuggestions([]);
-    setExpandedDestinationSuggestionKeys([]);
+    setShowDestinationSuggestionDetails(false);
     setDestinationSuggestionError("");
     setDestinationSuggestionModalOpen(false);
     destinationSuggestionRequestId.current += 1;
@@ -482,7 +481,7 @@ function PlanContent() {
         return;
       }
       setDestinationSuggestions(suggestions);
-      setExpandedDestinationSuggestionKeys([]);
+      setShowDestinationSuggestionDetails(false);
       setDestinationSuggestedByAi(false);
     } catch (e) {
       if (destinationSuggestionRequestId.current !== requestId) return;
@@ -988,10 +987,10 @@ function PlanContent() {
                 </h3>
                 <p>
                   {suggestingDestinations
-                    ? "VivuPlan đang so sánh yêu cầu của bạn để chọn ra vài phương án đáng cân nhắc."
+                    ? "VivuPlan đang tìm những nơi hợp với thời gian, ngân sách và cảm hứng chuyến đi của bạn."
                     : destinationSuggestionError
-                      ? "Bạn vẫn có thể nhập điểm đến thủ công và tạo lịch trình như bình thường."
-                      : "Chọn một điểm đến để quay lại form và tiếp tục tạo lịch trình."}
+                      ? "Bạn có thể thử lại sau ít phút, hoặc nhập nơi muốn đi để VivuPlan lên lịch trình ngay."
+                      : "Chọn nơi bạn thấy hợp nhất, hoặc xem chi tiết lý do AI gợi ý để quyết định nhé."}
                 </p>
               </div>
             </div>
@@ -1030,15 +1029,30 @@ function PlanContent() {
                 </div>
               </div>
             ) : (
-              <div className="destination-suggestion-modal-grid">
-                {destinationSuggestions.map((suggestion) => {
-                  const suggestionKey = `${suggestion.name}-${suggestion.region}`;
-                  const isExpanded = expandedDestinationSuggestionKeys.includes(suggestionKey);
-
-                  return (
+              <>
+                <div className="destination-suggestion-view-switch" aria-label="Chế độ xem gợi ý">
+                  <button
+                    type="button"
+                    className={!showDestinationSuggestionDetails ? "is-active" : ""}
+                    aria-pressed={!showDestinationSuggestionDetails}
+                    onClick={() => setShowDestinationSuggestionDetails(false)}
+                  >
+                    Tóm tắt
+                  </button>
+                  <button
+                    type="button"
+                    className={showDestinationSuggestionDetails ? "is-active" : ""}
+                    aria-pressed={showDestinationSuggestionDetails}
+                    onClick={() => setShowDestinationSuggestionDetails(true)}
+                  >
+                    Chi tiết
+                  </button>
+                </div>
+                <div className="destination-suggestion-modal-grid">
+                  {destinationSuggestions.map((suggestion) => (
                     <article
-                      key={suggestionKey}
-                      className={`destination-suggestion-modal-card${isExpanded ? " is-expanded" : ""}`}
+                      key={`${suggestion.name}-${suggestion.region}`}
+                      className={`destination-suggestion-modal-card${showDestinationSuggestionDetails ? " is-expanded" : ""}`}
                     >
                       <div className="destination-suggestion-card-top">
                         <span>{suggestion.region || "Điểm đến"}</span>
@@ -1050,38 +1064,25 @@ function PlanContent() {
                         <div>
                           <dt>Chi phí</dt>
                           <dd>{suggestion.budgetFit}</dd>
-                          {isExpanded && <p>{suggestion.budgetNote}</p>}
+                          {showDestinationSuggestionDetails && <p>{suggestion.budgetNote}</p>}
                         </div>
                         <div>
                           <dt>Số ngày</dt>
                           <dd>{suggestion.durationFit}</dd>
-                          {isExpanded && <p>{suggestion.durationNote}</p>}
+                          {showDestinationSuggestionDetails && <p>{suggestion.durationNote}</p>}
                         </div>
                         <div>
                           <dt>Đường đi</dt>
                           <dd>{suggestion.travelFit}</dd>
-                          {isExpanded && <p>{suggestion.travelNote}</p>}
+                          {showDestinationSuggestionDetails && <p>{suggestion.travelNote}</p>}
                         </div>
                         <div>
                           <dt>Sở thích</dt>
                           <dd>{suggestion.styleFit}</dd>
-                          {isExpanded && <p>{suggestion.styleNote}</p>}
+                          {showDestinationSuggestionDetails && <p>{suggestion.styleNote}</p>}
                         </div>
                       </dl>
-                      <button
-                        type="button"
-                        className="destination-suggestion-detail-toggle"
-                        aria-expanded={isExpanded}
-                        onClick={() => setExpandedDestinationSuggestionKeys((prev) => (
-                          isExpanded
-                            ? prev.filter((key) => key !== suggestionKey)
-                            : [...prev, suggestionKey]
-                        ))}
-                      >
-                        {isExpanded ? "Ẩn chi tiết" : "Chi tiết"}
-                        <ChevronDown size={15} aria-hidden="true" />
-                      </button>
-                      {isExpanded && (
+                      {showDestinationSuggestionDetails && (
                         <div className="destination-suggestion-reason">
                           <p>{suggestion.reason}</p>
                         </div>
@@ -1094,9 +1095,9 @@ function PlanContent() {
                         <CheckCircle2 size={15} /> Chọn điểm này
                       </button>
                     </article>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>

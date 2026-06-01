@@ -2461,6 +2461,44 @@ textarea.input.textarea-compact {
   gap: 14px;
 }
 
+.destination-suggestion-view-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  width: max-content;
+  margin: 0 0 14px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+}
+
+.destination-suggestion-view-switch button {
+  min-width: 82px;
+  min-height: 32px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--text-3);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.destination-suggestion-view-switch button:hover,
+.destination-suggestion-view-switch button:focus-visible {
+  color: var(--primary-hover);
+  outline: none;
+}
+
+.destination-suggestion-view-switch button.is-active {
+  background: var(--surface);
+  color: var(--primary-hover);
+  box-shadow: var(--shadow-sm);
+}
+
 .destination-suggestion-skeleton-card,
 .destination-suggestion-modal-card {
   min-height: 292px;
@@ -2658,38 +2696,6 @@ textarea.input.textarea-compact {
   color: var(--text-3);
   font-size: 12px;
   line-height: 1.45;
-}
-
-.destination-suggestion-detail-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
-  width: max-content;
-  max-width: 100%;
-  padding: 2px 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--primary-hover);
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: color 0.16s ease;
-}
-
-.destination-suggestion-detail-toggle:hover,
-.destination-suggestion-detail-toggle:focus-visible {
-  color: var(--primary);
-  outline: none;
-}
-
-.destination-suggestion-detail-toggle svg {
-  transition: transform 0.16s ease;
-}
-
-.destination-suggestion-modal-card.is-expanded .destination-suggestion-detail-toggle svg {
-  transform: rotate(180deg);
 }
 
 .destination-suggestion-select-label {
@@ -5889,6 +5895,14 @@ textarea.input.textarea-compact {
 
   .destination-suggestion-modal-head h3 {
     font-size: 20px;
+  }
+
+  .destination-suggestion-view-switch {
+    width: 100%;
+  }
+
+  .destination-suggestion-view-switch button {
+    flex: 1;
   }
 
   .destination-suggestion-modal-card,
