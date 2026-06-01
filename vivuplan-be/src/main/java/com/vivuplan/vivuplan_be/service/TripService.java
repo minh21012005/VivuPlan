@@ -97,7 +97,6 @@ public class TripService {
         aiReq.setTravelerCount(resolveTravelerCount(req));
         aiReq.setStyle(req.getStyle());
         aiReq.setGroupType(req.getGroupType());
-        aiReq.setTransport(req.getTransport());
         aiReq.setOutboundTransport(req.getOutboundTransport());
         aiReq.setLocalTransport(req.getLocalTransport());
         aiReq.setDestinationSuggested(req.getDestinationSuggested());
@@ -126,7 +125,6 @@ public class TripService {
                 .travelerCount(resolveTravelerCount(req))
                 .style(parseEnum(Trip.TravelStyle.class, req.getStyle(), Trip.TravelStyle.RELAXING))
                 .groupType(parseEnum(Trip.GroupType.class, req.getGroupType(), Trip.GroupType.FRIENDS))
-                .transport(parseEnum(Trip.TransportMode.class, req.getTransport(), Trip.TransportMode.MIXED))
                 .outboundTransport(
                         parseEnum(Trip.TransportMode.class, req.getOutboundTransport(), Trip.TransportMode.MIXED))
                 .localTransport(parseEnum(Trip.TransportMode.class, req.getLocalTransport(), Trip.TransportMode.MIXED))
@@ -435,7 +433,6 @@ public class TripService {
         req.setTravelerCount(trip.getTravelerCount());
         req.setStyle(trip.getStyle().name());
         req.setGroupType(trip.getGroupType().name());
-        req.setTransport(trip.getTransport().name());
         req.setOutboundTransport(trip.getOutboundTransport().name());
         req.setLocalTransport(trip.getLocalTransport().name());
         req.setDestinationSuggested(trip.getDestinationSuggested());

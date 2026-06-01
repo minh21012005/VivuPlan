@@ -240,7 +240,6 @@ class DestinationSuggestionServiceTest {
         req.setTravelerCount(2);
         req.setStyle("RELAXING");
         req.setGroupType("COUPLE");
-        req.setTransport("MIXED");
         req.setOutboundTransport("PLANE");
         req.setLocalTransport("TAXI");
         req.setMustVisit(mustVisit);

@@ -36,7 +36,6 @@ public class TripDto {
 
         private String style = "RELAXING";
         private String groupType = "FRIENDS";
-        private String transport = "MIXED";
         private String outboundTransport = "MIXED";
         private String localTransport = "MIXED";
         private Boolean destinationSuggested = false;
@@ -62,7 +61,6 @@ public class TripDto {
         private Integer travelerCount;
         private String style;
         private String groupType;
-        private String transport;
         private String outboundTransport;
         private String localTransport;
         private Boolean destinationSuggested;
@@ -93,7 +91,6 @@ public class TripDto {
             r.setTravelerCount(trip.getTravelerCount());
             r.setStyle(trip.getStyle().name());
             r.setGroupType(trip.getGroupType().name());
-            r.setTransport(trip.getTransport().name());
             r.setOutboundTransport(trip.getOutboundTransport().name());
             r.setLocalTransport(trip.getLocalTransport().name());
             r.setDestinationSuggested(trip.getDestinationSuggested());
@@ -271,7 +268,6 @@ public class TripDto {
         private Integer travelerCount;
         private String style;
         private String groupType;
-        private String transport;
         private String outboundTransport;
         private String localTransport;
         private Boolean destinationSuggested;
@@ -298,7 +294,6 @@ public class TripDto {
         private Integer travelerCount;
         private String style;
         private String groupType;
-        private String transport;
         private String outboundTransport;
         private String localTransport;
         @Size(max = 300, message = "Nơi muốn ghé tối đa 300 ký tự")

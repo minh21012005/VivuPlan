@@ -351,7 +351,6 @@ public class DestinationSuggestionService {
                 String.valueOf(req.getTravelerCount()),
                 normalizeForCache(req.getStyle()),
                 normalizeForCache(req.getGroupType()),
-                normalizeForCache(req.getTransport()),
                 normalizeForCache(req.getOutboundTransport()),
                 normalizeForCache(req.getLocalTransport()),
                 normalizeForCache(req.getMustVisit()),

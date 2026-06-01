@@ -740,7 +740,7 @@ class TripServiceTest {
         trip.setDeparture(baseRequest.getDeparture());
         trip.setBudgetPerPerson(5_000_000L);
         trip.setOutboundTransport(Trip.TransportMode.PLANE);
-        trip.setLocalTransport(Trip.TransportMode.MOTORBIKE);
+        trip.setLocalTransport(Trip.TransportMode.RENTAL_MOTORBIKE);
         trip.setStartDate(LocalDate.now());
         trip.setEndDate(LocalDate.now());
 
@@ -825,7 +825,6 @@ class TripServiceTest {
         req.setTravelerCount(1);
         req.setStyle("ADVENTURE");
         req.setGroupType("SOLO");
-        req.setTransport("MIXED");
         req.setOutboundTransport("PLANE");
         req.setLocalTransport("MIXED");
         req.setDestinationSuggested(false);
@@ -1021,7 +1020,6 @@ class TripServiceTest {
                 .travelerCount(1)
                 .style(Trip.TravelStyle.RELAXING)
                 .groupType(Trip.GroupType.SOLO)
-                .transport(Trip.TransportMode.MIXED)
                 .outboundTransport(Trip.TransportMode.MIXED)
                 .localTransport(Trip.TransportMode.MIXED)
                 .status(Trip.TripStatus.DRAFT)

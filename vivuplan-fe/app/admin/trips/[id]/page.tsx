@@ -67,14 +67,17 @@ function labelFromEnum(value?: string | null) {
     COUPLE: "Cặp đôi",
     FRIENDS: "Nhóm bạn",
     FAMILY: "Gia đình",
-    CAR: "Ô tô",
-    MOTORBIKE: "Xe máy",
+    PERSONAL_CAR: "Ô tô cá nhân",
+    PERSONAL_MOTORBIKE: "Xe máy cá nhân",
+    RENTAL_CAR: "Thuê ô tô",
+    RENTAL_MOTORBIKE: "Thuê xe máy",
+    TAXI_GRAB: "Taxi/Grab",
     BUS: "Xe khách",
     TRAIN: "Tàu hỏa",
     PLANE: "Máy bay",
     FLIGHT: "Máy bay",
     MIXED: "Linh hoạt",
-    WALKING: "Đi bộ",
+    WALKING: "Đi bộ là chính",
     PLANNED: "Đã tạo",
     DRAFT: "Bản nháp",
     COMPLETED: "Hoàn thành",
@@ -321,8 +324,8 @@ export default function AdminTripDetailPage() {
                       <div><dt>Ngày về</dt><dd>{formatDate(trip.endDate)}</dd></div>
                       <div><dt>Phong cách</dt><dd>{labelFromEnum(trip.style)}</dd></div>
                       <div><dt>Nhóm đi</dt><dd>{labelFromEnum(trip.groupType)}</dd></div>
-                      <div><dt>Di chuyển chính</dt><dd>{transportLabel(trip.outboundTransport || trip.transport)}</dd></div>
-                      <div><dt>Di chuyển tại nơi đến</dt><dd>{transportLabel(trip.localTransport || trip.transport)}</dd></div>
+                      <div><dt>Di chuyển chính</dt><dd>{transportLabel(trip.outboundTransport)}</dd></div>
+                      <div><dt>Di chuyển tại nơi đến</dt><dd>{transportLabel(trip.localTransport)}</dd></div>
                       <div><dt>Điểm đến được gợi ý</dt><dd>{trip.destinationSuggested ? "Có" : "Không"}</dd></div>
                       <div><dt>Hiển thị</dt><dd>{trip.isPublic ? "Công khai" : "Riêng tư"}</dd></div>
                       <div><dt>Mã chia sẻ</dt><dd>{trip.shareCode || "-"}</dd></div>

@@ -75,11 +75,6 @@ public class Trip {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private TransportMode transport = TransportMode.MIXED;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
     private TransportMode outboundTransport = TransportMode.MIXED;
 
     @Enumerated(EnumType.STRING)
@@ -134,6 +129,17 @@ public class Trip {
     public enum TravelStyle { ADVENTURE, RELAXING, CULTURAL, FOODIE }
     public enum GroupType   { SOLO, COUPLE, FRIENDS, FAMILY }
     public enum BudgetMode { PER_PERSON, TOTAL }
-    public enum TransportMode { MOTORBIKE, CAR, BUS, PLANE, TRAIN, WALKING, MIXED }
+    public enum TransportMode {
+        PERSONAL_MOTORBIKE,
+        PERSONAL_CAR,
+        RENTAL_MOTORBIKE,
+        RENTAL_CAR,
+        TAXI_GRAB,
+        BUS,
+        PLANE,
+        TRAIN,
+        WALKING,
+        MIXED
+    }
     public enum TripStatus  { DRAFT, PLANNED, COMPLETED }
 }

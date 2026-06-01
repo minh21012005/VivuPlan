@@ -53,16 +53,18 @@ const outboundTransportOptions = [
   { id: "plane", label: "Máy bay", icon: Plane },
   { id: "train", label: "Tàu hỏa", icon: Train },
   { id: "bus", label: "Xe khách", icon: Bus },
-  { id: "car", label: "Ô tô cá nhân", icon: Car },
-  { id: "motorbike", label: "Xe máy", icon: Bike },
+  { id: "personal-car", label: "Ô tô cá nhân", icon: Car },
+  { id: "personal-motorbike", label: "Xe máy cá nhân", icon: Bike },
   { id: "ai", label: "Để AI chọn", icon: Sparkles },
 ];
 
 const localTransportOptions = [
-  { id: "motorbike", label: "Thuê xe máy", icon: Bike },
-  { id: "taxi", label: "Taxi/Grab", icon: Car },
-  { id: "car", label: "Thuê ô tô", icon: Car },
-  { id: "walking", label: "Đi bộ/kết hợp", icon: Navigation },
+  { id: "personal-motorbike", label: "Dùng xe máy cá nhân", icon: Bike, requiresOutbound: "personal-motorbike" },
+  { id: "personal-car", label: "Dùng ô tô cá nhân", icon: Car, requiresOutbound: "personal-car" },
+  { id: "rental-motorbike", label: "Thuê xe máy", icon: Bike },
+  { id: "taxi-grab", label: "Taxi/Grab", icon: Car },
+  { id: "rental-car", label: "Thuê ô tô", icon: Car },
+  { id: "walking", label: "Đi bộ là chính", icon: Navigation },
   { id: "ai", label: "Để AI chọn", icon: Sparkles },
 ];
 
@@ -213,8 +215,11 @@ function toApiGroupType(group: string, travelers: number) {
 
 function toApiTransport(outboundTransport: string, localTransport: string) {
   const value = outboundTransport && outboundTransport !== "ai" ? outboundTransport : localTransport;
-  if (value === "motorbike") return "MOTORBIKE";
-  if (value === "car" || value === "taxi") return "CAR";
+  if (value === "personal-motorbike") return "PERSONAL_MOTORBIKE";
+  if (value === "personal-car") return "PERSONAL_CAR";
+  if (value === "rental-motorbike") return "RENTAL_MOTORBIKE";
+  if (value === "rental-car") return "RENTAL_CAR";
+  if (value === "taxi-grab") return "TAXI_GRAB";
   if (value === "bus") return "BUS";
   if (value === "plane") return "PLANE";
   if (value === "train") return "TRAIN";
@@ -281,6 +286,10 @@ function PlanContent() {
   const todayInput = getTodayDateInput();
   const oneYearLaterInput = getOneYearLaterDateInput();
   const compatibleGroupOptions = getGroupOptions(form.travelers);
+  const compatibleLocalTransportOptions = useMemo(() => localTransportOptions.filter((item) => {
+    if (!("requiresOutbound" in item)) return true;
+    return item.requiresOutbound === form.outboundTransport;
+  }), [form.outboundTransport]);
   const groupSummary =
     form.travelers === 1
       ? "Đi một mình"
@@ -321,6 +330,14 @@ function PlanContent() {
     }, 1000);
     return () => window.clearInterval(timer);
   }, [suggestingDestinations]);
+
+  useEffect(() => {
+    if (!form.localTransport) return;
+    const stillAvailable = compatibleLocalTransportOptions.some((item) => item.id === form.localTransport);
+    if (!stillAvailable) {
+      setForm((prev) => ({ ...prev, localTransport: "" }));
+    }
+  }, [compatibleLocalTransportOptions, form.localTransport]);
 
   useEffect(() => {
     setDestinationSuggestedByAi(false);
@@ -398,7 +415,6 @@ function PlanContent() {
     travelerCount: form.travelers,
     style: (form.style || "relaxing").toUpperCase(),
     groupType: toApiGroupType(form.group, form.travelers),
-    transport: toApiTransport(form.outboundTransport, form.localTransport),
     outboundTransport: toApiTransport(form.outboundTransport, ""),
     localTransport: toApiTransport("", form.localTransport),
     mustVisit: form.mustVisit.trim() || undefined,
@@ -826,7 +842,7 @@ function PlanContent() {
               <div className="field-group">
                 <label>Di chuyển trong chuyến đi</label>
                 <div className="option-grid option-grid-transport">
-                  {localTransportOptions.map(({ id, label, icon: Icon }) => (
+                  {compatibleLocalTransportOptions.map(({ id, label, icon: Icon }) => (
                     <button
                       key={id}
                       type="button"

@@ -239,7 +239,6 @@ public class AiService {
         copy.setTravelerCount(source.getTravelerCount());
         copy.setStyle(source.getStyle());
         copy.setGroupType(source.getGroupType());
-        copy.setTransport(source.getTransport());
         copy.setOutboundTransport(source.getOutboundTransport());
         copy.setLocalTransport(source.getLocalTransport());
         copy.setDestinationSuggested(source.getDestinationSuggested());
@@ -291,6 +290,7 @@ public class AiService {
                 - Group type: %s
                 - Outbound transport: %s
                 - Local transport: %s
+                %s
                 - Must visit / preferences: %s
                 - Avoid: %s
                 - Notes: %s
@@ -334,6 +334,7 @@ public class AiService {
                 nullToBlank(req.getGroupType()),
                 nullToBlank(req.getOutboundTransport()),
                 nullToBlank(req.getLocalTransport()),
+                transportOwnershipGuidance(req.getOutboundTransport(), req.getLocalTransport()),
                 nullToBlank(req.getMustVisit()),
                 nullToBlank(req.getAvoid()),
                 nullToBlank(req.getNotes()),
@@ -400,6 +401,37 @@ public class AiService {
                         - If you are not confident about latitude/longitude for a non-candidate place, omit latitude and longitude instead of guessing.
                         - For restaurants, cafes, accommodations, and rental shops, use specific real named options only when you are confident they exist. Otherwise, use a concrete neighborhood, market, food street, public venue, or lodging area plus the intended experience, and keep the activity useful without pretending it is a named business.
                         """.stripTrailing();
+    }
+
+    private String transportOwnershipGuidance(String outboundTransport, String localTransport) {
+        String outbound = outboundTransport == null ? "" : outboundTransport.trim().toUpperCase(Locale.ROOT);
+        String local = localTransport == null ? "" : localTransport.trim().toUpperCase(Locale.ROOT);
+        List<String> guidance = new ArrayList<>();
+        if ("MIXED".equals(outbound) || outbound.isBlank()) {
+            guidance.add("- Outbound transport choice: AI should choose the most practical way to reach the destination based on departure, distance, trip length, budget, group type, weather, and traveler safety. Prefer realistic Vietnamese options such as plane, train, bus, private car, or motorbike only when appropriate; include round-trip cost clearly.");
+        }
+        if ("PERSONAL_MOTORBIKE".equals(local)) {
+            guidance.add("- Transport ownership: the traveler will use their own motorbike at the destination. Do not create motorbike rental, pickup, return, or rental-fee activities. Include only realistic fuel, parking, ferry, toll, or safety-related local transport costs when useful.");
+        }
+        else if ("PERSONAL_CAR".equals(local)) {
+            guidance.add("- Transport ownership: the traveler will use their own car at the destination. Do not create car rental, pickup, return, or rental-fee activities. Include only realistic fuel, parking, toll, ferry, or driver/rest-stop costs when useful.");
+        }
+        else if ("RENTAL_MOTORBIKE".equals(local)) {
+            guidance.add("- Local transport choice: rented motorbike. If used across multiple activities or days, create one clear motorbike rental TRANSPORT activity with total rental fee, covered days, pickup area/shop, and realistic fuel/parking notes when useful.");
+        }
+        else if ("RENTAL_CAR".equals(local)) {
+            guidance.add("- Local transport choice: rented car. If used across multiple activities or days, create one clear car rental TRANSPORT activity with total rental fee, driver/self-drive assumption, covered days, pickup area/company, and realistic fuel/parking/toll notes when useful.");
+        }
+        else if ("TAXI_GRAB".equals(local)) {
+            guidance.add("- Local transport choice: taxi/Grab. Do not create vehicle rental, pickup, return, or rental-fee activities. Use per-route taxi/Grab TRANSPORT activities only when distance or cost is meaningful, with realistic group cost.");
+        }
+        else if ("WALKING".equals(local)) {
+            guidance.add("- Local transport choice: walking-first. Keep nearby clusters walkable with clear walking notes and cost 0, but still add taxi/Grab, shuttle, public transport, or another safe paid transfer when distance, weather, terrain, children, seniors, luggage, or safety makes walking unrealistic.");
+        }
+        else if ("MIXED".equals(local) || local.isBlank()) {
+            guidance.add("- Local transport choice: AI should choose a practical mix inside the destination. Do not treat MIXED as a request to use every mode; choose the simplest realistic combination and explain meaningful paid local movement.");
+        }
+        return String.join("\n", guidance);
     }
 
     private boolean isSevereWeatherForecastLine(String line) {
@@ -491,6 +523,7 @@ public class AiService {
                         - Group: %s
                         - Outbound transport: %s
                         - Local transport: %s
+                        %s
                         - Must visit: %s
                         - Avoid: %s
                         - Notes: %s
@@ -633,6 +666,7 @@ public class AiService {
                 req.getGroupType(),
                 req.getOutboundTransport(),
                 req.getLocalTransport(),
+                transportOwnershipGuidance(req.getOutboundTransport(), req.getLocalTransport()),
                 req.getMustVisit() != null && !req.getMustVisit().isBlank() ? req.getMustVisit() : "none",
                 req.getAvoid() != null && !req.getAvoid().isBlank() ? req.getAvoid() : "none",
                 req.getNotes() != null && !req.getNotes().isBlank() ? req.getNotes() : "none",
@@ -744,6 +778,7 @@ public class AiService {
                         - Group: %s
                         - Outbound transport: %s
                         - Local transport: %s
+                        %s
                         - Must visit: %s
                         - Avoid: %s
                         - Notes: %s
@@ -898,6 +933,7 @@ public class AiService {
                 req.getGroupType(),
                 req.getOutboundTransport(),
                 req.getLocalTransport(),
+                transportOwnershipGuidance(req.getOutboundTransport(), req.getLocalTransport()),
                 req.getMustVisit() != null && !req.getMustVisit().isBlank() ? req.getMustVisit() : "none",
                 req.getAvoid() != null && !req.getAvoid().isBlank() ? req.getAvoid() : "none",
                 req.getNotes() != null && !req.getNotes().isBlank() ? req.getNotes() : "none",

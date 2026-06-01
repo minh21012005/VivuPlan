@@ -490,7 +490,6 @@ export interface GenerateRequest {
   travelerCount?: number;
   style: string;
   groupType: string;
-  transport: string;
   outboundTransport?: string;
   localTransport?: string;
   destinationSuggested?: boolean;
@@ -510,7 +509,6 @@ export interface DestinationSuggestionRequest {
   travelerCount?: number;
   style: string;
   groupType: string;
-  transport: string;
   outboundTransport?: string;
   localTransport?: string;
   mustVisit?: string;
@@ -545,7 +543,6 @@ export interface TripResponse {
   travelerCount?: number;
   style: string;
   groupType: string;
-  transport: string;
   outboundTransport?: string;
   localTransport?: string;
   destinationSuggested?: boolean;

@@ -603,6 +603,92 @@ class AiServiceTest {
     }
 
     @Test
+    void generatedPromptDistinguishesPersonalMotorbikeFromRentalMotorbike() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setOutboundTransport("PERSONAL_MOTORBIKE");
+        req.setLocalTransport("PERSONAL_MOTORBIKE");
+
+        String prompt = buildPrompt(service, req);
+
+        assertThat(prompt)
+                .contains("Outbound transport: PERSONAL_MOTORBIKE")
+                .contains("Local transport: PERSONAL_MOTORBIKE")
+                .contains("the traveler will use their own motorbike at the destination")
+                .contains("Do not create motorbike rental, pickup, return, or rental-fee activities")
+                .contains("fuel, parking, ferry, toll");
+    }
+
+    @Test
+    void generatedPromptDistinguishesTaxiGrabAndRentalCarLocalTransport() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest taxiReq = generateRequest();
+        taxiReq.setLocalTransport("TAXI_GRAB");
+
+        String taxiPrompt = buildPrompt(service, taxiReq);
+
+        assertThat(taxiPrompt)
+                .contains("Local transport: TAXI_GRAB")
+                .contains("Local transport choice: taxi/Grab")
+                .contains("Do not create vehicle rental, pickup, return, or rental-fee activities")
+                .contains("per-route taxi/Grab TRANSPORT activities");
+
+        TripDto.GenerateRequest rentalCarReq = generateRequest();
+        rentalCarReq.setLocalTransport("RENTAL_CAR");
+
+        String rentalCarPrompt = buildPrompt(service, rentalCarReq);
+
+        assertThat(rentalCarPrompt)
+                .contains("Local transport: RENTAL_CAR")
+                .contains("Local transport choice: rented car")
+                .contains("create one clear car rental TRANSPORT activity")
+                .contains("fuel/parking/toll");
+    }
+
+    @Test
+    void generatedPromptHandlesAiSelectedAndWalkingFirstTransportClearly() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest mixedReq = generateRequest();
+        mixedReq.setOutboundTransport("MIXED");
+        mixedReq.setLocalTransport("MIXED");
+
+        String mixedPrompt = buildPrompt(service, mixedReq);
+
+        assertThat(mixedPrompt)
+                .contains("Outbound transport choice: AI should choose the most practical way")
+                .contains("based on departure, distance, trip length, budget, group type, weather, and traveler safety")
+                .contains("Local transport choice: AI should choose a practical mix inside the destination")
+                .contains("Do not treat MIXED as a request to use every mode");
+
+        TripDto.GenerateRequest walkingReq = generateRequest();
+        walkingReq.setLocalTransport("WALKING");
+
+        String walkingPrompt = buildPrompt(service, walkingReq);
+
+        assertThat(walkingPrompt)
+                .contains("Local transport: WALKING")
+                .contains("Local transport choice: walking-first")
+                .contains("still add taxi/Grab, shuttle, public transport, or another safe paid transfer")
+                .contains("when distance, weather, terrain, children, seniors, luggage, or safety makes walking unrealistic");
+    }
+
+    @Test
+    void destinationSuggestionPromptIncludesTransportChoiceGuidance() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.DestinationSuggestionRequest req = destinationSuggestionRequest();
+        req.setOutboundTransport("MIXED");
+        req.setLocalTransport("WALKING");
+
+        String prompt = buildDestinationSuggestionPrompt(service, req, "[]");
+
+        assertThat(prompt)
+                .contains("Outbound transport: MIXED")
+                .contains("Local transport: WALKING")
+                .contains("Outbound transport choice: AI should choose the most practical way")
+                .contains("Local transport choice: walking-first");
+    }
+
+    @Test
     void regenerationPromptTreatsVerifiedPlacesAsTrustedSuggestionsNotAllowedOnlyList() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
@@ -888,6 +974,18 @@ class AiServiceTest {
         return (String) method.invoke(service, req);
     }
 
+    private String buildDestinationSuggestionPrompt(
+            AiService service,
+            TripDto.DestinationSuggestionRequest req,
+            String catalogContext) throws Exception {
+        Method method = AiService.class.getDeclaredMethod(
+                "buildDestinationSuggestionPrompt",
+                TripDto.DestinationSuggestionRequest.class,
+                String.class);
+        method.setAccessible(true);
+        return (String) method.invoke(service, req, catalogContext);
+    }
+
     private String buildDayRegenerationPrompt(
             AiService service,
             TripDto.GenerateRequest req,
@@ -958,9 +1056,27 @@ class AiServiceTest {
         req.setTravelerCount(2);
         req.setStyle("RELAXING");
         req.setGroupType("COUPLE");
-        req.setTransport("PLANE");
         req.setOutboundTransport("PLANE");
         req.setLocalTransport("MIXED");
+        return req;
+    }
+
+    private TripDto.DestinationSuggestionRequest destinationSuggestionRequest() {
+        TripDto.DestinationSuggestionRequest req = new TripDto.DestinationSuggestionRequest();
+        req.setDeparture("Ha Noi");
+        req.setStartDate(LocalDate.now().plusDays(7));
+        req.setEndDate(LocalDate.now().plusDays(9));
+        req.setDays(3);
+        req.setBudgetPerPerson(3_000_000L);
+        req.setBudgetMode("PER_PERSON");
+        req.setTravelerCount(2);
+        req.setStyle("RELAXING");
+        req.setGroupType("COUPLE");
+        req.setOutboundTransport("MIXED");
+        req.setLocalTransport("MIXED");
+        req.setMustVisit("bien hoac nui nhe nhang");
+        req.setAvoid("di bo qua nhieu");
+        req.setNotes("uu tien lich trinh nhe");
         return req;
     }
 
