@@ -19,7 +19,7 @@ import java.util.*;
 @Slf4j
 public class AiService {
 
-    private static final int PROMPT_TOKEN_WARN_THRESHOLD = 8_000;
+    private static final int PROMPT_TOKEN_WARN_THRESHOLD = 12_000;
     private static final int MAX_SUGGESTION_NAME_LENGTH = 80;
     private static final int MAX_SUGGESTION_REASON_LENGTH = 180;
     private static final Set<String> SUGGESTION_BUDGET_DURATION_LABELS = Set.of("Phù hợp", "Khá phù hợp",
@@ -57,7 +57,7 @@ public class AiService {
     @Value("${app.ai.gemini.regenerate-max-output-tokens:24576}")
     private int geminiRegenerateMaxOutputTokens;
 
-    @Value("${app.ai.gemini.regenerate-thinking-budget:4096}")
+    @Value("${app.ai.gemini.regenerate-thinking-budget:6144}")
     private int geminiRegenerateThinkingBudget;
 
     @Value("${app.ai.gemini.suggestion-max-output-tokens:8192}")
@@ -1024,10 +1024,6 @@ public class AiService {
      * errors.
      * Retries up to 2 times (delays: 2 s, 4 s) before giving up.
      */
-    private String callGeminiWithRetry(String prompt, int maxOutputTokens) {
-        return callGeminiWithRetry(prompt, maxOutputTokens, null);
-    }
-
     private String callGeminiWithRetry(String prompt, int maxOutputTokens, Integer thinkingBudget) {
         if (geminiApiKey == null || geminiApiKey.isBlank()) {
             throw new IllegalStateException("Gemini API key is not configured");
@@ -1059,7 +1055,7 @@ public class AiService {
         for (int attempt = 0; attempt <= retryDelaysMs.length; attempt++) {
             try {
                 ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
-                return parseGeminiResponse(response.getBody(), maxOutputTokens);
+                return parseGeminiResponse(response.getBody(), maxOutputTokens, thinkingBudget);
             } catch (HttpStatusCodeException e) {
                 int code = e.getStatusCode().value();
                 if ((code == 503 || code == 429) && attempt < retryDelaysMs.length) {
@@ -1090,7 +1086,7 @@ public class AiService {
         return geminiModel != null && geminiModel.toLowerCase(Locale.ROOT).contains("2.5");
     }
 
-    private String parseGeminiResponse(String responseBody, int maxOutputTokens) {
+    private String parseGeminiResponse(String responseBody, int maxOutputTokens, Integer thinkingBudget) {
         try {
             JsonNode root = objectMapper.readTree(responseBody);
             JsonNode candidate = root.path("candidates").get(0);
@@ -1099,14 +1095,22 @@ public class AiService {
             JsonNode usage = root.path("usageMetadata");
             int promptTokens = usage.path("promptTokenCount").asInt(-1);
             int outputTokens = usage.path("candidatesTokenCount").asInt(-1);
+            int thinkingTokens = usage.path("thoughtsTokenCount").asInt(-1);
             int totalTokens = usage.path("totalTokenCount").asInt(-1);
+            int generatedTokens = outputTokens + Math.max(thinkingTokens, 0);
+            int remainingOutputBudget = outputTokens >= 0 ? maxOutputTokens - generatedTokens : -1;
+            int remainingThinkingBudget = thinkingBudget != null && thinkingBudget >= 0 && thinkingTokens >= 0
+                    ? thinkingBudget - thinkingTokens
+                    : -1;
             log.debug(
-                    "Gemini response finishReason={}, textLength={}, promptTokens={}, outputTokens={}, totalTokens={}, maxOutputTokens={}",
-                    finishReason, text.length(), promptTokens, outputTokens, totalTokens, maxOutputTokens);
+                    "Gemini response finishReason={}, textLength={}, promptTokens={}, outputTokens={}, thinkingTokens={}, totalTokens={}, maxOutputTokens={}, remainingOutputBudget={}, thinkingBudget={}, remainingThinkingBudget={}",
+                    finishReason, text.length(), promptTokens, outputTokens, thinkingTokens, totalTokens,
+                    maxOutputTokens, remainingOutputBudget, thinkingBudget, remainingThinkingBudget);
             if (promptTokens > PROMPT_TOKEN_WARN_THRESHOLD) {
                 log.warn(
-                        "Gemini prompt is getting large: promptTokens={}, warnThreshold={}, totalTokens={}, maxOutputTokens={}",
-                        promptTokens, PROMPT_TOKEN_WARN_THRESHOLD, totalTokens, maxOutputTokens);
+                        "Gemini prompt is getting large: promptTokens={}, warnThreshold={}, outputTokens={}, thinkingTokens={}, totalTokens={}, maxOutputTokens={}, remainingOutputBudget={}",
+                        promptTokens, PROMPT_TOKEN_WARN_THRESHOLD, outputTokens, thinkingTokens, totalTokens,
+                        maxOutputTokens, remainingOutputBudget);
             }
             if ("MAX_TOKENS".equals(finishReason)) {
                 throw new RuntimeException(

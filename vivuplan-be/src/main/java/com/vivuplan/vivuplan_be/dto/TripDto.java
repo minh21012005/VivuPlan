@@ -14,42 +14,6 @@ public class TripDto {
     public static final int MAX_TRAVELERS = 10;
 
     @Data
-    public static class CreateRequest {
-        @NotBlank(message = "Điểm đến không được để trống")
-        @Size(max = 100, message = "Điểm đến tối đa 100 ký tự")
-        private String destination;
-
-        @NotBlank(message = "Điểm xuất phát không được để trống")
-        @Size(max = 100, message = "Điểm xuất phát tối đa 100 ký tự")
-        private String departure;
-
-        @Min(1) @Max(MAX_TRIP_DAYS)
-        private int days;
-
-        private LocalDate startDate;
-        private LocalDate endDate;
-
-        @Min(500000)
-        private long budgetPerPerson;
-        private Long budgetTotal;
-        private String budgetMode = "PER_PERSON";
-        @Min(1) @Max(MAX_TRAVELERS)
-        private Integer travelerCount = 1;
-
-        private String style = "RELAXING";
-        private String groupType = "FRIENDS";
-        private String outboundTransport = "MIXED";
-        private String localTransport = "MIXED";
-        private Boolean destinationSuggested = false;
-        @Size(max = 300, message = "Nơi muốn ghé tối đa 300 ký tự")
-        private String mustVisit;
-        @Size(max = 300, message = "Điều muốn tránh tối đa 300 ký tự")
-        private String avoid;
-        @Size(max = 800, message = "Ghi chú tối đa 800 ký tự")
-        private String notes;
-    }
-
-    @Data
     public static class TripResponse {
         private Long id;
         private String destination;

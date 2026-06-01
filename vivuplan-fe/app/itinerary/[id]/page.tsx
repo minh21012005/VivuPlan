@@ -29,6 +29,8 @@ import {
   Calendar,
   Camera,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   ChevronDown,
   ChevronUp,
@@ -282,6 +284,7 @@ export default function ItineraryPage() {
   const { destinations, loading: destinationsLoading } = useDestinations();
   const [trip, setTrip] = useState<TripResponse | null>(null);
   const [activeDay, setActiveDay] = useState(0);
+  const dayTabsRef = useRef<HTMLDivElement | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [redirectingForbidden, setRedirectingForbidden] = useState(false);
@@ -295,6 +298,7 @@ export default function ItineraryPage() {
   const [activityError, setActivityError] = useState("");
   const [regenerateOpen, setRegenerateOpen] = useState(false);
   const [regeneratePreview, setRegeneratePreview] = useState<RegenerateDayPreviewResponse | null>(null);
+  const [regeneratePreviewError, setRegeneratePreviewError] = useState("");
   const [selectedRegenerateIndexes, setSelectedRegenerateIndexes] = useState<number[]>([]);
   const [regeneratingDay, setRegeneratingDay] = useState(false);
   const [applyingRegeneration, setApplyingRegeneration] = useState(false);
@@ -449,6 +453,15 @@ export default function ItineraryPage() {
   const dayPlaceCount = dayActivities.filter((activity) => activity.type !== "TRANSPORT").length;
   const dayTimeRange = getDayTimeRange(dayActivities);
   const dayDirectionsUrl = buildDayDirectionsUrl(dayActivities, trip?.destination);
+  const showDayScrollControls = (trip?.schedule?.length ?? 0) > 5;
+  const scrollDayTabs = (direction: "left" | "right") => {
+    const container = dayTabsRef.current;
+    if (!container) return;
+    container.scrollBy({
+      left: direction === "left" ? -220 : 220,
+      behavior: "smooth",
+    });
+  };
   const budget = trip?.budget;
 
   const targetBudget =
@@ -511,6 +524,7 @@ export default function ItineraryPage() {
     if (!trip || !day) return;
     setRegeneratingDay(true);
     setRegeneratePreview(null);
+    setRegeneratePreviewError("");
     setSelectedRegenerateIndexes([]);
     try {
       const preview = await tripApi.previewRegenerateDay(trip.id, day.day, request);
@@ -524,9 +538,9 @@ export default function ItineraryPage() {
     } catch (e) {
       if (e instanceof ApiError && e.status === 402) {
         setPurchaseOpen(true);
-        showToast("Bạn đã hết lượt chỉnh ngày bằng AI. Mua thêm lượt để tiếp tục nhé.", "info", 7000);
+        setRegeneratePreviewError("Bạn đã hết lượt chỉnh ngày bằng AI. Mua thêm lượt để tiếp tục nhé.");
       } else {
-        showToast(e instanceof Error ? e.message : "Không thể tạo phương án mới cho ngày này", "error", 6000);
+        setRegeneratePreviewError(e instanceof Error ? e.message : "Không thể tạo phương án mới cho ngày này");
       }
     } finally {
       setRegeneratingDay(false);
@@ -536,6 +550,7 @@ export default function ItineraryPage() {
   const applyRegeneratedDay = async () => {
     if (!trip || !regeneratePreview) return;
     setApplyingRegeneration(true);
+    setRegeneratePreviewError("");
     try {
       const updated = await tripApi.applyRegenerateDay(
         trip.id,
@@ -549,12 +564,12 @@ export default function ItineraryPage() {
       setExpanded(null);
       setRegenerateOpen(false);
       setRegeneratePreview(null);
+      setRegeneratePreviewError("");
       setSelectedRegenerateIndexes([]);
       showToast("Đã áp dụng thay đổi cho ngày thành công!", "success", 3000);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Không thể áp dụng phương án mới";
-      // Use toast for the error message
-      showToast(message, "error", 6000);
+      setRegeneratePreviewError(message);
     } finally {
       setApplyingRegeneration(false);
     }
@@ -809,7 +824,18 @@ export default function ItineraryPage() {
           <section>
 
             <div className="itinerary-day-toolbar">
-              <div style={{ display: "flex", gap: 8, overflowX: "auto", minWidth: 0 }} className="no-scrollbar">
+              <div className="itinerary-day-tabs-wrap">
+                {showDayScrollControls && (
+                  <button
+                    type="button"
+                    className="itinerary-day-scroll-button"
+                    onClick={() => scrollDayTabs("left")}
+                    aria-label="Xem các ngày trước"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                )}
+                <div ref={dayTabsRef} className="itinerary-day-tabs no-scrollbar">
                 {trip.schedule?.map((item, index) => {
                   const dw = getByDayIndex(item.day - 1, trip.startDate);
                   const weatherSummary = dw ? summarizeItineraryDayWeather(dw, item.activities) : null;
@@ -835,6 +861,17 @@ export default function ItineraryPage() {
                     </button>
                   );
                 })}
+                </div>
+                {showDayScrollControls && (
+                  <button
+                    type="button"
+                    className="itinerary-day-scroll-button"
+                    onClick={() => scrollDayTabs("right")}
+                    aria-label="Xem các ngày sau"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                )}
               </div>
               <Button variant="primary" size="sm" onClick={() => setEditor({ mode: "add", dayNumber: day.day })}>
                 <Plus size={13} /> Thêm hoạt động
@@ -847,6 +884,7 @@ export default function ItineraryPage() {
                   <h2>{day.title}</h2>
                   <div className="itinerary-day-actions">
                     <Button type="button" variant="secondary" size="sm" onClick={() => {
+                      setRegeneratePreviewError("");
                       setRegenerateOpen(true);
                     }}>
                       <Sparkles size={13} /> Tạo lại ngày
@@ -1010,17 +1048,20 @@ export default function ItineraryPage() {
         <RegenerateDayModal
           day={day}
           preview={regeneratePreview}
+          error={regeneratePreviewError}
           loading={regeneratingDay}
           applying={applyingRegeneration}
           selectedIndexes={selectedRegenerateIndexes}
           onSelectedIndexesChange={setSelectedRegenerateIndexes}
           editCredits={wallet?.editCredits}
+          onClearError={() => setRegeneratePreviewError("")}
           onPreview={previewRegenerateDay}
           onApply={applyRegeneratedDay}
           onCancel={() => {
             if (regeneratingDay || applyingRegeneration) return;
             setRegenerateOpen(false);
             setRegeneratePreview(null);
+            setRegeneratePreviewError("");
             setSelectedRegenerateIndexes([]);
           }}
         />
@@ -1091,10 +1132,12 @@ function findActivityTimeConflicts(activities: ActivityResponse[]) {
 function RegenerateDayModal({
   day,
   preview,
+  error,
   loading,
   applying,
   selectedIndexes,
   editCredits,
+  onClearError,
   onSelectedIndexesChange,
   onPreview,
   onApply,
@@ -1102,10 +1145,12 @@ function RegenerateDayModal({
 }: {
   day: NonNullable<TripResponse["schedule"]>[number];
   preview: RegenerateDayPreviewResponse | null;
+  error: string;
   loading: boolean;
   applying: boolean;
   selectedIndexes: number[];
   editCredits?: number;
+  onClearError: () => void;
   onSelectedIndexesChange: (indexes: number[]) => void;
   onPreview: (request: RegenerateDayRequest) => Promise<void>;
   onApply: () => Promise<void>;
@@ -1173,6 +1218,7 @@ function RegenerateDayModal({
       return;
     }
     setLocalError("");
+    onClearError();
     void onPreview({ intent: "REGENERATE", instruction: trimmedInstruction });
   };
 
@@ -1216,6 +1262,7 @@ function RegenerateDayModal({
                 onChange={(event) => {
                   setInstruction(event.target.value);
                   if (localError) setLocalError("");
+                  if (error) onClearError();
                 }}
                 placeholder="VD: Tôi muốn ngày này tiết kiệm hơn, thêm hải sản, bớt đi bộ hoặc đổi quán ăn tối."
                 disabled={loading || applying}
@@ -1234,6 +1281,7 @@ function RegenerateDayModal({
             )}
 
             {localError && <div className="form-error">{localError}</div>}
+            {error && !localError && <div className="form-error">{error}</div>}
 
             {loading && (
               <div className="regenerate-generation-status" role="status" aria-live="polite">
