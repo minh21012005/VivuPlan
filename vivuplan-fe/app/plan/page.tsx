@@ -1068,12 +1068,6 @@ function PlanContent() {
                           {isExpanded && <p>{suggestion.styleNote}</p>}
                         </div>
                       </dl>
-                      {isExpanded && (
-                        <div className="destination-suggestion-reason">
-                          <span>Vì sao phù hợp</span>
-                          <p>{suggestion.reason}</p>
-                        </div>
-                      )}
                       <button
                         type="button"
                         className="destination-suggestion-detail-toggle"
@@ -1084,9 +1078,14 @@ function PlanContent() {
                             : [...prev, suggestionKey]
                         ))}
                       >
-                        {isExpanded ? "Thu gọn" : "Xem lý do"}
+                        {isExpanded ? "Ẩn chi tiết" : "Chi tiết"}
                         <ChevronDown size={15} aria-hidden="true" />
                       </button>
+                      {isExpanded && (
+                        <div className="destination-suggestion-reason">
+                          <p>{suggestion.reason}</p>
+                        </div>
+                      )}
                       <button
                         type="button"
                         className="destination-suggestion-select-label"
