@@ -37,7 +37,7 @@ public class DestinationSuggestionService {
     private static final int MAX_CACHE_ENTRIES = 300;
     private static final int MAX_DESTINATION_NAME_LENGTH = 80;
     private static final int MAX_REASON_LENGTH = 180;
-    private static final int MAX_FIT_NOTE_LENGTH = 120;
+    private static final int MAX_FIT_NOTE_LENGTH = 150;
     private static final Set<String> OVERALL_FITS = Set.of("Phù hợp nhất", "Rất phù hợp", "Đáng cân nhắc");
     private static final Set<String> BUDGET_DURATION_FITS = Set.of("Phù hợp", "Khá phù hợp", "Cần cân nhắc");
     private static final Set<String> STYLE_FITS = Set.of("Rất hợp", "Phù hợp", "Khá phù hợp");

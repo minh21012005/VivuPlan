@@ -22,7 +22,7 @@ public class AiService {
     private static final int PROMPT_TOKEN_WARN_THRESHOLD = 12_000;
     private static final int MAX_SUGGESTION_NAME_LENGTH = 80;
     private static final int MAX_SUGGESTION_REASON_LENGTH = 180;
-    private static final int MAX_SUGGESTION_NOTE_LENGTH = 120;
+    private static final int MAX_SUGGESTION_NOTE_LENGTH = 150;
     private static final Set<String> SUGGESTION_OVERALL_LABELS = Set.of("Phù hợp nhất", "Rất phù hợp",
             "Đáng cân nhắc");
     private static final Set<String> SUGGESTION_PRACTICAL_LABELS = Set.of("Phù hợp", "Khá phù hợp",
@@ -312,7 +312,7 @@ public class AiService {
                         - If Must visit / preferences mention a region, beach, mountain, food, culture, kids, seniors, or low-walking need, reflect that in the suggestions.
                         - Prefer destinations where a practical itinerary can be generated immediately after the user chooses one.
                         - Keep reason under 140 Vietnamese characters.
-                        - Keep overallNote under 105 Vietnamese characters.
+                        - Keep overallNote under 120 Vietnamese characters.
                         - Keep each detailed note field under 120 Vietnamese characters: budgetNote, durationNote, travelNote, styleNote.
                         - Notes must sound natural, warm, travel-oriented, practical, non-technical, and not repetitive with reason.
 
@@ -344,7 +344,7 @@ public class AiService {
                               "region": "Miền Bắc | Miền Trung | Miền Nam | Việt Nam",
                               "reason": "One concise Vietnamese sentence under 140 characters explaining why it fits this user.",
                               "overallFit": "Phù hợp nhất | Rất phù hợp | Đáng cân nhắc",
-                              "overallNote": "Natural Vietnamese travel note summarizing the strongest reason to choose it, max 105 characters",
+                              "overallNote": "Natural Vietnamese travel note summarizing the strongest reason to choose it, max 120 characters",
                               "budgetFit": "Phù hợp | Khá phù hợp | Cần cân nhắc",
                               "budgetNote": "Natural Vietnamese note about budget fit, max 120 characters",
                               "durationFit": "Phù hợp | Khá phù hợp | Cần cân nhắc",
@@ -363,7 +363,7 @@ public class AiService {
                         - name and reason are required.
                         - overallFit must be exactly one of: Phù hợp nhất, Rất phù hợp, Đáng cân nhắc.
                         - overallNote is required and must summarize the overall tradeoff in user-friendly Vietnamese.
-                        - overallNote must be natural, travel-oriented, and under 105 Vietnamese characters.
+                        - overallNote must be natural, travel-oriented, and under 120 Vietnamese characters.
                         - At most one suggestion may use overallFit = Phù hợp nhất.
                         - A suggestion with two or more "Cần cân nhắc" practical fit fields must not use overallFit = Phù hợp nhất.
                         - budgetFit must be exactly one of: Phù hợp, Khá phù hợp, Cần cân nhắc.
@@ -406,8 +406,7 @@ public class AiService {
 
                         Your previous response was invalid because: %s
                         Retry now with valid JSON only. No markdown. No comments. Exactly 3 suggestions.
-                        Keep overallNote under 105 Vietnamese characters.
-                        Keep budgetNote, durationNote, travelNote, and styleNote under 120 Vietnamese characters each.
+                        Keep overallNote, budgetNote, durationNote, travelNote, and styleNote under 120 Vietnamese characters each.
                         Keep the wording natural, warm, and travel-oriented, not dry or technical.
                         """,
                 reason);
