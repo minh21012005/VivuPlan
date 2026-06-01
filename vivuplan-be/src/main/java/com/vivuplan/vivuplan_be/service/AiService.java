@@ -60,10 +60,10 @@ public class AiService {
     @Value("${app.ai.gemini.regenerate-thinking-budget:6144}")
     private int geminiRegenerateThinkingBudget;
 
-    @Value("${app.ai.gemini.suggestion-max-output-tokens:8192}")
+    @Value("${app.ai.gemini.suggestion-max-output-tokens:4096}")
     private int geminiSuggestionMaxOutputTokens;
 
-    @Value("${app.ai.gemini.suggestion-thinking-budget:1024}")
+    @Value("${app.ai.gemini.suggestion-thinking-budget:1536}")
     private int geminiSuggestionThinkingBudget;
 
     private final ObjectMapper objectMapper;

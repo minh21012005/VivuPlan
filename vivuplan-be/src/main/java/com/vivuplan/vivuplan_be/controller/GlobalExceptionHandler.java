@@ -44,12 +44,17 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, String>> handleRuntime(RuntimeException e) {
-        log.error("Runtime error: {}", e.getMessage());
-        HttpStatus status = e.getMessage().contains("không có quyền") || e.getMessage().contains("quyền")
-                ? HttpStatus.FORBIDDEN : HttpStatus.INTERNAL_SERVER_ERROR;
-        if (e.getMessage().contains("không tồn tại") || e.getMessage().contains("Không tìm thấy"))
-            status = HttpStatus.NOT_FOUND;
-        return ResponseEntity.status(status).body(Map.of("error", e.getMessage()));
+        String message = e.getMessage() == null ? "" : e.getMessage();
+        log.error("Runtime error: {}", message, e);
+
+        if (message.contains("không có quyền") || message.contains("quyền")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", message));
+        }
+        if (message.contains("không tồn tại") || message.contains("Không tìm thấy")) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", message));
+        }
+
+        return ResponseEntity.internalServerError().body(Map.of("error", "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau."));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
