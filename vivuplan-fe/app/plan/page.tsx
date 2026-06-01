@@ -30,6 +30,7 @@ import {
   Wallet,
   Waves,
   CheckCircle2,
+  ChevronDown,
   X,
   Zap,
 } from "lucide-react";
@@ -252,6 +253,7 @@ function PlanContent() {
   const [generating, setGenerating] = useState(false);
   const [suggestingDestinations, setSuggestingDestinations] = useState(false);
   const [destinationSuggestions, setDestinationSuggestions] = useState<DestinationSuggestion[]>([]);
+  const [expandedDestinationSuggestionKeys, setExpandedDestinationSuggestionKeys] = useState<string[]>([]);
   const [destinationSuggestedByAi, setDestinationSuggestedByAi] = useState(false);
   const [destinationSuggestionModalOpen, setDestinationSuggestionModalOpen] = useState(false);
   const [destinationSuggestionError, setDestinationSuggestionError] = useState("");
@@ -346,6 +348,7 @@ function PlanContent() {
   useEffect(() => {
     setDestinationSuggestedByAi(false);
     setDestinationSuggestions([]);
+    setExpandedDestinationSuggestionKeys([]);
     setDestinationSuggestionError("");
     setDestinationSuggestionModalOpen(false);
     destinationSuggestionRequestId.current += 1;
@@ -479,6 +482,7 @@ function PlanContent() {
         return;
       }
       setDestinationSuggestions(suggestions);
+      setExpandedDestinationSuggestionKeys([]);
       setDestinationSuggestedByAi(false);
     } catch (e) {
       if (destinationSuggestionRequestId.current !== requestId) return;
@@ -1027,50 +1031,72 @@ function PlanContent() {
               </div>
             ) : (
               <div className="destination-suggestion-modal-grid">
-                {destinationSuggestions.map((suggestion) => (
-                  <button
-                    key={`${suggestion.name}-${suggestion.region}`}
-                    type="button"
-                    className="destination-suggestion-modal-card"
-                    onClick={() => selectDestinationSuggestion(suggestion)}
-                  >
-                    <div className="destination-suggestion-card-top">
-                      <span>{suggestion.region || "Điểm đến"}</span>
-                      <span className="destination-suggestion-overall-badge">{suggestion.overallFit}</span>
-                    </div>
-                    <h4>{suggestion.name}</h4>
-                    <p className="destination-suggestion-overall-note">{suggestion.overallNote}</p>
-                    <div className="destination-suggestion-reason">
-                      <span>Vì sao phù hợp</span>
-                      <p>{suggestion.reason}</p>
-                    </div>
-                    <dl className="destination-suggestion-fit-list">
-                      <div>
-                        <dt>Chi phí</dt>
-                        <dd>{suggestion.budgetFit}</dd>
-                        <p>{suggestion.budgetNote}</p>
+                {destinationSuggestions.map((suggestion) => {
+                  const suggestionKey = `${suggestion.name}-${suggestion.region}`;
+                  const isExpanded = expandedDestinationSuggestionKeys.includes(suggestionKey);
+
+                  return (
+                    <article
+                      key={suggestionKey}
+                      className={`destination-suggestion-modal-card${isExpanded ? " is-expanded" : ""}`}
+                    >
+                      <div className="destination-suggestion-card-top">
+                        <span>{suggestion.region || "Điểm đến"}</span>
+                        <span className="destination-suggestion-overall-badge">{suggestion.overallFit}</span>
                       </div>
-                      <div>
-                        <dt>Số ngày</dt>
-                        <dd>{suggestion.durationFit}</dd>
-                        <p>{suggestion.durationNote}</p>
-                      </div>
-                      <div>
-                        <dt>Đường đi</dt>
-                        <dd>{suggestion.travelFit}</dd>
-                        <p>{suggestion.travelNote}</p>
-                      </div>
-                      <div>
-                        <dt>Sở thích</dt>
-                        <dd>{suggestion.styleFit}</dd>
-                        <p>{suggestion.styleNote}</p>
-                      </div>
-                    </dl>
-                    <span className="destination-suggestion-select-label">
-                      <CheckCircle2 size={15} /> Chọn điểm này
-                    </span>
-                  </button>
-                ))}
+                      <h4>{suggestion.name}</h4>
+                      <p className="destination-suggestion-overall-note">{suggestion.overallNote}</p>
+                      <dl className="destination-suggestion-fit-list">
+                        <div>
+                          <dt>Chi phí</dt>
+                          <dd>{suggestion.budgetFit}</dd>
+                          {isExpanded && <p>{suggestion.budgetNote}</p>}
+                        </div>
+                        <div>
+                          <dt>Số ngày</dt>
+                          <dd>{suggestion.durationFit}</dd>
+                          {isExpanded && <p>{suggestion.durationNote}</p>}
+                        </div>
+                        <div>
+                          <dt>Đường đi</dt>
+                          <dd>{suggestion.travelFit}</dd>
+                          {isExpanded && <p>{suggestion.travelNote}</p>}
+                        </div>
+                        <div>
+                          <dt>Sở thích</dt>
+                          <dd>{suggestion.styleFit}</dd>
+                          {isExpanded && <p>{suggestion.styleNote}</p>}
+                        </div>
+                      </dl>
+                      {isExpanded && (
+                        <div className="destination-suggestion-reason">
+                          <span>Vì sao phù hợp</span>
+                          <p>{suggestion.reason}</p>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        className="destination-suggestion-detail-toggle"
+                        aria-expanded={isExpanded}
+                        onClick={() => setExpandedDestinationSuggestionKeys((prev) => (
+                          isExpanded
+                            ? prev.filter((key) => key !== suggestionKey)
+                            : [...prev, suggestionKey]
+                        ))}
+                      >
+                        {isExpanded ? "Thu gọn" : "Xem lý do"}
+                        <ChevronDown size={15} aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        className="destination-suggestion-select-label"
+                        onClick={() => selectDestinationSuggestion(suggestion)}
+                      >
+                        <CheckCircle2 size={15} /> Chọn điểm này
+                      </button>
+                    </article>
+                  );
+                })}
               </div>
             )}
           </div>

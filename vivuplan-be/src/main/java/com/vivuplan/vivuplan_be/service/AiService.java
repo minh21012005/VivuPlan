@@ -312,7 +312,9 @@ public class AiService {
                         - If Must visit / preferences mention a region, beach, mountain, food, culture, kids, seniors, or low-walking need, reflect that in the suggestions.
                         - Prefer destinations where a practical itinerary can be generated immediately after the user chooses one.
                         - Keep reason under 140 Vietnamese characters.
-                        - Keep each fit note under 120 Vietnamese characters, practical, non-technical, and not repetitive with reason.
+                        - Keep overallNote under 120 Vietnamese characters.
+                        - Keep each detailed note field under 120 Vietnamese characters: budgetNote, durationNote, travelNote, styleNote.
+                        - Notes must sound natural, warm, travel-oriented, practical, non-technical, and not repetitive with reason.
 
                         Trip context:
                         - Departure: %s
@@ -342,15 +344,15 @@ public class AiService {
                               "region": "Miền Bắc | Miền Trung | Miền Nam | Việt Nam",
                               "reason": "One concise Vietnamese sentence under 140 characters explaining why it fits this user.",
                               "overallFit": "Phù hợp nhất | Rất phù hợp | Đáng cân nhắc",
-                              "overallNote": "Short Vietnamese note summarizing the strongest reason to choose it, max 120 characters",
+                              "overallNote": "Natural Vietnamese travel note summarizing the strongest reason to choose it, max 120 characters",
                               "budgetFit": "Phù hợp | Khá phù hợp | Cần cân nhắc",
-                              "budgetNote": "Short Vietnamese note about budget fit, max 120 characters",
+                              "budgetNote": "Natural Vietnamese note about budget fit, max 120 characters",
                               "durationFit": "Phù hợp | Khá phù hợp | Cần cân nhắc",
-                              "durationNote": "Short Vietnamese note about selected trip length, max 120 characters",
+                              "durationNote": "Natural Vietnamese note about selected trip length, max 120 characters",
                               "travelFit": "Phù hợp | Khá phù hợp | Cần cân nhắc",
-                              "travelNote": "Short Vietnamese note about route convenience, travel time and fatigue, max 120 characters",
+                              "travelNote": "Natural Vietnamese note about route convenience, travel time and fatigue, max 120 characters",
                               "styleFit": "Rất hợp | Phù hợp | Khá phù hợp",
-                              "styleNote": "Short Vietnamese note about style/preference fit, max 120 characters",
+                              "styleNote": "Natural Vietnamese note about style/preference fit, max 120 characters",
                               "fromCatalog": true
                             }
                           ]
@@ -361,16 +363,17 @@ public class AiService {
                         - name and reason are required.
                         - overallFit must be exactly one of: Phù hợp nhất, Rất phù hợp, Đáng cân nhắc.
                         - overallNote is required and must summarize the overall tradeoff in user-friendly Vietnamese.
+                        - overallNote must be natural, travel-oriented, and under 120 Vietnamese characters.
                         - At most one suggestion may use overallFit = Phù hợp nhất.
                         - A suggestion with two or more "Cần cân nhắc" practical fit fields must not use overallFit = Phù hợp nhất.
                         - budgetFit must be exactly one of: Phù hợp, Khá phù hợp, Cần cân nhắc.
-                        - budgetNote is required and must explain budget fit in user-friendly Vietnamese.
+                        - budgetNote is required, under 120 Vietnamese characters, and must explain budget fit in user-friendly Vietnamese.
                         - durationFit must be exactly one of: Phù hợp, Khá phù hợp, Cần cân nhắc and must evaluate the selected number of days, not travel distance.
-                        - durationNote is required and must explain fit with the selected number of days.
+                        - durationNote is required, under 120 Vietnamese characters, and must explain fit with the selected number of days.
                         - travelFit must be exactly one of: Phù hợp, Khá phù hợp, Cần cân nhắc and must evaluate route convenience from departure point with outbound transport.
-                        - travelNote is required and must mention practical route convenience, approximate travel time/fatigue, or safety.
+                        - travelNote is required, under 120 Vietnamese characters, and must mention practical route convenience, approximate travel time/fatigue, or safety.
                         - styleFit must be exactly one of: Rất hợp, Phù hợp, Khá phù hợp.
-                        - styleNote is required and must explain fit with preferences/group/style.
+                        - styleNote is required, under 120 Vietnamese characters, and must explain fit with preferences/group/style.
                         - fromCatalog must be true only when the destination appears in the catalog above.
                         - Return JSON only. No markdown. No comments.
                         """,
@@ -403,6 +406,8 @@ public class AiService {
 
                         Your previous response was invalid because: %s
                         Retry now with valid JSON only. No markdown. No comments. Exactly 3 suggestions.
+                        Keep overallNote, budgetNote, durationNote, travelNote, and styleNote under 120 Vietnamese characters each.
+                        Keep the wording natural, warm, and travel-oriented, not dry or technical.
                         """,
                 reason);
     }

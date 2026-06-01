@@ -2522,7 +2522,6 @@ textarea.input.textarea-compact {
   padding: 18px;
   color: var(--text);
   text-align: left;
-  cursor: pointer;
   transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
@@ -2596,17 +2595,14 @@ textarea.input.textarea-compact {
   color: var(--text-2);
   font-size: 13px;
   line-height: 1.55;
-  min-height: 61px;
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
 }
 
 .destination-suggestion-reason {
   display: grid;
   gap: 5px;
-  min-height: 86px;
+  min-height: 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--border);
   align-content: start;
 }
 
@@ -2639,7 +2635,7 @@ textarea.input.textarea-compact {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
   gap: 4px 10px;
-  padding: 10px;
+  padding: 9px 10px;
   border-radius: var(--r-md);
   background: var(--surface-2);
 }
@@ -2673,6 +2669,39 @@ textarea.input.textarea-compact {
   line-height: 1.45;
 }
 
+.destination-suggestion-detail-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.destination-suggestion-detail-toggle:hover,
+.destination-suggestion-detail-toggle:focus-visible {
+  background: var(--surface-2);
+  border-color: var(--primary-muted);
+  color: var(--primary-hover);
+  outline: none;
+}
+
+.destination-suggestion-detail-toggle svg {
+  transition: transform 0.16s ease;
+}
+
+.destination-suggestion-modal-card.is-expanded .destination-suggestion-detail-toggle svg {
+  transform: rotate(180deg);
+}
+
 .destination-suggestion-select-label {
   display: inline-flex;
   align-items: center;
@@ -2680,11 +2709,23 @@ textarea.input.textarea-compact {
   gap: 7px;
   width: 100%;
   padding: 11px 12px;
+  border: 1px solid rgba(15, 159, 156, 0.16);
   border-radius: var(--r-md);
   background: var(--primary-light);
   color: var(--primary-hover);
   font-size: 13px;
   font-weight: 850;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.destination-suggestion-select-label:hover,
+.destination-suggestion-select-label:focus-visible {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+  box-shadow: 0 10px 22px rgba(15, 159, 156, 0.18);
+  outline: none;
 }
 
 .destination-suggestion-modal-error {
