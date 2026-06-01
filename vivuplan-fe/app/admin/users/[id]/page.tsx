@@ -44,6 +44,15 @@ function formatCurrency(value?: number | null) {
   }).format(value ?? 0);
 }
 
+function packageLabel(packageCode?: string) {
+  const labels: Record<string, string> = {
+    PLAN_BASIC: "Gói cơ bản",
+    PLAN_STANDARD: "Gói tiêu chuẩn",
+    PLAN_SAVING: "Gói tiết kiệm",
+  };
+  return packageCode ? labels[packageCode] ?? packageCode : "-";
+}
+
 function statusLabel(status?: string) {
   const labels: Record<string, string> = {
     PENDING: "Đang chờ",
@@ -207,7 +216,7 @@ export default function AdminUserDetailPage() {
                                 <strong>{order.orderCode}</strong>
                                 <span>#{order.id}</span>
                               </td>
-                              <td>{order.packageCode}</td>
+                              <td>{packageLabel(order.packageCode)}</td>
                               <td>
                                 <strong>{formatCurrency(order.amount)}</strong>
                                 <span>{order.planCredits} tạo · {order.editCredits} chỉnh</span>

@@ -266,7 +266,7 @@ class BillingServiceTest {
         return PaymentOrder.builder()
                 .orderCode("VPTEST1234")
                 .user(user)
-                .packageCode("PLAN_1")
+                .packageCode("PLAN_BASIC")
                 .amount(10_000L)
                 .planCredits(2L)
                 .editCredits(3L)

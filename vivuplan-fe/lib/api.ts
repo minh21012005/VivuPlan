@@ -348,7 +348,7 @@ export interface ForgotPasswordOtpResponse {
 }
 
 export interface BillingPackage {
-  code: "PLAN_1" | "PLAN_3" | "PLAN_10" | string;
+  code: "PLAN_BASIC" | "PLAN_STANDARD" | "PLAN_SAVING" | string;
   name: string;
   description: string;
   amount: number;

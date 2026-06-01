@@ -18,9 +18,9 @@ interface PurchaseModalProps {
 }
 
 const fallbackPackages: BillingPackage[] = [
-  { code: "PLAN_1", name: "Cơ bản", description: "2 lịch trình mới + 3 lần chỉnh ngày", amount: 10_000, planCredits: 2, editCredits: 3 },
-  { code: "PLAN_3", name: "Tiêu chuẩn", description: "5 lịch trình mới + 10 lần chỉnh ngày", amount: 19_000, planCredits: 5, editCredits: 10, highlighted: true },
-  { code: "PLAN_10", name: "Tiết kiệm", description: "12 lịch trình mới + 20 lần chỉnh ngày", amount: 39_000, planCredits: 12, editCredits: 20 },
+  { code: "PLAN_BASIC", name: "Cơ bản", description: "2 lịch trình mới + 3 lần chỉnh ngày", amount: 10_000, planCredits: 2, editCredits: 3 },
+  { code: "PLAN_STANDARD", name: "Tiêu chuẩn", description: "5 lịch trình mới + 10 lần chỉnh ngày", amount: 19_000, planCredits: 5, editCredits: 10, highlighted: true },
+  { code: "PLAN_SAVING", name: "Tiết kiệm", description: "12 lịch trình mới + 20 lần chỉnh ngày", amount: 39_000, planCredits: 12, editCredits: 20 },
 ];
 
 function fmtVnd(value: number) {
@@ -40,15 +40,15 @@ function fmtCountdown(totalSeconds: number) {
 
 function packageCopy(item: BillingPackage) {
   const copy: Record<string, { name: string; description: string }> = {
-    PLAN_1: {
+    PLAN_BASIC: {
       name: "Cơ bản",
       description: "2 lịch trình mới, kèm 3 lần chỉnh ngày.",
     },
-    PLAN_3: {
+    PLAN_STANDARD: {
       name: "Tiêu chuẩn",
       description: "5 lịch trình mới, kèm 10 lần chỉnh ngày.",
     },
-    PLAN_10: {
+    PLAN_SAVING: {
       name: "Tiết kiệm",
       description: "12 lịch trình mới, kèm 20 lần chỉnh ngày.",
     },
@@ -72,7 +72,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
   const { isLoggedIn, loading: authLoading } = useAuth();
   const { wallet, refreshWallet } = useBilling();
   const [packages, setPackages] = useState<BillingPackage[]>(fallbackPackages);
-  const [selectedCode, setSelectedCode] = useState(initialPackageCode ?? "PLAN_3");
+  const [selectedCode, setSelectedCode] = useState(initialPackageCode ?? "PLAN_STANDARD");
   const [order, setOrder] = useState<BillingOrder | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -80,7 +80,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
   const [pickerManuallyOpened, setPickerManuallyOpened] = useState(false);
   const autoCreatedCodeRef = useRef<string | null>(null);
 
-  const recommended = useMemo(() => new Set(["PLAN_1", "PLAN_3", "PLAN_10"]), []);
+  const recommended = useMemo(() => new Set(["PLAN_BASIC", "PLAN_STANDARD", "PLAN_SAVING"]), []);
 
   const visiblePackages = useMemo(() => {
     const list = packages.length ? packages : fallbackPackages;
@@ -118,7 +118,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
     if (!open) return;
     setOrder(null);
     setMessage("");
-    setSelectedCode(initialPackageCode ?? "PLAN_3");
+    setSelectedCode(initialPackageCode ?? "PLAN_STANDARD");
     setPickerManuallyOpened(false);
     billingApi.packages()
       .then(setPackages)

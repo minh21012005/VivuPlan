@@ -55,6 +55,15 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+function packageLabel(packageCode?: string) {
+  const labels: Record<string, string> = {
+    PLAN_BASIC: "Gói cơ bản",
+    PLAN_STANDARD: "Gói tiêu chuẩn",
+    PLAN_SAVING: "Gói tiết kiệm",
+  };
+  return packageCode ? labels[packageCode] ?? packageCode : "-";
+}
+
 function isAdmin(user: { role?: string; roles?: string[] } | null | undefined) {
   return user?.role === "ADMIN" || user?.roles?.includes("ADMIN");
 }
@@ -160,7 +169,7 @@ function TransactionDrawer({
             <dl className="admin-drawer-list">
               <div>
                 <dt>Gói</dt>
-                <dd>{transaction.packageCode}</dd>
+                <dd>{packageLabel(transaction.packageCode)}</dd>
               </div>
               <div>
                 <dt>Số tiền cần thanh toán</dt>

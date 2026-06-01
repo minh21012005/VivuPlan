@@ -11,9 +11,9 @@ import { useBilling } from "@/hooks/useBilling";
 import { Check, CreditCard, Sparkles, Zap } from "lucide-react";
 
 const fallbackPackages: BillingPackage[] = [
-  { code: "PLAN_1", name: "Gói cơ bản", description: "2 lượt tạo lịch trình + 3 lượt chỉnh ngày bằng AI", amount: 10_000, planCredits: 2, editCredits: 3 },
-  { code: "PLAN_3", name: "Gói tiêu chuẩn", description: "5 lượt tạo lịch trình + 10 lượt chỉnh ngày bằng AI", amount: 19_000, planCredits: 5, editCredits: 10, highlighted: true },
-  { code: "PLAN_10", name: "Gói tiết kiệm", description: "12 lượt tạo lịch trình + 20 lượt chỉnh ngày bằng AI", amount: 39_000, planCredits: 12, editCredits: 20 },
+  { code: "PLAN_BASIC", name: "Gói cơ bản", description: "2 lượt tạo lịch trình + 3 lượt chỉnh ngày bằng AI", amount: 10_000, planCredits: 2, editCredits: 3 },
+  { code: "PLAN_STANDARD", name: "Gói tiêu chuẩn", description: "5 lượt tạo lịch trình + 10 lượt chỉnh ngày bằng AI", amount: 19_000, planCredits: 5, editCredits: 10, highlighted: true },
+  { code: "PLAN_SAVING", name: "Gói tiết kiệm", description: "12 lượt tạo lịch trình + 20 lượt chỉnh ngày bằng AI", amount: 39_000, planCredits: 12, editCredits: 20 },
 ];
 
 function fmtVnd(value: number) {
@@ -22,17 +22,17 @@ function fmtVnd(value: number) {
 
 function packageCopy(item: BillingPackage) {
   const copy: Record<string, { name: string; eyebrow: string; bestFor: string }> = {
-    PLAN_1: {
+    PLAN_BASIC: {
       name: "Cơ bản",
       eyebrow: "Linh hoạt",
       bestFor: "Phù hợp khi bạn muốn lên vài phương án đầu tiên.",
     },
-    PLAN_3: {
+    PLAN_STANDARD: {
       name: "Tiêu chuẩn",
       eyebrow: "Phổ biến",
       bestFor: "Dành cho nhiều chuyến ngắn hoặc nhóm cần thêm lựa chọn.",
     },
-    PLAN_10: {
+    PLAN_SAVING: {
       name: "Tiết kiệm",
       eyebrow: "Giá tốt nhất",
       bestFor: "Tối ưu cho người thường xuyên lên kế hoạch du lịch.",
