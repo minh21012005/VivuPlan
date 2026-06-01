@@ -1077,7 +1077,7 @@ function PlanContent() {
                           {showDestinationSuggestionDetails && <p>{suggestion.travelNote}</p>}
                         </div>
                         <div>
-                          <dt>Sở thích</dt>
+                          <dt>Phong cách</dt>
                           <dd>{suggestion.styleFit}</dd>
                           {showDestinationSuggestionDetails && <p>{suggestion.styleNote}</p>}
                         </div>
