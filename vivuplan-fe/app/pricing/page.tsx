@@ -13,7 +13,7 @@ import { Check, CreditCard, Sparkles, Zap } from "lucide-react";
 const fallbackPackages: BillingPackage[] = [
   { code: "PLAN_1", name: "Gói cơ bản", description: "2 lượt tạo lịch trình + 3 lượt chỉnh ngày bằng AI", amount: 10_000, planCredits: 2, editCredits: 3 },
   { code: "PLAN_3", name: "Gói tiêu chuẩn", description: "5 lượt tạo lịch trình + 10 lượt chỉnh ngày bằng AI", amount: 19_000, planCredits: 5, editCredits: 10, highlighted: true },
-  { code: "PLAN_10", name: "Gói tiết kiệm", description: "15 lượt tạo lịch trình + 30 lượt chỉnh ngày bằng AI", amount: 39_000, planCredits: 15, editCredits: 30 },
+  { code: "PLAN_10", name: "Gói tiết kiệm", description: "12 lượt tạo lịch trình + 20 lượt chỉnh ngày bằng AI", amount: 39_000, planCredits: 12, editCredits: 20 },
 ];
 
 function fmtVnd(value: number) {
