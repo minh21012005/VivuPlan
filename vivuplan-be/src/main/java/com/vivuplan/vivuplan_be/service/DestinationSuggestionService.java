@@ -37,6 +37,8 @@ public class DestinationSuggestionService {
     private static final int MAX_CACHE_ENTRIES = 300;
     private static final int MAX_DESTINATION_NAME_LENGTH = 80;
     private static final int MAX_REASON_LENGTH = 180;
+    private static final int MAX_FIT_NOTE_LENGTH = 120;
+    private static final Set<String> OVERALL_FITS = Set.of("Phù hợp nhất", "Rất phù hợp", "Đáng cân nhắc");
     private static final Set<String> BUDGET_DURATION_FITS = Set.of("Phù hợp", "Khá phù hợp", "Cần cân nhắc");
     private static final Set<String> STYLE_FITS = Set.of("Rất hợp", "Phù hợp", "Khá phù hợp");
 
@@ -260,28 +262,55 @@ public class DestinationSuggestionService {
 
         List<TripDto.DestinationSuggestion> cleaned = new ArrayList<>();
         Set<String> names = new HashSet<>();
+        int topFitCount = 0;
         for (TripDto.DestinationSuggestion suggestion : suggestions) {
             if (suggestion == null) {
                 continue;
             }
             String name = blankToNull(suggestion.getName());
             String reason = blankToNull(suggestion.getReason());
-            if (name == null || reason == null) {
+            String overallNote = blankToNull(suggestion.getOverallNote());
+            String budgetNote = blankToNull(suggestion.getBudgetNote());
+            String durationNote = blankToNull(suggestion.getDurationNote());
+            String travelNote = blankToNull(suggestion.getTravelNote());
+            String styleNote = blankToNull(suggestion.getStyleNote());
+            if (name == null || reason == null || overallNote == null || budgetNote == null || durationNote == null
+                    || travelNote == null || styleNote == null) {
                 continue;
             }
-            if (name.length() > MAX_DESTINATION_NAME_LENGTH || reason.length() > MAX_REASON_LENGTH) {
+            if (name.length() > MAX_DESTINATION_NAME_LENGTH
+                    || reason.length() > MAX_REASON_LENGTH
+                    || overallNote.length() > MAX_FIT_NOTE_LENGTH
+                    || budgetNote.length() > MAX_FIT_NOTE_LENGTH
+                    || durationNote.length() > MAX_FIT_NOTE_LENGTH
+                    || travelNote.length() > MAX_FIT_NOTE_LENGTH
+                    || styleNote.length() > MAX_FIT_NOTE_LENGTH) {
                 continue;
             }
             String normalizedName = normalize(name);
-            if (!names.add(normalizedName)) {
+            if (names.contains(normalizedName)) {
                 continue;
             }
             suggestion.setName(name);
             suggestion.setReason(reason);
+            suggestion.setOverallNote(overallNote);
+            suggestion.setBudgetNote(budgetNote);
+            suggestion.setDurationNote(durationNote);
+            suggestion.setTravelNote(travelNote);
+            suggestion.setStyleNote(styleNote);
             suggestion.setRegion(defaultText(suggestion.getRegion(), "Việt Nam"));
+            suggestion.setOverallFit(validFitLabel(suggestion.getOverallFit(), OVERALL_FITS));
             suggestion.setBudgetFit(validFitLabel(suggestion.getBudgetFit(), BUDGET_DURATION_FITS));
             suggestion.setDurationFit(validFitLabel(suggestion.getDurationFit(), BUDGET_DURATION_FITS));
+            suggestion.setTravelFit(validFitLabel(suggestion.getTravelFit(), BUDGET_DURATION_FITS));
             suggestion.setStyleFit(validFitLabel(suggestion.getStyleFit(), STYLE_FITS));
+            if ("Phù hợp nhất".equals(suggestion.getOverallFit())) {
+                if (topFitCount >= 1 || practicalCautionCount(suggestion) >= 2) {
+                    continue;
+                }
+                topFitCount++;
+            }
+            names.add(normalizedName);
             suggestion.setFromCatalog(catalogNames.contains(normalizedName));
             cleaned.add(suggestion);
             if (cleaned.size() == 3) {
@@ -330,9 +359,16 @@ public class DestinationSuggestionService {
             copy.setName(suggestion.getName());
             copy.setRegion(suggestion.getRegion());
             copy.setReason(suggestion.getReason());
+            copy.setOverallFit(suggestion.getOverallFit());
+            copy.setOverallNote(suggestion.getOverallNote());
             copy.setBudgetFit(suggestion.getBudgetFit());
+            copy.setBudgetNote(suggestion.getBudgetNote());
             copy.setDurationFit(suggestion.getDurationFit());
+            copy.setDurationNote(suggestion.getDurationNote());
+            copy.setTravelFit(suggestion.getTravelFit());
+            copy.setTravelNote(suggestion.getTravelNote());
             copy.setStyleFit(suggestion.getStyleFit());
+            copy.setStyleNote(suggestion.getStyleNote());
             copy.setFromCatalog(suggestion.getFromCatalog());
             return copy;
         }).toList();
@@ -364,6 +400,14 @@ public class DestinationSuggestionService {
             throw new AiGenerationException(AI_SUGGESTION_ERROR);
         }
         return normalized;
+    }
+
+    private int practicalCautionCount(TripDto.DestinationSuggestion suggestion) {
+        int count = 0;
+        if ("Cần cân nhắc".equals(suggestion.getBudgetFit())) count++;
+        if ("Cần cân nhắc".equals(suggestion.getDurationFit())) count++;
+        if ("Cần cân nhắc".equals(suggestion.getTravelFit())) count++;
+        return count;
     }
 
     private boolean containsAny(String value, String... needles) {

@@ -1036,24 +1036,34 @@ function PlanContent() {
                   >
                     <div className="destination-suggestion-card-top">
                       <span>{suggestion.region || "Điểm đến"}</span>
+                      <span className="destination-suggestion-overall-badge">{suggestion.overallFit}</span>
                     </div>
                     <h4>{suggestion.name}</h4>
+                    <p className="destination-suggestion-overall-note">{suggestion.overallNote}</p>
                     <div className="destination-suggestion-reason">
                       <span>Vì sao phù hợp</span>
                       <p>{suggestion.reason}</p>
                     </div>
                     <dl className="destination-suggestion-fit-list">
                       <div>
-                        <dt>Ngân sách</dt>
+                        <dt>Chi phí</dt>
                         <dd>{suggestion.budgetFit}</dd>
+                        <p>{suggestion.budgetNote}</p>
                       </div>
                       <div>
-                        <dt>Thời gian</dt>
+                        <dt>Số ngày</dt>
                         <dd>{suggestion.durationFit}</dd>
+                        <p>{suggestion.durationNote}</p>
                       </div>
                       <div>
-                        <dt>Phong cách</dt>
+                        <dt>Đường đi</dt>
+                        <dd>{suggestion.travelFit}</dd>
+                        <p>{suggestion.travelNote}</p>
+                      </div>
+                      <div>
+                        <dt>Sở thích</dt>
                         <dd>{suggestion.styleFit}</dd>
+                        <p>{suggestion.styleNote}</p>
                       </div>
                     </dl>
                     <span className="destination-suggestion-select-label">

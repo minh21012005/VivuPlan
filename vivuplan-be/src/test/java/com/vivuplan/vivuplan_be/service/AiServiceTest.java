@@ -721,6 +721,192 @@ class AiServiceTest {
     }
 
     @Test
+    void destinationSuggestionParserRequiresFitNotes() throws Throwable {
+        AiService service = new AiService(new ObjectMapper());
+
+        List<TripDto.DestinationSuggestion> suggestions = parseDestinationSuggestions(service, """
+                {
+                  "suggestions": [
+                    {
+                      "name": "Tam Đảo",
+                      "region": "Miền Bắc",
+                      "reason": "Gần Hà Nội, hợp chuyến ngắn và nhịp đi nhẹ.",
+                      "overallFit": "Phù hợp nhất",
+                      "overallNote": "Cân bằng tốt giữa đường đi gần, chi phí và nhu cầu nghỉ nhẹ.",
+                      "budgetFit": "Phù hợp",
+                      "budgetNote": "Ngân sách đủ cho ăn uống và điểm tham quan chính.",
+                      "durationFit": "Phù hợp",
+                      "durationNote": "Một ngày vẫn đủ ghé các điểm nổi bật.",
+                      "travelFit": "Phù hợp",
+                      "travelNote": "Đường đi tương đối gần, hợp đi về trong ngày.",
+                      "styleFit": "Rất hợp",
+                      "styleNote": "Hợp nhu cầu nghỉ nhẹ, chụp ảnh và đổi không khí.",
+                      "fromCatalog": true
+                    },
+                    {
+                      "name": "Ba Vì",
+                      "region": "Miền Bắc",
+                      "reason": "Không quá xa, có thiên nhiên và lịch trình dễ đi.",
+                      "overallFit": "Rất phù hợp",
+                      "overallNote": "Lựa chọn gần, dễ đi và hợp lịch ngắn.",
+                      "budgetFit": "Phù hợp",
+                      "budgetNote": "Chi phí dễ kiểm soát cho chuyến ngắn.",
+                      "durationFit": "Phù hợp",
+                      "durationNote": "Một ngày đủ cho các điểm chính nếu đi sớm.",
+                      "travelFit": "Phù hợp",
+                      "travelNote": "Tuyến đi gần Hà Nội, không chiếm quá nhiều thời gian.",
+                      "styleFit": "Phù hợp",
+                      "styleNote": "Hợp nhóm thích thiên nhiên và hoạt động nhẹ.",
+                      "fromCatalog": false
+                    },
+                    {
+                      "name": "Ninh Bình",
+                      "region": "Miền Bắc",
+                      "reason": "Có cảnh đẹp đặc trưng và vẫn khả thi cho lịch ngắn.",
+                      "overallFit": "Đáng cân nhắc",
+                      "overallNote": "Trải nghiệm nổi bật nhưng cần đi sớm vì xa hơn.",
+                      "budgetFit": "Khá phù hợp",
+                      "budgetNote": "Cần chọn lọc điểm tham quan để giữ ngân sách.",
+                      "durationFit": "Khá phù hợp",
+                      "durationNote": "Một ngày hơi gọn nhưng vẫn có thể đi điểm chính.",
+                      "travelFit": "Khá phù hợp",
+                      "travelNote": "Đường đi xa hơn, nên xuất phát sớm để đỡ vội.",
+                      "styleFit": "Rất hợp",
+                      "styleNote": "Rất hợp nếu muốn cảnh đẹp, chèo thuyền và chụp ảnh.",
+                      "fromCatalog": true
+                    }
+                  ]
+                }
+                """);
+
+        assertThat(suggestions).hasSize(3);
+        assertThat(suggestions.get(0).getTravelNote()).contains("gần");
+    }
+
+    @Test
+    void destinationSuggestionParserRejectsMissingTravelNote() {
+        AiService service = new AiService(new ObjectMapper());
+
+        assertThatThrownBy(() -> parseDestinationSuggestions(service, """
+                {
+                  "suggestions": [
+                    {
+                      "name": "Tam Đảo",
+                      "region": "Miền Bắc",
+                      "reason": "Gần Hà Nội, hợp chuyến ngắn và nhịp đi nhẹ.",
+                      "overallFit": "Phù hợp nhất",
+                      "overallNote": "Cân bằng tốt giữa đường đi gần, chi phí và nhu cầu nghỉ nhẹ.",
+                      "budgetFit": "Phù hợp",
+                      "budgetNote": "Ngân sách đủ cho ăn uống và điểm tham quan chính.",
+                      "durationFit": "Phù hợp",
+                      "durationNote": "Một ngày vẫn đủ ghé các điểm nổi bật.",
+                      "travelFit": "Phù hợp",
+                      "styleFit": "Rất hợp",
+                      "styleNote": "Hợp nhu cầu nghỉ nhẹ, chụp ảnh và đổi không khí.",
+                      "fromCatalog": true
+                    },
+                    {
+                      "name": "Ba Vì",
+                      "region": "Miền Bắc",
+                      "reason": "Không quá xa, có thiên nhiên và lịch trình dễ đi.",
+                      "overallFit": "Rất phù hợp",
+                      "overallNote": "Lựa chọn gần, dễ đi và hợp lịch ngắn.",
+                      "budgetFit": "Phù hợp",
+                      "budgetNote": "Chi phí dễ kiểm soát cho chuyến ngắn.",
+                      "durationFit": "Phù hợp",
+                      "durationNote": "Một ngày đủ cho các điểm chính nếu đi sớm.",
+                      "travelFit": "Phù hợp",
+                      "travelNote": "Tuyến đi gần Hà Nội, không chiếm quá nhiều thời gian.",
+                      "styleFit": "Phù hợp",
+                      "styleNote": "Hợp nhóm thích thiên nhiên và hoạt động nhẹ.",
+                      "fromCatalog": false
+                    },
+                    {
+                      "name": "Ninh Bình",
+                      "region": "Miền Bắc",
+                      "reason": "Có cảnh đẹp đặc trưng và vẫn khả thi cho lịch ngắn.",
+                      "overallFit": "Đáng cân nhắc",
+                      "overallNote": "Trải nghiệm nổi bật nhưng cần đi sớm vì xa hơn.",
+                      "budgetFit": "Khá phù hợp",
+                      "budgetNote": "Cần chọn lọc điểm tham quan để giữ ngân sách.",
+                      "durationFit": "Khá phù hợp",
+                      "durationNote": "Một ngày hơi gọn nhưng vẫn có thể đi điểm chính.",
+                      "travelFit": "Khá phù hợp",
+                      "travelNote": "Đường đi xa hơn, nên xuất phát sớm để đỡ vội.",
+                      "styleFit": "Rất hợp",
+                      "styleNote": "Rất hợp nếu muốn cảnh đẹp, chèo thuyền và chụp ảnh.",
+                      "fromCatalog": true
+                    }
+                  ]
+                }
+                """))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("travelNote");
+    }
+
+    @Test
+    void destinationSuggestionParserRejectsMultipleTopOverallFits() {
+        AiService service = new AiService(new ObjectMapper());
+
+        assertThatThrownBy(() -> parseDestinationSuggestions(service, """
+                {
+                  "suggestions": [
+                    {
+                      "name": "Tam Đảo",
+                      "region": "Miền Bắc",
+                      "reason": "Gần Hà Nội, hợp chuyến ngắn và nhịp đi nhẹ.",
+                      "overallFit": "Phù hợp nhất",
+                      "overallNote": "Cân bằng tốt giữa đường đi gần, chi phí và nhu cầu nghỉ nhẹ.",
+                      "budgetFit": "Phù hợp",
+                      "budgetNote": "Ngân sách đủ cho ăn uống và điểm tham quan chính.",
+                      "durationFit": "Phù hợp",
+                      "durationNote": "Một ngày vẫn đủ ghé các điểm nổi bật.",
+                      "travelFit": "Phù hợp",
+                      "travelNote": "Đường đi tương đối gần, hợp đi về trong ngày.",
+                      "styleFit": "Rất hợp",
+                      "styleNote": "Hợp nhu cầu nghỉ nhẹ, chụp ảnh và đổi không khí.",
+                      "fromCatalog": true
+                    },
+                    {
+                      "name": "Ba Vì",
+                      "region": "Miền Bắc",
+                      "reason": "Không quá xa, có thiên nhiên và lịch trình dễ đi.",
+                      "overallFit": "Phù hợp nhất",
+                      "overallNote": "Lựa chọn gần, dễ đi và hợp lịch ngắn.",
+                      "budgetFit": "Phù hợp",
+                      "budgetNote": "Chi phí dễ kiểm soát cho chuyến ngắn.",
+                      "durationFit": "Phù hợp",
+                      "durationNote": "Một ngày đủ cho các điểm chính nếu đi sớm.",
+                      "travelFit": "Phù hợp",
+                      "travelNote": "Tuyến đi gần Hà Nội, không chiếm quá nhiều thời gian.",
+                      "styleFit": "Phù hợp",
+                      "styleNote": "Hợp nhóm thích thiên nhiên và hoạt động nhẹ.",
+                      "fromCatalog": false
+                    },
+                    {
+                      "name": "Ninh Bình",
+                      "region": "Miền Bắc",
+                      "reason": "Có cảnh đẹp đặc trưng và vẫn khả thi cho lịch ngắn.",
+                      "overallFit": "Đáng cân nhắc",
+                      "overallNote": "Trải nghiệm nổi bật nhưng cần đi sớm vì xa hơn.",
+                      "budgetFit": "Khá phù hợp",
+                      "budgetNote": "Cần chọn lọc điểm tham quan để giữ ngân sách.",
+                      "durationFit": "Khá phù hợp",
+                      "durationNote": "Một ngày hơi gọn nhưng vẫn có thể đi điểm chính.",
+                      "travelFit": "Khá phù hợp",
+                      "travelNote": "Đường đi xa hơn, nên xuất phát sớm để đỡ vội.",
+                      "styleFit": "Rất hợp",
+                      "styleNote": "Rất hợp nếu muốn cảnh đẹp, chèo thuyền và chụp ảnh.",
+                      "fromCatalog": true
+                    }
+                  ]
+                }
+                """))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("more than one top fit");
+    }
+
+    @Test
     void regenerationPromptTreatsVerifiedPlacesAsTrustedSuggestionsNotAllowedOnlyList() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
@@ -1058,6 +1244,19 @@ class AiServiceTest {
         method.setAccessible(true);
         try {
             return (AiService.RegeneratedDayResult) method.invoke(service, json, dayNumber);
+        } catch (InvocationTargetException e) {
+            throw e.getCause();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<TripDto.DestinationSuggestion> parseDestinationSuggestions(
+            AiService service,
+            String json) throws Throwable {
+        Method method = AiService.class.getDeclaredMethod("parseDestinationSuggestions", String.class);
+        method.setAccessible(true);
+        try {
+            return (List<TripDto.DestinationSuggestion>) method.invoke(service, json);
         } catch (InvocationTargetException e) {
             throw e.getCause();
         }

@@ -520,9 +520,16 @@ export interface DestinationSuggestion {
   name: string;
   region: string;
   reason: string;
+  overallFit: string;
+  overallNote: string;
   budgetFit: string;
+  budgetNote: string;
   durationFit: string;
+  durationNote: string;
+  travelFit: string;
+  travelNote: string;
   styleFit: string;
+  styleNote: string;
   fromCatalog: boolean;
 }
 

@@ -280,9 +280,16 @@ public class TripDto {
         private String name;
         private String region;
         private String reason;
+        private String overallFit;
+        private String overallNote;
         private String budgetFit;
+        private String budgetNote;
         private String durationFit;
+        private String durationNote;
+        private String travelFit;
+        private String travelNote;
         private String styleFit;
+        private String styleNote;
         private Boolean fromCatalog;
     }
 }

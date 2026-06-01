@@ -22,7 +22,10 @@ public class AiService {
     private static final int PROMPT_TOKEN_WARN_THRESHOLD = 12_000;
     private static final int MAX_SUGGESTION_NAME_LENGTH = 80;
     private static final int MAX_SUGGESTION_REASON_LENGTH = 180;
-    private static final Set<String> SUGGESTION_BUDGET_DURATION_LABELS = Set.of("Phù hợp", "Khá phù hợp",
+    private static final int MAX_SUGGESTION_NOTE_LENGTH = 120;
+    private static final Set<String> SUGGESTION_OVERALL_LABELS = Set.of("Phù hợp nhất", "Rất phù hợp",
+            "Đáng cân nhắc");
+    private static final Set<String> SUGGESTION_PRACTICAL_LABELS = Set.of("Phù hợp", "Khá phù hợp",
             "Cần cân nhắc");
     private static final Set<String> SUGGESTION_STYLE_LABELS = Set.of("Rất hợp", "Phù hợp", "Khá phù hợp");
 
@@ -292,10 +295,24 @@ public class AiService {
 
                         Planning rules:
                         - Suggest only real destinations that are realistic for the departure point, trip duration, budget, group type, and transport choices.
+                        - Evaluate trip duration separately from travel convenience: durationFit means how well the destination fits the selected number of days; travelFit means how practical the route is from the departure point with the selected outbound transport.
+                        - For each fit field, include a short Vietnamese note explaining the rating from the user's point of view.
+                        - budgetNote must explain whether the budget is comfortable, tight, or requires selective spending.
+                        - durationNote must explain whether the selected number of days leaves enough time to enjoy the destination.
+                        - travelNote must consider approximate one-way travel time, chosen outbound transport, fatigue, safety, and how much of the trip would be spent traveling.
+                        - styleNote must explain how the destination matches style, must-visit, avoid, group type, and notes.
+                        - For 1-day trips, strongly prefer nearby destinations; avoid places where travel would consume most of the trip.
+                        - For personal motorbike trips, long distance, mountain passes, bad road access, or tiring routes must be rated "Cần cân nhắc" unless clearly practical.
+                        - For 2-day trips, farther destinations are acceptable only when there is still enough time for meaningful experiences.
+                        - For 3-7 day trips, farther destinations, flights, or trains can be suitable when budget and schedule make sense.
+                        - overallFit must summarize the destination compared with the other two suggestions.
+                        - Use "Phù hợp nhất" for at most one suggestion: the strongest overall balance across budget, days, route, and preferences.
+                        - Do not use "Phù hợp nhất" when two or more practical fit fields are "Cần cân nhắc".
                         - Do not suggest destinations that conflict with Avoid.
                         - If Must visit / preferences mention a region, beach, mountain, food, culture, kids, seniors, or low-walking need, reflect that in the suggestions.
                         - Prefer destinations where a practical itinerary can be generated immediately after the user chooses one.
                         - Keep reason under 140 Vietnamese characters.
+                        - Keep each fit note under 120 Vietnamese characters, practical, non-technical, and not repetitive with reason.
 
                         Trip context:
                         - Departure: %s
@@ -324,9 +341,16 @@ public class AiService {
                               "name": "Destination name, max 80 characters",
                               "region": "Miền Bắc | Miền Trung | Miền Nam | Việt Nam",
                               "reason": "One concise Vietnamese sentence under 140 characters explaining why it fits this user.",
+                              "overallFit": "Phù hợp nhất | Rất phù hợp | Đáng cân nhắc",
+                              "overallNote": "Short Vietnamese note summarizing the strongest reason to choose it, max 120 characters",
                               "budgetFit": "Phù hợp | Khá phù hợp | Cần cân nhắc",
+                              "budgetNote": "Short Vietnamese note about budget fit, max 120 characters",
                               "durationFit": "Phù hợp | Khá phù hợp | Cần cân nhắc",
+                              "durationNote": "Short Vietnamese note about selected trip length, max 120 characters",
+                              "travelFit": "Phù hợp | Khá phù hợp | Cần cân nhắc",
+                              "travelNote": "Short Vietnamese note about route convenience, travel time and fatigue, max 120 characters",
                               "styleFit": "Rất hợp | Phù hợp | Khá phù hợp",
+                              "styleNote": "Short Vietnamese note about style/preference fit, max 120 characters",
                               "fromCatalog": true
                             }
                           ]
@@ -335,9 +359,18 @@ public class AiService {
                         Constraints:
                         - suggestions must contain exactly 3 unique destinations.
                         - name and reason are required.
+                        - overallFit must be exactly one of: Phù hợp nhất, Rất phù hợp, Đáng cân nhắc.
+                        - overallNote is required and must summarize the overall tradeoff in user-friendly Vietnamese.
+                        - At most one suggestion may use overallFit = Phù hợp nhất.
+                        - A suggestion with two or more "Cần cân nhắc" practical fit fields must not use overallFit = Phù hợp nhất.
                         - budgetFit must be exactly one of: Phù hợp, Khá phù hợp, Cần cân nhắc.
-                        - durationFit must be exactly one of: Phù hợp, Khá phù hợp, Cần cân nhắc.
+                        - budgetNote is required and must explain budget fit in user-friendly Vietnamese.
+                        - durationFit must be exactly one of: Phù hợp, Khá phù hợp, Cần cân nhắc and must evaluate the selected number of days, not travel distance.
+                        - durationNote is required and must explain fit with the selected number of days.
+                        - travelFit must be exactly one of: Phù hợp, Khá phù hợp, Cần cân nhắc and must evaluate route convenience from departure point with outbound transport.
+                        - travelNote is required and must mention practical route convenience, approximate travel time/fatigue, or safety.
                         - styleFit must be exactly one of: Rất hợp, Phù hợp, Khá phù hợp.
+                        - styleNote is required and must explain fit with preferences/group/style.
                         - fromCatalog must be true only when the destination appears in the catalog above.
                         - Return JSON only. No markdown. No comments.
                         """,
@@ -1205,14 +1238,22 @@ public class AiService {
 
             List<TripDto.DestinationSuggestion> suggestions = new ArrayList<>();
             Set<String> names = new HashSet<>();
+            int topFitCount = 0;
             for (JsonNode node : suggestionsNode) {
                 TripDto.DestinationSuggestion suggestion = new TripDto.DestinationSuggestion();
                 suggestion.setName(requiredText(node, "name", MAX_SUGGESTION_NAME_LENGTH));
                 suggestion.setRegion(requiredText(node, "region", MAX_SUGGESTION_NAME_LENGTH));
                 suggestion.setReason(requiredText(node, "reason", MAX_SUGGESTION_REASON_LENGTH));
-                suggestion.setBudgetFit(requiredLabel(node, "budgetFit", SUGGESTION_BUDGET_DURATION_LABELS));
-                suggestion.setDurationFit(requiredLabel(node, "durationFit", SUGGESTION_BUDGET_DURATION_LABELS));
+                suggestion.setOverallFit(requiredLabel(node, "overallFit", SUGGESTION_OVERALL_LABELS));
+                suggestion.setOverallNote(requiredText(node, "overallNote", MAX_SUGGESTION_NOTE_LENGTH));
+                suggestion.setBudgetFit(requiredLabel(node, "budgetFit", SUGGESTION_PRACTICAL_LABELS));
+                suggestion.setBudgetNote(requiredText(node, "budgetNote", MAX_SUGGESTION_NOTE_LENGTH));
+                suggestion.setDurationFit(requiredLabel(node, "durationFit", SUGGESTION_PRACTICAL_LABELS));
+                suggestion.setDurationNote(requiredText(node, "durationNote", MAX_SUGGESTION_NOTE_LENGTH));
+                suggestion.setTravelFit(requiredLabel(node, "travelFit", SUGGESTION_PRACTICAL_LABELS));
+                suggestion.setTravelNote(requiredText(node, "travelNote", MAX_SUGGESTION_NOTE_LENGTH));
                 suggestion.setStyleFit(requiredLabel(node, "styleFit", SUGGESTION_STYLE_LABELS));
+                suggestion.setStyleNote(requiredText(node, "styleNote", MAX_SUGGESTION_NOTE_LENGTH));
                 if (!node.has("fromCatalog") || !node.path("fromCatalog").isBoolean()) {
                     throw new AiResponseFormatException("destination suggestion missing boolean \"fromCatalog\"");
                 }
@@ -1221,6 +1262,15 @@ public class AiService {
                 String normalizedName = normalize(suggestion.getName());
                 if (!names.add(normalizedName)) {
                     throw new AiResponseFormatException("destination suggestions contain duplicate names");
+                }
+                if ("Phù hợp nhất".equals(suggestion.getOverallFit())) {
+                    if (topFitCount >= 1) {
+                        throw new AiResponseFormatException("destination suggestions contain more than one top fit");
+                    }
+                    if (suggestionPracticalCautionCount(suggestion) >= 2) {
+                        throw new AiResponseFormatException("top destination suggestion has too many caution criteria");
+                    }
+                    topFitCount++;
                 }
                 suggestions.add(suggestion);
             }
@@ -1231,6 +1281,14 @@ public class AiService {
             throw new AiResponseFormatException("unparseable JSON from AI: " + e.getMessage()
                     + ". Raw length=" + (json != null ? json.length() : 0));
         }
+    }
+
+    private int suggestionPracticalCautionCount(TripDto.DestinationSuggestion suggestion) {
+        int count = 0;
+        if ("Cần cân nhắc".equals(suggestion.getBudgetFit())) count++;
+        if ("Cần cân nhắc".equals(suggestion.getDurationFit())) count++;
+        if ("Cần cân nhắc".equals(suggestion.getTravelFit())) count++;
+        return count;
     }
 
     private String requiredText(JsonNode node, String field, int maxLength) {
