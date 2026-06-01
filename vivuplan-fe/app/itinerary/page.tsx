@@ -398,9 +398,6 @@ function DeleteTripDialog({
       aria-modal="true"
       aria-labelledby="trip-delete-title"
       aria-describedby="trip-delete-description"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !deleting) onCancel();
-      }}
     >
       <section className="trip-delete-modal-panel">
         <button type="button" className="trip-delete-modal-close" onClick={onCancel} disabled={deleting} aria-label="Đóng xác nhận xóa">

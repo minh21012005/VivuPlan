@@ -1235,9 +1235,6 @@ function RegenerateDayModal({
       className="activity-editor-modal-backdrop regenerate-day-modal-backdrop"
       role="dialog"
       aria-modal="true"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !loading && !applying) onCancel();
-      }}
     >
       <div className="activity-editor-modal-panel regenerate-day-modal-panel">
         <Card className="activity-editor-card regenerate-day-card">
@@ -1459,9 +1456,6 @@ function ActivityEditorModal({
       className="activity-editor-modal-backdrop"
       role="dialog"
       aria-modal="true"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onCancel();
-      }}
     >
       <div className="activity-editor-modal-panel">
         <ActivityEditor activity={activity} saving={saving} error={error} onSave={onSave} onCancel={onCancel} />

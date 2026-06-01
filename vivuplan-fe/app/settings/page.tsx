@@ -117,7 +117,7 @@ function PasswordModal({
   };
 
   return (
-    <div className="settings-modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="settings-modal-backdrop">
       <div className="settings-modal-panel">
         <div className="settings-modal-header">
           <div className="settings-modal-title">
