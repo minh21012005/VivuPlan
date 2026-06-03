@@ -181,8 +181,6 @@ public class AdminDto {
         private long avgDurationMs;
         private long maxDurationMs;
         private List<AiCostBreakdown> operationBreakdown = new ArrayList<>();
-        private List<AiCostBreakdown> modelBreakdown = new ArrayList<>();
-        private List<AiCostBreakdown> statusBreakdown = new ArrayList<>();
         private List<AiOperationAverage> averageCosts = new ArrayList<>();
         private List<AiOperationHealth> operationHealth = new ArrayList<>();
         private List<AiRequestSummary> topCostRequests = new ArrayList<>();

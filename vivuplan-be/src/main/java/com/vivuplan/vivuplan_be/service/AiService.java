@@ -1129,26 +1129,12 @@ public class AiService {
         return Math.max(0, req.getBudgetPerPerson()) * travelers;
     }
 
-    private String callGemini(String prompt) {
-        return callGemini(prompt, newAiCallContext(AiUsageLog.Operation.PLAN_GENERATION, null, null));
-    }
-
     private String callGemini(String prompt, AiCallContext aiContext) {
         return callGeminiWithRetry(prompt, geminiPlanMaxOutputTokens, geminiPlanThinkingBudget, aiContext);
     }
 
-    private String callGeminiForSuggestion(String prompt) {
-        return callGeminiForSuggestion(prompt,
-                newAiCallContext(AiUsageLog.Operation.DESTINATION_SUGGESTION, null, null));
-    }
-
     private String callGeminiForSuggestion(String prompt, AiCallContext aiContext) {
         return callGeminiWithRetry(prompt, geminiSuggestionMaxOutputTokens, geminiSuggestionThinkingBudget, aiContext);
-    }
-
-    private String callGeminiForSingleDay(String prompt) {
-        return callGeminiForSingleDay(prompt,
-                newAiCallContext(AiUsageLog.Operation.DAY_REGENERATION, null, null));
     }
 
     private String callGeminiForSingleDay(String prompt, AiCallContext aiContext) {

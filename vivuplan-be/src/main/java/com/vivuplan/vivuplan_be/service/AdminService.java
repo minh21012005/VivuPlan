@@ -137,8 +137,6 @@ public class AdminService {
         response.setAvgDurationMs(avgRequestDurationMs(logs));
         response.setMaxDurationMs(maxRequestDurationMs(logs));
         response.setOperationBreakdown(groupBreakdown(logs, log -> log.getOperation().name(), this::aiOperationLabel));
-        response.setModelBreakdown(groupBreakdown(logs, AiUsageLog::getModel, value -> value));
-        response.setStatusBreakdown(groupBreakdown(logs, log -> log.getStatus().name(), this::aiStatusLabel));
         response.setAverageCosts(buildAverageCosts(logs));
         response.setOperationHealth(buildOperationHealth(logs));
         response.setTopCostRequests(buildTopCostRequests(logs));
@@ -573,17 +571,6 @@ public class AdminService {
             case "DAY_REGENERATION" -> "Chinh ngay";
             case "DESTINATION_SUGGESTION" -> "Goi y diem den";
             default -> operation;
-        };
-    }
-
-    private String aiStatusLabel(String status) {
-        return switch (status) {
-            case "SUCCESS" -> "Thanh cong";
-            case "INVALID_RESPONSE" -> "Response khong hop le";
-            case "HTTP_ERROR" -> "Loi HTTP";
-            case "PARSE_ERROR" -> "Loi parse";
-            case "FAILED" -> "That bai";
-            default -> status;
         };
     }
 

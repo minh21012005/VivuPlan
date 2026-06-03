@@ -518,8 +518,6 @@ export interface AdminAiCostSummary {
   avgDurationMs: number;
   maxDurationMs: number;
   operationBreakdown: AdminAiCostBreakdown[];
-  modelBreakdown: AdminAiCostBreakdown[];
-  statusBreakdown: AdminAiCostBreakdown[];
   averageCosts: AdminAiOperationAverage[];
   operationHealth: AdminAiOperationHealth[];
   topCostRequests: AdminAiRequestSummary[];
