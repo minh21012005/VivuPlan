@@ -90,9 +90,9 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
-    public Page<AdminDto.TripSummary> listTrips(int page, int size, String q, String status, String visibility) {
+    public Page<AdminDto.TripSummary> listTrips(int page, int size, String q) {
         return tripRepository.findAll(
-                tripSpec(q, parseTripStatusOrNull(status), parseVisibilityOrNull(visibility)),
+                tripSpec(q),
                 PageRequest.of(page, clampPageSize(size), Sort.by(Sort.Direction.DESC, "createdAt"))
         ).map(AdminDto.TripSummary::from);
     }
@@ -124,18 +124,16 @@ public class AdminService {
                 parseAiStatusOrNull(status));
         AdminDto.AiCostSummaryResponse response = new AdminDto.AiCostSummaryResponse();
         fillTotals(response, logs);
-        response.setSuccessfulOperations(countSuccessfulOperations(logs));
         response.setRequests(countRequests(logs));
-        response.setFailedRequests(countFailedRequests(logs));
-        response.setRetryAttempts(logs.stream().filter(log -> safeInt(log.getAttemptNumber()) > 1).count());
+        long failedRequests = countFailedRequests(logs);
+        long retryAttempts = logs.stream().filter(log -> safeInt(log.getAttemptNumber()) > 1).count();
         response.setRetryRate(response.getAttempts() > 0
-                ? roundDouble(response.getRetryAttempts() * 100.0 / response.getAttempts())
+                ? roundDouble(retryAttempts * 100.0 / response.getAttempts())
                 : 0);
         response.setErrorRate(response.getRequests() > 0
-                ? roundDouble(response.getFailedRequests() * 100.0 / response.getRequests())
+                ? roundDouble(failedRequests * 100.0 / response.getRequests())
                 : 0);
         response.setAvgDurationMs(avgRequestDurationMs(logs));
-        response.setMaxDurationMs(maxRequestDurationMs(logs));
         response.setOperationBreakdown(groupBreakdown(logs, log -> log.getOperation().name(), this::aiOperationLabel));
         response.setAverageCosts(buildAverageCosts(logs));
         response.setOperationHealth(buildOperationHealth(logs));
@@ -164,15 +162,7 @@ public class AdminService {
             List<AiUsageLog> dayLogs = byDate.getOrDefault(date, List.of());
             AdminDto.AiCostDaily item = new AdminDto.AiCostDaily();
             item.setDate(date.toString());
-            item.setAttempts(dayLogs.size());
-            item.setSuccessAttempts(dayLogs.stream().filter(log -> log.getStatus() == AiUsageLog.Status.SUCCESS).count());
-            item.setFailedAttempts(dayLogs.size() - item.getSuccessAttempts());
             item.setTotalCostVnd(sumCostVnd(dayLogs));
-            item.setTotalCostUsd(sumCostUsd(dayLogs));
-            item.setPromptTokens(sumPrompt(dayLogs));
-            item.setOutputTokens(sumOutput(dayLogs));
-            item.setThinkingTokens(sumThinking(dayLogs));
-            item.setTotalTokens(sumTotalTokens(dayLogs));
             result.add(item);
         }
         return result;
@@ -264,7 +254,6 @@ public class AdminService {
     private void fillTotals(AdminDto.AiCostSummaryResponse response, List<AiUsageLog> logs) {
         response.setAttempts(logs.size());
         response.setTotalCostVnd(sumCostVnd(logs));
-        response.setTotalCostUsd(sumCostUsd(logs));
         response.setPromptTokens(sumPrompt(logs));
         response.setOutputTokens(sumOutput(logs));
         response.setThinkingTokens(sumThinking(logs));
@@ -285,13 +274,7 @@ public class AdminService {
                     item.setKey(entry.getKey());
                     item.setLabel(labelFn.apply(entry.getKey()));
                     item.setAttempts(entry.getValue().size());
-                    item.setSuccessfulOperations(countSuccessfulOperations(entry.getValue()));
                     item.setTotalCostVnd(sumCostVnd(entry.getValue()));
-                    item.setTotalCostUsd(sumCostUsd(entry.getValue()));
-                    item.setPromptTokens(sumPrompt(entry.getValue()));
-                    item.setOutputTokens(sumOutput(entry.getValue()));
-                    item.setThinkingTokens(sumThinking(entry.getValue()));
-                    item.setTotalTokens(sumTotalTokens(entry.getValue()));
                     return item;
                 })
                 .toList();
@@ -310,13 +293,11 @@ public class AdminService {
                             .distinct()
                             .count();
                     long costVnd = sumCostVnd(entry.getValue());
-                    double costUsd = sumCostUsd(entry.getValue());
                     AdminDto.AiOperationAverage item = new AdminDto.AiOperationAverage();
                     item.setOperation(entry.getKey().name());
                     item.setLabel(aiOperationLabel(entry.getKey().name()));
                     item.setOperations(operations);
                     item.setAvgCostVnd(operations > 0 ? Math.round((double) costVnd / operations) : 0);
-                    item.setAvgCostUsd(operations > 0 ? roundDouble(costUsd / operations) : 0);
                     return item;
                 })
                 .toList();
@@ -373,11 +354,8 @@ public class AdminService {
         dto.setUserEmail(latest.getUser() != null ? latest.getUser().getEmail() : null);
         dto.setTripId(latest.getTrip() != null ? latest.getTrip().getId() : null);
         dto.setAttempts(requestLogs.size());
-        dto.setRetryAttempts(requestLogs.stream().filter(log -> safeInt(log.getAttemptNumber()) > 1).count());
         dto.setTotalCostVnd(sumCostVnd(requestLogs));
-        dto.setTotalCostUsd(sumCostUsd(requestLogs));
         dto.setTotalTokens(sumTotalTokens(requestLogs));
-        dto.setDurationMs(sumDurationMs(requestLogs));
         dto.setCreatedAt(first.getCreatedAt() != null ? first.getCreatedAt().toString() : null);
         return dto;
     }
@@ -430,18 +408,6 @@ public class AdminService {
         return logs.stream()
                 .mapToLong(log -> log.getDurationMs() != null && log.getDurationMs() > 0 ? log.getDurationMs() : 0)
                 .sum();
-    }
-
-    private long countSuccessfulOperations(List<AiUsageLog> logs) {
-        Map<String, Boolean> successByRequest = new HashMap<>();
-        for (AiUsageLog log : logs) {
-            String key = log.getRequestId();
-            if (key == null || key.isBlank()) {
-                continue;
-            }
-            successByRequest.merge(key, log.getStatus() == AiUsageLog.Status.SUCCESS, Boolean::logicalOr);
-        }
-        return successByRequest.values().stream().filter(Boolean::booleanValue).count();
     }
 
     private AdminDto.AiUsageEvent toAiUsageEvent(AiUsageLog log) {
@@ -502,13 +468,6 @@ public class AdminService {
 
     private long sumCostVnd(List<AiUsageLog> logs) {
         return logs.stream().mapToLong(log -> log.getEstimatedCostVnd() != null ? log.getEstimatedCostVnd() : 0L).sum();
-    }
-
-    private double sumCostUsd(List<AiUsageLog> logs) {
-        BigDecimal total = logs.stream()
-                .map(log -> log.getEstimatedCostUsd() != null ? log.getEstimatedCostUsd() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return total.setScale(6, RoundingMode.HALF_UP).doubleValue();
     }
 
     private long sumPrompt(List<AiUsageLog> logs) {
@@ -599,24 +558,6 @@ public class AdminService {
         }
     }
 
-    private Trip.TripStatus parseTripStatusOrNull(String status) {
-        if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) return null;
-        try {
-            return Trip.TripStatus.valueOf(status.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái lịch trình không hợp lệ");
-        }
-    }
-
-    private Boolean parseVisibilityOrNull(String visibility) {
-        if (visibility == null || visibility.isBlank() || "ALL".equalsIgnoreCase(visibility)) return null;
-        return switch (visibility.trim().toUpperCase(Locale.ROOT)) {
-            case "PUBLIC" -> true;
-            case "PRIVATE" -> false;
-            default -> throw new IllegalArgumentException("Bộ lọc hiển thị không hợp lệ");
-        };
-    }
-
     private PaymentOrder.Status parsePaymentStatusOrNull(String status) {
         if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) return null;
         try {
@@ -647,7 +588,7 @@ public class AdminService {
         };
     }
 
-    private Specification<Trip> tripSpec(String q, Trip.TripStatus status, Boolean visibility) {
+    private Specification<Trip> tripSpec(String q) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             String keyword = normalizeKeyword(q);
@@ -658,12 +599,6 @@ public class AdminService {
                         cb.like(cb.lower(root.get("departure")), keyword),
                         cb.like(cb.lower(userJoin.get("email")), keyword)
                 ));
-            }
-            if (status != null) {
-                predicates.add(cb.equal(root.get("status"), status));
-            }
-            if (visibility != null) {
-                predicates.add(cb.equal(root.get("isPublic"), visibility));
             }
             return cb.and(predicates.toArray(Predicate[]::new));
         };

@@ -60,9 +60,6 @@ public class AdminDto {
         private String departure;
         private String destination;
         private int days;
-        private String status;
-        private boolean isPublic;
-        private int viewCount;
         private String createdAt;
 
         public static TripSummary from(Trip trip) {
@@ -73,9 +70,6 @@ public class AdminDto {
             dto.setDeparture(trip.getDeparture());
             dto.setDestination(trip.getDestination());
             dto.setDays(trip.getDays());
-            dto.setStatus(trip.getStatus().name());
-            dto.setPublic(trip.getIsPublic());
-            dto.setViewCount(trip.getViewCount());
             dto.setCreatedAt(trip.getCreatedAt() != null ? trip.getCreatedAt().toString() : null);
             return dto;
         }
@@ -166,20 +160,15 @@ public class AdminDto {
     @Data
     public static class AiCostSummaryResponse {
         private long totalCostVnd;
-        private double totalCostUsd;
         private long promptTokens;
         private long outputTokens;
         private long thinkingTokens;
         private long totalTokens;
         private long requests;
         private long attempts;
-        private long successfulOperations;
-        private long failedRequests;
-        private long retryAttempts;
         private double retryRate;
         private double errorRate;
         private long avgDurationMs;
-        private long maxDurationMs;
         private List<AiCostBreakdown> operationBreakdown = new ArrayList<>();
         private List<AiOperationAverage> averageCosts = new ArrayList<>();
         private List<AiOperationHealth> operationHealth = new ArrayList<>();
@@ -191,13 +180,7 @@ public class AdminDto {
         private String key;
         private String label;
         private long attempts;
-        private long successfulOperations;
         private long totalCostVnd;
-        private double totalCostUsd;
-        private long promptTokens;
-        private long outputTokens;
-        private long thinkingTokens;
-        private long totalTokens;
     }
 
     @Data
@@ -206,7 +189,6 @@ public class AdminDto {
         private String label;
         private long operations;
         private long avgCostVnd;
-        private double avgCostUsd;
     }
 
     @Data
@@ -231,11 +213,8 @@ public class AdminDto {
         private String userEmail;
         private Long tripId;
         private long attempts;
-        private long retryAttempts;
         private long totalCostVnd;
-        private double totalCostUsd;
         private long totalTokens;
-        private long durationMs;
         private String createdAt;
     }
 
@@ -243,14 +222,6 @@ public class AdminDto {
     public static class AiCostDaily {
         private String date;
         private long totalCostVnd;
-        private double totalCostUsd;
-        private long promptTokens;
-        private long outputTokens;
-        private long thinkingTokens;
-        private long totalTokens;
-        private long attempts;
-        private long successAttempts;
-        private long failedAttempts;
     }
 
     @Data

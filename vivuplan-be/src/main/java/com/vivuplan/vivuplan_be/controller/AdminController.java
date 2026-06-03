@@ -62,10 +62,8 @@ public class AdminController {
     public ResponseEntity<Page<AdminDto.TripSummary>> trips(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String visibility) {
-        return ResponseEntity.ok(adminService.listTrips(page, size, q, status, visibility));
+            @RequestParam(required = false) String q) {
+        return ResponseEntity.ok(adminService.listTrips(page, size, q));
     }
 
     @GetMapping("/trips/{id}")

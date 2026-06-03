@@ -428,8 +428,6 @@ export interface AdminUserFilters {
 
 export interface AdminTripFilters {
   q?: string;
-  status?: "ALL" | "DRAFT" | "PLANNED" | "COMPLETED";
-  visibility?: "ALL" | "PUBLIC" | "PRIVATE";
 }
 
 export interface AdminTransactionFilters {
@@ -456,13 +454,7 @@ export interface AdminAiCostBreakdown {
   key: string;
   label: string;
   attempts: number;
-  successfulOperations: number;
   totalCostVnd: number;
-  totalCostUsd: number;
-  promptTokens: number;
-  outputTokens: number;
-  thinkingTokens: number;
-  totalTokens: number;
 }
 
 export interface AdminAiOperationAverage {
@@ -470,7 +462,6 @@ export interface AdminAiOperationAverage {
   label: string;
   operations: number;
   avgCostVnd: number;
-  avgCostUsd: number;
 }
 
 export interface AdminAiOperationHealth {
@@ -493,30 +484,22 @@ export interface AdminAiRequestSummary {
   userEmail?: string;
   tripId?: number;
   attempts: number;
-  retryAttempts: number;
   totalCostVnd: number;
-  totalCostUsd: number;
   totalTokens: number;
-  durationMs: number;
   createdAt?: string;
 }
 
 export interface AdminAiCostSummary {
   totalCostVnd: number;
-  totalCostUsd: number;
   promptTokens: number;
   outputTokens: number;
   thinkingTokens: number;
   totalTokens: number;
   requests: number;
   attempts: number;
-  successfulOperations: number;
-  failedRequests: number;
-  retryAttempts: number;
   retryRate: number;
   errorRate: number;
   avgDurationMs: number;
-  maxDurationMs: number;
   operationBreakdown: AdminAiCostBreakdown[];
   averageCosts: AdminAiOperationAverage[];
   operationHealth: AdminAiOperationHealth[];
@@ -526,14 +509,6 @@ export interface AdminAiCostSummary {
 export interface AdminAiCostDaily {
   date: string;
   totalCostVnd: number;
-  totalCostUsd: number;
-  promptTokens: number;
-  outputTokens: number;
-  thinkingTokens: number;
-  totalTokens: number;
-  attempts: number;
-  successAttempts: number;
-  failedAttempts: number;
 }
 
 export interface AdminAiUsageEvent {
@@ -591,9 +566,6 @@ export interface AdminTripSummary {
   departure?: string;
   destination: string;
   days: number;
-  status: string;
-  isPublic: boolean;
-  viewCount: number;
   createdAt?: string;
 }
 
