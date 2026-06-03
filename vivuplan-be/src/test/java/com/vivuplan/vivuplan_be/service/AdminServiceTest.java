@@ -3,6 +3,7 @@ package com.vivuplan.vivuplan_be.service;
 import com.vivuplan.vivuplan_be.dto.AdminDto;
 import com.vivuplan.vivuplan_be.entity.Role;
 import com.vivuplan.vivuplan_be.entity.User;
+import com.vivuplan.vivuplan_be.repository.AiUsageLogRepository;
 import com.vivuplan.vivuplan_be.repository.PaymentOrderRepository;
 import com.vivuplan.vivuplan_be.repository.RoleRepository;
 import com.vivuplan.vivuplan_be.repository.TripRepository;
@@ -41,13 +42,17 @@ class AdminServiceTest {
     @Mock
     private UserWalletRepository userWalletRepository;
 
+    @Mock
+    private AiUsageLogRepository aiUsageLogRepository;
+
     private AdminService service() {
         return new AdminService(
                 userRepository,
                 roleRepository,
                 tripRepository,
                 paymentOrderRepository,
-                userWalletRepository);
+                userWalletRepository,
+                aiUsageLogRepository);
     }
 
     @Test

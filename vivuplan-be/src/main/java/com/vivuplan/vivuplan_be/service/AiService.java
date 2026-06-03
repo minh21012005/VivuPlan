@@ -3,9 +3,10 @@ package com.vivuplan.vivuplan_be.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vivuplan.vivuplan_be.dto.TripDto;
+import com.vivuplan.vivuplan_be.entity.AiUsageLog;
 import com.vivuplan.vivuplan_be.exception.AiGenerationException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -13,9 +14,9 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class AiService {
 
@@ -37,6 +38,26 @@ public class AiService {
     public record RegeneratedDayResult(
             TripDto.DayResponse day,
             TripDto.RequestFulfillment requestFulfillment) {
+    }
+
+    private record AiCallContext(
+            AiUsageLog.Operation operation,
+            Long userId,
+            Long tripId,
+            String requestId,
+            AtomicInteger attempts) {
+        private int nextAttempt() {
+            return attempts.incrementAndGet();
+        }
+    }
+
+    private record GeminiParsedResponse(
+            String text,
+            String finishReason,
+            int promptTokens,
+            int outputTokens,
+            int thinkingTokens,
+            int totalTokens) {
     }
 
     private static class AiResponseFormatException extends RuntimeException {
@@ -70,27 +91,46 @@ public class AiService {
     private int geminiSuggestionThinkingBudget;
 
     private final ObjectMapper objectMapper;
+    private final AiUsageTrackingService aiUsageTrackingService;
 
     private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
     private static final String AI_GENERATION_USER_MESSAGE = "AI chưa tạo được lịch trình đủ cụ thể cho chuyến đi này. Vui lòng thử lại hoặc bổ sung thêm điểm muốn ghé, điều cần tránh hay ghi chú để VivuPlan lập lại lịch trình.";
 
+    public AiService(ObjectMapper objectMapper) {
+        this(objectMapper, null);
+    }
+
+    @Autowired
+    public AiService(ObjectMapper objectMapper, AiUsageTrackingService aiUsageTrackingService) {
+        this.objectMapper = objectMapper;
+        this.aiUsageTrackingService = aiUsageTrackingService;
+    }
+
     public GeneratedItineraryResult generateItinerary(TripDto.GenerateRequest req) {
+        return generateItinerary(req, null);
+    }
+
+    public GeneratedItineraryResult generateItinerary(TripDto.GenerateRequest req, Long userId) {
+        AiCallContext aiContext = newAiCallContext(AiUsageLog.Operation.PLAN_GENERATION, userId, null);
         String prompt = buildPrompt(req);
         log.info("Generating itinerary for: {} - {}N using Gemini model {}", req.getDestination(), req.getDays(),
                 geminiModel);
 
         try {
-            String rawJson = callGemini(prompt);
+            String rawJson = callGemini(prompt, aiContext);
             boolean usedRetry = false;
             GeneratedItineraryResult result;
             try {
                 result = parseGeneratedItineraryResult(rawJson);
             } catch (AiResponseFormatException e) {
+                markInvalidResponse(aiContext, "JSON_CONTRACT", e.getMessage());
                 usedRetry = true;
                 log.warn(
                         "AI itinerary for {} returned invalid response contract: {}. Retrying once with strict JSON contract.",
                         req.getDestination(), e.getMessage());
-                String retryJson = callGemini(buildQualityRetryPrompt(req, formatContractRetryReason(e.getMessage())));
+                String retryJson = callGemini(
+                        buildQualityRetryPrompt(req, formatContractRetryReason(e.getMessage())),
+                        aiContext);
                 result = parseGeneratedItineraryResult(retryJson);
             }
             QualityCheck quality = assessItineraryQuality(result.days(), req);
@@ -109,13 +149,15 @@ public class AiService {
                 log.warn(
                         "AI retry itinerary for {} has a structural failure after contract retry: {}. Returning error to user.",
                         req.getDestination(), quality.reason());
+                markInvalidResponse(aiContext, "QUALITY_CHECK", quality.reason());
                 throw new AiGenerationException(AI_GENERATION_USER_MESSAGE);
             }
 
             log.warn("AI itinerary for {} failed quality check: {}. Retrying once with stricter prompt.",
                     req.getDestination(), quality.reason());
+            markInvalidResponse(aiContext, "QUALITY_CHECK", quality.reason());
 
-            String retryJson = callGemini(buildQualityRetryPrompt(req, quality.reason()));
+            String retryJson = callGemini(buildQualityRetryPrompt(req, quality.reason()), aiContext);
             GeneratedItineraryResult retryResult = parseGeneratedItineraryResult(retryJson);
             QualityCheck retryQuality = assessItineraryQuality(retryResult.days(), req);
             if (retryQuality.passed()) {
@@ -131,9 +173,15 @@ public class AiService {
 
             log.warn("AI retry itinerary for {} has a structural failure: {}. Returning error to user.",
                     req.getDestination(), retryQuality.reason());
+            markInvalidResponse(aiContext, "QUALITY_CHECK", retryQuality.reason());
             throw new AiGenerationException(AI_GENERATION_USER_MESSAGE);
         } catch (AiGenerationException e) {
             throw e;
+        } catch (AiResponseFormatException e) {
+            markInvalidResponse(aiContext, "JSON_CONTRACT", e.getMessage());
+            log.error("AI generated itinerary for {} failed response contract after retry: {}",
+                    req.getDestination(), e.getMessage());
+            throw new AiGenerationException(AI_GENERATION_USER_MESSAGE, e);
         } catch (Exception e) {
             log.error("AI generation failed with Gemini model {}: {}", geminiModel, e.getMessage(), e);
             throw new AiGenerationException(AI_GENERATION_USER_MESSAGE, e);
@@ -143,22 +191,33 @@ public class AiService {
     public List<TripDto.DestinationSuggestion> suggestDestinations(
             TripDto.DestinationSuggestionRequest req,
             String catalogContext) {
+        return suggestDestinations(req, catalogContext, null);
+    }
+
+    public List<TripDto.DestinationSuggestion> suggestDestinations(
+            TripDto.DestinationSuggestionRequest req,
+            String catalogContext,
+            Long userId) {
+        AiCallContext aiContext = newAiCallContext(AiUsageLog.Operation.DESTINATION_SUGGESTION, userId, null);
         String prompt = buildDestinationSuggestionPrompt(req, catalogContext);
         log.info("Suggesting destinations from {} for {} days using Gemini model {}",
                 req.getDeparture(), req.getDays(), geminiModel);
 
         try {
-            String rawJson = callGeminiForSuggestion(prompt);
+            String rawJson = callGeminiForSuggestion(prompt, aiContext);
             try {
                 return parseDestinationSuggestions(rawJson);
             } catch (AiResponseFormatException e) {
+                markInvalidResponse(aiContext, "JSON_CONTRACT", e.getMessage());
                 log.warn("AI destination suggestions returned invalid response contract: {}. Retrying once.",
                         e.getMessage());
-                String retryJson = callGeminiForSuggestion(buildDestinationSuggestionRetryPrompt(req, catalogContext,
-                        e.getMessage()));
+                String retryJson = callGeminiForSuggestion(
+                        buildDestinationSuggestionRetryPrompt(req, catalogContext, e.getMessage()),
+                        aiContext);
                 return parseDestinationSuggestions(retryJson);
             }
         } catch (AiResponseFormatException e) {
+            markInvalidResponse(aiContext, "JSON_CONTRACT", e.getMessage());
             throw new AiGenerationException("AI chưa gợi ý được điểm đến phù hợp. Vui lòng thử lại.", e);
         } catch (AiGenerationException e) {
             throw e;
@@ -174,17 +233,31 @@ public class AiService {
             int dayNumber,
             String intent,
             String instruction) {
+        return regenerateDay(req, currentSchedule, dayNumber, intent, instruction, null, null);
+    }
+
+    public RegeneratedDayResult regenerateDay(
+            TripDto.GenerateRequest req,
+            List<TripDto.DayResponse> currentSchedule,
+            int dayNumber,
+            String intent,
+            String instruction,
+            Long userId,
+            Long tripId) {
+        AiCallContext aiContext = newAiCallContext(AiUsageLog.Operation.DAY_REGENERATION, userId, tripId);
         log.info("Regenerating day {} for trip to {} using intent {}", dayNumber, req.getDestination(), intent);
 
         try {
             TripDto.GenerateRequest qualityReq = withRegenerationInstruction(req, instruction);
             String rawJson = callGeminiForSingleDay(
-                    buildDayRegenerationPrompt(req, currentSchedule, dayNumber, intent, instruction, null));
+                    buildDayRegenerationPrompt(req, currentSchedule, dayNumber, intent, instruction, null),
+                    aiContext);
             boolean usedRetry = false;
             RegeneratedDayResult result;
             try {
                 result = parseRegeneratedDayResult(rawJson, dayNumber);
             } catch (AiResponseFormatException e) {
+                markInvalidResponse(aiContext, "JSON_CONTRACT", e.getMessage());
                 usedRetry = true;
                 log.warn(
                         "AI regenerated day {} for {} returned invalid response contract: {}. Retrying once with strict JSON contract.",
@@ -195,7 +268,8 @@ public class AiService {
                         dayNumber,
                         intent,
                         instruction,
-                        formatContractRetryReason(e.getMessage())));
+                        formatContractRetryReason(e.getMessage())),
+                        aiContext);
                 result = parseRegeneratedDayResult(retryJson, dayNumber);
             }
             QualityCheck quality = assessRegeneratedDayQuality(result.day(), currentSchedule, qualityReq);
@@ -213,15 +287,18 @@ public class AiService {
 
                 log.warn("AI retry regenerated day {} for {} has a structural failure after contract retry: {}.",
                         dayNumber, req.getDestination(), quality.reason());
+                markInvalidResponse(aiContext, "QUALITY_CHECK", quality.reason());
                 throw new AiGenerationException(
                         "AI chưa tạo được phương án chỉnh ngày này đủ tốt. Vui lòng thử lại với yêu cầu cụ thể hơn.");
             }
 
             log.warn("AI regenerated day {} for {} failed quality check: {}. Retrying once.",
                     dayNumber, req.getDestination(), quality.reason());
+            markInvalidResponse(aiContext, "QUALITY_CHECK", quality.reason());
 
             String retryJson = callGeminiForSingleDay(
-                    buildDayRegenerationPrompt(req, currentSchedule, dayNumber, intent, instruction, quality.reason()));
+                    buildDayRegenerationPrompt(req, currentSchedule, dayNumber, intent, instruction, quality.reason()),
+                    aiContext);
             RegeneratedDayResult retryResult = parseRegeneratedDayResult(retryJson, dayNumber);
             QualityCheck retryQuality = assessRegeneratedDayQuality(retryResult.day(), currentSchedule, qualityReq);
             if (retryQuality.passed()) {
@@ -237,10 +314,17 @@ public class AiService {
 
             log.warn("AI retry regenerated day {} for {} has a structural failure: {}.",
                     dayNumber, req.getDestination(), retryQuality.reason());
+            markInvalidResponse(aiContext, "QUALITY_CHECK", retryQuality.reason());
             throw new AiGenerationException(
                     "AI chưa tạo được phương án chỉnh ngày này đủ tốt. Vui lòng thử lại với yêu cầu cụ thể hơn.");
         } catch (AiGenerationException e) {
             throw e;
+        } catch (AiResponseFormatException e) {
+            markInvalidResponse(aiContext, "JSON_CONTRACT", e.getMessage());
+            log.error("AI regenerated day {} for {} failed response contract after retry: {}",
+                    dayNumber, req.getDestination(), e.getMessage());
+            throw new AiGenerationException(
+                    "AI chưa tạo được phương án chỉnh ngày này đủ tốt. Vui lòng thử lại với yêu cầu cụ thể hơn.", e);
         } catch (Exception e) {
             log.error("AI day regeneration failed with Gemini model {}: {}", geminiModel, e.getMessage(), e);
             throw new AiGenerationException(
@@ -1046,15 +1130,29 @@ public class AiService {
     }
 
     private String callGemini(String prompt) {
-        return callGeminiWithRetry(prompt, geminiPlanMaxOutputTokens, geminiPlanThinkingBudget);
+        return callGemini(prompt, newAiCallContext(AiUsageLog.Operation.PLAN_GENERATION, null, null));
+    }
+
+    private String callGemini(String prompt, AiCallContext aiContext) {
+        return callGeminiWithRetry(prompt, geminiPlanMaxOutputTokens, geminiPlanThinkingBudget, aiContext);
     }
 
     private String callGeminiForSuggestion(String prompt) {
-        return callGeminiWithRetry(prompt, geminiSuggestionMaxOutputTokens, geminiSuggestionThinkingBudget);
+        return callGeminiForSuggestion(prompt,
+                newAiCallContext(AiUsageLog.Operation.DESTINATION_SUGGESTION, null, null));
+    }
+
+    private String callGeminiForSuggestion(String prompt, AiCallContext aiContext) {
+        return callGeminiWithRetry(prompt, geminiSuggestionMaxOutputTokens, geminiSuggestionThinkingBudget, aiContext);
     }
 
     private String callGeminiForSingleDay(String prompt) {
-        return callGeminiWithRetry(prompt, geminiRegenerateMaxOutputTokens, geminiRegenerateThinkingBudget);
+        return callGeminiForSingleDay(prompt,
+                newAiCallContext(AiUsageLog.Operation.DAY_REGENERATION, null, null));
+    }
+
+    private String callGeminiForSingleDay(String prompt, AiCallContext aiContext) {
+        return callGeminiWithRetry(prompt, geminiRegenerateMaxOutputTokens, geminiRegenerateThinkingBudget, aiContext);
     }
 
     /**
@@ -1062,7 +1160,11 @@ public class AiService {
      * errors.
      * Retries up to 2 times (delays: 2 s, 4 s) before giving up.
      */
-    private String callGeminiWithRetry(String prompt, int maxOutputTokens, Integer thinkingBudget) {
+    private String callGeminiWithRetry(
+            String prompt,
+            int maxOutputTokens,
+            Integer thinkingBudget,
+            AiCallContext aiContext) {
         if (geminiApiKey == null || geminiApiKey.isBlank()) {
             throw new IllegalStateException("Gemini API key is not configured");
         }
@@ -1091,10 +1193,31 @@ public class AiService {
         HttpStatusCodeException lastTransientError = null;
 
         for (int attempt = 0; attempt <= retryDelaysMs.length; attempt++) {
+            int attemptNumber = aiContext.nextAttempt();
+            long startedAt = System.nanoTime();
             try {
                 ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
-                return parseGeminiResponse(response.getBody(), maxOutputTokens, thinkingBudget);
+                GeminiParsedResponse parsed = parseGeminiResponse(response.getBody());
+                long durationMs = elapsedMs(startedAt);
+                AiUsageLog.Status status = "MAX_TOKENS".equals(parsed.finishReason()) || parsed.text().isBlank()
+                        ? AiUsageLog.Status.INVALID_RESPONSE
+                        : AiUsageLog.Status.SUCCESS;
+                recordUsage(aiContext, status, attemptNumber, maxOutputTokens, thinkingBudget, parsed, durationMs,
+                        "MAX_TOKENS".equals(parsed.finishReason()) ? "MAX_TOKENS" : null,
+                        parsed.text().isBlank() ? "Gemini response text is empty" : null);
+                logGeminiUsage(parsed, maxOutputTokens, thinkingBudget);
+                if ("MAX_TOKENS".equals(parsed.finishReason())) {
+                    throw new RuntimeException(
+                            "Gemini response was truncated by maxOutputTokens (" + maxOutputTokens + ")");
+                }
+                if (parsed.text().isBlank()) {
+                    throw new RuntimeException("Gemini response text is empty");
+                }
+                return parsed.text();
             } catch (HttpStatusCodeException e) {
+                recordErrorUsage(aiContext, AiUsageLog.Status.HTTP_ERROR, attemptNumber, maxOutputTokens,
+                        thinkingBudget, elapsedMs(startedAt), String.valueOf(e.getStatusCode().value()),
+                        e.getResponseBodyAsString());
                 int code = e.getStatusCode().value();
                 if ((code == 503 || code == 429) && attempt < retryDelaysMs.length) {
                     lastTransientError = e;
@@ -1111,6 +1234,12 @@ public class AiService {
                     throw new RuntimeException("Gemini request failed for model " + geminiModel
                             + " with status " + e.getStatusCode() + ": " + e.getResponseBodyAsString());
                 }
+            } catch (RuntimeException e) {
+                if (isParseFailure(e)) {
+                    recordErrorUsage(aiContext, AiUsageLog.Status.PARSE_ERROR, attemptNumber, maxOutputTokens,
+                            thinkingBudget, elapsedMs(startedAt), "PARSE_ERROR", e.getMessage());
+                }
+                throw e;
             }
         }
 
@@ -1120,11 +1249,119 @@ public class AiService {
                 lastTransientError);
     }
 
+    private AiCallContext newAiCallContext(AiUsageLog.Operation operation, Long userId, Long tripId) {
+        return new AiCallContext(operation, userId, tripId, UUID.randomUUID().toString(), new AtomicInteger());
+    }
+
+    private void markInvalidResponse(AiCallContext aiContext, String errorCode, String errorMessage) {
+        if (aiUsageTrackingService == null) {
+            return;
+        }
+        aiUsageTrackingService.markLatestAttempt(
+                aiContext.requestId(),
+                AiUsageLog.Status.INVALID_RESPONSE,
+                errorCode,
+                errorMessage);
+    }
+
+    private void recordUsage(
+            AiCallContext aiContext,
+            AiUsageLog.Status status,
+            int attemptNumber,
+            int maxOutputTokens,
+            Integer thinkingBudget,
+            GeminiParsedResponse parsed,
+            long durationMs,
+            String errorCode,
+            String errorMessage) {
+        if (aiUsageTrackingService == null) {
+            return;
+        }
+        aiUsageTrackingService.record(new AiUsageTrackingService.AiUsageRecord(
+                aiContext.operation(),
+                status,
+                aiContext.requestId(),
+                attemptNumber,
+                aiContext.userId(),
+                aiContext.tripId(),
+                geminiModel,
+                parsed.finishReason(),
+                durationMs,
+                parsed.promptTokens(),
+                parsed.outputTokens(),
+                parsed.thinkingTokens(),
+                parsed.totalTokens(),
+                maxOutputTokens,
+                thinkingBudget,
+                errorCode,
+                errorMessage));
+    }
+
+    private void recordErrorUsage(
+            AiCallContext aiContext,
+            AiUsageLog.Status status,
+            int attemptNumber,
+            int maxOutputTokens,
+            Integer thinkingBudget,
+            long durationMs,
+            String errorCode,
+            String errorMessage) {
+        if (aiUsageTrackingService == null) {
+            return;
+        }
+        aiUsageTrackingService.record(new AiUsageTrackingService.AiUsageRecord(
+                aiContext.operation(),
+                status,
+                aiContext.requestId(),
+                attemptNumber,
+                aiContext.userId(),
+                aiContext.tripId(),
+                geminiModel,
+                null,
+                durationMs,
+                0,
+                0,
+                0,
+                0,
+                maxOutputTokens,
+                thinkingBudget,
+                errorCode,
+                errorMessage));
+    }
+
+    private long elapsedMs(long startedAtNanos) {
+        return Math.max(0, (System.nanoTime() - startedAtNanos) / 1_000_000);
+    }
+
+    private boolean isParseFailure(RuntimeException e) {
+        return e.getMessage() != null && e.getMessage().startsWith("Failed to parse Gemini response");
+    }
+
+    private void logGeminiUsage(GeminiParsedResponse parsed, int maxOutputTokens, Integer thinkingBudget) {
+        int thinkingTokens = Math.max(parsed.thinkingTokens(), 0);
+        int generatedTokens = parsed.outputTokens() + thinkingTokens;
+        int remainingOutputBudget = parsed.outputTokens() >= 0 ? maxOutputTokens - generatedTokens : -1;
+        int remainingThinkingBudget = thinkingBudget != null && thinkingBudget >= 0 && parsed.thinkingTokens() >= 0
+                ? thinkingBudget - parsed.thinkingTokens()
+                : -1;
+        log.debug(
+                "Gemini response finishReason={}, textLength={}, promptTokens={}, outputTokens={}, thinkingTokens={}, totalTokens={}, maxOutputTokens={}, remainingOutputBudget={}, thinkingBudget={}, remainingThinkingBudget={}",
+                parsed.finishReason(), parsed.text().length(), parsed.promptTokens(), parsed.outputTokens(),
+                parsed.thinkingTokens(), parsed.totalTokens(), maxOutputTokens, remainingOutputBudget,
+                thinkingBudget, remainingThinkingBudget);
+        if (parsed.promptTokens() > PROMPT_TOKEN_WARN_THRESHOLD) {
+            log.warn(
+                    "Gemini prompt is getting large: promptTokens={}, warnThreshold={}, outputTokens={}, thinkingTokens={}, totalTokens={}, maxOutputTokens={}, remainingOutputBudget={}",
+                    parsed.promptTokens(), PROMPT_TOKEN_WARN_THRESHOLD, parsed.outputTokens(), parsed.thinkingTokens(),
+                    parsed.totalTokens(), maxOutputTokens, remainingOutputBudget);
+        }
+    }
+
     private boolean supportsThinkingConfig() {
         return geminiModel != null && geminiModel.toLowerCase(Locale.ROOT).contains("2.5");
     }
 
-    private String parseGeminiResponse(String responseBody, int maxOutputTokens, Integer thinkingBudget) {
+    private GeminiParsedResponse parseGeminiResponse(String responseBody) {
         try {
             JsonNode root = objectMapper.readTree(responseBody);
             JsonNode candidate = root.path("candidates").get(0);
@@ -1135,33 +1372,9 @@ public class AiService {
             int outputTokens = usage.path("candidatesTokenCount").asInt(-1);
             int thinkingTokens = usage.path("thoughtsTokenCount").asInt(-1);
             int totalTokens = usage.path("totalTokenCount").asInt(-1);
-            int generatedTokens = outputTokens + Math.max(thinkingTokens, 0);
-            int remainingOutputBudget = outputTokens >= 0 ? maxOutputTokens - generatedTokens : -1;
-            int remainingThinkingBudget = thinkingBudget != null && thinkingBudget >= 0 && thinkingTokens >= 0
-                    ? thinkingBudget - thinkingTokens
-                    : -1;
-            log.debug(
-                    "Gemini response finishReason={}, textLength={}, promptTokens={}, outputTokens={}, thinkingTokens={}, totalTokens={}, maxOutputTokens={}, remainingOutputBudget={}, thinkingBudget={}, remainingThinkingBudget={}",
-                    finishReason, text.length(), promptTokens, outputTokens, thinkingTokens, totalTokens,
-                    maxOutputTokens, remainingOutputBudget, thinkingBudget, remainingThinkingBudget);
-            if (promptTokens > PROMPT_TOKEN_WARN_THRESHOLD) {
-                log.warn(
-                        "Gemini prompt is getting large: promptTokens={}, warnThreshold={}, outputTokens={}, thinkingTokens={}, totalTokens={}, maxOutputTokens={}, remainingOutputBudget={}",
-                        promptTokens, PROMPT_TOKEN_WARN_THRESHOLD, outputTokens, thinkingTokens, totalTokens,
-                        maxOutputTokens, remainingOutputBudget);
-            }
-            if ("MAX_TOKENS".equals(finishReason)) {
-                throw new RuntimeException(
-                        "Gemini response was truncated by maxOutputTokens (" + maxOutputTokens + ")");
-            }
-            if (text.isBlank()) {
-                throw new RuntimeException("Gemini response text is empty");
-            }
-            return text;
-        } catch (RuntimeException e) {
-            throw e;
+            return new GeminiParsedResponse(text, finishReason, promptTokens, outputTokens, thinkingTokens, totalTokens);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to parse Gemini response: " + e.getMessage());
+            throw new RuntimeException("Failed to parse Gemini response: " + e.getMessage(), e);
         }
     }
 

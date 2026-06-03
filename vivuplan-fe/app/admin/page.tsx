@@ -24,6 +24,11 @@ import Footer from "@/components/layout/Footer";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import {
   adminApi,
+  type AdminAiCostDaily,
+  type AdminAiCostSummary,
+  type AdminAiOperation,
+  type AdminAiStatus,
+  type AdminAiUsageEvent,
   type AdminStats,
   type AdminTripSummary,
   type AdminTransactionStatus,
@@ -32,7 +37,8 @@ import {
   type PageResponse,
 } from "@/lib/api";
 
-type AdminTab = "users" | "trips" | "transactions";
+type AdminTab = "users" | "trips" | "transactions" | "ai-cost";
+type AiRangeKey = "today" | "7d" | "30d" | "month" | "custom";
 
 const pageSize = 10;
 
@@ -53,6 +59,58 @@ function formatCurrency(value: number) {
     currency: "VND",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function formatUsd(value: number) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 4,
+  }).format(value || 0);
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("vi-VN").format(value || 0);
+}
+
+function formatPercent(value: number) {
+  return `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 }).format(value || 0)}%`;
+}
+
+function formatDurationMs(value: number) {
+  if (!value) return "-";
+  if (value < 1000) return `${formatNumber(value)} ms`;
+  return `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 }).format(value / 1000)} giây`;
+}
+
+function toIsoDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function aiDateRange(range: AiRangeKey, customFrom?: string, customTo?: string) {
+  if (range === "custom" && customFrom && customTo) {
+    return customFrom <= customTo
+      ? { from: customFrom, to: customTo }
+      : { from: customTo, to: customFrom };
+  }
+  const today = new Date();
+  const from = new Date(today);
+  if (range === "today") {
+    return { from: toIsoDate(today), to: toIsoDate(today) };
+  }
+  if (range === "7d") {
+    from.setDate(today.getDate() - 6);
+    return { from: toIsoDate(from), to: toIsoDate(today) };
+  }
+  if (range === "month") {
+    from.setDate(1);
+    return { from: toIsoDate(from), to: toIsoDate(today) };
+  }
+  from.setDate(today.getDate() - 29);
+  return { from: toIsoDate(from), to: toIsoDate(today) };
 }
 
 function packageLabel(packageCode?: string) {
@@ -84,6 +142,38 @@ const transactionStatusOptions = Object.keys(transactionStatusLabels) as AdminTr
 
 function transactionStatusLabel(status: string) {
   return transactionStatusLabels[status as AdminTransactionStatus] ?? status;
+}
+
+const aiOperationLabels: Record<AdminAiOperation, string> = {
+  PLAN_GENERATION: "Tạo lịch trình",
+  DAY_REGENERATION: "Chỉnh ngày",
+  DESTINATION_SUGGESTION: "Gợi ý điểm đến",
+};
+
+const aiStatusLabels: Record<AdminAiStatus, string> = {
+  SUCCESS: "Thành công",
+  INVALID_RESPONSE: "Response không hợp lệ",
+  HTTP_ERROR: "Lỗi HTTP",
+  PARSE_ERROR: "Lỗi parse",
+  FAILED: "Thất bại",
+};
+
+const aiOperationOptions = Object.keys(aiOperationLabels) as AdminAiOperation[];
+const aiStatusOptions = Object.keys(aiStatusLabels) as AdminAiStatus[];
+
+function aiOperationLabel(operation?: string) {
+  return operation ? aiOperationLabels[operation as AdminAiOperation] ?? operation : "-";
+}
+
+function aiStatusLabel(status?: string) {
+  return status ? aiStatusLabels[status as AdminAiStatus] ?? status : "-";
+}
+
+function aiStatusTone(status?: string): "neutral" | "success" | "admin" | "warning" {
+  if (status === "SUCCESS") return "success";
+  if (status === "INVALID_RESPONSE") return "warning";
+  if (status === "HTTP_ERROR" || status === "PARSE_ERROR" || status === "FAILED") return "neutral";
+  return "admin";
 }
 
 function transactionStatusTone(status: string): "neutral" | "success" | "admin" | "warning" {
@@ -225,6 +315,461 @@ function TransactionDrawer({
   );
 }
 
+function AiUsageDrawer({
+  event,
+  onClose,
+}: {
+  event: AdminAiUsageEvent;
+  onClose: () => void;
+}) {
+  return (
+    <div className="admin-drawer-backdrop">
+      <aside className="admin-drawer-panel" aria-label="Chi tiết AI call">
+        <div className="admin-drawer-header">
+          <div>
+            <span>Chi tiết AI call</span>
+            <h3>{aiOperationLabel(event.operation)}</h3>
+            <div className="admin-drawer-header-meta">
+              <StatusBadge tone={aiStatusTone(event.status)}>{aiStatusLabel(event.status)}</StatusBadge>
+              <span>Attempt #{event.attemptNumber}</span>
+            </div>
+          </div>
+          <button type="button" className="admin-drawer-close" onClick={onClose} aria-label="Đóng">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="admin-drawer-body">
+          <section className="admin-drawer-section">
+            <h4>Định danh</h4>
+            <dl className="admin-drawer-list">
+              <div>
+                <dt>Request ID</dt>
+                <dd>{event.requestId || "-"}</dd>
+              </div>
+              <div>
+                <dt>Thời gian</dt>
+                <dd>{formatDate(event.createdAt)}</dd>
+              </div>
+              <div>
+                <dt>User</dt>
+                <dd>{event.userEmail || "-"}</dd>
+              </div>
+              <div>
+                <dt>Trip</dt>
+                <dd>{event.tripId ? `#${event.tripId}` : "-"}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section className="admin-drawer-section">
+            <h4>Model & runtime</h4>
+            <dl className="admin-drawer-list">
+              <div>
+                <dt>Model</dt>
+                <dd>{event.model || "-"}</dd>
+              </div>
+              <div>
+                <dt>Finish reason</dt>
+                <dd>{event.finishReason || "-"}</dd>
+              </div>
+              <div>
+                <dt>Thời gian xử lý</dt>
+                <dd>{event.durationMs !== undefined ? `${formatNumber(event.durationMs)} ms` : "-"}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section className="admin-drawer-section">
+            <h4>Token</h4>
+            <div className="admin-drawer-credit-grid admin-ai-token-grid">
+              <div>
+                <span>Input</span>
+                <strong>{formatNumber(event.promptTokens)}</strong>
+              </div>
+              <div>
+                <span>Output</span>
+                <strong>{formatNumber(event.outputTokens)}</strong>
+              </div>
+              <div>
+                <span>Thinking</span>
+                <strong>{formatNumber(event.thinkingTokens)}</strong>
+              </div>
+              <div>
+                <span>Tổng</span>
+                <strong>{formatNumber(event.totalTokens)}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section className="admin-drawer-section">
+            <h4>Chi phí</h4>
+            <dl className="admin-drawer-list">
+              <div>
+                <dt>Ước tính VND</dt>
+                <dd>{formatCurrency(event.estimatedCostVnd)}</dd>
+              </div>
+              <div>
+                <dt>Ước tính USD</dt>
+                <dd>{formatUsd(event.estimatedCostUsd)}</dd>
+              </div>
+              <div>
+                <dt>Max output</dt>
+                <dd>{event.maxOutputTokens ? formatNumber(event.maxOutputTokens) : "-"}</dd>
+              </div>
+              <div>
+                <dt>Thinking budget</dt>
+                <dd>{event.thinkingBudget ? formatNumber(event.thinkingBudget) : "-"}</dd>
+              </div>
+            </dl>
+          </section>
+
+          {(event.errorCode || event.errorMessage) && (
+            <section className="admin-drawer-section">
+              <h4>Lỗi ngắn</h4>
+              <dl className="admin-drawer-list">
+                <div>
+                  <dt>Mã lỗi</dt>
+                  <dd>{event.errorCode || "-"}</dd>
+                </div>
+                <div>
+                  <dt>Nội dung</dt>
+                  <dd>{event.errorMessage || "-"}</dd>
+                </div>
+              </dl>
+            </section>
+          )}
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function AiCostDashboard({
+  summary,
+  daily,
+  events,
+  loading,
+  range,
+  operation,
+  status,
+  search,
+  page,
+  customFrom,
+  customTo,
+  onRangeChange,
+  onCustomFromChange,
+  onCustomToChange,
+  onOperationChange,
+  onStatusChange,
+  onSearchChange,
+  onPageChange,
+  onSelectEvent,
+}: {
+  summary: AdminAiCostSummary | null;
+  daily: AdminAiCostDaily[];
+  events: PageResponse<AdminAiUsageEvent> | null;
+  loading: boolean;
+  range: AiRangeKey;
+  operation: "ALL" | AdminAiOperation;
+  status: "ALL" | AdminAiStatus;
+  search: string;
+  page: number;
+  customFrom: string;
+  customTo: string;
+  onRangeChange: (range: AiRangeKey) => void;
+  onCustomFromChange: (value: string) => void;
+  onCustomToChange: (value: string) => void;
+  onOperationChange: (operation: "ALL" | AdminAiOperation) => void;
+  onStatusChange: (status: "ALL" | AdminAiStatus) => void;
+  onSearchChange: (value: string) => void;
+  onPageChange: (page: number) => void;
+  onSelectEvent: (event: AdminAiUsageEvent) => void;
+}) {
+  const maxDailyCost = Math.max(...daily.map((item) => item.totalCostVnd), 1);
+  const operationTotal = Math.max(...(summary?.operationBreakdown ?? []).map((item) => item.totalCostVnd), 1);
+  const totalUsageTokens = Math.max(
+    (summary?.promptTokens ?? 0) + (summary?.outputTokens ?? 0) + (summary?.thinkingTokens ?? 0),
+    1,
+  );
+
+  return (
+    <section className="admin-panel admin-ai-panel">
+      <div className="admin-panel-header">
+        <div>
+          <h2>AI chi phí</h2>
+          <p>Theo dõi token, retry và chi phí Gemini từ thời điểm bật tracking.</p>
+        </div>
+      </div>
+
+      <div className="admin-filter-bar admin-ai-filter-bar">
+        <div className="admin-ai-range">
+          {[
+            ["today", "Hôm nay"],
+            ["7d", "7 ngày"],
+            ["30d", "30 ngày"],
+            ["month", "Tháng này"],
+            ["custom", "Tùy chọn"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={range === value ? "active" : ""}
+              onClick={() => onRangeChange(value as AiRangeKey)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {range === "custom" && (
+          <div className="admin-ai-date-range">
+            <input
+              type="date"
+              value={customFrom}
+              onChange={(event) => onCustomFromChange(event.target.value)}
+              aria-label="Từ ngày"
+            />
+            <span>đến</span>
+            <input
+              type="date"
+              value={customTo}
+              onChange={(event) => onCustomToChange(event.target.value)}
+              aria-label="Đến ngày"
+            />
+          </div>
+        )}
+        <select className="admin-filter-select" value={operation} onChange={(event) => onOperationChange(event.target.value as "ALL" | AdminAiOperation)}>
+          <option value="ALL">Tất cả luồng</option>
+          {aiOperationOptions.map((item) => (
+            <option key={item} value={item}>{aiOperationLabel(item)}</option>
+          ))}
+        </select>
+        <select className="admin-filter-select" value={status} onChange={(event) => onStatusChange(event.target.value as "ALL" | AdminAiStatus)}>
+          <option value="ALL">Tất cả trạng thái</option>
+          {aiStatusOptions.map((item) => (
+            <option key={item} value={item}>{aiStatusLabel(item)}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="admin-ai-overview">
+        <StatCard label="Chi phí khoảng chọn" value={summary ? formatCurrency(summary.totalCostVnd) : "-"} icon={<CreditCard size={18} />} />
+        <StatCard label="Requests" value={summary ? formatNumber(summary.requests) : "-"} icon={<BarChart3 size={18} />} />
+        <StatCard label="Tổng token" value={summary ? formatNumber(summary.totalTokens) : "-"} icon={<BarChart3 size={18} />} />
+        <StatCard label="Gemini attempts" value={summary ? formatNumber(summary.attempts) : "-"} icon={<BarChart3 size={18} />} />
+        <StatCard label="Retry rate" value={summary ? formatPercent(summary.retryRate) : "-"} icon={<BarChart3 size={18} />} />
+        <StatCard label="Error rate" value={summary ? formatPercent(summary.errorRate) : "-"} icon={<BarChart3 size={18} />} />
+        <StatCard label="Avg latency" value={summary ? formatDurationMs(summary.avgDurationMs) : "-"} icon={<BarChart3 size={18} />} />
+      </div>
+
+      <div className="admin-ai-grid">
+        <section className="admin-ai-card">
+          <div className="admin-ai-card-header">
+            <h3>Chi phí theo ngày</h3>
+            <span>{daily.length} ngày</span>
+          </div>
+          <div className="admin-ai-trend">
+            {daily.length === 0 ? (
+              <p className="admin-ai-empty">Chưa có dữ liệu trong khoảng này.</p>
+            ) : daily.map((item) => (
+              <div className="admin-ai-trend-row" key={item.date}>
+                <span>{item.date}</span>
+                <div>
+                  <i style={{ width: `${Math.max(3, (item.totalCostVnd / maxDailyCost) * 100)}%` }} />
+                </div>
+                <strong>{formatCurrency(item.totalCostVnd)}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="admin-ai-card">
+          <div className="admin-ai-card-header">
+            <h3>Token usage</h3>
+            <span>{formatNumber(summary?.totalTokens ?? 0)} token</span>
+          </div>
+          <div className="admin-ai-token-breakdown">
+            {[
+              ["Input", summary?.promptTokens ?? 0],
+              ["Output", summary?.outputTokens ?? 0],
+              ["Thinking", summary?.thinkingTokens ?? 0],
+            ].map(([label, value]) => (
+              <div key={label as string}>
+                <div>
+                  <span>{label}</span>
+                  <strong>{formatNumber(value as number)}</strong>
+                </div>
+                <i style={{ width: `${Math.max(2, ((value as number) / totalUsageTokens) * 100)}%` }} />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="admin-ai-card">
+          <div className="admin-ai-card-header">
+            <h3>Chi phí theo luồng</h3>
+            <span>{summary?.operationBreakdown.length ?? 0} luồng</span>
+          </div>
+          <div className="admin-ai-breakdown-list">
+            {(summary?.operationBreakdown ?? []).length === 0 ? (
+              <p className="admin-ai-empty">Chưa có dữ liệu.</p>
+            ) : summary?.operationBreakdown.map((item) => (
+              <div key={item.key} className="admin-ai-breakdown-item">
+                <div>
+                  <strong>{aiOperationLabel(item.key)}</strong>
+                  <span>{formatNumber(item.attempts)} attempts</span>
+                </div>
+                <div className="admin-ai-mini-bar"><i style={{ width: `${Math.max(3, (item.totalCostVnd / operationTotal) * 100)}%` }} /></div>
+                <strong>{formatCurrency(item.totalCostVnd)}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="admin-ai-card">
+          <div className="admin-ai-card-header">
+            <h3>Avg cost</h3>
+            <span>Mỗi operation</span>
+          </div>
+          <div className="admin-ai-average-list">
+            {(summary?.averageCosts ?? []).length === 0 ? (
+              <p className="admin-ai-empty">Chưa có operation thành công.</p>
+            ) : summary?.averageCosts.map((item) => (
+              <div key={item.operation}>
+                <span>{aiOperationLabel(item.operation)}</span>
+                <strong>{formatCurrency(item.avgCostVnd)}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <div className="admin-ai-grid admin-ai-grid-wide">
+        <section className="admin-ai-card">
+          <div className="admin-ai-card-header">
+            <h3>Sức khỏe theo luồng</h3>
+            <span>{summary?.operationHealth.length ?? 0} luồng</span>
+          </div>
+          <div className="admin-ai-health-list">
+            {(summary?.operationHealth ?? []).length === 0 ? (
+              <p className="admin-ai-empty">Chưa có dữ liệu.</p>
+            ) : summary?.operationHealth.map((item) => (
+              <div key={item.operation} className="admin-ai-health-item">
+                <div>
+                  <strong>{aiOperationLabel(item.operation)}</strong>
+                  <span>{formatNumber(item.requests)} requests · {formatNumber(item.attempts)} attempts</span>
+                </div>
+                <dl>
+                  <div>
+                    <dt>Cost</dt>
+                    <dd>{formatCurrency(item.totalCostVnd)}</dd>
+                  </div>
+                  <div>
+                    <dt>Retry</dt>
+                    <dd>{formatPercent(item.retryRate)}</dd>
+                  </div>
+                  <div>
+                    <dt>Lỗi</dt>
+                    <dd>{formatPercent(item.errorRate)}</dd>
+                  </div>
+                  <div>
+                    <dt>Avg</dt>
+                    <dd>{formatDurationMs(item.avgDurationMs)}</dd>
+                  </div>
+                  <div>
+                    <dt>Max</dt>
+                    <dd>{formatDurationMs(item.maxDurationMs)}</dd>
+                  </div>
+                </dl>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="admin-ai-card">
+          <div className="admin-ai-card-header">
+            <h3>Request tốn nhiều</h3>
+            <span>Top 5</span>
+          </div>
+          <div className="admin-ai-expensive-list">
+            {(summary?.topCostRequests ?? []).length === 0 ? (
+              <p className="admin-ai-empty">Chưa có request phát sinh chi phí.</p>
+            ) : summary?.topCostRequests.map((item) => (
+              <div key={item.requestId} className="admin-ai-expensive-item">
+                <div>
+                  <strong>{aiOperationLabel(item.operation)}</strong>
+                  <span>{item.userEmail || "-"} · {formatDate(item.createdAt)}</span>
+                </div>
+                <div>
+                  <StatusBadge tone={aiStatusTone(item.status)}>{aiStatusLabel(item.status)}</StatusBadge>
+                  <span>{formatNumber(item.totalTokens)} token</span>
+                  <span>{item.attempts} attempts</span>
+                  <strong>{formatCurrency(item.totalCostVnd)}</strong>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <div className="admin-filter-bar">
+        <label className="admin-search-field">
+          <Search size={15} />
+          <input
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder="Tìm theo email, model hoặc request ID"
+          />
+        </label>
+      </div>
+
+      <div className="admin-table-wrap">
+        <table className="admin-table admin-ai-table">
+          <thead>
+            <tr>
+              <th>STT</th>
+              <th>Thời gian</th>
+              <th>Luồng</th>
+              <th>User</th>
+              <th>Model</th>
+              <th>Token</th>
+              <th>Cost</th>
+              <th>Trạng thái</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            {events?.content.map((item, index) => (
+              <tr key={item.id}>
+                <td>{rowNumber(page, index)}</td>
+                <td>{formatDate(item.createdAt)}</td>
+                <td>
+                  <strong>{aiOperationLabel(item.operation)}</strong>
+                  <span>Attempt #{item.attemptNumber}</span>
+                </td>
+                <td>{item.userEmail || "-"}</td>
+                <td>{item.model || "-"}</td>
+                <td>{formatNumber(item.totalTokens)}</td>
+                <td>
+                  <strong>{formatCurrency(item.estimatedCostVnd)}</strong>
+                </td>
+                <td><StatusBadge tone={aiStatusTone(item.status)}>{aiStatusLabel(item.status)}</StatusBadge></td>
+                <td>
+                  <button type="button" className="admin-row-action" onClick={() => onSelectEvent(item)}>
+                    <Eye size={15} /> Xem
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <Pagination page={page} totalPages={events?.totalPages ?? 1} loading={loading} onPageChange={onPageChange} />
+    </section>
+  );
+}
+
 function Pagination({
   page,
   totalPages,
@@ -281,11 +826,23 @@ export default function AdminPage() {
   const [users, setUsers] = useState<PageResponse<AdminUserSummary> | null>(null);
   const [trips, setTrips] = useState<PageResponse<AdminTripSummary> | null>(null);
   const [transactions, setTransactions] = useState<PageResponse<AdminTransactionSummary> | null>(null);
+  const [aiCostSummary, setAiCostSummary] = useState<AdminAiCostSummary | null>(null);
+  const [aiCostDaily, setAiCostDaily] = useState<AdminAiCostDaily[]>([]);
+  const [aiCostEvents, setAiCostEvents] = useState<PageResponse<AdminAiUsageEvent> | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<AdminTransactionSummary | null>(null);
+  const [selectedAiEvent, setSelectedAiEvent] = useState<AdminAiUsageEvent | null>(null);
   const [activeTab, setActiveTab] = useState<AdminTab>("users");
   const [userPage, setUserPage] = useState(0);
   const [tripPage, setTripPage] = useState(0);
   const [transactionPage, setTransactionPage] = useState(0);
+  const [aiCostPage, setAiCostPage] = useState(0);
+  const [aiCostRange, setAiCostRange] = useState<AiRangeKey>("7d");
+  const defaultAiRange = aiDateRange("7d");
+  const [aiCustomFrom, setAiCustomFrom] = useState(defaultAiRange.from);
+  const [aiCustomTo, setAiCustomTo] = useState(defaultAiRange.to);
+  const [aiOperationFilter, setAiOperationFilter] = useState<"ALL" | AdminAiOperation>("ALL");
+  const [aiStatusFilter, setAiStatusFilter] = useState<"ALL" | AdminAiStatus>("ALL");
+  const [aiCostSearch, setAiCostSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState<"ALL" | "USER" | "ADMIN">("ALL");
   const [userProviderFilter, setUserProviderFilter] = useState<"ALL" | "LOCAL" | "GOOGLE">("ALL");
@@ -312,10 +869,20 @@ export default function AdminPage() {
   }, [transactionSearch, transactionStatusFilter]);
 
   useEffect(() => {
+    setAiCostPage(0);
+  }, [aiCostRange, aiCustomFrom, aiCustomTo, aiOperationFilter, aiStatusFilter, aiCostSearch]);
+
+  useEffect(() => {
     if (authLoading || !authorized) return;
     let cancelled = false;
     setLoading(true);
     setError("");
+    const aiRange = aiDateRange(aiCostRange, aiCustomFrom, aiCustomTo);
+    const aiFilters = {
+      ...aiRange,
+      operation: aiOperationFilter,
+      status: aiStatusFilter,
+    };
 
     Promise.all([
       adminApi.stats(),
@@ -331,13 +898,22 @@ export default function AdminPage() {
         q: transactionSearch,
         status: transactionStatusFilter,
       }),
+      adminApi.aiCostSummary(aiFilters),
+      adminApi.aiCostDaily(aiFilters),
+      adminApi.aiCostEvents(aiCostPage, pageSize, {
+        ...aiFilters,
+        q: aiCostSearch,
+      }),
     ])
-      .then(([nextStats, nextUsers, nextTrips, nextTransactions]) => {
+      .then(([nextStats, nextUsers, nextTrips, nextTransactions, nextAiSummary, nextAiDaily, nextAiEvents]) => {
         if (cancelled) return;
         setStats(nextStats);
         setUsers(nextUsers);
         setTrips(nextTrips);
         setTransactions(nextTransactions);
+        setAiCostSummary(nextAiSummary);
+        setAiCostDaily(nextAiDaily);
+        setAiCostEvents(nextAiEvents);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -362,6 +938,13 @@ export default function AdminPage() {
     tripSearch,
     transactionSearch,
     transactionStatusFilter,
+    aiCostRange,
+    aiCustomFrom,
+    aiCustomTo,
+    aiCostPage,
+    aiCostSearch,
+    aiOperationFilter,
+    aiStatusFilter,
   ]);
 
   const requestRoleChange = (adminUser: AdminUserSummary, role: "USER" | "ADMIN", trigger: HTMLElement) => {
@@ -473,6 +1056,13 @@ export default function AdminPage() {
               onClick={() => setActiveTab("transactions")}
             >
               Giao dịch
+            </button>
+            <button
+              type="button"
+              className={activeTab === "ai-cost" ? "active" : ""}
+              onClick={() => setActiveTab("ai-cost")}
+            >
+              AI chi phí
             </button>
           </div>
 
@@ -676,7 +1266,7 @@ export default function AdminPage() {
 
               <Pagination page={tripPage} totalPages={trips?.totalPages ?? 1} loading={loading} onPageChange={setTripPage} />
             </section>
-          ) : (
+          ) : activeTab === "transactions" ? (
             <section className="admin-panel">
               <div className="admin-panel-header">
                 <div>
@@ -749,6 +1339,28 @@ export default function AdminPage() {
 
               <Pagination page={transactionPage} totalPages={transactions?.totalPages ?? 1} loading={loading} onPageChange={setTransactionPage} />
             </section>
+          ) : (
+            <AiCostDashboard
+              summary={aiCostSummary}
+              daily={aiCostDaily}
+              events={aiCostEvents}
+              loading={loading}
+              range={aiCostRange}
+              operation={aiOperationFilter}
+              status={aiStatusFilter}
+              search={aiCostSearch}
+              page={aiCostPage}
+              customFrom={aiCustomFrom}
+              customTo={aiCustomTo}
+              onRangeChange={setAiCostRange}
+              onCustomFromChange={setAiCustomFrom}
+              onCustomToChange={setAiCustomTo}
+              onOperationChange={setAiOperationFilter}
+              onStatusChange={setAiStatusFilter}
+              onSearchChange={setAiCostSearch}
+              onPageChange={setAiCostPage}
+              onSelectEvent={setSelectedAiEvent}
+            />
           )}
         </section>
       </main>
@@ -757,6 +1369,12 @@ export default function AdminPage() {
         <TransactionDrawer
           transaction={selectedTransaction}
           onClose={() => setSelectedTransaction(null)}
+        />
+      )}
+      {selectedAiEvent && (
+        <AiUsageDrawer
+          event={selectedAiEvent}
+          onClose={() => setSelectedAiEvent(null)}
         />
       )}
     </>

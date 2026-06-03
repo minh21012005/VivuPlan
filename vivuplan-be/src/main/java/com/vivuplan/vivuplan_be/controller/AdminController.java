@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
@@ -81,5 +83,35 @@ public class AdminController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String status) {
         return ResponseEntity.ok(adminService.listTransactions(page, size, q, status));
+    }
+
+    @GetMapping("/ai-cost/summary")
+    public ResponseEntity<AdminDto.AiCostSummaryResponse> aiCostSummary(
+            @RequestParam(required = false) LocalDate from,
+            @RequestParam(required = false) LocalDate to,
+            @RequestParam(required = false) String operation,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(adminService.aiCostSummary(from, to, operation, status));
+    }
+
+    @GetMapping("/ai-cost/daily")
+    public ResponseEntity<java.util.List<AdminDto.AiCostDaily>> aiCostDaily(
+            @RequestParam(required = false) LocalDate from,
+            @RequestParam(required = false) LocalDate to,
+            @RequestParam(required = false) String operation,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(adminService.aiCostDaily(from, to, operation, status));
+    }
+
+    @GetMapping("/ai-cost/events")
+    public ResponseEntity<Page<AdminDto.AiUsageEvent>> aiUsageEvents(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) LocalDate from,
+            @RequestParam(required = false) LocalDate to,
+            @RequestParam(required = false) String operation,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String q) {
+        return ResponseEntity.ok(adminService.aiUsageEvents(page, size, from, to, operation, status, q));
     }
 }

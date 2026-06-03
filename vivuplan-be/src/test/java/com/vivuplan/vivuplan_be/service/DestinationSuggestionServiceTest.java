@@ -55,14 +55,14 @@ class DestinationSuggestionServiceTest {
         DestinationSuggestionService service = service();
         when(destinationRepository.findByActiveTrueOrderByDisplayOrderAscNameAsc())
                 .thenReturn(List.of(destination("Đà Nẵng")));
-        when(aiService.suggestDestinations(any(), anyString()))
+        when(aiService.suggestDestinations(any(), anyString(), any()))
                 .thenReturn(validSuggestions());
 
         TripDto.DestinationSuggestionResponse response = service.suggest(7L, request("biển, ăn uống địa phương"));
 
         assertThat(response.getSuggestions()).hasSize(3);
         verify(billingService).requirePlanCredit(7L);
-        verify(aiService).suggestDestinations(any(), anyString());
+        verify(aiService).suggestDestinations(any(), anyString(), any());
     }
 
     @Test
@@ -70,7 +70,7 @@ class DestinationSuggestionServiceTest {
         DestinationSuggestionService service = service();
         when(destinationRepository.findByActiveTrueOrderByDisplayOrderAscNameAsc())
                 .thenReturn(List.of(destination("Quy Nhơn"), destination("Ninh Bình")));
-        when(aiService.suggestDestinations(any(), anyString()))
+        when(aiService.suggestDestinations(any(), anyString(), any()))
                 .thenReturn(List.of(
                         suggestion("Quy Nhơn", "Miền Trung", false),
                         suggestion("Côn Đảo", "Miền Nam", true),
@@ -94,7 +94,7 @@ class DestinationSuggestionServiceTest {
                 .isInstanceOf(IllegalArgumentException.class);
 
         verify(billingService, never()).requirePlanCredit(any());
-        verify(aiService, never()).suggestDestinations(any(), anyString());
+        verify(aiService, never()).suggestDestinations(any(), anyString(), any());
     }
 
     @Test
@@ -108,7 +108,7 @@ class DestinationSuggestionServiceTest {
                 .hasMessageContaining("Thời gian chuyến đi");
 
         verify(billingService, never()).requirePlanCredit(any());
-        verify(aiService, never()).suggestDestinations(any(), anyString());
+        verify(aiService, never()).suggestDestinations(any(), anyString(), any());
     }
 
     @Test
@@ -122,7 +122,7 @@ class DestinationSuggestionServiceTest {
                 .hasMessageContaining("Ngân sách");
 
         verify(billingService, never()).requirePlanCredit(any());
-        verify(aiService, never()).suggestDestinations(any(), anyString());
+        verify(aiService, never()).suggestDestinations(any(), anyString(), any());
     }
 
     @Test
@@ -137,7 +137,7 @@ class DestinationSuggestionServiceTest {
                 .hasMessageContaining(String.valueOf(TripDto.MAX_TRIP_DAYS));
 
         verify(billingService, never()).requirePlanCredit(any());
-        verify(aiService, never()).suggestDestinations(any(), anyString());
+        verify(aiService, never()).suggestDestinations(any(), anyString(), any());
     }
 
     @Test
@@ -151,7 +151,7 @@ class DestinationSuggestionServiceTest {
                 .hasMessageContaining(String.valueOf(TripDto.MAX_TRAVELERS));
 
         verify(billingService, never()).requirePlanCredit(any());
-        verify(aiService, never()).suggestDestinations(any(), anyString());
+        verify(aiService, never()).suggestDestinations(any(), anyString(), any());
     }
 
     @Test
@@ -163,7 +163,7 @@ class DestinationSuggestionServiceTest {
                 .isInstanceOf(BillingException.class);
 
         verify(destinationRepository, never()).findByActiveTrueOrderByDisplayOrderAscNameAsc();
-        verify(aiService, never()).suggestDestinations(any(), anyString());
+        verify(aiService, never()).suggestDestinations(any(), anyString(), any());
     }
 
     @Test
@@ -172,7 +172,7 @@ class DestinationSuggestionServiceTest {
         ReflectionTestUtils.setField(service, "suggestionLimit", 1);
         when(destinationRepository.findByActiveTrueOrderByDisplayOrderAscNameAsc())
                 .thenReturn(List.of(destination("Đà Nẵng")));
-        when(aiService.suggestDestinations(any(), anyString()))
+        when(aiService.suggestDestinations(any(), anyString(), any()))
                 .thenReturn(validSuggestions());
 
         TripDto.DestinationSuggestionResponse first = service.suggest(7L, request("biển"));
@@ -184,7 +184,7 @@ class DestinationSuggestionServiceTest {
                         .toList());
         verify(billingService, times(2)).requirePlanCredit(7L);
         verify(destinationRepository, times(1)).findByActiveTrueOrderByDisplayOrderAscNameAsc();
-        verify(aiService, times(1)).suggestDestinations(any(), anyString());
+        verify(aiService, times(1)).suggestDestinations(any(), anyString(), any());
     }
 
     @Test
@@ -193,7 +193,7 @@ class DestinationSuggestionServiceTest {
         ReflectionTestUtils.setField(service, "suggestionLimit", 1);
         when(destinationRepository.findByActiveTrueOrderByDisplayOrderAscNameAsc())
                 .thenReturn(List.of(destination("Đà Nẵng")));
-        when(aiService.suggestDestinations(any(), anyString()))
+        when(aiService.suggestDestinations(any(), anyString(), any()))
                 .thenReturn(validSuggestions());
 
         service.suggest(7L, request("biển"));
@@ -210,7 +210,7 @@ class DestinationSuggestionServiceTest {
         ReflectionTestUtils.setField(service, "suggestionCooldownSeconds", 60);
         when(destinationRepository.findByActiveTrueOrderByDisplayOrderAscNameAsc())
                 .thenReturn(List.of(destination("Đà Nẵng")));
-        when(aiService.suggestDestinations(any(), anyString()))
+        when(aiService.suggestDestinations(any(), anyString(), any()))
                 .thenReturn(validSuggestions());
 
         service.suggest(7L, request("biển"));
@@ -225,7 +225,7 @@ class DestinationSuggestionServiceTest {
         DestinationSuggestionService service = service();
         when(destinationRepository.findByActiveTrueOrderByDisplayOrderAscNameAsc())
                 .thenReturn(List.of(destination("Đà Nẵng")));
-        when(aiService.suggestDestinations(any(), anyString()))
+        when(aiService.suggestDestinations(any(), anyString(), any()))
                 .thenReturn(List.of(
                         suggestion("Quy Nhơn", "Miền Trung", true),
                         suggestion("Quy Nhơn", "Miền Trung", true)));
@@ -241,7 +241,7 @@ class DestinationSuggestionServiceTest {
                 .thenReturn(List.of(destination("Đà Nẵng")));
         TripDto.DestinationSuggestion invalid = suggestion("Quy Nhơn", "Miền Trung", true);
         invalid.setBudgetFit("Rất rẻ");
-        when(aiService.suggestDestinations(any(), anyString()))
+        when(aiService.suggestDestinations(any(), anyString(), any()))
                 .thenReturn(List.of(
                         invalid,
                         suggestion("Côn Đảo", "Miền Nam", false),
@@ -260,7 +260,7 @@ class DestinationSuggestionServiceTest {
         TripDto.DestinationSuggestion second = suggestion("Côn Đảo", "Miền Nam", false);
         first.setOverallFit("Phù hợp nhất");
         second.setOverallFit("Phù hợp nhất");
-        when(aiService.suggestDestinations(any(), anyString()))
+        when(aiService.suggestDestinations(any(), anyString(), any()))
                 .thenReturn(List.of(
                         first,
                         second,
@@ -279,7 +279,7 @@ class DestinationSuggestionServiceTest {
         invalid.setOverallFit("Phù hợp nhất");
         invalid.setBudgetFit("Cần cân nhắc");
         invalid.setTravelFit("Cần cân nhắc");
-        when(aiService.suggestDestinations(any(), anyString()))
+        when(aiService.suggestDestinations(any(), anyString(), any()))
                 .thenReturn(List.of(
                         invalid,
                         suggestion("Côn Đảo", "Miền Nam", false),
@@ -296,7 +296,7 @@ class DestinationSuggestionServiceTest {
                 .thenReturn(List.of(destination("Đà Nẵng")));
         TripDto.DestinationSuggestion invalid = suggestion("Quy Nhơn", "Miền Trung", true);
         invalid.setTravelNote("");
-        when(aiService.suggestDestinations(any(), anyString()))
+        when(aiService.suggestDestinations(any(), anyString(), any()))
                 .thenReturn(List.of(
                         invalid,
                         suggestion("Côn Đảo", "Miền Nam", false),
@@ -312,7 +312,7 @@ class DestinationSuggestionServiceTest {
         ReflectionTestUtils.setField(service, "suggestionLimit", 1);
         when(destinationRepository.findByActiveTrueOrderByDisplayOrderAscNameAsc())
                 .thenReturn(List.of(destination("Đà Nẵng")));
-        when(aiService.suggestDestinations(any(), anyString()))
+        when(aiService.suggestDestinations(any(), anyString(), any()))
                 .thenReturn(validSuggestions());
 
         TripDto.DestinationSuggestionResponse first = service.suggest(7L, request("biển"));

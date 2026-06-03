@@ -5,6 +5,7 @@ import com.vivuplan.vivuplan_be.entity.User;
 import com.vivuplan.vivuplan_be.entity.UserWallet;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class AdminDto {
@@ -160,5 +161,123 @@ public class AdminDto {
     @Data
     public static class UpdateUserLockRequest {
         private Boolean locked;
+    }
+
+    @Data
+    public static class AiCostSummaryResponse {
+        private long totalCostVnd;
+        private double totalCostUsd;
+        private long promptTokens;
+        private long outputTokens;
+        private long thinkingTokens;
+        private long totalTokens;
+        private long requests;
+        private long attempts;
+        private long successfulOperations;
+        private long failedRequests;
+        private long retryAttempts;
+        private double retryRate;
+        private double errorRate;
+        private long avgDurationMs;
+        private long maxDurationMs;
+        private List<AiCostBreakdown> operationBreakdown = new ArrayList<>();
+        private List<AiCostBreakdown> modelBreakdown = new ArrayList<>();
+        private List<AiCostBreakdown> statusBreakdown = new ArrayList<>();
+        private List<AiOperationAverage> averageCosts = new ArrayList<>();
+        private List<AiOperationHealth> operationHealth = new ArrayList<>();
+        private List<AiRequestSummary> topCostRequests = new ArrayList<>();
+    }
+
+    @Data
+    public static class AiCostBreakdown {
+        private String key;
+        private String label;
+        private long attempts;
+        private long successfulOperations;
+        private long totalCostVnd;
+        private double totalCostUsd;
+        private long promptTokens;
+        private long outputTokens;
+        private long thinkingTokens;
+        private long totalTokens;
+    }
+
+    @Data
+    public static class AiOperationAverage {
+        private String operation;
+        private String label;
+        private long operations;
+        private long avgCostVnd;
+        private double avgCostUsd;
+    }
+
+    @Data
+    public static class AiOperationHealth {
+        private String operation;
+        private String label;
+        private long requests;
+        private long attempts;
+        private double retryRate;
+        private double errorRate;
+        private long avgDurationMs;
+        private long maxDurationMs;
+        private long totalCostVnd;
+    }
+
+    @Data
+    public static class AiRequestSummary {
+        private String requestId;
+        private String operation;
+        private String status;
+        private Long userId;
+        private String userEmail;
+        private Long tripId;
+        private long attempts;
+        private long retryAttempts;
+        private long totalCostVnd;
+        private double totalCostUsd;
+        private long totalTokens;
+        private long durationMs;
+        private String createdAt;
+    }
+
+    @Data
+    public static class AiCostDaily {
+        private String date;
+        private long totalCostVnd;
+        private double totalCostUsd;
+        private long promptTokens;
+        private long outputTokens;
+        private long thinkingTokens;
+        private long totalTokens;
+        private long attempts;
+        private long successAttempts;
+        private long failedAttempts;
+    }
+
+    @Data
+    public static class AiUsageEvent {
+        private Long id;
+        private String requestId;
+        private Integer attemptNumber;
+        private String operation;
+        private String status;
+        private Long userId;
+        private String userEmail;
+        private Long tripId;
+        private String model;
+        private String finishReason;
+        private Long durationMs;
+        private Integer promptTokens;
+        private Integer outputTokens;
+        private Integer thinkingTokens;
+        private Integer totalTokens;
+        private Integer maxOutputTokens;
+        private Integer thinkingBudget;
+        private long estimatedCostVnd;
+        private double estimatedCostUsd;
+        private String errorCode;
+        private String errorMessage;
+        private String createdAt;
     }
 }

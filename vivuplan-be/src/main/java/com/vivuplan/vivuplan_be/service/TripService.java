@@ -106,7 +106,7 @@ public class TripService {
         aiReq.setWeatherForecast(fetchWeatherContext(req));
         aiReq.setVerifiedPlacesContext(placePlanningService.buildVerifiedPlacesContext(aiReq));
 
-        AiService.GeneratedItineraryResult generatedItinerary = aiService.generateItinerary(aiReq);
+        AiService.GeneratedItineraryResult generatedItinerary = aiService.generateItinerary(aiReq, userId);
         List<TripDto.DayResponse> aiSchedule = generatedItinerary.days();
         TripDto.RequestFulfillment requestFulfillment = generatedItinerary.requestFulfillment();
         placePlanningService.enrichScheduleWithVerifiedPlaces(aiSchedule, req.getDestination());
@@ -314,7 +314,9 @@ public class TripService {
                 currentSchedule,
                 dayNumber,
                 req != null ? req.getIntent() : "REGENERATE",
-                instruction);
+                instruction,
+                userId,
+                trip.getId());
         TripDto.DayResponse proposedDay = regeneratedDay.day();
         TripDto.RequestFulfillment requestFulfillment = regeneratedDay.requestFulfillment();
         placePlanningService.enrichScheduleWithVerifiedPlaces(List.of(proposedDay), trip.getDestination());

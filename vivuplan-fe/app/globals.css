@@ -7294,3 +7294,341 @@ textarea.input.textarea-compact {
     grid-template-columns: 1fr;
   }
 }
+
+/* Admin AI cost dashboard */
+.admin-ai-panel {
+  overflow: visible;
+}
+
+.admin-ai-filter-bar {
+  flex-wrap: wrap;
+}
+
+.admin-ai-range {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  background: var(--surface);
+}
+
+.admin-ai-range button {
+  min-height: 34px;
+  border: 0;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 850;
+  padding: 0 13px;
+}
+
+.admin-ai-range button.active {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.admin-ai-date-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-ai-date-range input {
+  min-height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+  padding: 0 12px;
+  outline: none;
+}
+
+.admin-ai-date-range input:focus {
+  border-color: rgba(15, 159, 156, 0.5);
+  box-shadow: 0 0 0 3px rgba(15, 159, 156, 0.1);
+}
+
+.admin-ai-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+  background: #fbfefd;
+}
+
+.admin-ai-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #fff, #fbfefd);
+}
+
+.admin-ai-card {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.045);
+  padding: 16px;
+}
+
+.admin-ai-grid-wide {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+}
+
+.admin-ai-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.admin-ai-card-header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.admin-ai-card-header span,
+.admin-ai-empty,
+.admin-ai-trend-row span,
+.admin-ai-breakdown-item span,
+.admin-ai-average-list span,
+.admin-ai-health-item span,
+.admin-ai-expensive-item span {
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.admin-ai-empty {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.admin-ai-trend,
+.admin-ai-token-breakdown,
+.admin-ai-breakdown-list,
+.admin-ai-average-list,
+.admin-ai-health-list,
+.admin-ai-expensive-list {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-ai-trend-row {
+  display: grid;
+  grid-template-columns: 88px minmax(90px, 1fr) 104px;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-ai-trend-row > div,
+.admin-ai-mini-bar {
+  overflow: hidden;
+  height: 9px;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+}
+
+.admin-ai-trend-row i,
+.admin-ai-mini-bar i,
+.admin-ai-token-breakdown i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary), #2f8fc9);
+}
+
+.admin-ai-trend-row strong,
+.admin-ai-breakdown-item > strong {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 850;
+  text-align: right;
+}
+
+.admin-ai-token-breakdown > div {
+  display: grid;
+  gap: 7px;
+}
+
+.admin-ai-token-breakdown > div > div,
+.admin-ai-average-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-ai-token-breakdown strong,
+.admin-ai-average-list strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.admin-ai-token-breakdown > div > i {
+  overflow: hidden;
+  height: 8px;
+  border-radius: var(--r-full);
+  background: linear-gradient(90deg, rgba(15, 159, 156, 0.82), rgba(47, 143, 201, 0.82));
+}
+
+.admin-ai-breakdown-item {
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) minmax(90px, 1fr) 96px;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-ai-breakdown-item strong:first-child {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.admin-ai-health-item,
+.admin-ai-expensive-item {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fbfefd;
+}
+
+.admin-ai-health-item > div:first-child,
+.admin-ai-expensive-item > div:first-child,
+.admin-ai-expensive-item > div:last-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-ai-health-item strong,
+.admin-ai-expensive-item strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.admin-ai-health-item dl {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.admin-ai-health-item dl div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.admin-ai-health-item dt {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.admin-ai-health-item dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.admin-ai-expensive-item > div:first-child {
+  align-items: flex-start;
+}
+
+.admin-ai-expensive-item > div:first-child > div,
+.admin-ai-expensive-item > div:first-child {
+  min-width: 0;
+}
+
+.admin-ai-expensive-item > div:first-child span {
+  display: block;
+  margin-top: 3px;
+}
+
+.admin-ai-expensive-item > div:last-child {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.admin-ai-expensive-item > div:last-child strong {
+  margin-left: auto;
+}
+
+.admin-ai-table {
+  min-width: 980px;
+}
+
+.admin-ai-token-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 1180px) {
+  .admin-ai-overview,
+  .admin-ai-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-ai-health-item dl {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-ai-overview,
+  .admin-ai-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-ai-trend-row,
+  .admin-ai-breakdown-item {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .admin-ai-date-range {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-ai-health-item > div:first-child,
+  .admin-ai-expensive-item > div:first-child,
+  .admin-ai-expensive-item > div:last-child {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-ai-health-item dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-ai-trend-row strong,
+  .admin-ai-breakdown-item > strong {
+    text-align: left;
+  }
+}

@@ -167,7 +167,7 @@ class TripServiceTest {
         assertThatThrownBy(() -> service.generateAndSave(7L, generateRequest("", "")))
                 .isInstanceOf(BillingException.class);
 
-        verify(aiService, never()).generateItinerary(any());
+        verify(aiService, never()).generateItinerary(any(), any());
         verify(billingService, never()).consumePlanCredit(any(), any());
     }
 
@@ -182,7 +182,7 @@ class TripServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Không thể gợi ý điểm đến");
         verify(billingService, never()).requirePlanCredit(any());
-        verify(aiService, never()).generateItinerary(any());
+        verify(aiService, never()).generateItinerary(any(), any());
     }
 
     @Test
@@ -198,7 +198,7 @@ class TripServiceTest {
                 .hasMessageContaining(String.valueOf(TripDto.MAX_TRIP_DAYS));
 
         verify(billingService, never()).requirePlanCredit(any());
-        verify(aiService, never()).generateItinerary(any());
+        verify(aiService, never()).generateItinerary(any(), any());
     }
 
     @Test
@@ -212,7 +212,7 @@ class TripServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(String.valueOf(TripDto.MAX_TRAVELERS));
 
-        verify(aiService, never()).generateItinerary(any());
+        verify(aiService, never()).generateItinerary(any(), any());
         verify(billingService, never()).consumePlanCredit(any(), any());
     }
 
@@ -224,7 +224,7 @@ class TripServiceTest {
                 .thenReturn(Optional.empty());
         mockRainForecast();
         when(tripRepository.existsByShareCode(anyString())).thenReturn(false);
-        when(aiService.generateItinerary(any())).thenReturn(new AiService.GeneratedItineraryResult(
+        when(aiService.generateItinerary(any(), any())).thenReturn(new AiService.GeneratedItineraryResult(
                 List.of(proposedDayWithoutRequestedActivity()),
                 noRequestFulfillment()));
         when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> {
@@ -246,7 +246,7 @@ class TripServiceTest {
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
         mockRainForecast();
-        when(aiService.generateItinerary(any())).thenThrow(new RuntimeException("AI failed"));
+        when(aiService.generateItinerary(any(), any())).thenThrow(new RuntimeException("AI failed"));
 
         assertThatThrownBy(() -> service.generateAndSave(7L, generateRequest("", "")))
                 .hasMessageContaining("AI failed");
@@ -277,7 +277,7 @@ class TripServiceTest {
                 "NOT_APPLIED",
                 "WEATHER_SAFETY",
                 userMessage);
-        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class)))
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class), any()))
                 .thenReturn(new AiService.GeneratedItineraryResult(List.of(proposedDayWithoutRequestedActivity()), requestFulfillment));
 
         TripDto.GenerateRequest req = generateRequest("Nhảy dù ở Đà Nẵng", "");
@@ -332,7 +332,7 @@ class TripServiceTest {
             return saved;
         });
         AtomicReference<TripDto.GenerateRequest> capturedRequest = new AtomicReference<>();
-        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class))).thenAnswer(invocation -> {
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class), any())).thenAnswer(invocation -> {
             TripDto.GenerateRequest aiReq = invocation.getArgument(0);
             capturedRequest.set(aiReq);
             return new AiService.GeneratedItineraryResult(List.of(proposedDayWithoutRequestedActivity()), noRequestFulfillment());
@@ -400,7 +400,7 @@ class TripServiceTest {
             return saved;
         });
         AtomicReference<TripDto.GenerateRequest> capturedRequest = new AtomicReference<>();
-        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class))).thenAnswer(invocation -> {
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class), any())).thenAnswer(invocation -> {
             TripDto.GenerateRequest aiReq = invocation.getArgument(0);
             capturedRequest.set(aiReq);
             return new AiService.GeneratedItineraryResult(List.of(proposedDayWithoutRequestedActivity()), noRequestFulfillment());
@@ -427,7 +427,7 @@ class TripServiceTest {
             saved.setId(1L);
             return saved;
         });
-        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class)))
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class), any()))
                 .thenReturn(new AiService.GeneratedItineraryResult(List.of(proposedDayWithoutRequestedActivity()), null));
 
         TripDto.GenerateRequest req = generateRequest("", "Nhảy dù ở Đà Nẵng cũng hay mà");
@@ -452,7 +452,7 @@ class TripServiceTest {
             saved.setId(1L);
             return saved;
         });
-        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class)))
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class), any()))
                 .thenReturn(new AiService.GeneratedItineraryResult(
                         List.of(proposedDayWithoutRequestedActivity()),
                         noRequestFulfillment()));
@@ -497,7 +497,7 @@ class TripServiceTest {
             return saved;
         });
         AtomicReference<TripDto.GenerateRequest> capturedRequest = new AtomicReference<>();
-        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class)))
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class), any()))
                 .thenAnswer(invocation -> {
                     capturedRequest.set(invocation.getArgument(0));
                     return new AiService.GeneratedItineraryResult(
@@ -532,7 +532,7 @@ class TripServiceTest {
             savedTrip.set(saved);
             return saved;
         });
-        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class)))
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class), any()))
                 .thenReturn(new AiService.GeneratedItineraryResult(
                         List.of(proposedDayWithUnrealisticRequiredCosts()),
                         noRequestFulfillment()));
@@ -565,7 +565,7 @@ class TripServiceTest {
             saved.setId(1L);
             return saved;
         });
-        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class)))
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class), any()))
                 .thenReturn(new AiService.GeneratedItineraryResult(
                         List.of(proposedShortRouteBusDay()),
                         noRequestFulfillment()));
@@ -595,7 +595,7 @@ class TripServiceTest {
             saved.setId(1L);
             return saved;
         });
-        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class)))
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class), any()))
                 .thenReturn(new AiService.GeneratedItineraryResult(
                         List.of(proposedRoundTripIncludedFlightDay()),
                         noRequestFulfillment()));
@@ -626,7 +626,7 @@ class TripServiceTest {
             saved.setId(1L);
             return saved;
         });
-        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class)))
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class), any()))
                 .thenReturn(new AiService.GeneratedItineraryResult(
                         List.of(proposedOverBudgetDay()),
                         noRequestFulfillment()));
@@ -653,7 +653,7 @@ class TripServiceTest {
                 .hasMessageContaining("Ngân sách");
 
         verify(billingService, never()).requirePlanCredit(any());
-        verify(aiService, never()).generateItinerary(any());
+        verify(aiService, never()).generateItinerary(any(), any());
     }
 
     @Test
@@ -661,7 +661,7 @@ class TripServiceTest {
         Trip trip = sampleTrip();
         TripService service = service();
         when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
-        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class)))
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class), any(), any()))
                 .thenReturn(new AiService.RegeneratedDayResult(proposedDayWithoutRequestedActivity(), noRequestFulfillment()));
 
         TripDto.RegenerateDayRequest req = new TripDto.RegenerateDayRequest();
@@ -692,7 +692,7 @@ class TripServiceTest {
         Trip trip = sampleTrip();
         TripService service = service();
         when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
-        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class)))
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class), any(), any()))
                 .thenReturn(new AiService.RegeneratedDayResult(proposedDayWithoutRequestedActivity(), noRequestFulfillment()));
         when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -728,7 +728,7 @@ class TripServiceTest {
                 "NOT_APPLIED",
                 "WEATHER_SAFETY",
                 userMessage);
-        when(aiService.regenerateDay(any(TripDto.GenerateRequest.class), any(), anyInt(), anyString(), anyString()))
+        when(aiService.regenerateDay(any(TripDto.GenerateRequest.class), any(), anyInt(), anyString(), anyString(), any(), any()))
                 .thenReturn(new AiService.RegeneratedDayResult(proposedDayWithoutRequestedActivity(), requestFulfillment));
 
         TripDto.RegenerateDayRequest req = new TripDto.RegenerateDayRequest();
@@ -751,7 +751,7 @@ class TripServiceTest {
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
         mockRainForecast();
-        when(aiService.regenerateDay(any(TripDto.GenerateRequest.class), any(), anyInt(), anyString(), anyString()))
+        when(aiService.regenerateDay(any(TripDto.GenerateRequest.class), any(), anyInt(), anyString(), anyString(), any(), any()))
                 .thenReturn(new AiService.RegeneratedDayResult(proposedDayWithoutRequestedActivity(), null));
 
         TripDto.RegenerateDayRequest req = new TripDto.RegenerateDayRequest();
@@ -780,7 +780,7 @@ class TripServiceTest {
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
         mockRainForecast();
-        when(aiService.regenerateDay(any(TripDto.GenerateRequest.class), any(), anyInt(), anyString(), anyString()))
+        when(aiService.regenerateDay(any(TripDto.GenerateRequest.class), any(), anyInt(), anyString(), anyString(), any(), any()))
                 .thenReturn(new AiService.RegeneratedDayResult(
                         proposedDayWithUnrealisticRequiredCosts(),
                         noRequestFulfillment()));
@@ -811,7 +811,7 @@ class TripServiceTest {
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
         mockRainForecast();
-        when(aiService.regenerateDay(any(TripDto.GenerateRequest.class), any(), anyInt(), anyString(), anyString()))
+        when(aiService.regenerateDay(any(TripDto.GenerateRequest.class), any(), anyInt(), anyString(), anyString(), any(), any()))
                 .thenReturn(new AiService.RegeneratedDayResult(
                         proposedOverBudgetDay(),
                         noRequestFulfillment()));

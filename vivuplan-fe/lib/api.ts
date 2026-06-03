@@ -295,6 +295,24 @@ export const adminApi = {
       .then(handleResponse<PageResponse<AdminTransactionSummary>>);
   },
 
+  aiCostSummary: (filters: AdminAiCostFilters = {}) => {
+    const query = adminQuery({ ...filters });
+    return fetch(`${API_BASE}/api/admin/ai-cost/summary?${query}`, { headers: authHeaders() })
+      .then(handleResponse<AdminAiCostSummary>);
+  },
+
+  aiCostDaily: (filters: AdminAiCostFilters = {}) => {
+    const query = adminQuery({ ...filters });
+    return fetch(`${API_BASE}/api/admin/ai-cost/daily?${query}`, { headers: authHeaders() })
+      .then(handleResponse<AdminAiCostDaily[]>);
+  },
+
+  aiCostEvents: (page = 0, size = 10, filters: AdminAiCostEventFilters = {}) => {
+    const query = adminQuery({ page, size, ...filters });
+    return fetch(`${API_BASE}/api/admin/ai-cost/events?${query}`, { headers: authHeaders() })
+      .then(handleResponse<PageResponse<AdminAiUsageEvent>>);
+  },
+
   updateUserRole: (userId: number, role: "USER" | "ADMIN") =>
     fetch(`${API_BASE}/api/admin/users/${userId}/role`, {
       method: "PATCH",
@@ -420,6 +438,130 @@ export interface AdminTransactionFilters {
 }
 
 export type AdminTransactionStatus = "PENDING" | "PAID" | "UNDERPAID" | "EXPIRED" | "CANCELLED";
+export type AdminAiOperation = "PLAN_GENERATION" | "DAY_REGENERATION" | "DESTINATION_SUGGESTION";
+export type AdminAiStatus = "SUCCESS" | "INVALID_RESPONSE" | "HTTP_ERROR" | "PARSE_ERROR" | "FAILED";
+
+export interface AdminAiCostFilters {
+  from?: string;
+  to?: string;
+  operation?: "ALL" | AdminAiOperation;
+  status?: "ALL" | AdminAiStatus;
+}
+
+export interface AdminAiCostEventFilters extends AdminAiCostFilters {
+  q?: string;
+}
+
+export interface AdminAiCostBreakdown {
+  key: string;
+  label: string;
+  attempts: number;
+  successfulOperations: number;
+  totalCostVnd: number;
+  totalCostUsd: number;
+  promptTokens: number;
+  outputTokens: number;
+  thinkingTokens: number;
+  totalTokens: number;
+}
+
+export interface AdminAiOperationAverage {
+  operation: AdminAiOperation | string;
+  label: string;
+  operations: number;
+  avgCostVnd: number;
+  avgCostUsd: number;
+}
+
+export interface AdminAiOperationHealth {
+  operation: AdminAiOperation | string;
+  label: string;
+  requests: number;
+  attempts: number;
+  retryRate: number;
+  errorRate: number;
+  avgDurationMs: number;
+  maxDurationMs: number;
+  totalCostVnd: number;
+}
+
+export interface AdminAiRequestSummary {
+  requestId: string;
+  operation: AdminAiOperation | string;
+  status: AdminAiStatus | string;
+  userId?: number;
+  userEmail?: string;
+  tripId?: number;
+  attempts: number;
+  retryAttempts: number;
+  totalCostVnd: number;
+  totalCostUsd: number;
+  totalTokens: number;
+  durationMs: number;
+  createdAt?: string;
+}
+
+export interface AdminAiCostSummary {
+  totalCostVnd: number;
+  totalCostUsd: number;
+  promptTokens: number;
+  outputTokens: number;
+  thinkingTokens: number;
+  totalTokens: number;
+  requests: number;
+  attempts: number;
+  successfulOperations: number;
+  failedRequests: number;
+  retryAttempts: number;
+  retryRate: number;
+  errorRate: number;
+  avgDurationMs: number;
+  maxDurationMs: number;
+  operationBreakdown: AdminAiCostBreakdown[];
+  modelBreakdown: AdminAiCostBreakdown[];
+  statusBreakdown: AdminAiCostBreakdown[];
+  averageCosts: AdminAiOperationAverage[];
+  operationHealth: AdminAiOperationHealth[];
+  topCostRequests: AdminAiRequestSummary[];
+}
+
+export interface AdminAiCostDaily {
+  date: string;
+  totalCostVnd: number;
+  totalCostUsd: number;
+  promptTokens: number;
+  outputTokens: number;
+  thinkingTokens: number;
+  totalTokens: number;
+  attempts: number;
+  successAttempts: number;
+  failedAttempts: number;
+}
+
+export interface AdminAiUsageEvent {
+  id: number;
+  requestId: string;
+  attemptNumber: number;
+  operation: AdminAiOperation | string;
+  status: AdminAiStatus | string;
+  userId?: number;
+  userEmail?: string;
+  tripId?: number;
+  model?: string;
+  finishReason?: string;
+  durationMs?: number;
+  promptTokens: number;
+  outputTokens: number;
+  thinkingTokens: number;
+  totalTokens: number;
+  maxOutputTokens?: number;
+  thinkingBudget?: number;
+  estimatedCostVnd: number;
+  estimatedCostUsd: number;
+  errorCode?: string;
+  errorMessage?: string;
+  createdAt?: string;
+}
 
 export interface AdminUserSummary {
   id: number;

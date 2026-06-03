@@ -82,7 +82,7 @@ public class DestinationSuggestionService {
                 .collect(Collectors.toSet());
         String catalogContext = buildCatalogContext(req, catalogDestinations);
 
-        List<TripDto.DestinationSuggestion> suggestions = aiService.suggestDestinations(req, catalogContext);
+        List<TripDto.DestinationSuggestion> suggestions = aiService.suggestDestinations(req, catalogContext, userId);
         List<TripDto.DestinationSuggestion> cleaned = validateAndCleanSuggestions(suggestions, catalogNames);
 
         TripDto.DestinationSuggestionResponse response = new TripDto.DestinationSuggestionResponse();
