@@ -6667,7 +6667,7 @@ textarea.input.textarea-compact {
 
 .pricing-hero-inner {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 280px);
+  grid-template-columns: minmax(0, 1fr) minmax(310px, 340px);
   gap: 32px;
   align-items: center;
 }
@@ -6706,10 +6706,11 @@ textarea.input.textarea-compact {
 }
 
 .pricing-balance-panel {
+  width: 100%;
   border: 1px solid rgba(15, 159, 156, 0.16);
   border-radius: 14px;
   background: linear-gradient(180deg, #ffffff 0%, rgba(240, 253, 250, 0.72) 100%);
-  padding: 14px;
+  padding: 12px;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 }
 
@@ -6717,13 +6718,13 @@ textarea.input.textarea-compact {
   color: var(--text-3);
   font-size: 12px;
   font-weight: 700;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .pricing-balance-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .pricing-balance-item {
@@ -6732,11 +6733,12 @@ textarea.input.textarea-compact {
   align-items: start;
   justify-items: start;
   gap: 6px;
-  min-height: 72px;
+  min-height: 64px;
   border: 1px solid rgba(15, 159, 156, 0.12);
   border-radius: 10px;
   background: var(--surface);
-  padding: 10px;
+  padding: 8px 7px;
+  min-width: 0;
 }
 
 .pricing-balance-item span {
@@ -6744,11 +6746,12 @@ textarea.input.textarea-compact {
   align-items: center;
   justify-content: flex-start;
   text-align: left;
-  gap: 6px;
+  gap: 5px;
   color: var(--text-3);
-  font-size: 11px;
+  font-size: 9.5px;
   font-weight: 600;
   line-height: 1.25;
+  min-width: 0;
 }
 
 .pricing-balance-item svg {
@@ -6760,7 +6763,7 @@ textarea.input.textarea-compact {
   text-align: left;
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 650;
   line-height: 1;
 }
@@ -6939,12 +6942,22 @@ textarea.input.textarea-compact {
     width: 100%;
   }
 
+  .pricing-balance-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .pricing-grid {
     grid-template-columns: 1fr;
   }
 
   .pricing-card-head {
     min-height: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .pricing-balance-grid {
+    grid-template-columns: 1fr;
   }
 }
 

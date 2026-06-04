@@ -18,9 +18,9 @@ interface PurchaseModalProps {
 }
 
 const fallbackPackages: BillingPackage[] = [
-  { code: "PLAN_BASIC", name: "Cơ bản", description: "2 lịch trình mới + 2 lần chỉnh ngày + 3 lượt gợi ý điểm đến AI", amount: 10_000, planCredits: 2, editCredits: 2, suggestionCredits: 3 },
-  { code: "PLAN_STANDARD", name: "Tiêu chuẩn", description: "5 lịch trình mới + 5 lần chỉnh ngày + 8 lượt gợi ý điểm đến AI", amount: 19_000, planCredits: 5, editCredits: 5, suggestionCredits: 8, highlighted: true },
-  { code: "PLAN_SAVING", name: "Tiết kiệm", description: "12 lịch trình mới + 12 lần chỉnh ngày + 20 lượt gợi ý điểm đến AI", amount: 39_000, planCredits: 12, editCredits: 12, suggestionCredits: 20 },
+  { code: "PLAN_BASIC", name: "Cơ bản", description: "2 lượt lập lịch trình, 2 lượt chỉnh sửa ngày và 3 lượt gợi ý điểm đến phù hợp", amount: 10_000, planCredits: 2, editCredits: 2, suggestionCredits: 3 },
+  { code: "PLAN_STANDARD", name: "Tiêu chuẩn", description: "5 lượt lập lịch trình, 5 lượt chỉnh sửa ngày và 8 lượt gợi ý điểm đến phù hợp", amount: 19_000, planCredits: 5, editCredits: 5, suggestionCredits: 8, highlighted: true },
+  { code: "PLAN_SAVING", name: "Tiết kiệm", description: "12 lượt lập lịch trình, 12 lượt chỉnh sửa ngày và 20 lượt gợi ý điểm đến phù hợp", amount: 39_000, planCredits: 12, editCredits: 12, suggestionCredits: 20 },
 ];
 
 function fmtVnd(value: number) {
@@ -42,15 +42,15 @@ function packageCopy(item: BillingPackage) {
   const copy: Record<string, { name: string; description: string }> = {
     PLAN_BASIC: {
       name: "Cơ bản",
-      description: "2 lịch trình mới, 2 lần chỉnh ngày và 3 lượt gợi ý điểm đến AI.",
+      description: "2 lượt lập lịch trình, 2 lượt chỉnh sửa ngày và 3 lượt gợi ý điểm đến phù hợp.",
     },
     PLAN_STANDARD: {
       name: "Tiêu chuẩn",
-      description: "5 lịch trình mới, 5 lần chỉnh ngày và 8 lượt gợi ý điểm đến AI.",
+      description: "5 lượt lập lịch trình, 5 lượt chỉnh sửa ngày và 8 lượt gợi ý điểm đến phù hợp.",
     },
     PLAN_SAVING: {
       name: "Tiết kiệm",
-      description: "12 lịch trình mới, 12 lần chỉnh ngày và 20 lượt gợi ý điểm đến AI.",
+      description: "12 lượt lập lịch trình, 12 lượt chỉnh sửa ngày và 20 lượt gợi ý điểm đến phù hợp.",
     },
   };
   return copy[item.code] ?? { name: item.name, description: item.description };
@@ -219,7 +219,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 22px", borderBottom: "1px solid var(--border)" }}>
           <div>
             <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "var(--text)" }}>
-              {order ? "Hoàn tất thanh toán" : reason === "EDIT" ? "Thêm lượt chỉnh ngày" : reason === "SUGGESTION" ? "Thêm lượt gợi ý điểm đến" : "Chọn gói cho chuyến đi"}
+              {order ? "Hoàn tất thanh toán" : reason === "EDIT" ? "Thêm lượt chỉnh sửa ngày" : reason === "SUGGESTION" ? "Thêm lượt gợi ý điểm đến phù hợp" : "Chọn gói cho chuyến đi"}
             </h2>
             <p style={{ margin: "6px 0 0", color: "var(--text-3)", fontSize: 14 }}>
               {order
@@ -260,8 +260,8 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
               color: "var(--text-2)",
               fontSize: 14,
             }}>
-              <span className="badge badge-teal"><Sparkles size={13} /> Còn {wallet.planCredits} lượt tạo</span>
-              <span className="badge badge-blue"><CreditCard size={13} /> Còn {wallet.editCredits} lượt chỉnh AI</span>
+              <span className="badge badge-teal"><Sparkles size={13} /> Còn {wallet.planCredits} lượt lập lịch</span>
+              <span className="badge badge-blue"><CreditCard size={13} /> Còn {wallet.editCredits} lượt chỉnh sửa</span>
               <span className="badge badge-green"><Sparkles size={13} /> Còn {wallet.suggestionCredits} lượt gợi ý</span>
             </div>
           )}
@@ -303,9 +303,9 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
                     <div style={{ fontSize: 28, fontWeight: 900, color: "var(--primary)", margin: "14px 0 8px" }}>{fmtVnd(item.amount)}</div>
                     <p style={{ margin: 0, color: "var(--text-3)", fontSize: 13, lineHeight: 1.5 }}>{packageCopy(item).description}</p>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-                      {item.planCredits > 0 && <span className="badge badge-teal">+{item.planCredits} lịch trình</span>}
-                      {item.editCredits > 0 && <span className="badge badge-blue">+{item.editCredits} lần chỉnh</span>}
-                      {item.suggestionCredits > 0 && <span className="badge badge-green">+{item.suggestionCredits} gợi ý AI</span>}
+                      {item.planCredits > 0 && <span className="badge badge-teal">+{item.planCredits} lập lịch trình</span>}
+                      {item.editCredits > 0 && <span className="badge badge-blue">+{item.editCredits} chỉnh sửa ngày</span>}
+                      {item.suggestionCredits > 0 && <span className="badge badge-green">+{item.suggestionCredits} gợi ý điểm đến</span>}
                     </div>
                   </button>
                 );
@@ -333,7 +333,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
                 <h3 style={{ fontSize: 24, margin: "0 0 12px", color: "var(--text)" }}>Chuyển khoản {fmtVnd(order.amount)}</h3>
                 <div style={{ display: "grid", gap: 10, fontSize: 14, color: "var(--text-2)" }}>
                   <div><strong>Nội dung chuyển khoản:</strong> <code style={{ fontSize: 16 }}>{order.orderCode}</code></div>
-                  <div><strong>Gói này thêm:</strong> +{order.planCredits} lượt tạo, +{order.editCredits} lượt chỉnh AI, +{order.suggestionCredits} lượt gợi ý điểm đến</div>
+                  <div><strong>Gói này thêm:</strong> {order.planCredits} lượt lập lịch trình, {order.editCredits} lượt chỉnh sửa ngày, {order.suggestionCredits} lượt gợi ý điểm đến phù hợp</div>
                   <div><strong>Hết hạn sau:</strong> {fmtCountdown(remaining)}</div>
                 </div>
                 <p style={{ marginTop: 16, color: "var(--text-3)", lineHeight: 1.6, fontSize: 14 }}>

@@ -588,7 +588,7 @@ function PlanContent() {
               fontWeight: "500",
               maxWidth: "80%"
             }}>
-              {form.destination ? destination?.tag ?? "Tạo lịch trình thực tế với ngân sách và phong cách phù hợp." : "Để trống nếu bạn muốn VivuPlan gợi ý nơi phù hợp với thời gian và ngân sách."}
+              {form.destination ? destination?.tag ?? "Tạo lịch trình thực tế với ngân sách và phong cách phù hợp." : "Để trống nếu bạn muốn VivuPlan gợi ý điểm đến phù hợp với thời gian và ngân sách."}
             </p>
           </div>
 
@@ -701,7 +701,7 @@ function PlanContent() {
               </div>
               <p className="field-hint field-hint-icon">
                 <Sparkles size={14} aria-hidden="true" />
-                <span>Chưa biết đi đâu? Để trống điểm đến, VivuPlan sẽ gợi ý nơi phù hợp với thời gian, ngân sách và sở thích của bạn.</span>
+                <span>Chưa biết đi đâu? Để trống điểm đến, VivuPlan sẽ gợi ý điểm đến phù hợp với thời gian, ngân sách và sở thích của bạn.</span>
               </p>
               {destinationSuggestedByAi && form.destination.trim() && (
                 <div className="destination-ai-selected-note">
