@@ -134,10 +134,8 @@ public class AdminService {
                 ? roundDouble(failedRequests * 100.0 / response.getRequests())
                 : 0);
         response.setAvgDurationMs(avgRequestDurationMs(logs));
-        response.setOperationBreakdown(groupBreakdown(logs, log -> log.getOperation().name(), this::aiOperationLabel));
         response.setAverageCosts(buildAverageCosts(logs));
         response.setOperationHealth(buildOperationHealth(logs));
-        response.setTopCostRequests(buildTopCostRequests(logs));
         return response;
     }
 
@@ -260,26 +258,6 @@ public class AdminService {
         response.setTotalTokens(sumTotalTokens(logs));
     }
 
-    private List<AdminDto.AiCostBreakdown> groupBreakdown(
-            List<AiUsageLog> logs,
-            java.util.function.Function<AiUsageLog, String> keyFn,
-            java.util.function.Function<String, String> labelFn) {
-        return logs.stream()
-                .collect(Collectors.groupingBy(log -> nullToUnknown(keyFn.apply(log)), HashMap::new, Collectors.toList()))
-                .entrySet()
-                .stream()
-                .sorted(Map.Entry.<String, List<AiUsageLog>>comparingByKey())
-                .map(entry -> {
-                    AdminDto.AiCostBreakdown item = new AdminDto.AiCostBreakdown();
-                    item.setKey(entry.getKey());
-                    item.setLabel(labelFn.apply(entry.getKey()));
-                    item.setAttempts(entry.getValue().size());
-                    item.setTotalCostVnd(sumCostVnd(entry.getValue()));
-                    return item;
-                })
-                .toList();
-    }
-
     private List<AdminDto.AiOperationAverage> buildAverageCosts(List<AiUsageLog> logs) {
         return logs.stream()
                 .collect(Collectors.groupingBy(AiUsageLog::getOperation, HashMap::new, Collectors.toList()))
@@ -287,11 +265,7 @@ public class AdminService {
                 .stream()
                 .sorted(Comparator.comparing(entry -> entry.getKey().name()))
                 .map(entry -> {
-                    long operations = entry.getValue().stream()
-                            .map(AiUsageLog::getRequestId)
-                            .filter(value -> value != null && !value.isBlank())
-                            .distinct()
-                            .count();
+                    long operations = countBillableRequests(entry.getValue());
                     long costVnd = sumCostVnd(entry.getValue());
                     AdminDto.AiOperationAverage item = new AdminDto.AiOperationAverage();
                     item.setOperation(entry.getKey().name());
@@ -331,35 +305,6 @@ public class AdminService {
                 .toList();
     }
 
-    private List<AdminDto.AiRequestSummary> buildTopCostRequests(List<AiUsageLog> logs) {
-        return groupByRequest(logs).values().stream()
-                .map(this::toAiRequestSummary)
-                .sorted(Comparator.comparingLong(AdminDto.AiRequestSummary::getTotalCostVnd).reversed()
-                        .thenComparing(AdminDto.AiRequestSummary::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-                .limit(5)
-                .toList();
-    }
-
-    private AdminDto.AiRequestSummary toAiRequestSummary(List<AiUsageLog> requestLogs) {
-        AiUsageLog latest = latestAttempt(requestLogs);
-        AiUsageLog first = requestLogs.stream()
-                .min(Comparator.comparing(AiUsageLog::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
-                .orElse(latest);
-        AdminDto.AiRequestSummary dto = new AdminDto.AiRequestSummary();
-        dto.setRequestId(latest.getRequestId());
-        dto.setOperation(latest.getOperation() != null ? latest.getOperation().name() : null);
-        dto.setStatus(requestSucceeded(requestLogs) ? AiUsageLog.Status.SUCCESS.name()
-                : latest.getStatus() != null ? latest.getStatus().name() : null);
-        dto.setUserId(latest.getUser() != null ? latest.getUser().getId() : null);
-        dto.setUserEmail(latest.getUser() != null ? latest.getUser().getEmail() : null);
-        dto.setTripId(latest.getTrip() != null ? latest.getTrip().getId() : null);
-        dto.setAttempts(requestLogs.size());
-        dto.setTotalCostVnd(sumCostVnd(requestLogs));
-        dto.setTotalTokens(sumTotalTokens(requestLogs));
-        dto.setCreatedAt(first.getCreatedAt() != null ? first.getCreatedAt().toString() : null);
-        return dto;
-    }
-
     private Map<String, List<AiUsageLog>> groupByRequest(List<AiUsageLog> logs) {
         return logs.stream()
                 .filter(log -> log.getRequestId() != null && !log.getRequestId().isBlank())
@@ -382,13 +327,27 @@ public class AdminService {
                 .count();
     }
 
+    private long countBillableRequests(List<AiUsageLog> logs) {
+        return groupByRequest(logs).values().stream()
+                .filter(requestLogs -> requestLogs.stream().anyMatch(this::isBillableAttempt))
+                .count();
+    }
+
+    private boolean isBillableAttempt(AiUsageLog log) {
+        return (log.getEstimatedCostVnd() != null && log.getEstimatedCostVnd() > 0)
+                || safeInt(log.getPromptTokens()) > 0
+                || safeInt(log.getOutputTokens()) > 0
+                || safeInt(log.getThinkingTokens()) > 0
+                || safeInt(log.getTotalTokens()) > 0;
+    }
+
     private boolean requestSucceeded(List<AiUsageLog> requestLogs) {
         return requestLogs.stream().anyMatch(log -> log.getStatus() == AiUsageLog.Status.SUCCESS);
     }
 
     private long avgRequestDurationMs(List<AiUsageLog> logs) {
         List<Long> durations = groupByRequest(logs).values().stream()
-                .map(this::sumDurationMs)
+                .map(this::requestDurationMs)
                 .filter(value -> value > 0)
                 .toList();
         if (durations.isEmpty()) {
@@ -399,9 +358,28 @@ public class AdminService {
 
     private long maxRequestDurationMs(List<AiUsageLog> logs) {
         return groupByRequest(logs).values().stream()
-                .mapToLong(this::sumDurationMs)
+                .mapToLong(this::requestDurationMs)
                 .max()
                 .orElse(0);
+    }
+
+    private long requestDurationMs(List<AiUsageLog> logs) {
+        long attemptDuration = sumDurationMs(logs);
+        List<AiUsageLog> timedLogs = logs.stream()
+                .filter(log -> log.getCreatedAt() != null)
+                .sorted(Comparator.comparing(AiUsageLog::getCreatedAt))
+                .toList();
+        if (timedLogs.size() < 2) {
+            return attemptDuration;
+        }
+
+        long firstAttemptDuration = timedLogs.getFirst().getDurationMs() != null && timedLogs.getFirst().getDurationMs() > 0
+                ? timedLogs.getFirst().getDurationMs()
+                : 0;
+        long timelineDuration = java.time.Duration.between(
+                timedLogs.getFirst().getCreatedAt(),
+                timedLogs.getLast().getCreatedAt()).toMillis() + firstAttemptDuration;
+        return Math.max(attemptDuration, timelineDuration);
     }
 
     private long sumDurationMs(List<AiUsageLog> logs) {
@@ -492,10 +470,6 @@ public class AdminService {
 
     private double roundDouble(double value) {
         return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
-    }
-
-    private String nullToUnknown(String value) {
-        return value == null || value.isBlank() ? "UNKNOWN" : value;
     }
 
     private LocalDate normalizeFrom(LocalDate from) {

@@ -38,7 +38,7 @@ import {
 } from "@/lib/api";
 
 type AdminTab = "users" | "trips" | "transactions" | "ai-cost";
-type AiRangeKey = "today" | "7d" | "30d" | "month" | "custom";
+type AiRangeKey = "today" | "7d" | "30d" | "custom";
 
 const pageSize = 10;
 
@@ -103,10 +103,6 @@ function aiDateRange(range: AiRangeKey, customFrom?: string, customTo?: string) 
   }
   if (range === "7d") {
     from.setDate(today.getDate() - 6);
-    return { from: toIsoDate(from), to: toIsoDate(today) };
-  }
-  if (range === "month") {
-    from.setDate(1);
     return { from: toIsoDate(from), to: toIsoDate(today) };
   }
   from.setDate(today.getDate() - 29);
@@ -191,10 +187,12 @@ function StatCard({
   label,
   value,
   icon,
+  note,
 }: {
   label: string;
   value: string | number;
   icon: ReactNode;
+  note?: string;
 }) {
   return (
     <div className="admin-stat-card">
@@ -202,6 +200,7 @@ function StatCard({
       <div>
         <span>{label}</span>
         <strong>{value}</strong>
+        {note && <small>{note}</small>}
       </div>
     </div>
   );
@@ -487,7 +486,7 @@ function AiCostDashboard({
   onSelectEvent: (event: AdminAiUsageEvent) => void;
 }) {
   const maxDailyCost = Math.max(...daily.map((item) => item.totalCostVnd), 1);
-  const operationTotal = Math.max(...(summary?.operationBreakdown ?? []).map((item) => item.totalCostVnd), 1);
+  const dailyNewestFirst = [...daily].sort((left, right) => right.date.localeCompare(left.date));
   const totalUsageTokens = Math.max(
     (summary?.promptTokens ?? 0) + (summary?.outputTokens ?? 0) + (summary?.thinkingTokens ?? 0),
     1,
@@ -508,7 +507,6 @@ function AiCostDashboard({
             ["today", "Hôm nay"],
             ["7d", "7 ngày"],
             ["30d", "30 ngày"],
-            ["month", "Tháng này"],
             ["custom", "Tùy chọn"],
           ].map(([value, label]) => (
             <button
@@ -554,15 +552,18 @@ function AiCostDashboard({
 
       <div className="admin-ai-overview">
         <StatCard label="Chi phí khoảng chọn" value={summary ? formatCurrency(summary.totalCostVnd) : "-"} icon={<CreditCard size={18} />} />
-        <StatCard label="Requests" value={summary ? formatNumber(summary.requests) : "-"} icon={<BarChart3 size={18} />} />
-        <StatCard label="Tổng token" value={summary ? formatNumber(summary.totalTokens) : "-"} icon={<BarChart3 size={18} />} />
-        <StatCard label="Gemini attempts" value={summary ? formatNumber(summary.attempts) : "-"} icon={<BarChart3 size={18} />} />
+        <StatCard
+          label="Requests"
+          value={summary ? formatNumber(summary.requests) : "-"}
+          note={summary ? `${formatNumber(summary.attempts)} attempts` : undefined}
+          icon={<BarChart3 size={18} />}
+        />
         <StatCard label="Retry rate" value={summary ? formatPercent(summary.retryRate) : "-"} icon={<BarChart3 size={18} />} />
         <StatCard label="Error rate" value={summary ? formatPercent(summary.errorRate) : "-"} icon={<BarChart3 size={18} />} />
         <StatCard label="Avg latency" value={summary ? formatDurationMs(summary.avgDurationMs) : "-"} icon={<BarChart3 size={18} />} />
       </div>
 
-      <div className="admin-ai-grid">
+      <div className="admin-ai-grid admin-ai-grid-balanced">
         <section className="admin-ai-card">
           <div className="admin-ai-card-header">
             <h3>Chi phí theo ngày</h3>
@@ -571,7 +572,7 @@ function AiCostDashboard({
           <div className="admin-ai-trend">
             {daily.length === 0 ? (
               <p className="admin-ai-empty">Chưa có dữ liệu trong khoảng này.</p>
-            ) : daily.map((item) => (
+            ) : dailyNewestFirst.map((item) => (
               <div className="admin-ai-trend-row" key={item.date}>
                 <span>{item.date}</span>
                 <div>
@@ -607,27 +608,6 @@ function AiCostDashboard({
 
         <section className="admin-ai-card">
           <div className="admin-ai-card-header">
-            <h3>Chi phí theo luồng</h3>
-            <span>{summary?.operationBreakdown.length ?? 0} luồng</span>
-          </div>
-          <div className="admin-ai-breakdown-list">
-            {(summary?.operationBreakdown ?? []).length === 0 ? (
-              <p className="admin-ai-empty">Chưa có dữ liệu.</p>
-            ) : summary?.operationBreakdown.map((item) => (
-              <div key={item.key} className="admin-ai-breakdown-item">
-                <div>
-                  <strong>{aiOperationLabel(item.key)}</strong>
-                  <span>{formatNumber(item.attempts)} attempts</span>
-                </div>
-                <div className="admin-ai-mini-bar"><i style={{ width: `${Math.max(3, (item.totalCostVnd / operationTotal) * 100)}%` }} /></div>
-                <strong>{formatCurrency(item.totalCostVnd)}</strong>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="admin-ai-card">
-          <div className="admin-ai-card-header">
             <h3>Avg cost</h3>
             <span>Mỗi operation</span>
           </div>
@@ -644,7 +624,7 @@ function AiCostDashboard({
         </section>
       </div>
 
-      <div className="admin-ai-grid admin-ai-grid-wide">
+      <div className="admin-ai-grid admin-ai-grid-health">
         <section className="admin-ai-card">
           <div className="admin-ai-card-header">
             <h3>Sức khỏe theo luồng</h3>
@@ -685,31 +665,6 @@ function AiCostDashboard({
             ))}
           </div>
         </section>
-
-        <section className="admin-ai-card">
-          <div className="admin-ai-card-header">
-            <h3>Request tốn nhiều</h3>
-            <span>Top 5</span>
-          </div>
-          <div className="admin-ai-expensive-list">
-            {(summary?.topCostRequests ?? []).length === 0 ? (
-              <p className="admin-ai-empty">Chưa có request phát sinh chi phí.</p>
-            ) : summary?.topCostRequests.map((item) => (
-              <div key={item.requestId} className="admin-ai-expensive-item">
-                <div>
-                  <strong>{aiOperationLabel(item.operation)}</strong>
-                  <span>{item.userEmail || "-"} · {formatDate(item.createdAt)}</span>
-                </div>
-                <div>
-                  <StatusBadge tone={aiStatusTone(item.status)}>{aiStatusLabel(item.status)}</StatusBadge>
-                  <span>{formatNumber(item.totalTokens)} token</span>
-                  <span>{item.attempts} attempts</span>
-                  <strong>{formatCurrency(item.totalCostVnd)}</strong>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
       </div>
 
       <div className="admin-filter-bar">
@@ -718,7 +673,7 @@ function AiCostDashboard({
           <input
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Tìm theo email, model hoặc request ID"
+            placeholder="Tìm theo email hoặc request ID"
           />
         </label>
       </div>
@@ -731,8 +686,6 @@ function AiCostDashboard({
               <th>Thời gian</th>
               <th>Luồng</th>
               <th>User</th>
-              <th>Model</th>
-              <th>Token</th>
               <th>Cost</th>
               <th>Trạng thái</th>
               <th>Hành động</th>
@@ -748,8 +701,6 @@ function AiCostDashboard({
                   <span>Attempt #{item.attemptNumber}</span>
                 </td>
                 <td>{item.userEmail || "-"}</td>
-                <td>{item.model || "-"}</td>
-                <td>{formatNumber(item.totalTokens)}</td>
                 <td>
                   <strong>{formatCurrency(item.estimatedCostVnd)}</strong>
                 </td>

@@ -450,13 +450,6 @@ export interface AdminAiCostEventFilters extends AdminAiCostFilters {
   q?: string;
 }
 
-export interface AdminAiCostBreakdown {
-  key: string;
-  label: string;
-  attempts: number;
-  totalCostVnd: number;
-}
-
 export interface AdminAiOperationAverage {
   operation: AdminAiOperation | string;
   label: string;
@@ -476,19 +469,6 @@ export interface AdminAiOperationHealth {
   totalCostVnd: number;
 }
 
-export interface AdminAiRequestSummary {
-  requestId: string;
-  operation: AdminAiOperation | string;
-  status: AdminAiStatus | string;
-  userId?: number;
-  userEmail?: string;
-  tripId?: number;
-  attempts: number;
-  totalCostVnd: number;
-  totalTokens: number;
-  createdAt?: string;
-}
-
 export interface AdminAiCostSummary {
   totalCostVnd: number;
   promptTokens: number;
@@ -500,10 +480,8 @@ export interface AdminAiCostSummary {
   retryRate: number;
   errorRate: number;
   avgDurationMs: number;
-  operationBreakdown: AdminAiCostBreakdown[];
   averageCosts: AdminAiOperationAverage[];
   operationHealth: AdminAiOperationHealth[];
-  topCostRequests: AdminAiRequestSummary[];
 }
 
 export interface AdminAiCostDaily {

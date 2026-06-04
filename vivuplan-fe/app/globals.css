@@ -180,6 +180,15 @@
   letter-spacing: 0;
 }
 
+.admin-stat-card small {
+  display: block;
+  margin-top: 5px;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 760;
+  line-height: 1.25;
+}
+
 .admin-tabs {
   display: inline-flex;
   align-self: flex-start;
@@ -7376,6 +7385,8 @@ textarea.input.textarea-compact {
 }
 
 .admin-ai-card {
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: #fff;
@@ -7383,8 +7394,28 @@ textarea.input.textarea-compact {
   padding: 16px;
 }
 
-.admin-ai-grid-wide {
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+.admin-ai-grid-health {
+  grid-template-columns: 1fr;
+}
+
+.admin-ai-grid-balanced > .admin-ai-card:last-child {
+  grid-column: 1 / -1;
+}
+
+.admin-ai-grid-balanced > .admin-ai-card:nth-child(-n + 2) {
+  height: 210px;
+  min-height: 0;
+}
+
+.admin-ai-grid-balanced .admin-ai-average-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-ai-grid-balanced .admin-ai-average-list > div {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fbfefd;
 }
 
 .admin-ai-card-header {
@@ -7405,10 +7436,8 @@ textarea.input.textarea-compact {
 .admin-ai-card-header span,
 .admin-ai-empty,
 .admin-ai-trend-row span,
-.admin-ai-breakdown-item span,
 .admin-ai-average-list span,
-.admin-ai-health-item span,
-.admin-ai-expensive-item span {
+.admin-ai-health-item span {
   color: var(--text-3);
   font-size: 12px;
   font-weight: 750;
@@ -7421,12 +7450,43 @@ textarea.input.textarea-compact {
 
 .admin-ai-trend,
 .admin-ai-token-breakdown,
-.admin-ai-breakdown-list,
 .admin-ai-average-list,
-.admin-ai-health-list,
-.admin-ai-expensive-list {
+.admin-ai-health-list {
   display: grid;
   gap: 12px;
+}
+
+.admin-ai-trend {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.admin-ai-card:hover .admin-ai-trend,
+.admin-ai-card:focus-within .admin-ai-trend {
+  scrollbar-color: rgba(100, 116, 139, 0.34) transparent;
+}
+
+.admin-ai-trend::-webkit-scrollbar {
+  width: 6px;
+}
+
+.admin-ai-trend::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-ai-trend::-webkit-scrollbar-thumb {
+  border-radius: var(--r-full);
+  background: transparent;
+}
+
+.admin-ai-card:hover .admin-ai-trend::-webkit-scrollbar-thumb,
+.admin-ai-card:focus-within .admin-ai-trend::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.34);
 }
 
 .admin-ai-trend-row {
@@ -7436,8 +7496,7 @@ textarea.input.textarea-compact {
   gap: 10px;
 }
 
-.admin-ai-trend-row > div,
-.admin-ai-mini-bar {
+.admin-ai-trend-row > div {
   overflow: hidden;
   height: 9px;
   border-radius: var(--r-full);
@@ -7445,7 +7504,6 @@ textarea.input.textarea-compact {
 }
 
 .admin-ai-trend-row i,
-.admin-ai-mini-bar i,
 .admin-ai-token-breakdown i {
   display: block;
   height: 100%;
@@ -7453,8 +7511,7 @@ textarea.input.textarea-compact {
   background: linear-gradient(90deg, var(--primary), #2f8fc9);
 }
 
-.admin-ai-trend-row strong,
-.admin-ai-breakdown-item > strong {
+.admin-ai-trend-row strong {
   color: var(--text);
   font-size: 12px;
   font-weight: 850;
@@ -7488,23 +7545,7 @@ textarea.input.textarea-compact {
   background: linear-gradient(90deg, rgba(15, 159, 156, 0.82), rgba(47, 143, 201, 0.82));
 }
 
-.admin-ai-breakdown-item {
-  display: grid;
-  grid-template-columns: minmax(110px, 1fr) minmax(90px, 1fr) 96px;
-  align-items: center;
-  gap: 10px;
-}
-
-.admin-ai-breakdown-item strong:first-child {
-  display: block;
-  margin-bottom: 3px;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 850;
-}
-
-.admin-ai-health-item,
-.admin-ai-expensive-item {
+.admin-ai-health-item {
   display: grid;
   gap: 12px;
   padding: 12px;
@@ -7513,17 +7554,14 @@ textarea.input.textarea-compact {
   background: #fbfefd;
 }
 
-.admin-ai-health-item > div:first-child,
-.admin-ai-expensive-item > div:first-child,
-.admin-ai-expensive-item > div:last-child {
+.admin-ai-health-item > div:first-child {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
 
-.admin-ai-health-item strong,
-.admin-ai-expensive-item strong {
+.admin-ai-health-item strong {
   color: var(--text);
   font-size: 13px;
   font-weight: 850;
@@ -7556,29 +7594,6 @@ textarea.input.textarea-compact {
   font-weight: 850;
 }
 
-.admin-ai-expensive-item > div:first-child {
-  align-items: flex-start;
-}
-
-.admin-ai-expensive-item > div:first-child > div,
-.admin-ai-expensive-item > div:first-child {
-  min-width: 0;
-}
-
-.admin-ai-expensive-item > div:first-child span {
-  display: block;
-  margin-top: 3px;
-}
-
-.admin-ai-expensive-item > div:last-child {
-  flex-wrap: wrap;
-  justify-content: flex-start;
-}
-
-.admin-ai-expensive-item > div:last-child strong {
-  margin-left: auto;
-}
-
 .admin-ai-table {
   min-width: 980px;
 }
@@ -7604,8 +7619,11 @@ textarea.input.textarea-compact {
     grid-template-columns: 1fr;
   }
 
-  .admin-ai-trend-row,
-  .admin-ai-breakdown-item {
+  .admin-ai-grid-balanced .admin-ai-average-list {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-ai-trend-row {
     grid-template-columns: 1fr;
     align-items: stretch;
   }
@@ -7616,9 +7634,7 @@ textarea.input.textarea-compact {
     flex-direction: column;
   }
 
-  .admin-ai-health-item > div:first-child,
-  .admin-ai-expensive-item > div:first-child,
-  .admin-ai-expensive-item > div:last-child {
+  .admin-ai-health-item > div:first-child {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -7627,8 +7643,7 @@ textarea.input.textarea-compact {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .admin-ai-trend-row strong,
-  .admin-ai-breakdown-item > strong {
+  .admin-ai-trend-row strong {
     text-align: left;
   }
 }

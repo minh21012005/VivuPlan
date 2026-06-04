@@ -169,18 +169,8 @@ public class AdminDto {
         private double retryRate;
         private double errorRate;
         private long avgDurationMs;
-        private List<AiCostBreakdown> operationBreakdown = new ArrayList<>();
         private List<AiOperationAverage> averageCosts = new ArrayList<>();
         private List<AiOperationHealth> operationHealth = new ArrayList<>();
-        private List<AiRequestSummary> topCostRequests = new ArrayList<>();
-    }
-
-    @Data
-    public static class AiCostBreakdown {
-        private String key;
-        private String label;
-        private long attempts;
-        private long totalCostVnd;
     }
 
     @Data
@@ -202,20 +192,6 @@ public class AdminDto {
         private long avgDurationMs;
         private long maxDurationMs;
         private long totalCostVnd;
-    }
-
-    @Data
-    public static class AiRequestSummary {
-        private String requestId;
-        private String operation;
-        private String status;
-        private Long userId;
-        private String userEmail;
-        private Long tripId;
-        private long attempts;
-        private long totalCostVnd;
-        private long totalTokens;
-        private String createdAt;
     }
 
     @Data
