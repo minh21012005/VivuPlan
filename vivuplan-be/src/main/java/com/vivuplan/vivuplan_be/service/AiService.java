@@ -2010,6 +2010,9 @@ public class AiService {
         if (isVehicleRentalReturnActivity(normalizedText)) {
             return false;
         }
+        if (isPersonalVehicleReference(normalizedText) && !hasExplicitVehicleRentalPhrase(normalizedText)) {
+            return false;
+        }
         return containsAny(normalizedText,
                 "thue xe may",
                 "nhan xe may",
@@ -2022,6 +2025,32 @@ public class AiService {
                 "nhan oto",
                 "lay o to",
                 "lay oto");
+    }
+
+    private boolean isPersonalVehicleReference(String normalizedText) {
+        return containsAny(normalizedText,
+                "xe may ca nhan",
+                "o to ca nhan",
+                "oto ca nhan",
+                "xe ca nhan",
+                "xe rieng",
+                "xe nha",
+                "xe cua minh",
+                "xe cua ban",
+                "tu mang xe",
+                "mang xe theo");
+    }
+
+    private boolean hasExplicitVehicleRentalPhrase(String normalizedText) {
+        return containsAny(normalizedText,
+                "thue xe may",
+                "xe may thue",
+                "thue xe dap",
+                "xe dap thue",
+                "thue o to",
+                "thue oto",
+                "o to thue",
+                "oto thue");
     }
 
     private String vehicleRentalKind(String normalizedText) {

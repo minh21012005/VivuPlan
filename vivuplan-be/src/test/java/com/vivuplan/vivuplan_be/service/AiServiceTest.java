@@ -182,6 +182,28 @@ class AiServiceTest {
     }
 
     @Test
+    void regeneratedDayQualityHandlesVietnameseVegetarianNegationWithAccents() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDestination("Yen Tu");
+        req.setAvoid("Kh\u00f4ng mu\u1ed1n \u0103n chay");
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Di chuyen len khu danh thang Yen Tu", "TRANSPORT",
+                        "Ben xe Uong Bi", 200_000L, "Di chuyen som de kip lich tham quan."),
+                activity("11:30", "An trua voi mon an dia phuong", "FOOD",
+                        "Nha hang Tung Lam Yen Tu", 250_000L,
+                        "Chon mon dia phuong man, kh\u00f4ng ph\u1ea3i m\u00f3n chay."),
+                activity("14:00", "Tham quan Thien vien Truc Lam Yen Tu", "ATTRACTION",
+                        "Yen Tu, Uong Bi", 80_000L, "Giu lich nhe nhaang sau bua trua.")));
+
+        QualityResult quality = assessRegeneratedDayQuality(service, day, List.of(), req);
+
+        assertThat(quality.passed()).isTrue();
+    }
+
+    @Test
     void regeneratedDayQualityStillFlagsVegetarianMealWhenUserAvoidsVegetarianFood() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
@@ -348,6 +370,26 @@ class AiServiceTest {
 
         assertThat(quality.passed()).isFalse();
         assertThat(quality.reason()).contains("vehicle rental cost is missing");
+    }
+
+    @Test
+    void itineraryQualityDoesNotTreatPersonalVehiclePickupAsRentalCostIssue() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Nhan xe may ca nhan tai khach san", "TRANSPORT",
+                        "Khach san trung tam Da Nang", 0,
+                        "Dung xe may ca nhan cua ban de di chuyen trong ngay."),
+                activity("09:30", "Tham quan Bao tang Da Nang", "ATTRACTION",
+                        "24 Tran Phu, Hai Chau, Da Nang", 80_000L, null),
+                activity("12:00", "An trua tai Cho Con", "FOOD",
+                        "Cho Con, Da Nang", 200_000L, null)));
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).isTrue();
     }
 
     @Test
