@@ -356,7 +356,13 @@ function AiUsageDrawer({
               </div>
               <div>
                 <dt>Trip</dt>
-                <dd>{event.tripId ? `#${event.tripId}` : "-"}</dd>
+                <dd>
+                  {event.tripId ? (
+                    <Link href={`/admin/trips/${event.tripId}`} className="admin-drawer-link">
+                      #{event.tripId}
+                    </Link>
+                  ) : "-"}
+                </dd>
               </div>
             </dl>
           </section>
@@ -497,7 +503,6 @@ function AiCostDashboard({
       <div className="admin-panel-header">
         <div>
           <h2>AI chi phí</h2>
-          <p>Theo dõi token, retry và chi phí Gemini từ thời điểm bật tracking.</p>
         </div>
       </div>
 
