@@ -256,6 +256,7 @@ function PlanContent() {
   const [destinationSuggestedByAi, setDestinationSuggestedByAi] = useState(false);
   const [destinationSuggestionModalOpen, setDestinationSuggestionModalOpen] = useState(false);
   const [destinationSuggestionError, setDestinationSuggestionError] = useState("");
+  const [destinationSuggestionCloseConfirmOpen, setDestinationSuggestionCloseConfirmOpen] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [suggestionElapsedSeconds, setSuggestionElapsedSeconds] = useState(0);
   const [error, setError] = useState("");
@@ -428,11 +429,16 @@ function PlanContent() {
     notes: form.notes.trim() || undefined,
   });
 
-  const closeDestinationSuggestionModal = () => {
+  const closeDestinationSuggestionModal = (force = false) => {
+    if (suggestingDestinations && !force) {
+      setDestinationSuggestionCloseConfirmOpen(true);
+      return;
+    }
     if (suggestingDestinations) {
       destinationSuggestionRequestId.current += 1;
       setSuggestingDestinations(false);
     }
+    setDestinationSuggestionCloseConfirmOpen(false);
     setDestinationSuggestionModalOpen(false);
   };
 
@@ -441,6 +447,7 @@ function PlanContent() {
     setDestinationSuggestedByAi(true);
     setDestinationSuggestionError("");
     setDestinationSuggestionModalOpen(false);
+    setDestinationSuggestionCloseConfirmOpen(false);
     setFocusedField(null);
   };
 
@@ -471,10 +478,12 @@ function PlanContent() {
     destinationSuggestionRequestId.current = requestId;
     setDestinationSuggestionModalOpen(true);
     setSuggestingDestinations(true);
+    setDestinationSuggestionCloseConfirmOpen(false);
     setSuggestionElapsedSeconds(0);
     try {
       const response = await tripApi.suggestDestinations(buildPlanningPayload());
       if (destinationSuggestionRequestId.current !== requestId) return;
+      setDestinationSuggestionCloseConfirmOpen(false);
       const suggestions = response.suggestions ?? [];
       if (suggestions.length === 0) {
         setDestinationSuggestionError("VivuPlan chưa tìm được điểm đến phù hợp. Bạn có thể thử lại hoặc nhập điểm đến thủ công.");
@@ -483,8 +492,10 @@ function PlanContent() {
       setDestinationSuggestions(suggestions);
       setShowDestinationSuggestionDetails(false);
       setDestinationSuggestedByAi(false);
+      setDestinationSuggestionCloseConfirmOpen(false);
     } catch (e) {
       if (destinationSuggestionRequestId.current !== requestId) return;
+      setDestinationSuggestionCloseConfirmOpen(false);
       if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
         setDestinationSuggestionModalOpen(false);
         router.push("/login");
@@ -970,7 +981,7 @@ function PlanContent() {
             <button
               type="button"
               className="destination-suggestion-modal-close"
-              onClick={closeDestinationSuggestionModal}
+              onClick={() => closeDestinationSuggestionModal()}
               aria-label="Đóng gợi ý điểm đến"
             >
               <X size={18} />
@@ -994,6 +1005,23 @@ function PlanContent() {
                 </p>
               </div>
             </div>
+
+            {destinationSuggestionCloseConfirmOpen && (
+              <div className="modal-close-confirm" role="alertdialog" aria-label="Xác nhận đóng gợi ý điểm đến">
+                <div>
+                  <strong>Vẫn đang tìm điểm đến</strong>
+                  <p>Nếu đóng bây giờ, kết quả gợi ý sẽ không được hiển thị. Bạn vẫn muốn đóng chứ?</p>
+                </div>
+                <div>
+                  <button type="button" onClick={() => setDestinationSuggestionCloseConfirmOpen(false)}>
+                    Tiếp tục chờ
+                  </button>
+                  <button type="button" className="danger" onClick={() => closeDestinationSuggestionModal(true)}>
+                    Đóng
+                  </button>
+                </div>
+              </div>
+            )}
 
             {suggestingDestinations ? (
               <div className="destination-suggestion-loading" role="status" aria-live="polite">
@@ -1020,7 +1048,7 @@ function PlanContent() {
               <div className="destination-suggestion-modal-error">
                 <p>{destinationSuggestionError}</p>
                 <div className="destination-suggestion-modal-actions">
-                  <button type="button" className="destination-suggestion-secondary" onClick={closeDestinationSuggestionModal}>
+                  <button type="button" className="destination-suggestion-secondary" onClick={() => closeDestinationSuggestionModal()}>
                     Nhập thủ công
                   </button>
                   <button type="button" className="destination-suggestion-primary" onClick={handleSuggestDestinations}>

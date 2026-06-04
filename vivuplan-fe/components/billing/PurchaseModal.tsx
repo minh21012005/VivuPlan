@@ -78,6 +78,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
   const [message, setMessage] = useState("");
   const [remaining, setRemaining] = useState(0);
   const [pickerManuallyOpened, setPickerManuallyOpened] = useState(false);
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const autoCreatedCodeRef = useRef<string | null>(null);
 
   const recommended = useMemo(() => new Set(["PLAN_BASIC", "PLAN_STANDARD", "PLAN_SAVING"]), []);
@@ -118,6 +119,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
     if (!open) return;
     setOrder(null);
     setMessage("");
+    setCloseConfirmOpen(false);
     setSelectedCode(initialPackageCode ?? "PLAN_STANDARD");
     setPickerManuallyOpened(false);
     billingApi.packages()
@@ -129,6 +131,12 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
     if (open) return;
     autoCreatedCodeRef.current = null;
   }, [open]);
+
+  useEffect(() => {
+    if (order?.status && order.status !== "PENDING") {
+      setCloseConfirmOpen(false);
+    }
+  }, [order?.status]);
 
   useEffect(() => {
     if (!open || !initialPackageCode || authLoading || !isLoggedIn || packagePickerVisible) return;
@@ -170,8 +178,17 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
 
   if (!open) return null;
 
+  const requestClose = () => {
+    if (order?.status === "PENDING") {
+      setCloseConfirmOpen(true);
+      return;
+    }
+    onClose();
+  };
+
   const chooseDifferentPackage = async () => {
     const currentOrder = order;
+    setCloseConfirmOpen(false);
     setPickerManuallyOpened(true);
     setOrder(null);
     autoCreatedCodeRef.current = initialPackageCode ?? null;
@@ -210,12 +227,29 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
                 : "Chọn gói bạn cần, quét mã để thanh toán và VivuPlan sẽ cộng lượt vào tài khoản ngay khi giao dịch hoàn tất."}
             </p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Đóng" style={{ border: 0, background: "transparent", cursor: "pointer", color: "var(--text-3)" }}>
+          <button type="button" onClick={requestClose} aria-label="Đóng" style={{ border: 0, background: "transparent", cursor: "pointer", color: "var(--text-3)" }}>
             <X size={22} />
           </button>
         </div>
 
         <div style={{ padding: 22 }}>
+          {closeConfirmOpen && (
+            <div className="modal-close-confirm" role="alertdialog" aria-label="Xác nhận đóng thanh toán" style={{ marginBottom: 16 }}>
+              <div>
+                <strong>Thanh toán vẫn đang chờ xử lý</strong>
+                <p>Nếu đóng bây giờ, giao dịch vẫn có thể được ghi nhận sau vài phút. Bạn vẫn muốn đóng chứ?</p>
+              </div>
+              <div>
+                <button type="button" onClick={() => setCloseConfirmOpen(false)}>
+                  Tiếp tục chờ
+                </button>
+                <button type="button" className="danger" onClick={onClose}>
+                  Đóng
+                </button>
+              </div>
+            </div>
+          )}
+
           {wallet && (
             <div style={{
               display: "flex",
@@ -315,7 +349,7 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
                   >
                     Chọn gói khác
                   </button>
-                  <button type="button" className="btn btn-primary" onClick={onClose}>Đóng</button>
+                  <button type="button" className="btn btn-primary" onClick={requestClose}>Đóng</button>
                 </div>
               </div>
             </div>

@@ -302,6 +302,8 @@ export default function ItineraryPage() {
   const [selectedRegenerateIndexes, setSelectedRegenerateIndexes] = useState<number[]>([]);
   const [regeneratingDay, setRegeneratingDay] = useState(false);
   const [applyingRegeneration, setApplyingRegeneration] = useState(false);
+  const [regenerateCloseConfirmOpen, setRegenerateCloseConfirmOpen] = useState(false);
+  const regenerateRequestId = useRef(0);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
   const { wallet, refreshWallet } = useBilling();
   const [clientWarnings, setClientWarnings] = useState<string[]>([]);
@@ -348,6 +350,7 @@ export default function ItineraryPage() {
         setAiWarningsCollapsed(false);
         setRegenerateOpen(false);
         setRegeneratePreview(null);
+        setRegenerateCloseConfirmOpen(false);
         setSelectedRegenerateIndexes([]);
       } catch (e) {
         if (cancelled) return;
@@ -522,12 +525,17 @@ export default function ItineraryPage() {
 
   const previewRegenerateDay = async (request: RegenerateDayRequest) => {
     if (!trip || !day) return;
+    const requestId = regenerateRequestId.current + 1;
+    regenerateRequestId.current = requestId;
     setRegeneratingDay(true);
+    setRegenerateCloseConfirmOpen(false);
     setRegeneratePreview(null);
     setRegeneratePreviewError("");
     setSelectedRegenerateIndexes([]);
     try {
       const preview = await tripApi.previewRegenerateDay(trip.id, day.day, request);
+      if (regenerateRequestId.current !== requestId) return;
+      setRegenerateCloseConfirmOpen(false);
       refreshWallet();
       setRegeneratePreview(preview);
       setSelectedRegenerateIndexes(preview.day.activities.map((_, index) => index));
@@ -536,6 +544,8 @@ export default function ItineraryPage() {
         showToast(requestWarning, "info", 9000);
       }
     } catch (e) {
+      if (regenerateRequestId.current !== requestId) return;
+      setRegenerateCloseConfirmOpen(false);
       if (e instanceof ApiError && e.status === 402) {
         setPurchaseOpen(true);
         setRegeneratePreviewError("Bạn đã hết lượt chỉnh ngày bằng AI. Mua thêm lượt để tiếp tục nhé.");
@@ -543,8 +553,33 @@ export default function ItineraryPage() {
         setRegeneratePreviewError(e instanceof Error ? e.message : "Không thể tạo phương án mới cho ngày này");
       }
     } finally {
-      setRegeneratingDay(false);
+      if (regenerateRequestId.current === requestId) {
+        setRegeneratingDay(false);
+      }
     }
+  };
+
+  const closeRegenerateModal = () => {
+    setRegenerateOpen(false);
+    setRegeneratePreview(null);
+    setRegeneratePreviewError("");
+    setSelectedRegenerateIndexes([]);
+    setRegenerateCloseConfirmOpen(false);
+  };
+
+  const requestCloseRegenerateModal = () => {
+    if (regeneratingDay) {
+      setRegenerateCloseConfirmOpen(true);
+      return;
+    }
+    if (applyingRegeneration) return;
+    closeRegenerateModal();
+  };
+
+  const forceCloseRegenerateModal = () => {
+    regenerateRequestId.current += 1;
+    setRegeneratingDay(false);
+    closeRegenerateModal();
   };
 
   const applyRegeneratedDay = async () => {
@@ -562,10 +597,7 @@ export default function ItineraryPage() {
       const nextIndex = updated.schedule?.findIndex((item) => item.day === regeneratePreview.dayNumber) ?? activeDay;
       if (nextIndex >= 0) setActiveDay(nextIndex);
       setExpanded(null);
-      setRegenerateOpen(false);
-      setRegeneratePreview(null);
-      setRegeneratePreviewError("");
-      setSelectedRegenerateIndexes([]);
+      closeRegenerateModal();
       showToast("Đã áp dụng thay đổi cho ngày thành công!", "success", 3000);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Không thể áp dụng phương án mới";
@@ -885,6 +917,7 @@ export default function ItineraryPage() {
                   <div className="itinerary-day-actions">
                     <Button type="button" variant="secondary" size="sm" onClick={() => {
                       setRegeneratePreviewError("");
+                      setRegenerateCloseConfirmOpen(false);
                       setRegenerateOpen(true);
                     }}>
                       <Sparkles size={13} /> Tạo lại ngày
@@ -1051,19 +1084,16 @@ export default function ItineraryPage() {
           error={regeneratePreviewError}
           loading={regeneratingDay}
           applying={applyingRegeneration}
+          closeConfirmOpen={regenerateCloseConfirmOpen}
           selectedIndexes={selectedRegenerateIndexes}
           onSelectedIndexesChange={setSelectedRegenerateIndexes}
           editCredits={wallet?.editCredits}
           onClearError={() => setRegeneratePreviewError("")}
           onPreview={previewRegenerateDay}
           onApply={applyRegeneratedDay}
-          onCancel={() => {
-            if (regeneratingDay || applyingRegeneration) return;
-            setRegenerateOpen(false);
-            setRegeneratePreview(null);
-            setRegeneratePreviewError("");
-            setSelectedRegenerateIndexes([]);
-          }}
+          onCancel={requestCloseRegenerateModal}
+          onContinueWaiting={() => setRegenerateCloseConfirmOpen(false)}
+          onForceClose={forceCloseRegenerateModal}
         />
       )}
       <PurchaseModal
@@ -1135,6 +1165,7 @@ function RegenerateDayModal({
   error,
   loading,
   applying,
+  closeConfirmOpen,
   selectedIndexes,
   editCredits,
   onClearError,
@@ -1142,12 +1173,15 @@ function RegenerateDayModal({
   onPreview,
   onApply,
   onCancel,
+  onContinueWaiting,
+  onForceClose,
 }: {
   day: NonNullable<TripResponse["schedule"]>[number];
   preview: RegenerateDayPreviewResponse | null;
   error: string;
   loading: boolean;
   applying: boolean;
+  closeConfirmOpen: boolean;
   selectedIndexes: number[];
   editCredits?: number;
   onClearError: () => void;
@@ -1155,6 +1189,8 @@ function RegenerateDayModal({
   onPreview: (request: RegenerateDayRequest) => Promise<void>;
   onApply: () => Promise<void>;
   onCancel: () => void;
+  onContinueWaiting: () => void;
+  onForceClose: () => void;
 }) {
   const [instruction, setInstruction] = useState("");
   const [localError, setLocalError] = useState("");
@@ -1244,10 +1280,27 @@ function RegenerateDayModal({
               <h3>Bạn muốn chỉnh ngày này như thế nào?</h3>
               <p>VivuPlan sẽ tạo một phương án mới cho riêng ngày này và chỉ thay đổi lịch trình khi bạn áp dụng.</p>
             </div>
-            <button type="button" className="btn btn-ghost btn-icon" onClick={onCancel} disabled={loading || applying} aria-label="Đóng tạo lại ngày">
+            <button type="button" className="btn btn-ghost btn-icon" onClick={onCancel} disabled={applying} aria-label="Đóng tạo lại ngày">
               <X size={16} />
             </button>
           </div>
+
+          {closeConfirmOpen && (
+            <div className="modal-close-confirm" role="alertdialog" aria-label="Xác nhận đóng tạo lại ngày">
+              <div>
+                <strong>AI vẫn đang tạo phương án mới</strong>
+                <p>Nếu đóng bây giờ, kết quả tạo lại ngày sẽ không được hiển thị. Bạn vẫn muốn đóng chứ?</p>
+              </div>
+              <div>
+                <button type="button" onClick={onContinueWaiting}>
+                  Tiếp tục chờ
+                </button>
+                <button type="button" className="danger" onClick={onForceClose}>
+                  Đóng
+                </button>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={submit} className="regenerate-day-form">
             <label className="regenerate-instruction-field regenerate-chat-field">
@@ -1293,7 +1346,7 @@ function RegenerateDayModal({
 
             {!preview && (
               <div className="regenerate-actions">
-                <Button type="button" variant="secondary" onClick={onCancel} disabled={loading || applying}>
+                <Button type="button" variant="secondary" onClick={onCancel} disabled={applying}>
                   Hủy
                 </Button>
                 <Button type="submit" disabled={loading || applying}>
@@ -1402,7 +1455,7 @@ function RegenerateDayModal({
               </div>
 
               <div className="regenerate-actions">
-                <Button type="button" variant="secondary" onClick={onCancel} disabled={loading || applying}>
+                <Button type="button" variant="secondary" onClick={onCancel} disabled={applying}>
                   Hủy
                 </Button>
                 <Button
