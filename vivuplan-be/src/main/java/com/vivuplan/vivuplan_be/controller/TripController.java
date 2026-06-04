@@ -1,11 +1,11 @@
 package com.vivuplan.vivuplan_be.controller;
 
+import com.vivuplan.vivuplan_be.dto.PageDto;
 import com.vivuplan.vivuplan_be.dto.TripDto;
 import com.vivuplan.vivuplan_be.service.DestinationSuggestionService;
 import com.vivuplan.vivuplan_be.service.TripService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -132,10 +132,10 @@ public class TripController {
 
     /** Public trips feed */
     @GetMapping("/public")
-    public ResponseEntity<Page<TripDto.TripResponse>> publicTrips(
+    public ResponseEntity<PageDto.PageResponse<TripDto.TripResponse>> publicTrips(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size) {
-        return ResponseEntity.ok(tripService.getPublicTrips(page, size));
+        return ResponseEntity.ok(PageDto.PageResponse.from(tripService.getPublicTrips(page, size)));
     }
 
     /** Get trip by share code */

@@ -2101,7 +2101,7 @@ public class AiService {
         int windowStart = Math.max(0, termStart - 40);
         String before = searchableActivity.substring(windowStart, termStart).trim();
         return before.matches(
-                ".*(?:^|\\s)(khong co|khong dung|khong an|khong thich|khong phuc vu|tranh|loai bo|thay bang)\\s*$");
+                ".*(?:^|\\s)(khong co|khong dung|khong an|khong thich|khong phuc vu|khong phai|khong la|tranh|loai bo|thay bang)(?:\\s+(?:mon|kieu|phong cach))?\\s*$");
     }
 
     private String extractNegativeInstruction(String notes) {

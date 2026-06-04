@@ -160,6 +160,51 @@ class AiServiceTest {
     }
 
     @Test
+    void regeneratedDayQualityDoesNotTreatNonVegetarianMealAsVegetarianAvoidViolation() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDestination("Yen Tu");
+        req.setAvoid("Khong muon an chay");
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Di chuyen len khu danh thang Yen Tu", "TRANSPORT",
+                        "Ben xe Uong Bi", 200_000L, "Di chuyen som de kip lich tham quan."),
+                activity("11:30", "An trua voi mon an dia phuong", "FOOD",
+                        "Nha hang Tung Lam Yen Tu", 250_000L,
+                        "Chon mon dia phuong man, khong phai mon chay."),
+                activity("14:00", "Tham quan Thien vien Truc Lam Yen Tu", "ATTRACTION",
+                        "Yen Tu, Uong Bi", 80_000L, "Giu lich nhe nhaang sau bua trua.")));
+
+        QualityResult quality = assessRegeneratedDayQuality(service, day, List.of(), req);
+
+        assertThat(quality.passed()).isTrue();
+    }
+
+    @Test
+    void regeneratedDayQualityStillFlagsVegetarianMealWhenUserAvoidsVegetarianFood() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDestination("Yen Tu");
+        req.setAvoid("Khong muon an chay");
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Di chuyen len khu danh thang Yen Tu", "TRANSPORT",
+                        "Ben xe Uong Bi", 200_000L, "Di chuyen som de kip lich tham quan."),
+                activity("11:30", "An trua com chay de nui", "FOOD",
+                        "Nha hang gan chua Hoa Yen", 180_000L,
+                        "Bua trua chay thanh dam trong khu Yen Tu."),
+                activity("14:00", "Tham quan Thien vien Truc Lam Yen Tu", "ATTRACTION",
+                        "Yen Tu, Uong Bi", 80_000L, "Giu lich nhe nhaang sau bua trua.")));
+
+        QualityResult quality = assessRegeneratedDayQuality(service, day, List.of(), req);
+
+        assertThat(quality.passed()).isFalse();
+        assertThat(quality.reason()).contains("avoid instruction");
+    }
+
+    @Test
     void itineraryQualityAvoidUsesWordBoundariesAndSkipsAmbiguousCrabTerm() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();

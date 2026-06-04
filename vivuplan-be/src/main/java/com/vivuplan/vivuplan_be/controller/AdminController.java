@@ -1,11 +1,11 @@
 package com.vivuplan.vivuplan_be.controller;
 
 import com.vivuplan.vivuplan_be.dto.AdminDto;
+import com.vivuplan.vivuplan_be.dto.PageDto;
 import com.vivuplan.vivuplan_be.dto.TripDto;
 import com.vivuplan.vivuplan_be.service.AdminService;
 import com.vivuplan.vivuplan_be.service.TripService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -26,13 +26,13 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    public ResponseEntity<Page<AdminDto.UserSummary>> users(
+    public ResponseEntity<PageDto.PageResponse<AdminDto.UserSummary>> users(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String role,
             @RequestParam(required = false) String provider) {
-        return ResponseEntity.ok(adminService.listUsers(page, size, q, role, provider));
+        return ResponseEntity.ok(PageDto.PageResponse.from(adminService.listUsers(page, size, q, role, provider)));
     }
 
     @GetMapping("/users/{id}")
@@ -59,11 +59,11 @@ public class AdminController {
     }
 
     @GetMapping("/trips")
-    public ResponseEntity<Page<AdminDto.TripSummary>> trips(
+    public ResponseEntity<PageDto.PageResponse<AdminDto.TripSummary>> trips(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String q) {
-        return ResponseEntity.ok(adminService.listTrips(page, size, q));
+        return ResponseEntity.ok(PageDto.PageResponse.from(adminService.listTrips(page, size, q)));
     }
 
     @GetMapping("/trips/{id}")
@@ -75,12 +75,12 @@ public class AdminController {
     }
 
     @GetMapping("/transactions")
-    public ResponseEntity<Page<AdminDto.TransactionSummary>> transactions(
+    public ResponseEntity<PageDto.PageResponse<AdminDto.TransactionSummary>> transactions(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String status) {
-        return ResponseEntity.ok(adminService.listTransactions(page, size, q, status));
+        return ResponseEntity.ok(PageDto.PageResponse.from(adminService.listTransactions(page, size, q, status)));
     }
 
     @GetMapping("/ai-cost/summary")
@@ -102,7 +102,7 @@ public class AdminController {
     }
 
     @GetMapping("/ai-cost/events")
-    public ResponseEntity<Page<AdminDto.AiUsageEvent>> aiUsageEvents(
+    public ResponseEntity<PageDto.PageResponse<AdminDto.AiUsageEvent>> aiUsageEvents(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) LocalDate from,
@@ -110,6 +110,6 @@ public class AdminController {
             @RequestParam(required = false) String operation,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String q) {
-        return ResponseEntity.ok(adminService.aiUsageEvents(page, size, from, to, operation, status, q));
+        return ResponseEntity.ok(PageDto.PageResponse.from(adminService.aiUsageEvents(page, size, from, to, operation, status, q)));
     }
 }
