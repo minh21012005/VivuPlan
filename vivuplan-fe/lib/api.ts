@@ -372,12 +372,14 @@ export interface BillingPackage {
   amount: number;
   planCredits: number;
   editCredits: number;
+  suggestionCredits: number;
   highlighted?: boolean;
 }
 
 export interface BillingWallet {
   planCredits: number;
   editCredits: number;
+  suggestionCredits: number;
 }
 
 export interface BillingOrder {
@@ -386,6 +388,7 @@ export interface BillingOrder {
   amount: number;
   planCredits: number;
   editCredits: number;
+  suggestionCredits: number;
   status: "PENDING" | "PAID" | "UNDERPAID" | "EXPIRED" | "CANCELLED";
   qrUrl?: string;
   expiresAt: string;
@@ -562,6 +565,7 @@ export interface AdminTransactionSummary {
   paidAmount?: number;
   planCredits: number;
   editCredits: number;
+  suggestionCredits: number;
   status: AdminTransactionStatus | string;
   createdAt?: string;
   paidAt?: string;

@@ -11,9 +11,9 @@ import { useBilling } from "@/hooks/useBilling";
 import { Check, CreditCard, Sparkles, Zap } from "lucide-react";
 
 const fallbackPackages: BillingPackage[] = [
-  { code: "PLAN_BASIC", name: "Gói cơ bản", description: "2 lượt tạo lịch trình + 3 lượt chỉnh ngày bằng AI", amount: 10_000, planCredits: 2, editCredits: 3 },
-  { code: "PLAN_STANDARD", name: "Gói tiêu chuẩn", description: "5 lượt tạo lịch trình + 10 lượt chỉnh ngày bằng AI", amount: 19_000, planCredits: 5, editCredits: 10, highlighted: true },
-  { code: "PLAN_SAVING", name: "Gói tiết kiệm", description: "12 lượt tạo lịch trình + 20 lượt chỉnh ngày bằng AI", amount: 39_000, planCredits: 12, editCredits: 20 },
+  { code: "PLAN_BASIC", name: "Gói cơ bản", description: "2 lượt tạo lịch trình + 2 lượt chỉnh ngày + 3 lượt gợi ý điểm đến AI", amount: 10_000, planCredits: 2, editCredits: 2, suggestionCredits: 3 },
+  { code: "PLAN_STANDARD", name: "Gói tiêu chuẩn", description: "5 lượt tạo lịch trình + 5 lượt chỉnh ngày + 8 lượt gợi ý điểm đến AI", amount: 19_000, planCredits: 5, editCredits: 5, suggestionCredits: 8, highlighted: true },
+  { code: "PLAN_SAVING", name: "Gói tiết kiệm", description: "12 lượt tạo lịch trình + 12 lượt chỉnh ngày + 20 lượt gợi ý điểm đến AI", amount: 39_000, planCredits: 12, editCredits: 12, suggestionCredits: 20 },
 ];
 
 function fmtVnd(value: number) {
@@ -95,6 +95,10 @@ export default function PricingPage() {
                     <span><CreditCard size={13} /> Chỉnh ngày</span>
                     <strong>{wallet.editCredits}</strong>
                   </div>
+                  <div className="pricing-balance-item">
+                    <span><Sparkles size={13} /> Gợi ý điểm đến</span>
+                    <strong>{wallet.suggestionCredits}</strong>
+                  </div>
                 </div>
               </>
             ) : (
@@ -134,6 +138,7 @@ export default function PricingPage() {
               <ul className="pricing-benefits">
                 <li><Check size={14} /> 1 lịch trình mới</li>
                 <li><Check size={14} /> 1 lần chỉnh ngày bằng AI</li>
+                <li><Check size={14} /> 1 lượt gợi ý điểm đến bằng AI</li>
                 <li><Check size={14} /> Đầy đủ tính năng trong lịch trình</li>
               </ul>
             </article>
@@ -170,7 +175,8 @@ export default function PricingPage() {
                   <ul className="pricing-benefits">
                     <li><Check size={14} /> {item.planCredits} lịch trình mới</li>
                     <li><Check size={14} /> {item.editCredits} lần chỉnh ngày bằng AI</li>
-                    <li><Check size={14} /> Chỉ trừ lượt khi AI tạo thành công</li>
+                    <li><Check size={14} /> {item.suggestionCredits} lượt gợi ý điểm đến AI</li>
+                    <li><Check size={14} /> Chỉ trừ lượt khi AI xử lý thành công</li>
                   </ul>
                 </article>
               );

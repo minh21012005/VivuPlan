@@ -58,8 +58,6 @@ app:
       output-usd-per-1m: ${GEMINI_OUTPUT_USD_PER_1M:2.50}
       usd-to-vnd-rate: ${AI_COST_USD_TO_VND_RATE:26400}
     destination-suggest:
-      limit: ${AI_DESTINATION_SUGGEST_LIMIT:2}
-      window-minutes: ${AI_DESTINATION_SUGGEST_WINDOW_MINUTES:1440}
       cooldown-seconds: ${AI_DESTINATION_SUGGEST_COOLDOWN_SECONDS:60}
       cache-ttl-hours: ${AI_DESTINATION_SUGGEST_CACHE_TTL_HOURS:24}
   cors:

@@ -36,11 +36,17 @@ public class PaymentOrder {
     @Column(nullable = false)
     private Long amount;
 
-    @Column(nullable = false)
-    private Long planCredits;
+    @Column(nullable = false, columnDefinition = "bigint default 0")
+    @Builder.Default
+    private Long planCredits = 0L;
 
-    @Column(nullable = false)
-    private Long editCredits;
+    @Column(nullable = false, columnDefinition = "bigint default 0")
+    @Builder.Default
+    private Long editCredits = 0L;
+
+    @Column(nullable = false, columnDefinition = "bigint default 0")
+    @Builder.Default
+    private Long suggestionCredits = 0L;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 24)

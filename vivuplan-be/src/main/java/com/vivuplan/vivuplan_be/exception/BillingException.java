@@ -27,4 +27,11 @@ public class BillingException extends RuntimeException {
                 "Bạn đã hết lượt chỉnh ngày bằng AI. Mua thêm lượt để tiếp tục nhé.",
                 HttpStatus.PAYMENT_REQUIRED);
     }
+
+    public static BillingException insufficientSuggestionCredits() {
+        return new BillingException(
+                "INSUFFICIENT_SUGGESTION_CREDITS",
+                "Bạn đã hết lượt gợi ý điểm đến bằng AI. Vui lòng mua thêm lượt để tiếp tục.",
+                HttpStatus.PAYMENT_REQUIRED);
+    }
 }

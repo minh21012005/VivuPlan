@@ -92,11 +92,13 @@ public class AdminDto {
     public static class WalletSummary {
         private Long planCredits;
         private Long editCredits;
+        private Long suggestionCredits;
 
         public static WalletSummary from(UserWallet wallet) {
             WalletSummary dto = new WalletSummary();
             dto.setPlanCredits(wallet != null ? wallet.getPlanCredits() : 0L);
             dto.setEditCredits(wallet != null ? wallet.getEditCredits() : 0L);
+            dto.setSuggestionCredits(wallet != null && wallet.getSuggestionCredits() != null ? wallet.getSuggestionCredits() : 0L);
             return dto;
         }
     }
@@ -123,6 +125,7 @@ public class AdminDto {
         private Long paidAmount;
         private Long planCredits;
         private Long editCredits;
+        private Long suggestionCredits;
         private String status;
         private String createdAt;
         private String paidAt;
@@ -139,6 +142,7 @@ public class AdminDto {
             dto.setPaidAmount(order.getPaidAmount());
             dto.setPlanCredits(order.getPlanCredits());
             dto.setEditCredits(order.getEditCredits());
+            dto.setSuggestionCredits(order.getSuggestionCredits() != null ? order.getSuggestionCredits() : 0L);
             dto.setStatus(order.getStatus().name());
             dto.setCreatedAt(order.getCreatedAt() != null ? order.getCreatedAt().toString() : null);
             dto.setPaidAt(order.getPaidAt() != null ? order.getPaidAt().toString() : null);

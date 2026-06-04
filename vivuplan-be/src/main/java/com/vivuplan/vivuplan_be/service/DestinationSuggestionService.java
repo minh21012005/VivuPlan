@@ -27,8 +27,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DestinationSuggestionService {
 
-    private static final String RATE_LIMIT_MESSAGE =
-            "Bạn đã yêu cầu gợi ý quá nhiều lần. Vui lòng thử lại sau ít phút.";
     private static final String COOLDOWN_MESSAGE =
             "Vui lòng chờ một chút trước khi yêu cầu gợi ý điểm đến mới.";
     private static final String AI_SUGGESTION_ERROR =
@@ -46,14 +44,8 @@ public class DestinationSuggestionService {
     private final AiService aiService;
     private final BillingService billingService;
     private final UserPromptGuardService userPromptGuardService;
-    private final Map<Long, SuggestionRateWindow> rateWindows = new ConcurrentHashMap<>();
+    private final Map<Long, Long> cooldowns = new ConcurrentHashMap<>();
     private final Map<String, SuggestionCacheEntry> suggestionCache = new ConcurrentHashMap<>();
-
-    @Value("${app.ai.destination-suggest.limit:2}")
-    private int suggestionLimit;
-
-    @Value("${app.ai.destination-suggest.window-minutes:1440}")
-    private int suggestionWindowMinutes;
 
     @Value("${app.ai.destination-suggest.cooldown-seconds:60}")
     private int suggestionCooldownSeconds;
@@ -64,7 +56,6 @@ public class DestinationSuggestionService {
     public TripDto.DestinationSuggestionResponse suggest(Long userId, TripDto.DestinationSuggestionRequest req) {
         userPromptGuardService.validateAndSanitizeDestinationSuggestionRequest(req);
         validatePlanningContext(req);
-        billingService.requirePlanCredit(userId);
 
         long now = System.currentTimeMillis();
         String cacheKey = buildCacheKey(userId, req);
@@ -73,7 +64,8 @@ public class DestinationSuggestionService {
             return cached;
         }
 
-        enforceRateLimit(userId, now);
+        billingService.requireSuggestionCredit(userId);
+        enforceCooldown(userId, now);
 
         List<Destination> catalogDestinations = destinationRepository.findByActiveTrueOrderByDisplayOrderAscNameAsc();
         Set<String> catalogNames = catalogDestinations.stream()
@@ -84,6 +76,7 @@ public class DestinationSuggestionService {
 
         List<TripDto.DestinationSuggestion> suggestions = aiService.suggestDestinations(req, catalogContext, userId);
         List<TripDto.DestinationSuggestion> cleaned = validateAndCleanSuggestions(suggestions, catalogNames);
+        billingService.consumeSuggestionCredit(userId);
 
         TripDto.DestinationSuggestionResponse response = new TripDto.DestinationSuggestionResponse();
         response.setSuggestions(cleaned);
@@ -91,24 +84,17 @@ public class DestinationSuggestionService {
         return response;
     }
 
-    private void enforceRateLimit(Long userId, long now) {
-        if (suggestionLimit <= 0 && suggestionCooldownSeconds <= 0) {
+    private void enforceCooldown(Long userId, long now) {
+        if (suggestionCooldownSeconds <= 0) {
             return;
         }
 
-        long windowMillis = Math.max(1, suggestionWindowMinutes) * 60_000L;
         long cooldownMillis = Math.max(0, suggestionCooldownSeconds) * 1_000L;
-        rateWindows.compute(userId, (key, window) -> {
-            if (window == null || now - window.startedAt() >= windowMillis) {
-                return new SuggestionRateWindow(now, 1, now);
-            }
-            if (cooldownMillis > 0 && now - window.lastSuggestedAt() < cooldownMillis) {
+        cooldowns.compute(userId, (key, lastSuggestedAt) -> {
+            if (lastSuggestedAt != null && now - lastSuggestedAt < cooldownMillis) {
                 throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, COOLDOWN_MESSAGE);
             }
-            if (suggestionLimit > 0 && window.count() >= suggestionLimit) {
-                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, RATE_LIMIT_MESSAGE);
-            }
-            return new SuggestionRateWindow(window.startedAt(), window.count() + 1, now);
+            return now;
         });
     }
 
@@ -450,9 +436,6 @@ public class DestinationSuggestionService {
         String lower = value.toLowerCase(Locale.ROOT);
         String decomposed = Normalizer.normalize(lower, Normalizer.Form.NFD);
         return decomposed.replaceAll("\\p{M}", "").replace('đ', 'd').trim();
-    }
-
-    private record SuggestionRateWindow(long startedAt, int count, long lastSuggestedAt) {
     }
 
     private record SuggestionCacheEntry(List<TripDto.DestinationSuggestion> suggestions, long expiresAt) {

@@ -49,6 +49,7 @@ public class CreditLedger {
 
     public enum CreditType {
         PLAN,
-        EDIT
+        EDIT,
+        SUGGESTION
     }
 }

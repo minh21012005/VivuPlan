@@ -18,6 +18,7 @@ public class BillingDto {
         private Long amount;
         private Long planCredits;
         private Long editCredits;
+        private Long suggestionCredits;
         private Boolean highlighted;
     }
 
@@ -25,11 +26,13 @@ public class BillingDto {
     public static class WalletResponse {
         private Long planCredits;
         private Long editCredits;
+        private Long suggestionCredits;
 
         public static WalletResponse from(UserWallet wallet) {
             return WalletResponse.builder()
                     .planCredits(wallet.getPlanCredits())
                     .editCredits(wallet.getEditCredits())
+                    .suggestionCredits(wallet.getSuggestionCredits() != null ? wallet.getSuggestionCredits() : 0L)
                     .build();
         }
     }
@@ -53,6 +56,7 @@ public class BillingDto {
         private Long amount;
         private Long planCredits;
         private Long editCredits;
+        private Long suggestionCredits;
         private PaymentOrder.Status status;
         private String qrUrl;
         private LocalDateTime expiresAt;
@@ -66,6 +70,7 @@ public class BillingDto {
                     .amount(order.getAmount())
                     .planCredits(order.getPlanCredits())
                     .editCredits(order.getEditCredits())
+                    .suggestionCredits(order.getSuggestionCredits() != null ? order.getSuggestionCredits() : 0L)
                     .status(order.getStatus())
                     .qrUrl(order.getQrUrl())
                     .expiresAt(order.getExpiresAt())

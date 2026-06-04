@@ -261,6 +261,7 @@ function PlanContent() {
   const [suggestionElapsedSeconds, setSuggestionElapsedSeconds] = useState(0);
   const [error, setError] = useState("");
   const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [purchaseReason, setPurchaseReason] = useState<"PLAN" | "SUGGESTION">("PLAN");
   const { wallet, refreshWallet } = useBilling();
   const auth = useAuth();
   const [focusedField, setFocusedField] = useState<"departure" | "destination" | null>(null);
@@ -501,7 +502,8 @@ function PlanContent() {
         router.push("/login");
       } else if (e instanceof ApiError && e.status === 402) {
         setDestinationSuggestionModalOpen(false);
-        setError("Bạn cần có lượt tạo lịch trình để dùng gợi ý điểm đến bằng AI.");
+        setError("Bạn đã hết lượt gợi ý điểm đến bằng AI. Mua thêm lượt để tiếp tục nhé.");
+        setPurchaseReason("SUGGESTION");
         setPurchaseOpen(true);
       } else if (e instanceof ApiError && e.status === 429) {
         setDestinationSuggestionError(e.message || "Bạn đã yêu cầu gợi ý quá nhiều lần. Vui lòng thử lại sau ít phút.");
@@ -552,6 +554,7 @@ function PlanContent() {
     } catch (e) {
       if (e instanceof ApiError && e.status === 402) {
         setError("Bạn đã hết lượt tạo lịch trình bằng AI. Mua thêm lượt để tiếp tục nhé.");
+        setPurchaseReason("PLAN");
         setPurchaseOpen(true);
       } else if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
         router.push("/login");
@@ -947,7 +950,10 @@ function PlanContent() {
             {wallet && (
               <div className="credit-inline-note">
                 <Sparkles size={14} />
-                <span>Còn <strong>{wallet.planCredits}</strong> lượt tạo lịch trình</span>
+                <span>
+                  Còn <strong>{wallet.planCredits}</strong> lượt tạo
+                  {!form.destination.trim() && <> · <strong>{wallet.suggestionCredits}</strong> lượt gợi ý</>}
+                </span>
               </div>
             )}
 
@@ -1134,7 +1140,7 @@ function PlanContent() {
       )}
       <PurchaseModal
         open={purchaseOpen}
-        reason="PLAN"
+        reason={purchaseReason}
         onClose={() => setPurchaseOpen(false)}
       />
     </div>

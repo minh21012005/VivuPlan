@@ -143,7 +143,7 @@ export default function AdminUserDetailPage() {
                 <StatCard label="Lịch trình" value={detail.totalTrips} icon={<MapPin size={18} />} />
                 <StatCard label="Đơn đã thanh toán" value={detail.paidOrders} icon={<CreditCard size={18} />} />
                 <StatCard label="Tổng đã trả" value={formatCurrency(detail.totalPaid)} icon={<Wallet size={18} />} />
-                <StatCard label="Lượt còn lại" value={`${detail.wallet.planCredits} tạo · ${detail.wallet.editCredits} chỉnh`} icon={<Ticket size={18} />} />
+                <StatCard label="Lượt còn lại" value={`${detail.wallet.planCredits} tạo · ${detail.wallet.editCredits} chỉnh · ${detail.wallet.suggestionCredits} gợi ý`} icon={<Ticket size={18} />} />
               </div>
 
               <div className="admin-trip-detail-layout">
@@ -219,7 +219,7 @@ export default function AdminUserDetailPage() {
                               <td>{packageLabel(order.packageCode)}</td>
                               <td>
                                 <strong>{formatCurrency(order.amount)}</strong>
-                                <span>{order.planCredits} tạo · {order.editCredits} chỉnh</span>
+                                <span>{order.planCredits} tạo · {order.editCredits} chỉnh · {order.suggestionCredits} gợi ý</span>
                               </td>
                               <td>{statusLabel(order.status)}</td>
                               <td>{formatDate(order.createdAt)}</td>

@@ -75,7 +75,8 @@ class BillingServiceTest {
         verify(userWalletRepository).save(walletCaptor.capture());
         assertThat(walletCaptor.getValue().getPlanCredits()).isEqualTo(1);
         assertThat(walletCaptor.getValue().getEditCredits()).isEqualTo(1);
-        verify(creditLedgerRepository, times(2)).save(any());
+        assertThat(walletCaptor.getValue().getSuggestionCredits()).isEqualTo(1);
+        verify(creditLedgerRepository, times(3)).save(any());
     }
 
     @Test
@@ -137,9 +138,25 @@ class BillingServiceTest {
         assertThat(status).isEqualTo("CREDITED");
         assertThat(order.getStatus()).isEqualTo(PaymentOrder.Status.PAID);
         assertThat(wallet.getPlanCredits()).isEqualTo(2);
-        assertThat(wallet.getEditCredits()).isEqualTo(3);
-        verify(creditLedgerRepository, times(2)).save(any());
+        assertThat(wallet.getEditCredits()).isEqualTo(2);
+        assertThat(wallet.getSuggestionCredits()).isEqualTo(3);
+        verify(creditLedgerRepository, times(3)).save(any());
         verify(sepayTransactionRepository).save(any(SepayTransaction.class));
+    }
+
+    @Test
+    void createOrderStoresSuggestionCreditsFromPackage() {
+        BillingService service = service();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(sampleUser()));
+        when(paymentOrderRepository.existsByOrderCode(anyString())).thenReturn(false);
+        when(paymentOrderRepository.save(any(PaymentOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.createOrder(7L, "PLAN_STANDARD");
+
+        assertThat(response.getAmount()).isEqualTo(19_000L);
+        assertThat(response.getPlanCredits()).isEqualTo(5);
+        assertThat(response.getEditCredits()).isEqualTo(5);
+        assertThat(response.getSuggestionCredits()).isEqualTo(8);
     }
 
     @Test
@@ -252,6 +269,7 @@ class BillingServiceTest {
                 rawBody);
 
         assertThat(status).isEqualTo("CREDITED");
+        assertThat(wallet.getSuggestionCredits()).isEqualTo(3);
     }
 
     private User sampleUser() {
@@ -269,7 +287,8 @@ class BillingServiceTest {
                 .packageCode("PLAN_BASIC")
                 .amount(10_000L)
                 .planCredits(2L)
-                .editCredits(3L)
+                .editCredits(2L)
+                .suggestionCredits(3L)
                 .status(PaymentOrder.Status.PENDING)
                 .expiresAt(LocalDateTime.now().plusMinutes(20))
                 .build();

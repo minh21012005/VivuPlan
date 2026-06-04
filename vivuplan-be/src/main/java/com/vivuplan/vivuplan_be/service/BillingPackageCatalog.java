@@ -9,9 +9,15 @@ import java.util.List;
 public class BillingPackageCatalog {
 
     private final List<CreditPackage> packages = List.of(
-            new CreditPackage("PLAN_BASIC", "Gói cơ bản", "2 lịch trình AI + 3 lượt chỉnh ngày", 10_000L, 2L, 3L, false),
-            new CreditPackage("PLAN_STANDARD", "Gói tiêu chuẩn", "5 lịch trình AI + 10 lượt chỉnh ngày", 19_000L, 5L, 10L, true),
-            new CreditPackage("PLAN_SAVING", "Gói tiết kiệm", "12 lịch trình AI + 20 lượt chỉnh ngày", 39_000L, 12L, 20L, false)
+            new CreditPackage("PLAN_BASIC", "Gói cơ bản",
+                    "2 lịch trình AI + 2 lượt chỉnh ngày + 3 lượt gợi ý điểm đến AI",
+                    10_000L, 2L, 2L, 3L, false),
+            new CreditPackage("PLAN_STANDARD", "Gói tiêu chuẩn",
+                    "5 lịch trình AI + 5 lượt chỉnh ngày + 8 lượt gợi ý điểm đến AI",
+                    19_000L, 5L, 5L, 8L, true),
+            new CreditPackage("PLAN_SAVING", "Gói tiết kiệm",
+                    "12 lịch trình AI + 12 lượt chỉnh ngày + 20 lượt gợi ý điểm đến AI",
+                    39_000L, 12L, 12L, 20L, false)
     );
 
     public List<CreditPackage> list() {
@@ -32,6 +38,7 @@ public class BillingPackageCatalog {
             Long amount,
             Long planCredits,
             Long editCredits,
+            Long suggestionCredits,
             Boolean highlighted) {
 
         public BillingDto.PackageResponse toResponse() {
@@ -42,6 +49,7 @@ public class BillingPackageCatalog {
                     .amount(amount)
                     .planCredits(planCredits)
                     .editCredits(editCredits)
+                    .suggestionCredits(suggestionCredits)
                     .highlighted(highlighted)
                     .build();
         }

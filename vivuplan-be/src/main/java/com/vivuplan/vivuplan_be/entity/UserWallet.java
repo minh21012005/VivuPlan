@@ -25,13 +25,17 @@ public class UserWallet {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "bigint default 0")
     @Builder.Default
     private Long planCredits = 0L;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "bigint default 0")
     @Builder.Default
     private Long editCredits = 0L;
+
+    @Column(nullable = false, columnDefinition = "bigint default 0")
+    @Builder.Default
+    private Long suggestionCredits = 0L;
 
     @CreationTimestamp
     @Column(updatable = false)

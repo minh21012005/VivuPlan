@@ -34,6 +34,7 @@ public class BillingService {
 
     private static final long FREE_SIGNUP_PLAN_CREDITS = 1L;
     private static final long FREE_SIGNUP_EDIT_CREDITS = 1L;
+    private static final long FREE_SIGNUP_SUGGESTION_CREDITS = 1L;
     private static final long WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS = 300L;
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final char[] ORDER_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".toCharArray();
@@ -82,17 +83,19 @@ public class BillingService {
                 .user(user)
                 .planCredits(FREE_SIGNUP_PLAN_CREDITS)
                 .editCredits(FREE_SIGNUP_EDIT_CREDITS)
+                .suggestionCredits(FREE_SIGNUP_SUGGESTION_CREDITS)
                 .build();
         userWalletRepository.save(wallet);
         writeLedger(user, CreditLedger.CreditType.PLAN, FREE_SIGNUP_PLAN_CREDITS, "FREE_SIGNUP", null, null);
         writeLedger(user, CreditLedger.CreditType.EDIT, FREE_SIGNUP_EDIT_CREDITS, "FREE_SIGNUP", null, null);
+        writeLedger(user, CreditLedger.CreditType.SUGGESTION, FREE_SIGNUP_SUGGESTION_CREDITS, "FREE_SIGNUP", null, null);
     }
 
     @Transactional(readOnly = true)
     public BillingDto.BillingMeResponse me(Long userId) {
         User user = requireUser(userId);
         UserWallet wallet = userWalletRepository.findByUserId(userId)
-                .orElse(UserWallet.builder().user(user).planCredits(0L).editCredits(0L).build());
+                .orElse(UserWallet.builder().user(user).planCredits(0L).editCredits(0L).suggestionCredits(0L).build());
         return BillingDto.BillingMeResponse.builder()
                 .wallet(BillingDto.WalletResponse.from(wallet))
                 .recentOrders(paymentOrderRepository.findTop8ByUserIdOrderByCreatedAtDesc(userId).stream()
@@ -113,6 +116,7 @@ public class BillingService {
                 .amount(creditPackage.amount())
                 .planCredits(creditPackage.planCredits())
                 .editCredits(creditPackage.editCredits())
+                .suggestionCredits(creditPackage.suggestionCredits())
                 .status(PaymentOrder.Status.PENDING)
                 .qrUrl(buildQrUrl(orderCode, creditPackage.amount()))
                 .expiresAt(LocalDateTime.now().plusMinutes(orderExpiryMinutes))
@@ -170,6 +174,14 @@ public class BillingService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public void requireSuggestionCredit(Long userId) {
+        UserWallet wallet = userWalletRepository.findByUserId(userId).orElse(null);
+        if (wallet == null || safeCredits(wallet.getSuggestionCredits()) <= 0) {
+            throw BillingException.insufficientSuggestionCredits();
+        }
+    }
+
     @Transactional
     public void consumePlanCredit(Long userId, Trip trip) {
         UserWallet wallet = userWalletRepository.lockByUserId(userId)
@@ -190,6 +202,18 @@ public class BillingService {
         }
         wallet.setEditCredits(wallet.getEditCredits() - 1);
         writeLedger(wallet.getUser(), CreditLedger.CreditType.EDIT, -1L, "DAY_REGENERATION", null, trip);
+    }
+
+    @Transactional
+    public void consumeSuggestionCredit(Long userId) {
+        UserWallet wallet = userWalletRepository.lockByUserId(userId)
+                .orElseThrow(BillingException::insufficientSuggestionCredits);
+        long currentCredits = safeCredits(wallet.getSuggestionCredits());
+        if (currentCredits <= 0) {
+            throw BillingException.insufficientSuggestionCredits();
+        }
+        wallet.setSuggestionCredits(currentCredits - 1);
+        writeLedger(wallet.getUser(), CreditLedger.CreditType.SUGGESTION, -1L, "DESTINATION_SUGGESTION", null, null);
     }
 
     @Transactional
@@ -260,15 +284,20 @@ public class BillingService {
                         .user(order.getUser())
                         .planCredits(0L)
                         .editCredits(0L)
+                        .suggestionCredits(0L)
                         .build()));
         wallet.setPlanCredits(wallet.getPlanCredits() + order.getPlanCredits());
         wallet.setEditCredits(wallet.getEditCredits() + order.getEditCredits());
+        wallet.setSuggestionCredits(safeCredits(wallet.getSuggestionCredits()) + safeCredits(order.getSuggestionCredits()));
 
         if (order.getPlanCredits() > 0) {
             writeLedger(order.getUser(), CreditLedger.CreditType.PLAN, order.getPlanCredits(), "PAYMENT", order, null);
         }
         if (order.getEditCredits() > 0) {
             writeLedger(order.getUser(), CreditLedger.CreditType.EDIT, order.getEditCredits(), "PAYMENT", order, null);
+        }
+        if (safeCredits(order.getSuggestionCredits()) > 0) {
+            writeLedger(order.getUser(), CreditLedger.CreditType.SUGGESTION, order.getSuggestionCredits(), "PAYMENT", order, null);
         }
     }
 
@@ -429,5 +458,9 @@ public class BillingService {
 
     private String nullToBlank(String value) {
         return value == null ? "" : value;
+    }
+
+    private long safeCredits(Long value) {
+        return value != null ? value : 0L;
     }
 }

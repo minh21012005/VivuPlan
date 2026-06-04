@@ -284,6 +284,10 @@ function TransactionDrawer({
                 <span>Chỉnh AI</span>
                 <strong>{transaction.editCredits}</strong>
               </div>
+              <div>
+                <span>Gợi ý AI</span>
+                <strong>{transaction.suggestionCredits}</strong>
+              </div>
             </div>
           </section>
 
