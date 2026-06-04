@@ -227,29 +227,30 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
                 : "Chọn gói bạn cần, quét mã để thanh toán và VivuPlan sẽ cộng lượt vào tài khoản ngay khi giao dịch hoàn tất."}
             </p>
           </div>
-          <button type="button" onClick={requestClose} aria-label="Đóng" style={{ border: 0, background: "transparent", cursor: "pointer", color: "var(--text-3)" }}>
-            <X size={22} />
-          </button>
+          <div className="modal-close-anchor">
+            <button type="button" onClick={requestClose} aria-label="Đóng" style={{ border: 0, background: "transparent", cursor: "pointer", color: "var(--text-3)" }}>
+              <X size={22} />
+            </button>
+            {closeConfirmOpen && (
+              <div className="modal-close-popconfirm" role="alertdialog" aria-label="Xác nhận đóng thanh toán">
+                <div>
+                  <strong>Thanh toán vẫn đang chờ xử lý</strong>
+                  <p>Nếu đóng bây giờ, giao dịch vẫn có thể được ghi nhận sau vài phút.</p>
+                </div>
+                <div>
+                  <button type="button" onClick={() => setCloseConfirmOpen(false)}>
+                    Tiếp tục chờ
+                  </button>
+                  <button type="button" className="danger" onClick={onClose}>
+                    Đóng
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div style={{ padding: 22 }}>
-          {closeConfirmOpen && (
-            <div className="modal-close-confirm" role="alertdialog" aria-label="Xác nhận đóng thanh toán" style={{ marginBottom: 16 }}>
-              <div>
-                <strong>Thanh toán vẫn đang chờ xử lý</strong>
-                <p>Nếu đóng bây giờ, giao dịch vẫn có thể được ghi nhận sau vài phút. Bạn vẫn muốn đóng chứ?</p>
-              </div>
-              <div>
-                <button type="button" onClick={() => setCloseConfirmOpen(false)}>
-                  Tiếp tục chờ
-                </button>
-                <button type="button" className="danger" onClick={onClose}>
-                  Đóng
-                </button>
-              </div>
-            </div>
-          )}
-
           {wallet && (
             <div style={{
               display: "flex",

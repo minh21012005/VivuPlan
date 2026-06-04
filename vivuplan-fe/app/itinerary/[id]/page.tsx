@@ -1280,27 +1280,28 @@ function RegenerateDayModal({
               <h3>Bạn muốn chỉnh ngày này như thế nào?</h3>
               <p>VivuPlan sẽ tạo một phương án mới cho riêng ngày này và chỉ thay đổi lịch trình khi bạn áp dụng.</p>
             </div>
-            <button type="button" className="btn btn-ghost btn-icon" onClick={onCancel} disabled={applying} aria-label="Đóng tạo lại ngày">
-              <X size={16} />
-            </button>
-          </div>
-
-          {closeConfirmOpen && (
-            <div className="modal-close-confirm" role="alertdialog" aria-label="Xác nhận đóng tạo lại ngày">
-              <div>
-                <strong>AI vẫn đang tạo phương án mới</strong>
-                <p>Nếu đóng bây giờ, kết quả tạo lại ngày sẽ không được hiển thị. Bạn vẫn muốn đóng chứ?</p>
-              </div>
-              <div>
-                <button type="button" onClick={onContinueWaiting}>
-                  Tiếp tục chờ
-                </button>
-                <button type="button" className="danger" onClick={onForceClose}>
-                  Đóng
-                </button>
-              </div>
+            <div className="modal-close-anchor">
+              <button type="button" className="btn btn-ghost btn-icon" onClick={onCancel} disabled={applying} aria-label="Đóng tạo lại ngày">
+                <X size={16} />
+              </button>
+              {closeConfirmOpen && (
+                <div className="modal-close-popconfirm" role="alertdialog" aria-label="Xác nhận đóng tạo lại ngày">
+                  <div>
+                    <strong>AI vẫn đang tạo phương án mới</strong>
+                    <p>Nếu đóng bây giờ, kết quả tạo lại ngày sẽ không được hiển thị.</p>
+                  </div>
+                  <div>
+                    <button type="button" onClick={onContinueWaiting}>
+                      Tiếp tục chờ
+                    </button>
+                    <button type="button" className="danger" onClick={onForceClose}>
+                      Đóng
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
           <form onSubmit={submit} className="regenerate-day-form">
             <label className="regenerate-instruction-field regenerate-chat-field">

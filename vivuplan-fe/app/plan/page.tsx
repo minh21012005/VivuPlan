@@ -978,14 +978,32 @@ function PlanContent() {
       {destinationSuggestionModalOpen && (
         <div className="destination-suggestion-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="destination-suggestion-title">
           <div className="destination-suggestion-modal-panel">
-            <button
-              type="button"
-              className="destination-suggestion-modal-close"
-              onClick={() => closeDestinationSuggestionModal()}
-              aria-label="Đóng gợi ý điểm đến"
-            >
-              <X size={18} />
-            </button>
+            <div className="modal-close-anchor">
+              <button
+                type="button"
+                className="destination-suggestion-modal-close"
+                onClick={() => closeDestinationSuggestionModal()}
+                aria-label="Đóng gợi ý điểm đến"
+              >
+                <X size={18} />
+              </button>
+              {destinationSuggestionCloseConfirmOpen && (
+                <div className="modal-close-popconfirm" role="alertdialog" aria-label="Xác nhận đóng gợi ý điểm đến">
+                  <div>
+                    <strong>Vẫn đang tìm điểm đến</strong>
+                    <p>Nếu đóng bây giờ, kết quả gợi ý sẽ không được hiển thị.</p>
+                  </div>
+                  <div>
+                    <button type="button" onClick={() => setDestinationSuggestionCloseConfirmOpen(false)}>
+                      Tiếp tục chờ
+                    </button>
+                    <button type="button" className="danger" onClick={() => closeDestinationSuggestionModal(true)}>
+                      Đóng
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="destination-suggestion-modal-head">
               <div className="destination-suggestion-modal-icon">
@@ -1005,23 +1023,6 @@ function PlanContent() {
                 </p>
               </div>
             </div>
-
-            {destinationSuggestionCloseConfirmOpen && (
-              <div className="modal-close-confirm" role="alertdialog" aria-label="Xác nhận đóng gợi ý điểm đến">
-                <div>
-                  <strong>Vẫn đang tìm điểm đến</strong>
-                  <p>Nếu đóng bây giờ, kết quả gợi ý sẽ không được hiển thị. Bạn vẫn muốn đóng chứ?</p>
-                </div>
-                <div>
-                  <button type="button" onClick={() => setDestinationSuggestionCloseConfirmOpen(false)}>
-                    Tiếp tục chờ
-                  </button>
-                  <button type="button" className="danger" onClick={() => closeDestinationSuggestionModal(true)}>
-                    Đóng
-                  </button>
-                </div>
-              </div>
-            )}
 
             {suggestingDestinations ? (
               <div className="destination-suggestion-loading" role="status" aria-live="polite">
