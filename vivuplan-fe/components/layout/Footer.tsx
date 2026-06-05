@@ -15,9 +15,9 @@ const footerLinks = {
     { label: "Miền Nam", href: "/explore?region=Mi%E1%BB%81n+Nam" },
   ],
   "Hỗ trợ": [
-    { label: "Điều khoản", href: "/terms" },
-    { label: "Bảo mật", href: "/privacy" },
-    { label: "Liên hệ", href: "/contact" },
+    { label: "Điều khoản", href: "" },
+    { label: "Bảo mật", href: "" },
+    { label: "Liên hệ", href: "" },
   ],
 };
 
