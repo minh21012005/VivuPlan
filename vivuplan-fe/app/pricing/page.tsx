@@ -11,9 +11,9 @@ import { useBilling } from "@/hooks/useBilling";
 import { Check, CreditCard, Sparkles, Zap } from "lucide-react";
 
 const fallbackPackages: BillingPackage[] = [
-  { code: "PLAN_BASIC", name: "Gói cơ bản", description: "2 lượt lập lịch trình, 2 lượt chỉnh sửa ngày và 3 lượt gợi ý điểm đến phù hợp", amount: 10_000, planCredits: 2, editCredits: 2, suggestionCredits: 3 },
-  { code: "PLAN_STANDARD", name: "Gói tiêu chuẩn", description: "5 lượt lập lịch trình, 5 lượt chỉnh sửa ngày và 8 lượt gợi ý điểm đến phù hợp", amount: 19_000, planCredits: 5, editCredits: 5, suggestionCredits: 8, highlighted: true },
-  { code: "PLAN_SAVING", name: "Gói tiết kiệm", description: "12 lượt lập lịch trình, 12 lượt chỉnh sửa ngày và 20 lượt gợi ý điểm đến phù hợp", amount: 39_000, planCredits: 12, editCredits: 12, suggestionCredits: 20 },
+  { code: "PLAN_BASIC", name: "Gói cơ bản", description: "Vừa đủ cho một chuyến ngắn, có thêm lượt chỉnh lại ngày và gợi ý điểm đến.", amount: 10_000, planCredits: 2, editCredits: 2, suggestionCredits: 3 },
+  { code: "PLAN_STANDARD", name: "Gói tiêu chuẩn", description: "Hợp khi muốn so sánh vài phương án hoặc đi cùng nhóm.", amount: 19_000, planCredits: 5, editCredits: 5, suggestionCredits: 8, highlighted: true },
+  { code: "PLAN_SAVING", name: "Gói tiết kiệm", description: "Dành cho người hay lên kế hoạch và muốn nhiều lượt dự phòng.", amount: 39_000, planCredits: 12, editCredits: 12, suggestionCredits: 20 },
 ];
 
 function fmtVnd(value: number) {
@@ -25,17 +25,17 @@ function packageCopy(item: BillingPackage) {
     PLAN_BASIC: {
       name: "Cơ bản",
       eyebrow: "Linh hoạt",
-      bestFor: "Phù hợp khi bạn muốn lên vài phương án đầu tiên.",
+      bestFor: "Vừa đủ cho một chuyến ngắn, có thêm lượt chỉnh lại ngày và gợi ý điểm đến.",
     },
     PLAN_STANDARD: {
       name: "Tiêu chuẩn",
       eyebrow: "Phổ biến",
-      bestFor: "Dành cho nhiều chuyến ngắn hoặc nhóm cần thêm lựa chọn.",
+      bestFor: "Hợp khi muốn so sánh vài phương án hoặc đi cùng nhóm.",
     },
     PLAN_SAVING: {
       name: "Tiết kiệm",
       eyebrow: "Giá tốt nhất",
-      bestFor: "Tối ưu cho người thường xuyên lên kế hoạch du lịch.",
+      bestFor: "Dành cho người hay lên kế hoạch và muốn nhiều lượt dự phòng.",
     },
   };
   return copy[item.code] ?? { name: item.name, eyebrow: "Gói lịch trình", bestFor: "Lập lịch trình cho chuyến đi tiếp theo." };
@@ -136,8 +136,8 @@ export default function PricingPage() {
               <div className="pricing-includes-title">Bao gồm</div>
 
               <ul className="pricing-benefits">
-                <li><Check size={14} /> 1 lượt lập lịch trình</li>
-                <li><Check size={14} /> 1 lượt chỉnh sửa ngày</li>
+                <li><Check size={14} /> 1 lượt lập lịch trình phù hợp với chuyến đi</li>
+                <li><Check size={14} /> 1 lượt chỉnh lại ngày trong lịch trình</li>
                 <li><Check size={14} /> 1 lượt gợi ý điểm đến phù hợp</li>
                 <li><Check size={14} /> Đầy đủ tính năng trong lịch trình</li>
               </ul>
@@ -173,8 +173,8 @@ export default function PricingPage() {
                   <div className="pricing-includes-title">Bao gồm</div>
 
                   <ul className="pricing-benefits">
-                    <li><Check size={14} /> {item.planCredits} lượt lập lịch trình</li>
-                    <li><Check size={14} /> {item.editCredits} lượt chỉnh sửa ngày</li>
+                    <li><Check size={14} /> {item.planCredits} lượt lập lịch trình phù hợp với chuyến đi</li>
+                    <li><Check size={14} /> {item.editCredits} lượt chỉnh lại ngày trong lịch trình</li>
                     <li><Check size={14} /> {item.suggestionCredits} lượt gợi ý điểm đến phù hợp</li>
                     <li><Check size={14} /> Chỉ trừ lượt khi AI xử lý thành công</li>
                   </ul>

@@ -10,13 +10,13 @@ public class BillingPackageCatalog {
 
     private final List<CreditPackage> packages = List.of(
             new CreditPackage("PLAN_BASIC", "Gói cơ bản",
-                    "2 lượt lập lịch trình, 2 lượt chỉnh sửa ngày và 3 lượt gợi ý điểm đến phù hợp",
+                    "Vừa đủ cho một chuyến ngắn, có thêm lượt chỉnh lại ngày và gợi ý điểm đến.",
                     10_000L, 2L, 2L, 3L, false),
             new CreditPackage("PLAN_STANDARD", "Gói tiêu chuẩn",
-                    "5 lượt lập lịch trình, 5 lượt chỉnh sửa ngày và 8 lượt gợi ý điểm đến phù hợp",
+                    "Hợp khi muốn so sánh vài phương án hoặc đi cùng nhóm.",
                     19_000L, 5L, 5L, 8L, true),
             new CreditPackage("PLAN_SAVING", "Gói tiết kiệm",
-                    "12 lượt lập lịch trình, 12 lượt chỉnh sửa ngày và 20 lượt gợi ý điểm đến phù hợp",
+                    "Dành cho người hay lên kế hoạch và muốn nhiều lượt dự phòng.",
                     39_000L, 12L, 12L, 20L, false)
     );
 
