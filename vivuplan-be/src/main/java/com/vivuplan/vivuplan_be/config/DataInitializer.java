@@ -117,7 +117,7 @@ public class DataInitializer implements CommandLineRunner {
             }
             log.info("Place seed synchronized: {} records", seeds.size());
         } catch (IOException e) {
-            throw new IllegalStateException("Khong the import du lieu dia diem", e);
+            throw new IllegalStateException("Không thể import dữ liệu địa điểm", e);
         }
     }
 

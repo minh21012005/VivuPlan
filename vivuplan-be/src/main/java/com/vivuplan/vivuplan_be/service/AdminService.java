@@ -485,7 +485,7 @@ public class AdminService {
         try {
             return AiUsageLog.Operation.valueOf(operation.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Loai AI call khong hop le");
+            throw new IllegalArgumentException("Loại AI call không hợp lệ");
         }
     }
 
@@ -494,15 +494,15 @@ public class AdminService {
         try {
             return AiUsageLog.Status.valueOf(status.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trang thai AI call khong hop le");
+            throw new IllegalArgumentException("Trạng thái AI call không hợp lệ");
         }
     }
 
     private String aiOperationLabel(String operation) {
         return switch (operation) {
-            case "PLAN_GENERATION" -> "Tao lich trinh";
-            case "DAY_REGENERATION" -> "Chinh ngay";
-            case "DESTINATION_SUGGESTION" -> "Goi y diem den";
+            case "PLAN_GENERATION" -> "Tạo lịch trình";
+            case "DAY_REGENERATION" -> "Chỉnh ngày";
+            case "DESTINATION_SUGGESTION" -> "Gợi ý điểm đến";
             default -> operation;
         };
     }

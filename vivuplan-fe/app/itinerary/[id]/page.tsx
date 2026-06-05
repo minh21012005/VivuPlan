@@ -628,7 +628,6 @@ export default function ItineraryPage() {
 
   const deleteActivity = async (activity: ActivityResponse) => {
     if (!trip) return;
-    if (!window.confirm(`Xóa hoạt động "${activity.name}"?`)) return;
     setActivityError("");
     try {
       const updated = await tripApi.deleteActivity(trip.id, activity.id);
@@ -1696,6 +1695,7 @@ function ActivityItem({
 }) {
   const cfg = typeConfig[activity.type] ?? typeConfig.ATTRACTION;
   const Icon = cfg.icon;
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const mapUrl =
     activity.latitude && activity.longitude
       ? `https://www.google.com/maps/search/?api=1&query=${activity.latitude},${activity.longitude}`
@@ -1721,7 +1721,7 @@ function ActivityItem({
       >
         <Icon size={13} style={{ color: cfg.color }} />
       </div>
-      <article className="card" style={{ flex: 1, overflow: "hidden" }}>
+      <article className="card" style={{ flex: 1, overflow: "visible" }}>
         <button
           onClick={onToggle}
           style={{ width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: 16, display: "flex", gap: 12, alignItems: "center", textAlign: "left" }}
@@ -1839,9 +1839,39 @@ function ActivityItem({
               <button type="button" className="btn btn-secondary btn-sm" onClick={onEdit}>
                 <Edit3 size={12} /> Sửa
               </button>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={onDelete} style={{ color: "#B91C1C" }}>
-                <Trash2 size={12} /> Xóa
-              </button>
+              <div className="modal-close-anchor">
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  style={{ color: "#B91C1C" }}
+                >
+                  <Trash2 size={12} /> Xóa
+                </button>
+                {deleteConfirmOpen && (
+                  <div className="modal-close-popconfirm itinerary-activity-delete-popconfirm" role="alertdialog" aria-label="Xác nhận xóa hoạt động">
+                    <div>
+                      <strong>Xóa hoạt động này?</strong>
+                      <p>Hoạt động “{activity.name}” sẽ được gỡ khỏi ngày hiện tại.</p>
+                    </div>
+                    <div>
+                      <button type="button" onClick={() => setDeleteConfirmOpen(false)}>
+                        Giữ lại
+                      </button>
+                      <button
+                        type="button"
+                        className="danger"
+                        onClick={() => {
+                          setDeleteConfirmOpen(false);
+                          onDelete();
+                        }}
+                      >
+                        Xóa hoạt động
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
               <span className="badge badge-teal">{cfg.label}</span>
             </div>
           </div>

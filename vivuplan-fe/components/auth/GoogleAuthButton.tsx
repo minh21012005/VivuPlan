@@ -56,7 +56,7 @@ export function GoogleAuthButton({ onSuccess, onError }: GoogleAuthButtonProps) 
   const handleCredential = useCallback(
     async (response: GoogleCredentialResponse) => {
       if (!response.credential) {
-        onError("Khong nhan duoc thong tin dang nhap tu Google");
+        onError("Không nhận được thông tin đăng nhập từ Google");
         return;
       }
 
@@ -65,7 +65,7 @@ export function GoogleAuthButton({ onSuccess, onError }: GoogleAuthButtonProps) 
         const authResponse = await authApi.google({ idToken: response.credential });
         onSuccess(authResponse);
       } catch (err: unknown) {
-        onError(err instanceof Error ? err.message : "Dang nhap Google that bai");
+        onError(err instanceof Error ? err.message : "Đăng nhập Google thất bại");
       } finally {
         setLoading(false);
       }
@@ -120,7 +120,7 @@ export function GoogleAuthButton({ onSuccess, onError }: GoogleAuthButtonProps) 
         className="btn btn-secondary"
         style={{ width: "100%", marginBottom: "20px", justifyContent: "center", padding: "12px" }}
       >
-        <Globe size={17} /> Google chua duoc cau hinh
+        <Globe size={17} /> Google chưa được cấu hình
       </button>
     );
   }
@@ -141,7 +141,7 @@ export function GoogleAuthButton({ onSuccess, onError }: GoogleAuthButtonProps) 
           className="btn btn-secondary"
           style={{ width: "100%", justifyContent: "center", padding: "12px" }}
         >
-          <div className="spinner" /> Dang nhap voi Google...
+          <div className="spinner" /> Đang đăng nhập với Google...
         </button>
       )}
       <div

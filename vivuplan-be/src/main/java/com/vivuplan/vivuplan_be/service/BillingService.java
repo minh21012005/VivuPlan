@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriUtils;
 
 import javax.crypto.Mac;
@@ -128,7 +129,7 @@ public class BillingService {
     public BillingDto.OrderResponse getOrder(Long userId, String orderCode) {
         PaymentOrder order = paymentOrderRepository.findByOrderCode(orderCode)
                 .filter(item -> item.getUser().getId().equals(userId))
-                .orElseThrow(() -> new RuntimeException("Khong tim thay don thanh toan"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn thanh toán"));
         return BillingDto.OrderResponse.from(order);
     }
 
@@ -136,7 +137,7 @@ public class BillingService {
     public BillingDto.OrderResponse cancelOrder(Long userId, String orderCode) {
         PaymentOrder order = paymentOrderRepository.lockByOrderCode(orderCode)
                 .filter(item -> item.getUser().getId().equals(userId))
-                .orElseThrow(() -> new RuntimeException("Khong tim thay don thanh toan"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn thanh toán"));
 
         if (order.getStatus() == PaymentOrder.Status.PENDING) {
             order.setStatus(order.getExpiresAt().isBefore(LocalDateTime.now())
@@ -386,7 +387,7 @@ public class BillingService {
 
     private User requireUser(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Nguoi dung khong ton tai"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
     }
 
     private void writeLedger(
@@ -419,7 +420,7 @@ public class BillingService {
                 return candidate;
             }
         }
-        throw new IllegalStateException("Khong the tao ma don thanh toan");
+        throw new IllegalStateException("Không thể tạo mã đơn thanh toán");
     }
 
     private String buildQrUrl(String orderCode, Long amount) {

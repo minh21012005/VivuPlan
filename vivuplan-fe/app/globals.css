@@ -4736,6 +4736,18 @@ textarea.input.textarea-compact {
   background: #FEF2F2;
 }
 
+.itinerary-activity-delete-popconfirm {
+  top: auto;
+  bottom: calc(100% + 10px);
+  right: 0;
+}
+
+.itinerary-activity-delete-popconfirm::before {
+  top: auto;
+  bottom: -6px;
+  transform: rotate(225deg);
+}
+
 .regenerate-actions {
   display: flex;
   justify-content: flex-end;
