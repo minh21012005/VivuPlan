@@ -96,9 +96,9 @@ public class AdminDto {
 
         public static WalletSummary from(UserWallet wallet) {
             WalletSummary dto = new WalletSummary();
-            dto.setPlanCredits(wallet != null ? wallet.getPlanCredits() : 0L);
-            dto.setEditCredits(wallet != null ? wallet.getEditCredits() : 0L);
-            dto.setSuggestionCredits(wallet != null && wallet.getSuggestionCredits() != null ? wallet.getSuggestionCredits() : 0L);
+            dto.setPlanCredits(wallet != null ? safeCredits(wallet.getPlanCredits()) : 0L);
+            dto.setEditCredits(wallet != null ? safeCredits(wallet.getEditCredits()) : 0L);
+            dto.setSuggestionCredits(wallet != null ? safeCredits(wallet.getSuggestionCredits()) : 0L);
             return dto;
         }
     }
@@ -140,9 +140,9 @@ public class AdminDto {
             dto.setPackageCode(order.getPackageCode());
             dto.setAmount(order.getAmount());
             dto.setPaidAmount(order.getPaidAmount());
-            dto.setPlanCredits(order.getPlanCredits());
-            dto.setEditCredits(order.getEditCredits());
-            dto.setSuggestionCredits(order.getSuggestionCredits() != null ? order.getSuggestionCredits() : 0L);
+            dto.setPlanCredits(safeCredits(order.getPlanCredits()));
+            dto.setEditCredits(safeCredits(order.getEditCredits()));
+            dto.setSuggestionCredits(safeCredits(order.getSuggestionCredits()));
             dto.setStatus(order.getStatus().name());
             dto.setCreatedAt(order.getCreatedAt() != null ? order.getCreatedAt().toString() : null);
             dto.setPaidAt(order.getPaidAt() != null ? order.getPaidAt().toString() : null);
@@ -228,5 +228,9 @@ public class AdminDto {
         private String errorCode;
         private String errorMessage;
         private String createdAt;
+    }
+
+    private static long safeCredits(Long value) {
+        return value != null ? value : 0L;
     }
 }

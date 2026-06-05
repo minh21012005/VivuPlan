@@ -161,7 +161,7 @@ public class BillingService {
     @Transactional(readOnly = true)
     public void requirePlanCredit(Long userId) {
         UserWallet wallet = userWalletRepository.findByUserId(userId).orElse(null);
-        if (wallet == null || wallet.getPlanCredits() <= 0) {
+        if (wallet == null || safeCredits(wallet.getPlanCredits()) <= 0) {
             throw BillingException.insufficientPlanCredits();
         }
     }
@@ -169,7 +169,7 @@ public class BillingService {
     @Transactional(readOnly = true)
     public void requireEditCredit(Long userId) {
         UserWallet wallet = userWalletRepository.findByUserId(userId).orElse(null);
-        if (wallet == null || wallet.getEditCredits() <= 0) {
+        if (wallet == null || safeCredits(wallet.getEditCredits()) <= 0) {
             throw BillingException.insufficientEditCredits();
         }
     }
@@ -186,10 +186,11 @@ public class BillingService {
     public void consumePlanCredit(Long userId, Trip trip) {
         UserWallet wallet = userWalletRepository.lockByUserId(userId)
                 .orElseThrow(BillingException::insufficientPlanCredits);
-        if (wallet.getPlanCredits() <= 0) {
+        long currentCredits = safeCredits(wallet.getPlanCredits());
+        if (currentCredits <= 0) {
             throw BillingException.insufficientPlanCredits();
         }
-        wallet.setPlanCredits(wallet.getPlanCredits() - 1);
+        wallet.setPlanCredits(currentCredits - 1);
         writeLedger(wallet.getUser(), CreditLedger.CreditType.PLAN, -1L, "PLAN_GENERATION", null, trip);
     }
 
@@ -197,10 +198,11 @@ public class BillingService {
     public void consumeEditCredit(Long userId, Trip trip) {
         UserWallet wallet = userWalletRepository.lockByUserId(userId)
                 .orElseThrow(BillingException::insufficientEditCredits);
-        if (wallet.getEditCredits() <= 0) {
+        long currentCredits = safeCredits(wallet.getEditCredits());
+        if (currentCredits <= 0) {
             throw BillingException.insufficientEditCredits();
         }
-        wallet.setEditCredits(wallet.getEditCredits() - 1);
+        wallet.setEditCredits(currentCredits - 1);
         writeLedger(wallet.getUser(), CreditLedger.CreditType.EDIT, -1L, "DAY_REGENERATION", null, trip);
     }
 
@@ -286,14 +288,14 @@ public class BillingService {
                         .editCredits(0L)
                         .suggestionCredits(0L)
                         .build()));
-        wallet.setPlanCredits(wallet.getPlanCredits() + order.getPlanCredits());
-        wallet.setEditCredits(wallet.getEditCredits() + order.getEditCredits());
+        wallet.setPlanCredits(safeCredits(wallet.getPlanCredits()) + safeCredits(order.getPlanCredits()));
+        wallet.setEditCredits(safeCredits(wallet.getEditCredits()) + safeCredits(order.getEditCredits()));
         wallet.setSuggestionCredits(safeCredits(wallet.getSuggestionCredits()) + safeCredits(order.getSuggestionCredits()));
 
-        if (order.getPlanCredits() > 0) {
+        if (safeCredits(order.getPlanCredits()) > 0) {
             writeLedger(order.getUser(), CreditLedger.CreditType.PLAN, order.getPlanCredits(), "PAYMENT", order, null);
         }
-        if (order.getEditCredits() > 0) {
+        if (safeCredits(order.getEditCredits()) > 0) {
             writeLedger(order.getUser(), CreditLedger.CreditType.EDIT, order.getEditCredits(), "PAYMENT", order, null);
         }
         if (safeCredits(order.getSuggestionCredits()) > 0) {

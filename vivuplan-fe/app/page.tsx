@@ -107,7 +107,7 @@ export default function HomePage() {
           minHeight: "min(620px, 90vh)",
           display: "flex",
           alignItems: "center",
-          backgroundImage: `radial-gradient(ellipse at center, rgba(15, 23, 42, 0.26) 0%, rgba(15, 23, 42, 0.14) 48%, rgba(15, 23, 42, 0.04) 100%), url(${heroImages.vietnamBay})`,
+          backgroundImage: `radial-gradient(ellipse at center, rgba(15, 23, 42, 0.38) 0%, rgba(15, 23, 42, 0.22) 48%, rgba(15, 23, 42, 0.06) 100%), url(${heroImages.vietnamBay})`,
         }}
       >
         <div className="container home-hero-shell">

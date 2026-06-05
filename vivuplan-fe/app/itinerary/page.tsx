@@ -169,7 +169,7 @@ export default function ItineraryLibraryPage() {
       <section
         className="trip-library-hero"
         style={{
-          backgroundImage: `linear-gradient(90deg, rgba(4,47,46,0.82), rgba(2,132,199,0.36)), url(${heroImages.hoiAn})`,
+          backgroundImage: `linear-gradient(90deg, rgba(4,47,46,0.54), rgba(2,132,199,0.18)), url(${heroImages.hoiAn})`,
         }}
       >
         <div className="container">

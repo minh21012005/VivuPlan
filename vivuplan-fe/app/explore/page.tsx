@@ -83,7 +83,7 @@ export default function ExplorePage() {
         className="travel-hero"
         style={{
           minHeight: 460,
-          backgroundImage: `linear-gradient(to right, rgba(15, 23, 42, 0.8) 0%, rgba(15, 23, 42, 0.4) 50%, rgba(15, 23, 42, 0.1) 100%), url(${heroImages.vietnamCoast})`,
+          backgroundImage: `linear-gradient(to right, rgba(15, 23, 42, 0.62) 0%, rgba(15, 23, 42, 0.28) 50%, rgba(15, 23, 42, 0.06) 100%), url(${heroImages.vietnamCoast})`,
           display: "flex",
           alignItems: "center"
         }}

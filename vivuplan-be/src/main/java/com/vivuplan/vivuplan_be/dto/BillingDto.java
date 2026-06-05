@@ -30,9 +30,9 @@ public class BillingDto {
 
         public static WalletResponse from(UserWallet wallet) {
             return WalletResponse.builder()
-                    .planCredits(wallet.getPlanCredits())
-                    .editCredits(wallet.getEditCredits())
-                    .suggestionCredits(wallet.getSuggestionCredits() != null ? wallet.getSuggestionCredits() : 0L)
+                    .planCredits(safeCredits(wallet.getPlanCredits()))
+                    .editCredits(safeCredits(wallet.getEditCredits()))
+                    .suggestionCredits(safeCredits(wallet.getSuggestionCredits()))
                     .build();
         }
     }
@@ -68,9 +68,9 @@ public class BillingDto {
                     .orderCode(order.getOrderCode())
                     .packageCode(order.getPackageCode())
                     .amount(order.getAmount())
-                    .planCredits(order.getPlanCredits())
-                    .editCredits(order.getEditCredits())
-                    .suggestionCredits(order.getSuggestionCredits() != null ? order.getSuggestionCredits() : 0L)
+                    .planCredits(safeCredits(order.getPlanCredits()))
+                    .editCredits(safeCredits(order.getEditCredits()))
+                    .suggestionCredits(safeCredits(order.getSuggestionCredits()))
                     .status(order.getStatus())
                     .qrUrl(order.getQrUrl())
                     .expiresAt(order.getExpiresAt())
@@ -78,5 +78,9 @@ public class BillingDto {
                     .paidAmount(order.getPaidAmount())
                     .build();
         }
+    }
+
+    private static long safeCredits(Long value) {
+        return value != null ? value : 0L;
     }
 }

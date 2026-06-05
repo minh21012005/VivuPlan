@@ -670,7 +670,7 @@ export default function ItineraryPage() {
       <section
         style={{
           paddingTop: 64,
-          backgroundImage: `linear-gradient(90deg, rgba(4,47,46,0.84), rgba(4,47,46,0.28)), url(${image})`,
+          backgroundImage: `linear-gradient(90deg, rgba(4,47,46,0.56), rgba(4,47,46,0.12)), url(${image})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           color: "white",
