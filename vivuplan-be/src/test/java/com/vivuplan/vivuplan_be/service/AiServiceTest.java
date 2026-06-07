@@ -703,6 +703,14 @@ class AiServiceTest {
                 .contains("If a rented vehicle is used across multiple activities or days")
                 .contains("Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee")
                 .contains("signature/must-try experiences using your own Vietnam travel knowledge")
+                .contains("Final self-check before returning JSON")
+                .contains("The itinerary array has exactly " + req.getDays() + " days")
+                .contains("Every estimatedCost is a non-negative group-level VND amount")
+                .contains("Apply this checklist silently")
+                .contains("Return exactly one JSON object matching the required schema")
+                .contains("with no markdown, comments, checklist, or surrounding text")
+                .doesNotContain("The plan respects Must visit, Avoid, weather safety")
+                .doesNotContain("requestFulfillment honestly explains")
                 .doesNotContain("Add a clear local transportation plan with TRANSPORT activities for getting around");
     }
 
@@ -726,6 +734,11 @@ class AiServiceTest {
                 .contains("If a rented vehicle is used across multiple activities or days")
                 .contains("Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee")
                 .contains("Preserve or restore relevant destination-signature/must-try experiences")
+                .contains("Final self-check before returning JSON")
+                .contains("The \"day\" object has day value 1 and does not change other days")
+                .contains("Every estimatedCost is a non-negative group-level VND amount")
+                .doesNotContain("The day respects the user request, Must visit, Avoid, weather safety")
+                .doesNotContain("requestFulfillment honestly explains")
                 .contains("The previous proposal was rejected because: missing explicit local transport");
     }
 
@@ -886,7 +899,13 @@ class AiServiceTest {
                 .contains("Outbound transport: MIXED")
                 .contains("Local transport: WALKING")
                 .contains("Outbound transport choice: choose the simplest practical way")
-                .contains("Local transport choice: walking-first");
+                .contains("Local transport choice: walking-first")
+                .contains("Final self-check before returning JSON")
+                .contains("The suggestions array contains exactly 3 items with all required fields")
+                .contains("Every enum-like fit field uses only a value allowed by the schema")
+                .doesNotContain("No suggestion conflicts with Avoid or ignores departure")
+                .contains("Return exactly one JSON object matching the required schema")
+                .containsSubsequence("Constraints:", "Final self-check before returning JSON");
     }
 
     @Test
@@ -1145,7 +1164,13 @@ class AiServiceTest {
                 .contains("not a reason to reduce outdoor diversity")
                 .contains("real destination-signature evening cultural areas")
                 .contains("Phố cổ Hoa Lư")
-                .contains("Keep destination-defining outdoor/scenic places in the main plan when generally safe");
+                .contains("Keep destination-defining outdoor/scenic places in the main plan when generally safe")
+                .contains("safety-sensitive outdoor activities that require sustained suitable conditions")
+                .contains("trekking, hiking, climbing, caving, canyoning")
+                .contains("RAIN FLEX is not an automatic ban")
+                .contains("including access and return time")
+                .contains("thunderstorms, heavy rain, strong wind, flooding, rough seas, slippery trails")
+                .contains("reconfirm conditions and operating status");
     }
 
     @Test

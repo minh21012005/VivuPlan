@@ -84,9 +84,25 @@ public class WeatherService {
             return weatherLabel(code);
         }
 
-        /** 0 = fine, 1 = flexible rain plan, 2 = severe weather safety risk */
+        /**
+         * Human-readable planning label that does not turn a brief severe window
+         * into an all-day weather conclusion.
+         */
+        public String toPlanningWeatherLabel() {
+            return planningWeatherLabel(code, outdoorRiskLevel());
+        }
+
+        /**
+         * 0 = fine, 1 = flexible rain plan, 2 = no usable daytime outdoor window.
+         * Falls back to daily aggregates when hourly daytime coverage is incomplete.
+         */
         public int outdoorRiskLevel() {
-            return resolveOutdoorRiskLevel(code, precipitationMm, precipitationProbability, windspeedKmh);
+            return resolveDailyPlanningRiskLevel(
+                    code,
+                    precipitationMm,
+                    precipitationProbability,
+                    windspeedKmh,
+                    timeWindows);
         }
     }
 
@@ -142,6 +158,62 @@ public class WeatherService {
         if (code <= 86)           return "Snow showers";
         if (code <= 99)           return "Thunderstorm";
         return "Unknown";
+    }
+
+    private static String planningWeatherLabel(int code, int riskLevel) {
+        if (riskLevel == 1) {
+            return "Variable weather with localized rain possible";
+        }
+        if (riskLevel == 0 && code >= 51) {
+            return "Mostly favorable during planned daytime windows";
+        }
+        return weatherLabel(code);
+    }
+
+    private static int resolveDailyPlanningRiskLevel(
+            int code,
+            double precipitationMm,
+            int precipitationProbability,
+            double windspeedKmh,
+            List<WeatherWindow> timeWindows) {
+        int dailyFallback = resolveOutdoorRiskLevel(
+                code,
+                precipitationMm,
+                precipitationProbability,
+                windspeedKmh);
+        if (timeWindows == null || timeWindows.isEmpty()) {
+            return dailyFallback;
+        }
+
+        WeatherWindow morning = findWindow(timeWindows, "morning", 6, 11);
+        WeatherWindow afternoon = findWindow(timeWindows, "afternoon", 12, 17);
+        if (morning == null || afternoon == null) {
+            return dailyFallback;
+        }
+
+        int morningRisk = morning.outdoorRiskLevel();
+        int afternoonRisk = afternoon.outdoorRiskLevel();
+        if (morningRisk == 2 && afternoonRisk == 2) {
+            return 2;
+        }
+        if (morningRisk > 0 || afternoonRisk > 0) {
+            return 1;
+        }
+        return 0;
+    }
+
+    private static WeatherWindow findWindow(
+            List<WeatherWindow> timeWindows,
+            String expectedLabel,
+            int expectedStartHour,
+            int expectedEndHour) {
+        return timeWindows.stream()
+                .filter(window -> window != null
+                        && (expectedLabel.equalsIgnoreCase(window.getLabel())
+                        || (window.getStartHour() <= expectedStartHour
+                        && window.getEndHour() >= expectedEndHour)))
+                .findFirst()
+                .orElse(null);
     }
 
     private static int resolveOutdoorRiskLevel(

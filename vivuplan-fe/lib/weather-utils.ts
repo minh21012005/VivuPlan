@@ -436,17 +436,19 @@ function interpretAverageDayWeather(
 
 export function summarizeItineraryDayWeather(
   weather: DailyWeather,
-  _activities: Array<{ time?: string }> = [],
 ): ItineraryDayWeatherSummary {
   const windows = weather.timeWindows ?? [];
 
   if (windows.length > 0) {
-    const avgRisk = windows.reduce((sum, window) => sum + getWindowOutdoorRiskLevel(window), 0) / windows.length;
     const avgRainChance = Math.round(windows.reduce((sum, window) => sum + window.precipitationProbability, 0) / windows.length);
     const avgRainMm = windows.reduce((sum, window) => sum + window.precipitationMm, 0) / windows.length;
     const avgWindKmh = windows.reduce((sum, window) => sum + window.windspeedKmh, 0) / windows.length;
-    const roundedRisk: 0 | 1 | 2 = avgRisk >= 1.5 ? 2 : avgRisk >= 0.5 ? 1 : 0;
-    const condition = interpretAverageDayWeather(roundedRisk, avgRainChance, avgRainMm, avgWindKmh);
+    const condition = interpretAverageDayWeather(
+      getOutdoorRiskLevel(weather),
+      avgRainChance,
+      avgRainMm,
+      avgWindKmh,
+    );
     const title = `${condition.label} · mưa trung bình ${avgRainChance}% · gió ${avgWindKmh.toFixed(0)} km/h`;
     return {
       condition,

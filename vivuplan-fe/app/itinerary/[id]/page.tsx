@@ -939,7 +939,7 @@ export default function ItineraryPage() {
                 <div ref={dayTabsRef} className="itinerary-day-tabs no-scrollbar">
                 {trip.schedule?.map((item, index) => {
                   const dw = getByDayIndex(item.day - 1, trip.startDate);
-                  const weatherSummary = dw ? summarizeItineraryDayWeather(dw, item.activities) : null;
+                  const weatherSummary = dw ? summarizeItineraryDayWeather(dw) : null;
                   const dc = weatherSummary?.condition ?? null;
                   return (
                     <button
@@ -1014,7 +1014,7 @@ export default function ItineraryPage() {
                 {/* Feature 3 – Weather insight chip (always rendered for layout consistency) */}
                 {(() => {
                   const dw = getByDayIndex(activeDay, trip.startDate);
-                  const weatherSummary = dw ? summarizeItineraryDayWeather(dw, dayActivities) : null;
+                  const weatherSummary = dw ? summarizeItineraryDayWeather(dw) : null;
                   const dc = weatherSummary?.condition ?? null;
                   return (
                     <div title={weatherSummary?.title ?? "Chưa có dữ liệu thời tiết"}>

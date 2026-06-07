@@ -461,6 +461,8 @@ public class AiService {
                         - styleNote is required, under 120 Vietnamese characters, and must explain fit with preferences/group/style.
                         - fromCatalog must be true only when the destination appears in the catalog above.
                         - Return JSON only. No markdown. No comments.
+
+                        %s
                         """,
                 nullToBlank(req.getDeparture()),
                 req.getStartDate(),
@@ -479,7 +481,8 @@ public class AiService {
                 nullToBlank(req.getMustVisit()),
                 nullToBlank(req.getAvoid()),
                 nullToBlank(req.getNotes()),
-                catalogContext == null || catalogContext.isBlank() ? "[]" : catalogContext);
+                catalogContext == null || catalogContext.isBlank() ? "[]" : catalogContext,
+                destinationSuggestionSelfCheck());
     }
 
     private String buildDestinationSuggestionRetryPrompt(
@@ -612,6 +615,50 @@ public class AiService {
         return "response JSON contract was invalid: " + reason;
     }
 
+    private String destinationSuggestionSelfCheck() {
+        return """
+                Final self-check before returning JSON:
+                - The response is exactly one JSON object with key "suggestions".
+                - The suggestions array contains exactly 3 items with all required fields.
+                - Every enum-like fit field uses only a value allowed by the schema.
+                %s
+                """.formatted(selfCheckOutputDiscipline());
+    }
+
+    private String itinerarySelfCheck(int days) {
+        return String.format(
+                """
+                        Final self-check before returning JSON:
+                        - The response is exactly one JSON object with keys "itinerary" and "requestFulfillment".
+                        - The itinerary array has exactly %d days.
+                        - Every activity has a valid HH:mm time, allowed type, specific name, and searchable location.
+                        - Every estimatedCost is a non-negative group-level VND amount, and required paid items are not hidden only in notes.
+                        %s
+                        """,
+                Math.max(1, days),
+                selfCheckOutputDiscipline());
+    }
+
+    private String regeneratedDaySelfCheck(int dayNumber) {
+        return String.format(
+                """
+                        Final self-check before returning JSON:
+                        - The response is exactly one JSON object with keys "day" and "requestFulfillment".
+                        - The "day" object has day value %d and does not change other days.
+                        - Every activity has a valid HH:mm time, allowed type, specific name, and searchable location.
+                        - Every estimatedCost is a non-negative group-level VND amount, and required paid items are not hidden only in notes.
+                        %s
+                        """,
+                dayNumber,
+                selfCheckOutputDiscipline());
+    }
+
+    private String selfCheckOutputDiscipline() {
+        return """
+                - Apply this checklist silently. Return exactly one JSON object matching the required schema, with no markdown, comments, checklist, or surrounding text.
+                """.strip();
+    }
+
     private String buildQualityRetryPrompt(TripDto.GenerateRequest req, String reason) {
         return buildCostAwarePrompt(req) + String.format(
                 """
@@ -717,6 +764,7 @@ public class AiService {
                         - Treat RAIN FLEX or legacy LIGHT RAIN as low-impact weather context, not a reason to reduce outdoor diversity.
                         - If hourly Outdoor timing windows are present, use them to schedule outdoor/scenic highlights into the least rainy practical daytime part of the day.
                         - Keep destination-defining outdoor/scenic places in the main plan when generally safe; add backup notes instead of replacing them.
+                        - For safety-sensitive outdoor activities that require sustained suitable conditions, such as trekking, hiking, climbing, caving, canyoning, boat/island trips, diving, paddling, or paragliding, RAIN FLEX is not an automatic ban. Include them only when the full activity, including access and return time, fits suitable non-severe forecast windows. Move, shorten, substitute, or omit them when thunderstorms, heavy rain, strong wind, flooding, rough seas, slippery trails, or other relevant hazards make them unsafe. For activities dependent on local route/site conditions or an operator, note that travelers should reconfirm conditions and operating status.
                         - Treat SEVERE WEATHER RISK or legacy HIGH RAIN RISK as a hard safety constraint only for unsafe outdoor/water/adventure activities on the affected day.
                         - If weather blocks or weakens a user request or a destination-signature experience, explain it in requestFulfillment.items[].userMessage with reasonCode WEATHER_SAFETY.
 
@@ -791,6 +839,8 @@ public class AiService {
                         24. If there is no meaningful user-specific request and no destination-signature omission/substitution needs explanation, set overallStatus to NO_REQUEST and items to []. If a signature experience category is omitted or substituted for a real constraint, return PARTIAL or NOT_FULFILLED with a concise grouped requestFulfillment item even without a user-specific request.
                         25. If you are unsure whether the request was satisfied, mark the item UNCLEAR and explain what the user should check.
 
+                        %s
+
                         JSON schema:
                         {
                           "day": {
@@ -855,6 +905,7 @@ public class AiService {
                 ItineraryQualityPolicy.vietnamPacingGuidance(),
                 travelers,
                 ItineraryQualityPolicy.localTransportGuidance(req.getDestination()),
+                regeneratedDaySelfCheck(dayNumber),
                 dayNumber,
                 dayNumber,
                 retryBlock);
@@ -976,6 +1027,7 @@ public class AiService {
                         - Treat RAIN FLEX or legacy LIGHT RAIN as low-impact weather context, not a reason to reduce outdoor diversity.
                         - If hourly Outdoor timing windows are present, use them to schedule outdoor/scenic highlights into the least rainy practical daytime part of the day.
                         - Keep destination-defining outdoor/scenic places in the main plan when generally safe; add backup notes instead of replacing them.
+                        - For safety-sensitive outdoor activities that require sustained suitable conditions, such as trekking, hiking, climbing, caving, canyoning, boat/island trips, diving, paddling, or paragliding, RAIN FLEX is not an automatic ban. Include them only when the full activity, including access and return time, fits suitable non-severe forecast windows. Move, shorten, substitute, or omit them when thunderstorms, heavy rain, strong wind, flooding, rough seas, slippery trails, or other relevant hazards make them unsafe. For activities dependent on local route/site conditions or an operator, note that travelers should reconfirm conditions and operating status.
                         - Treat SEVERE WEATHER RISK or legacy HIGH RAIN RISK as a hard safety constraint only for unsafe outdoor/water/adventure activities on the affected day.
                         - If weather blocks all or most destination-signature scenic experiences, explain the omission/substitution in requestFulfillment.items[].userMessage with reasonCode WEATHER_SAFETY so the user knows the plan changed for safety, not because the system missed them.
 
@@ -1057,6 +1109,8 @@ public class AiService {
                         9. If you are unsure whether a request was satisfied, mark the item UNCLEAR and explain what the user should check.
                         10. Never mention the weather in itinerary day titles, summaries, activities, or notes. If weather blocks a user request, explain it only in requestFulfillment.items[].userMessage.
 
+                        %s
+
                         JSON schema:
                         {
                           "itinerary": [
@@ -1122,7 +1176,8 @@ public class AiService {
                 ItineraryQualityPolicy.localTransportGuidance(req.getDestination()),
                 days,
                 ItineraryQualityPolicy.vietnamPacingGuidance(),
-                req.getDestination());
+                req.getDestination(),
+                itinerarySelfCheck(days));
     }
 
     private long resolvePromptTotalBudget(TripDto.GenerateRequest req, int travelers) {

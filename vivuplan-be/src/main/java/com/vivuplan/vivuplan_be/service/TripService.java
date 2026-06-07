@@ -181,14 +181,14 @@ public class TripService {
 
         TripDto.BudgetBreakdown budget = calculateBudget(trip, aiSchedule);
         String requestText = buildGenerationRequestText(req);
-        List<String> persistentWarnings = buildRequestFulfillmentWarnings(
+        List<String> requestWarnings = buildRequestFulfillmentWarnings(
                 requestFulfillment,
                 requestText,
                 "lịch trình vừa tạo");
         List<String> warnings = buildGenerationWarnings(
                 aiSchedule,
-                persistentWarnings);
-        trip.setAiWarnings(serializeWarnings(persistentWarnings));
+                requestWarnings);
+        trip.setAiWarnings(serializeWarnings(requestWarnings));
 
         trip = tripRepository.saveAndFlush(trip);
         billingService.consumePlanCredit(userId, trip);
@@ -331,7 +331,7 @@ public class TripService {
 
         long oldBudget = sumDayCost(existingDay);
         long newBudget = sumDayCost(proposedDay);
-        List<String> persistentWarnings = buildRequestFulfillmentWarnings(
+        List<String> requestWarnings = buildRequestFulfillmentWarnings(
                 requestFulfillment,
                 instruction,
                 "preview này");
@@ -339,7 +339,7 @@ public class TripService {
                 trip,
                 existingDay,
                 proposedDay,
-                persistentWarnings);
+                requestWarnings);
         String proposalId = UUID.randomUUID().toString();
         billingService.consumeEditCredit(userId, trip);
         dayRegenerationProposals.put(proposalId, new DayRegenerationProposal(
@@ -351,7 +351,7 @@ public class TripService {
                 oldBudget,
                 newBudget,
                 warnings,
-                persistentWarnings,
+                requestWarnings,
                 LocalDateTime.now().plusMinutes(REGENERATION_PROPOSAL_TTL_MINUTES)));
 
         TripDto.RegenerateDayPreviewResponse response = new TripDto.RegenerateDayPreviewResponse();
@@ -581,7 +581,7 @@ public class TripService {
                     "Day %d (%s): %s, %.0f-%.0fC, rain chance %d%%, rain %.1fmm, wind %.0fkm/h -> %s%n",
                     dayNum++,
                     dw.getDate(),
-                    dw.toWeatherLabel(),
+                    dw.toPlanningWeatherLabel(),
                     dw.getMinTemp(),
                     dw.getMaxTemp(),
                     dw.getPrecipitationProbability(),
@@ -1820,4 +1820,5 @@ public class TripService {
             List<String> persistentWarnings,
             LocalDateTime expiresAt) {
     }
+
 }

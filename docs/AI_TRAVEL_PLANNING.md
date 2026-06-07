@@ -73,6 +73,29 @@ Avoid:
 - Guessing exact coordinates for unverified places.
 - Ignoring explicit user constraints.
 
+## Prompt Self-Validation
+
+Prompts should include a short final self-check before the JSON schema. The
+model should use it silently and must not output the checklist.
+
+The self-check should verify:
+
+- The response is exactly one JSON object with the required top-level keys.
+- Array counts match the operation contract.
+- Required fields, enum-like values, times, activity types, and basic cost
+  representation match the schema.
+- Required paid items are not represented only in notes with a zero or missing
+  cost.
+
+Do not repeat broad semantic planning rules such as weather interpretation,
+style, pacing, destination selection, or request fulfillment inside the final
+self-check. Those rules belong in the main prompt and application-side quality
+validation. Keeping the final checklist structural reduces recency bias toward
+one planning concern.
+
+Self-validation is only a model instruction. Backend parsing, quality checks,
+normalization, retries, and tests remain the real enforcement layer.
+
 ## Cost Rules
 
 - `estimatedCost` is a VND value for the whole group unless an existing contract
@@ -97,6 +120,28 @@ Avoid:
 
 - Weather context should influence outdoor and flexible activities.
 - Severe weather should create warnings or safer alternatives where appropriate.
+- Daily `outdoorRiskLevel` is a planning summary, not the worst raw WMO code of
+  the day. When complete morning and afternoon windows exist, mark the day
+  severe only when both daytime windows are severe; mixed daytime conditions
+  remain rain-flexible.
+- Keep window-level risk authoritative for activities scheduled in that window.
+  A rain-flexible day may still contain a severe afternoon or evening window.
+- Safety-sensitive outdoor activities such as trekking, climbing, caving,
+  canyoning, boat/island trips, diving, paddling, and paragliding are not
+  automatically banned on a rain-flexible day. The full activity, including
+  access and return time, must fit suitable non-severe forecast windows.
+- Move, shorten, substitute, or omit those activities when relevant hazards such
+  as thunderstorms, heavy rain, strong wind, flooding, rough seas, or slippery
+  trails make them unsafe. Travelers should reconfirm local route/site
+  conditions and operator status where relevant.
+- Preserve AI `WEATHER_SAFETY` explanations after the normal response-contract
+  parsing. Do not silently rewrite or suppress them with a second simplified
+  weather interpretation in `TripService`; prompt context and AI quality rules
+  own the semantic explanation.
+- Persist AI `WEATHER_SAFETY` explanations in `Trip.aiWarnings` with the other
+  request-fulfillment messages. They explain why that saved itinerary was
+  constructed, so users must still see them after refresh. Current frontend
+  weather advisories remain a separate live-weather layer.
 - Weather failures must not make core trip viewing unusable.
 - Keep Open-Meteo/Nominatim integration inside existing backend services and
   frontend hooks/components.
@@ -131,4 +176,3 @@ When changing AI itinerary behavior, add or update focused tests around:
 - Prompt guard behavior.
 - Coordinate enrichment and validation.
 - Credit consumption timing.
-

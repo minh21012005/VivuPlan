@@ -268,9 +268,11 @@ class TripServiceTest {
                 .thenReturn(Optional.empty());
         mockRainForecast();
         when(tripRepository.existsByShareCode(anyString())).thenReturn(false);
+        AtomicReference<Trip> savedTrip = new AtomicReference<>();
         when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> {
             Trip saved = invocation.getArgument(0);
             saved.setId(1L);
+            savedTrip.set(saved);
             return saved;
         });
 
@@ -289,7 +291,8 @@ class TripServiceTest {
         TripDto.TripResponse response = service.generateAndSave(7L, req);
 
         assertThat(response.getRequestFulfillment()).isSameAs(requestFulfillment);
-        assertThat(response.getWarnings()).contains(userMessage);
+        assertThat(response.getWarnings()).containsExactly(userMessage);
+        assertThat(savedTrip.get().getAiWarnings()).isEqualTo(userMessage);
     }
 
     @Test
@@ -349,6 +352,90 @@ class TripServiceTest {
                 .contains("morning 06-11")
                 .contains("Best daytime outdoor slot: morning 06-11")
                 .contains("schedule signature scenic/tour/viewpoint activities here");
+    }
+
+    @Test
+    void generateAndSavePreservesAiWeatherWarningForMixedDaytimeConditions() {
+        User user = sampleUser();
+        TripService service = service();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        when(weatherService.getForecastForDestination(anyString(), nullable(Double.class), nullable(Double.class)))
+                .thenReturn(List.of(WeatherService.DailyWeather.builder()
+                        .date(LocalDate.now().toString())
+                        .code(95)
+                        .minTemp(27)
+                        .maxTemp(33)
+                        .precipitationProbability(80)
+                        .precipitationMm(5.0)
+                        .windspeedKmh(20)
+                        .timeWindows(List.of(
+                                WeatherService.WeatherWindow.builder()
+                                        .label("morning")
+                                        .startHour(6)
+                                        .endHour(11)
+                                        .code(95)
+                                        .precipitationProbability(20)
+                                        .precipitationMm(0.0)
+                                        .windspeedKmh(12)
+                                        .build(),
+                                WeatherService.WeatherWindow.builder()
+                                        .label("afternoon")
+                                        .startHour(12)
+                                        .endHour(17)
+                                        .code(95)
+                                        .precipitationProbability(75)
+                                        .precipitationMm(4.0)
+                                        .windspeedKmh(20)
+                                        .build(),
+                                WeatherService.WeatherWindow.builder()
+                                        .label("evening")
+                                        .startHour(18)
+                                        .endHour(22)
+                                        .code(95)
+                                        .precipitationProbability(70)
+                                        .precipitationMm(3.0)
+                                        .windspeedKmh(18)
+                                        .build()))
+                        .build()));
+        when(placePlanningService.buildVerifiedPlacesContext(any(TripDto.GenerateRequest.class))).thenReturn("none");
+        when(tripRepository.existsByShareCode(anyString())).thenReturn(false);
+        AtomicReference<Trip> savedTrip = new AtomicReference<>();
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> {
+            Trip saved = invocation.getArgument(0);
+            saved.setId(1L);
+            savedTrip.set(saved);
+            return saved;
+        });
+        AtomicReference<TripDto.GenerateRequest> capturedRequest = new AtomicReference<>();
+        String aiWeatherMessage = "Yêu cầu \"Khám phá Hòn Mun\" chưa được áp dụng vì thời lượng tour không nằm trọn trong khung giờ thời tiết phù hợp.";
+        TripDto.RequestFulfillment weatherFulfillment = requestFulfillment(
+                "PARTIAL",
+                "Khám phá Hòn Mun",
+                "NOT_APPLIED",
+                "WEATHER_SAFETY",
+                aiWeatherMessage);
+        when(aiService.generateItinerary(any(TripDto.GenerateRequest.class), any())).thenAnswer(invocation -> {
+            capturedRequest.set(invocation.getArgument(0));
+            return new AiService.GeneratedItineraryResult(
+                    List.of(proposedDayWithoutRequestedActivity()),
+                    weatherFulfillment);
+        });
+
+        TripDto.TripResponse response = service.generateAndSave(7L, generateRequest("", ""));
+
+        String weatherForecast = capturedRequest.get().getWeatherForecast();
+        assertThat(weatherForecast)
+                .contains("Variable weather with localized rain possible")
+                .contains("-> RAIN FLEX")
+                .contains("afternoon 12-17")
+                .contains("afternoon 12-17: Thunderstorm, rain chance 75%, rain 4.0mm, wind 20km/h -> SEVERE WEATHER RISK");
+        assertThat(weatherForecast.lines().findFirst().orElseThrow())
+                .contains("-> RAIN FLEX")
+                .doesNotContain("SEVERE WEATHER RISK");
+        assertThat(response.getWarnings()).containsExactly(aiWeatherMessage);
+        assertThat(savedTrip.get().getAiWarnings()).isEqualTo(aiWeatherMessage);
     }
 
     @Test
@@ -741,7 +828,16 @@ class TripServiceTest {
         TripDto.RegenerateDayPreviewResponse response = service.previewRegenerateDay(1L, 7L, 1, req);
 
         assertThat(response.getRequestFulfillment()).isSameAs(requestFulfillment);
-        assertThat(response.getWarnings()).contains(userMessage);
+        assertThat(response.getWarnings()).containsExactly(userMessage);
+
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        TripDto.ApplyRegenerateDayRequest applyRequest = new TripDto.ApplyRegenerateDayRequest();
+        applyRequest.setProposalId(response.getProposalId());
+
+        TripDto.TripResponse updated = service.applyRegeneratedDay(1L, 7L, 1, applyRequest);
+
+        assertThat(updated.getWarnings()).containsExactly(userMessage);
+        assertThat(trip.getAiWarnings()).isEqualTo(userMessage);
     }
 
     @Test
@@ -841,10 +937,11 @@ class TripServiceTest {
         when(weatherService.getForecastForDestination(anyString(), nullable(Double.class), nullable(Double.class)))
                 .thenReturn(List.of(WeatherService.DailyWeather.builder()
                         .date(LocalDate.now().toString())
-                        .code(63)
+                        .code(95)
                         .minTemp(22)
                         .maxTemp(28)
                         .precipitationProbability(80)
+                        .precipitationMm(8.0)
                         .build()));
     }
 

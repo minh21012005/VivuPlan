@@ -181,6 +181,48 @@ class WeatherServiceTest {
     }
 
     @Test
+    void dailyPlanningRiskTreatsMixedDaytimeWindowsAsFlexible() {
+        WeatherService.DailyWeather weather = severeDailyWeatherWithWindows(
+                weatherWindow("morning", 6, 11, 95, 20, 0.0),
+                weatherWindow("afternoon", 12, 17, 95, 75, 4.0),
+                weatherWindow("evening", 18, 22, 95, 80, 5.0));
+
+        assertThat(weather.outdoorRiskLevel()).isEqualTo(1);
+        assertThat(weather.toPlanningWeatherLabel()).isEqualTo("Variable weather with localized rain possible");
+    }
+
+    @Test
+    void dailyPlanningRiskIsSevereOnlyWhenBothDaytimeWindowsAreSevere() {
+        WeatherService.DailyWeather weather = severeDailyWeatherWithWindows(
+                weatherWindow("morning", 6, 11, 95, 70, 4.0),
+                weatherWindow("afternoon", 12, 17, 95, 80, 6.0),
+                weatherWindow("evening", 18, 22, 1, 10, 0.0));
+
+        assertThat(weather.outdoorRiskLevel()).isEqualTo(2);
+        assertThat(weather.toPlanningWeatherLabel()).isEqualTo("Thunderstorm");
+    }
+
+    @Test
+    void dailyPlanningRiskCanBeGoodWhenSevereDailyCodeIsOutsideUsableDaytimeWindows() {
+        WeatherService.DailyWeather weather = severeDailyWeatherWithWindows(
+                weatherWindow("morning", 6, 11, 1, 10, 0.0),
+                weatherWindow("afternoon", 12, 17, 2, 20, 0.0),
+                weatherWindow("evening", 18, 22, 95, 80, 8.0));
+
+        assertThat(weather.outdoorRiskLevel()).isZero();
+        assertThat(weather.toPlanningWeatherLabel())
+                .isEqualTo("Mostly favorable during planned daytime windows");
+    }
+
+    @Test
+    void dailyPlanningRiskFallsBackToDailyAggregateWhenDaytimeCoverageIsIncomplete() {
+        WeatherService.DailyWeather weather = severeDailyWeatherWithWindows(
+                weatherWindow("morning", 6, 11, 1, 10, 0.0));
+
+        assertThat(weather.outdoorRiskLevel()).isEqualTo(2);
+    }
+
+    @Test
     void geocodeQueriesKeepOriginalAndTryCleanedVietnamesePlaceName() throws Exception {
         WeatherService service = new WeatherService();
 
@@ -217,6 +259,35 @@ class WeatherServiceTest {
                 List.of(irrelevant, outsideVietnam, relevant));
 
         assertThat(selected).isEqualTo(relevant);
+    }
+
+    private WeatherService.DailyWeather severeDailyWeatherWithWindows(
+            WeatherService.WeatherWindow... windows) {
+        return WeatherService.DailyWeather.builder()
+                .code(95)
+                .precipitationProbability(90)
+                .precipitationMm(8.0)
+                .windspeedKmh(20)
+                .timeWindows(List.of(windows))
+                .build();
+    }
+
+    private WeatherService.WeatherWindow weatherWindow(
+            String label,
+            int startHour,
+            int endHour,
+            int code,
+            int precipitationProbability,
+            double precipitationMm) {
+        return WeatherService.WeatherWindow.builder()
+                .label(label)
+                .startHour(startHour)
+                .endHour(endHour)
+                .code(code)
+                .precipitationProbability(precipitationProbability)
+                .precipitationMm(precipitationMm)
+                .windspeedKmh(15)
+                .build();
     }
 
     @SuppressWarnings("unchecked")
