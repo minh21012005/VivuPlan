@@ -250,6 +250,7 @@ function PlanContent() {
     notes: "",
   });
   const [generating, setGenerating] = useState(false);
+  const [openingItinerary, setOpeningItinerary] = useState(false);
   const [suggestingDestinations, setSuggestingDestinations] = useState(false);
   const [destinationSuggestions, setDestinationSuggestions] = useState<DestinationSuggestion[]>([]);
   const [showDestinationSuggestionDetails, setShowDestinationSuggestionDetails] = useState(false);
@@ -306,8 +307,10 @@ function PlanContent() {
           ? "Chưa chọn kiểu nhóm"
           : "Nhập số người trước";
 
-  const generationStep =
-    elapsedSeconds < 12
+  const plannerBusy = generating || openingItinerary;
+  const generationStep = openingItinerary
+    ? "Lịch trình đã sẵn sàng, VivuPlan đang mở trang chi tiết cho bạn."
+    : elapsedSeconds < 12
       ? "Đang phân tích điểm đến, ngày đi và ngân sách của bạn."
       : elapsedSeconds < 35
         ? "VivuPlan đang ghép các điểm đến, thời gian và nhịp di chuyển cho chuyến đi của bạn."
@@ -323,12 +326,12 @@ function PlanContent() {
         : "Đang chọn ra 3 gợi ý đáng để bạn cân nhắc.";
 
   useEffect(() => {
-    if (!generating) return;
+    if (!plannerBusy) return;
     const timer = window.setInterval(() => {
       setElapsedSeconds((current) => current + 1);
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [generating]);
+  }, [plannerBusy]);
 
   useEffect(() => {
     if (!suggestingDestinations) return;
@@ -537,7 +540,9 @@ function PlanContent() {
       return;
     }
     setGenerating(true);
+    setOpeningItinerary(false);
     setElapsedSeconds(0);
+    let keepBusyForNavigation = false;
     try {
       const finalDestination = form.destination.trim();
       const trip = await tripApi.generate({
@@ -550,8 +555,11 @@ function PlanContent() {
         window.sessionStorage.setItem(`vivuplan:trip:${trip.id}:warnings`, JSON.stringify(creationWarnings));
       }
       void refreshWallet();
+      keepBusyForNavigation = true;
+      setOpeningItinerary(true);
       router.push(`/itinerary/${trip.id}`);
     } catch (e) {
+      setOpeningItinerary(false);
       if (e instanceof ApiError && e.status === 402) {
         setError("Bạn đã hết lượt tạo lịch trình bằng AI. Mua thêm lượt để tiếp tục nhé.");
         setPurchaseReason("PLAN");
@@ -562,7 +570,9 @@ function PlanContent() {
         setError(e instanceof Error ? e.message : "Không thể tạo lịch trình. Hãy kiểm tra đăng nhập hoặc thử lại sau.");
       }
     } finally {
-      setGenerating(false);
+      if (!keepBusyForNavigation) {
+        setGenerating(false);
+      }
     }
   };
 
@@ -626,7 +636,7 @@ function PlanContent() {
             <h2>Thiết kế hành trình của riêng bạn</h2>
           </div>
 
-          <Card className={`planner-form${generating ? " planner-form-generating" : ""}`}>
+          <Card className={`planner-form${plannerBusy ? " planner-form-generating" : ""}`}>
             <div className="field-group">
               <label>Điểm xuất phát</label>
               <div className="input-with-icon">
@@ -936,13 +946,17 @@ function PlanContent() {
             {error && <div className="form-error">{error}</div>}
             {!error && budgetAdvisory && <div className="form-warning">{budgetAdvisory}</div>}
 
-            {generating && (
+            {plannerBusy && (
               <div className="planner-generation-status" role="status" aria-live="polite">
                 <div className="spinner" />
                 <div>
-                  <strong>AI đang lập lịch trình cho bạn...</strong>
+                  <strong>{openingItinerary ? "Đang mở lịch trình vừa tạo..." : "AI đang lập lịch trình cho bạn..."}</strong>
                   <p>{generationStep}</p>
-                  <span>Quá trình này thường mất khoảng 30 giây đến 1 phút, bạn vui lòng chờ một chút nhé.</span>
+                  <span>
+                    {openingItinerary
+                      ? "Bạn vui lòng chờ thêm một chút, trang chi tiết sẽ tự mở ngay khi sẵn sàng."
+                      : "Quá trình này thường mất khoảng 30 giây đến 1 phút, bạn vui lòng chờ một chút nhé."}
+                  </span>
                 </div>
               </div>
             )}
@@ -957,11 +971,11 @@ function PlanContent() {
               </div>
             )}
 
-            <Button id="btn-generate" onClick={handleGenerate} disabled={generating || suggestingDestinations} className="planner-submit">
-              {generating ? (
+            <Button id="btn-generate" onClick={handleGenerate} disabled={plannerBusy || suggestingDestinations} className="planner-submit">
+              {plannerBusy ? (
                 <>
                   <div className="spinner" style={{ borderColor: "rgba(255,255,255,0.3)", borderTopColor: "#fff" }} />
-                  Đang tạo lịch trình...
+                  {openingItinerary ? "Đang mở lịch trình..." : "Đang tạo lịch trình..."}
                 </>
               ) : suggestingDestinations ? (
                 <>

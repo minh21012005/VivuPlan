@@ -1,5 +1,6 @@
 package com.vivuplan.vivuplan_be.service;
 
+import com.vivuplan.vivuplan_be.dto.AdminDto;
 import com.vivuplan.vivuplan_be.dto.TripDto;
 import com.vivuplan.vivuplan_be.entity.*;
 import com.vivuplan.vivuplan_be.repository.DestinationRepository;
@@ -40,6 +41,7 @@ public class TripService {
     private final AiService aiService;
     private final WeatherService weatherService;
     private final PlacePlanningService placePlanningService;
+    private final ActivityCoordinateResolverService activityCoordinateResolverService;
     private final BillingService billingService;
     private final UserPromptGuardService userPromptGuardService;
     private final Map<String, DayRegenerationProposal> dayRegenerationProposals = new ConcurrentHashMap<>();
@@ -110,6 +112,7 @@ public class TripService {
         List<TripDto.DayResponse> aiSchedule = generatedItinerary.days();
         TripDto.RequestFulfillment requestFulfillment = generatedItinerary.requestFulfillment();
         placePlanningService.enrichScheduleWithVerifiedPlaces(aiSchedule, req.getDestination());
+        activityCoordinateResolverService.resolveSchedule(aiSchedule, req.getDestination());
 
         // 2. Build and save Trip entity
         Trip trip = Trip.builder()
@@ -164,6 +167,8 @@ public class TripService {
                     act.setLatitude(ar.getLatitude());
                     act.setLongitude(ar.getLongitude());
                     act.setGooglePlaceId(ar.getGooglePlaceId());
+                    act.setCoordinateSource(parseEnum(Activity.CoordinateSource.class, ar.getCoordinateSource(), null));
+                    act.setCoordinateConfidence(parseEnum(Activity.CoordinateConfidence.class, ar.getCoordinateConfidence(), null));
                     placePlanningService.attachVerifiedPlace(act, ar.getPlaceId());
                     act.setSortOrder(ar.getSortOrder());
                     activities.add(act);
@@ -320,6 +325,7 @@ public class TripService {
         TripDto.DayResponse proposedDay = regeneratedDay.day();
         TripDto.RequestFulfillment requestFulfillment = regeneratedDay.requestFulfillment();
         placePlanningService.enrichScheduleWithVerifiedPlaces(List.of(proposedDay), trip.getDestination());
+        activityCoordinateResolverService.resolveSchedule(List.of(proposedDay), trip.getDestination());
         normalizeActivityCosts(List.of(proposedDay), trip);
         validateRegeneratedDayProposal(trip, proposedDay);
 
@@ -401,6 +407,17 @@ public class TripService {
         trip = tripRepository.saveAndFlush(trip);
         dayRegenerationProposals.remove(req.getProposalId());
         return toTripResponse(trip);
+    }
+
+    @Transactional
+    public AdminDto.ActivityCoordinateResolutionResponse resolveActivityCoordinatesForAdmin(Long tripId, boolean dryRun) {
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("Lá»‹ch trÃ¬nh khÃ´ng tá»“n táº¡i"));
+        ActivityCoordinateResolverService.BatchResult batch = activityCoordinateResolverService.resolveTrip(trip, dryRun);
+        if (!dryRun && batch.appliedCount() > 0) {
+            tripRepository.saveAndFlush(trip);
+        }
+        return AdminDto.ActivityCoordinateResolutionResponse.from(tripId, dryRun, batch);
     }
 
     public Page<TripDto.TripResponse> getPublicTrips(int page, int size) {
@@ -793,6 +810,8 @@ public class TripService {
         copy.setLongitude(source.getLongitude());
         copy.setPlaceId(source.getPlaceId());
         copy.setGooglePlaceId(source.getGooglePlaceId());
+        copy.setCoordinateSource(source.getCoordinateSource());
+        copy.setCoordinateConfidence(source.getCoordinateConfidence());
         copy.setSortOrder(source.getSortOrder());
         return copy;
     }
@@ -821,6 +840,8 @@ public class TripService {
         activity.setLatitude(response.getLatitude());
         activity.setLongitude(response.getLongitude());
         activity.setGooglePlaceId(response.getGooglePlaceId());
+        activity.setCoordinateSource(parseEnum(Activity.CoordinateSource.class, response.getCoordinateSource(), null));
+        activity.setCoordinateConfidence(parseEnum(Activity.CoordinateConfidence.class, response.getCoordinateConfidence(), null));
         placePlanningService.attachVerifiedPlace(activity, response.getPlaceId());
         activity.setSortOrder(response.getSortOrder());
         return activity;
@@ -1268,6 +1289,13 @@ public class TripService {
         activity.setLatitude(req.getLatitude());
         activity.setLongitude(req.getLongitude());
         activity.setGooglePlaceId(req.getGooglePlaceId());
+        if (req.getLatitude() != null && req.getLongitude() != null) {
+            activity.setCoordinateSource(Activity.CoordinateSource.MANUAL);
+            activity.setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+        } else {
+            activity.setCoordinateSource(null);
+            activity.setCoordinateConfidence(null);
+        }
         activity.setSortOrder(req.getSortOrder() > 0 ? req.getSortOrder() : defaultSortOrder);
     }
 

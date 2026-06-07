@@ -57,6 +57,9 @@ class TripServiceTest {
     private PlacePlanningService placePlanningService;
 
     @Mock
+    private ActivityCoordinateResolverService activityCoordinateResolverService;
+
+    @Mock
     private BillingService billingService;
 
     private final UserPromptGuardService userPromptGuardService = new UserPromptGuardService();
@@ -69,6 +72,7 @@ class TripServiceTest {
                 aiService,
                 weatherService,
                 placePlanningService,
+                activityCoordinateResolverService,
                 billingService,
                 userPromptGuardService);
     }

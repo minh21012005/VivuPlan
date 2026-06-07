@@ -3,6 +3,7 @@ package com.vivuplan.vivuplan_be.dto;
 import com.vivuplan.vivuplan_be.entity.Trip;
 import com.vivuplan.vivuplan_be.entity.User;
 import com.vivuplan.vivuplan_be.entity.UserWallet;
+import com.vivuplan.vivuplan_be.service.ActivityCoordinateResolverService;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -228,6 +229,73 @@ public class AdminDto {
         private String errorCode;
         private String errorMessage;
         private String createdAt;
+    }
+
+    @Data
+    public static class ActivityCoordinateResolutionResponse {
+        private Long tripId;
+        private boolean dryRun;
+        private long resolvedCount;
+        private long appliedCount;
+        private List<ActivityCoordinateResolutionItem> items;
+
+        public static ActivityCoordinateResolutionResponse from(
+                Long tripId,
+                boolean dryRun,
+                ActivityCoordinateResolverService.BatchResult batch) {
+            ActivityCoordinateResolutionResponse response = new ActivityCoordinateResolutionResponse();
+            response.setTripId(tripId);
+            response.setDryRun(dryRun);
+            response.setResolvedCount(batch.items().stream()
+                    .filter(item -> "SUCCESS".equals(item.status()))
+                    .count());
+            response.setAppliedCount(dryRun ? 0 : batch.appliedCount());
+            response.setItems(batch.items().stream().map(ActivityCoordinateResolutionItem::from).toList());
+            return response;
+        }
+    }
+
+    @Data
+    public static class ActivityCoordinateResolutionItem {
+        private Integer dayNumber;
+        private Long activityId;
+        private Integer sortOrder;
+        private String name;
+        private String type;
+        private String location;
+        private String status;
+        private String query;
+        private String displayName;
+        private Double latitude;
+        private Double longitude;
+        private Integer confidenceScore;
+        private String coordinateConfidence;
+        private String coordinateSource;
+        private Boolean cacheHit;
+        private Boolean applied;
+        private String message;
+
+        public static ActivityCoordinateResolutionItem from(ActivityCoordinateResolverService.ItemResult result) {
+            ActivityCoordinateResolutionItem item = new ActivityCoordinateResolutionItem();
+            item.setDayNumber(result.dayNumber());
+            item.setActivityId(result.activityId());
+            item.setSortOrder(result.sortOrder());
+            item.setName(result.name());
+            item.setType(result.type());
+            item.setLocation(result.location());
+            item.setStatus(result.status());
+            item.setQuery(result.query());
+            item.setDisplayName(result.displayName());
+            item.setLatitude(result.latitude());
+            item.setLongitude(result.longitude());
+            item.setConfidenceScore(result.confidenceScore());
+            item.setCoordinateConfidence(result.coordinateConfidence());
+            item.setCoordinateSource(result.coordinateSource());
+            item.setCacheHit(result.cacheHit());
+            item.setApplied(result.applied());
+            item.setMessage(result.message());
+            return item;
+        }
     }
 
     private static long safeCredits(Long value) {

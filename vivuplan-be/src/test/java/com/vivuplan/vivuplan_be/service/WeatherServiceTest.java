@@ -180,6 +180,45 @@ class WeatherServiceTest {
         assertThat(weather.outdoorRiskLevel()).isEqualTo(2);
     }
 
+    @Test
+    void geocodeQueriesKeepOriginalAndTryCleanedVietnamesePlaceName() throws Exception {
+        WeatherService service = new WeatherService();
+
+        List<String> queries = invokeBuildGeocodeQueries(
+                service,
+                "Khu du lịch sinh thái Mường Thanh Diễn Lâm, Nghệ An");
+
+        assertThat(queries)
+                .contains(
+                        "Khu du lịch sinh thái Mường Thanh Diễn Lâm, Nghệ An, Việt Nam",
+                        "Mường Thanh Diễn Lâm, Nghệ An, Việt Nam");
+    }
+
+    @Test
+    void geocodeCandidateSelectionRequiresVietnamCoordinateAndRelevantName() throws Exception {
+        WeatherService service = new WeatherService();
+
+        Map<String, Object> irrelevant = Map.of(
+                "lat", "21.0278",
+                "lon", "105.8342",
+                "display_name", "Hồ Hoàn Kiếm, Hà Nội, Việt Nam");
+        Map<String, Object> relevant = Map.of(
+                "lat", "18.9560",
+                "lon", "105.5760",
+                "display_name", "Mường Thanh Diễn Lâm, Diễn Châu, Nghệ An, Việt Nam");
+        Map<String, Object> outsideVietnam = Map.of(
+                "lat", "35.6895",
+                "lon", "139.6917",
+                "display_name", "Tokyo, Japan");
+
+        Map<String, Object> selected = invokeSelectBestGeocodeCandidate(
+                service,
+                "Khu du lịch sinh thái Mường Thanh Diễn Lâm, Nghệ An",
+                List.of(irrelevant, outsideVietnam, relevant));
+
+        assertThat(selected).isEqualTo(relevant);
+    }
+
     @SuppressWarnings("unchecked")
     private List<WeatherService.DailyWeather> invokeParseDailyBlock(
             WeatherService service,
@@ -187,5 +226,22 @@ class WeatherServiceTest {
         Method method = WeatherService.class.getDeclaredMethod("parseDailyBlock", Map.class);
         method.setAccessible(true);
         return (List<WeatherService.DailyWeather>) method.invoke(service, response);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> invokeBuildGeocodeQueries(WeatherService service, String placeName) throws Exception {
+        Method method = WeatherService.class.getDeclaredMethod("buildGeocodeQueries", String.class);
+        method.setAccessible(true);
+        return (List<String>) method.invoke(service, placeName);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> invokeSelectBestGeocodeCandidate(
+            WeatherService service,
+            String placeName,
+            List<Map<String, Object>> candidates) throws Exception {
+        Method method = WeatherService.class.getDeclaredMethod("selectBestGeocodeCandidate", String.class, List.class);
+        method.setAccessible(true);
+        return (Map<String, Object>) method.invoke(service, placeName, candidates);
     }
 }

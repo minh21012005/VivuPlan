@@ -20,8 +20,8 @@ final class ItineraryQualityPolicy {
         return String.format(
                 "Keep each day realistic for Vietnam: normal sightseeing days should have %d-%d display items; "
                         + "first/last travel days and relaxing/family days may have %d-%d items; "
-                        + "dense but realistic city/food/adventure days may have %d-%d FOOD/CAFE/ATTRACTION/ACTIVITY items when distances are close and pacing is believable. "
-                        + "Never return more than %d total items in one day or more than %d FOOD/CAFE/ATTRACTION/ACTIVITY items in one day, and do not pad the itinerary just to hit a count.",
+                        + "dense but realistic city/food/adventure days may have %d-%d FOOD/CAFE/ATTRACTION/ACTIVITY/NIGHTLIFE items when distances are close and pacing is believable. "
+                        + "Never return more than %d total items in one day or more than %d FOOD/CAFE/ATTRACTION/ACTIVITY/NIGHTLIFE items in one day, and do not pad the itinerary just to hit a count.",
                 NORMAL_DAY_MIN_DISPLAY_ITEMS,
                 NORMAL_DAY_MAX_DISPLAY_ITEMS,
                 LIGHT_DAY_MIN_DISPLAY_ITEMS,

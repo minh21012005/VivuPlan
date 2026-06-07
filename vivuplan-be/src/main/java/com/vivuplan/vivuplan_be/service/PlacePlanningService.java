@@ -406,7 +406,9 @@ public class PlacePlanningService {
         String type = normalizeText(placeType.name());
         return activityType.equals(type)
                 || (activityType.equals("attraction") && type.equals("activity"))
-                || (activityType.equals("activity") && type.equals("attraction"));
+                || (activityType.equals("activity") && type.equals("attraction"))
+                || (activityType.equals("nightlife") && (type.equals("activity") || type.equals("attraction")))
+                || (type.equals("nightlife") && (activityType.equals("activity") || activityType.equals("attraction")));
     }
 
     private void applyPlace(TripDto.ActivityResponse activity, Place place) {
@@ -419,6 +421,10 @@ public class PlacePlanningService {
         }
         if (activity.getLongitude() == null) {
             activity.setLongitude(place.getLongitude());
+        }
+        if (activity.getLatitude() != null && activity.getLongitude() != null) {
+            activity.setCoordinateSource(Activity.CoordinateSource.VERIFIED_PLACE.name());
+            activity.setCoordinateConfidence(Activity.CoordinateConfidence.HIGH.name());
         }
         if ((activity.getLocation() == null || activity.getLocation().isBlank()) && place.getAddress() != null) {
             activity.setLocation(place.getAddress());

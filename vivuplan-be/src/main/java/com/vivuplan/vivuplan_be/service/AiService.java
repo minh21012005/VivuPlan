@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vivuplan.vivuplan_be.dto.TripDto;
 import com.vivuplan.vivuplan_be.entity.AiUsageLog;
+import com.vivuplan.vivuplan_be.entity.Activity;
 import com.vivuplan.vivuplan_be.exception.AiGenerationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -721,7 +722,7 @@ public class AiService {
 
                         Style rules:
                         1. Treat Style as the user's primary planning bias, not a hard restriction.
-                        2. Keep the day practical and balanced; include other activity types when they improve route, meals, rest, weather safety, or the user's explicit request.
+                        2. Keep the day practical and balanced; include other activity types when they improve route, meals, rest, nightlife/evening experiences, weather safety, or the user's explicit request.
                         3. If Must visit, Avoid, Notes, weather, budget, or group needs conflict with Style, prioritize those more specific constraints.
 
                         Destination essence rules:
@@ -741,6 +742,7 @@ public class AiService {
                         5. When using a verified candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
                         6. When using a non-candidate place or activity, prefer a specific real public place or clearly named area with a realistic location. For restaurants, cafes, accommodations, and rental shops, use a specific real business only when confident it exists; otherwise use a concrete food street, market, neighborhood, lodging area, hotel/homestay pickup point, or rental pickup area plus the intended experience. Do not invent exact addresses, coordinates, or obscure business names.
                         6a. Absolutely DO NOT use generic or unnamed placeholders for any activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "nhận phòng tại homestay/khách sạn", "địa điểm thuê xe", "chợ địa phương", "quán cà phê").
+                        6b. For every activity location, write the most map-searchable real place or area you can safely name. It may be a public place, market, food street, neighborhood, wharf, trail, beach, lodging area, or pickup area. Do NOT force exact street addresses or coordinates when unsure.
                         7. Anti-Bias Rule: Do NOT lazily reuse the same default chains or luxury brands. Actively suggest diverse, budget-appropriate, logically located, and context-relevant local businesses.
                         8. Do not force every candidate into the day; choose only what makes the day practical.
 
@@ -799,7 +801,7 @@ public class AiService {
                               {
                                 "time": "08:00",
                                 "name": "Tên địa điểm hoặc món/quán cụ thể",
-                                "type": "FOOD|CAFE|ATTRACTION|TRANSPORT|ACCOMMODATION|ACTIVITY",
+                                "type": "FOOD|CAFE|ATTRACTION|TRANSPORT|ACCOMMODATION|ACTIVITY|NIGHTLIFE",
                                 "location": "Địa chỉ hoặc khu vực cụ thể",
                                 "duration": "1 giờ",
                                 "estimatedCost": 50000,
@@ -979,7 +981,7 @@ public class AiService {
 
                         Style rules:
                         1. Treat Style as the user's primary planning bias, not a hard restriction.
-                        2. Keep the itinerary practical and balanced; include other activity types when they improve route, meals, rest, weather safety, or the user's explicit request.
+                        2. Keep the itinerary practical and balanced; include other activity types when they improve route, meals, rest, nightlife/evening experiences, weather safety, or the user's explicit request.
                         3. If Must visit, Avoid, Notes, weather, budget, or group needs conflict with Style, prioritize those more specific constraints.
 
                         Destination essence rules:
@@ -1020,6 +1022,7 @@ public class AiService {
                         5. When using a verified candidate, copy its exact name and use its address/coords in location, latitude, and longitude.
                         6. When using a non-candidate place or activity, prefer a specific real public place or clearly named area with a realistic location. For restaurants, cafes, accommodations, and rental shops, use a specific real business only when confident it exists; otherwise use a concrete food street, market, neighborhood, lodging area, hotel/homestay pickup point, or rental pickup area plus the intended experience. Do not invent exact addresses, coordinates, or obscure business names.
                         6a. Absolutely DO NOT use generic or unnamed placeholders for any activity (e.g., "ăn trưa tại địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "thuê homestay", "nhận phòng tại homestay/khách sạn", "địa điểm thuê xe", "chợ địa phương", "quán cà phê").
+                        6b. For every activity location, write the most map-searchable real place or area you can safely name. It may be a public place, market, food street, neighborhood, wharf, trail, beach, lodging area, or pickup area. Do NOT force exact street addresses or coordinates when unsure.
                         7. Anti-Bias Rule: Do NOT lazily reuse the same default chains or luxury brands. Actively suggest diverse, budget-appropriate, logically located, and context-relevant local businesses.
                         8. Do not force every candidate into the trip; choose only what makes the itinerary practical.
 
@@ -1037,7 +1040,7 @@ public class AiService {
                         1. Return exactly %d days in the itinerary array.
                         2. %s
                         3. FOOD/CAFE activities must name a specific dish or restaurant/cafe.
-                        4. ATTRACTION/ACTIVITY activities must name a specific real place in or near %s.
+                        4. ATTRACTION/ACTIVITY/NIGHTLIFE activities must name a specific real place in or near %s.
                         5. TRANSPORT activities must include outbound/return travel and local travel between distant clusters of places. Walking between nearby places can be documented in notes.
                         6. Do not use generic names like "ăn sáng đặc sản địa phương", "tham quan điểm nổi bật", "khám phá khu vực lân cận", "nhà hàng địa phương", "cà phê view đẹp", or "nhận phòng tại homestay/khách sạn".
                         7. Days must be clearly different and should not repeat the same activity sequence.
@@ -1065,7 +1068,7 @@ public class AiService {
                               {
                                 "time": "08:00",
                                 "name": "Tên địa điểm hoặc món/quán cụ thể",
-                                "type": "FOOD|CAFE|ATTRACTION|TRANSPORT|ACCOMMODATION|ACTIVITY",
+                                "type": "FOOD|CAFE|ATTRACTION|TRANSPORT|ACCOMMODATION|ACTIVITY|NIGHTLIFE",
                                 "location": "Địa chỉ hoặc khu vực cụ thể",
                                 "duration": "1 giờ",
                                 "estimatedCost": 50000,
@@ -1538,6 +1541,10 @@ public class AiService {
             }
             if (!actNode.path("longitude").isMissingNode()) {
                 act.setLongitude(actNode.path("longitude").asDouble());
+            }
+            if (act.getLatitude() != null && act.getLongitude() != null) {
+                act.setCoordinateSource(Activity.CoordinateSource.AI_PROVIDED.name());
+                act.setCoordinateConfidence(Activity.CoordinateConfidence.MEDIUM.name());
             }
             if (!actNode.path("googlePlaceId").isMissingNode()) {
                 act.setGooglePlaceId(actNode.path("googlePlaceId").asText());
@@ -2239,7 +2246,8 @@ public class AiService {
         if (type == null)
             return false;
         return type.equals("food") || type.equals("cafe") || type.equals("attraction")
-                || type.equals("transport") || type.equals("accommodation") || type.equals("activity");
+                || type.equals("transport") || type.equals("accommodation") || type.equals("activity")
+                || type.equals("nightlife");
     }
 
     private int parseActivityDurationMinutes(String duration) {

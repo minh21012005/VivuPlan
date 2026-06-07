@@ -14,10 +14,14 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -50,7 +54,15 @@ public class WeatherService {
     private final Map<String, LatLon>            geocodeCache    = new ConcurrentHashMap<>();
     private final Map<String, Long>              geocodeFetchedAt = new ConcurrentHashMap<>();
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
+
+    public WeatherService() {
+        this(new RestTemplate());
+    }
+
+    WeatherService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
 
     // ─── DailyWeather DTO ────────────────────────────────────────────────────
 
@@ -260,45 +272,218 @@ public class WeatherService {
             return geocodeCache.get(key); // null means previously unresolvable — don't retry
         }
 
+        List<String> queries = buildGeocodeQueries(placeName);
+
+        try {
+            for (String query : queries) {
+                List<Map<String, Object>> results = fetchGeocodeCandidates(query);
+
+                if (results == null || results.isEmpty()) {
+                    log.debug("Nominatim returned no candidates for '{}' via query '{}'", placeName, query);
+                    continue;
+                }
+                Map<String, Object> first = selectBestGeocodeCandidate(placeName, results);
+                if (first == null) {
+                    log.debug("Nominatim returned no usable candidate for '{}' via query '{}'", placeName, query);
+                    continue;
+                }
+                double lat = Double.parseDouble(first.get("lat").toString());
+                double lon = Double.parseDouble(first.get("lon").toString());
+                LatLon latLon = new LatLon(lat, lon);
+                geocodeFetchedAt.put(key, Instant.now().toEpochMilli());
+                geocodeCache.put(key, latLon);
+                log.info("Geocoded '{}' → ({}, {})", placeName, lat, lon);
+                return latLon;
+            }
+
+            geocodeFetchedAt.put(key, Instant.now().toEpochMilli());
+            log.warn("Nominatim could not resolve '{}' after {} queries", placeName, queries.size());
+            return null;
+        } catch (Exception e) {
+            geocodeFetchedAt.put(key, Instant.now().toEpochMilli());
+            log.warn("Nominatim geocoding failed for '{}': {}", placeName, e.getMessage());
+            return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> fetchGeocodeCandidates(String query) {
         java.net.URI uri = UriComponentsBuilder.fromHttpUrl(NOMINATIM_BASE)
-                .queryParam("q", placeName.trim())
-                .queryParam("format", "json")
-                .queryParam("limit", 1)
-                .queryParam("countrycodes", "vn")  // prefer Vietnam results
+                .queryParam("q", query)
+                .queryParam("format", "jsonv2")
+                .queryParam("limit", 3)
+                .queryParam("countrycodes", "vn")
+                .queryParam("accept-language", "vi")
                 .build()
                 .encode()
                 .toUri();
 
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("User-Agent", "VivuPlan/1.0 (travel-planning-app)");
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("User-Agent", "VivuPlan/1.0 (travel-planning-app)");
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> results = restTemplate.exchange(
-                    uri, HttpMethod.GET, entity,
-                    (Class<List<Map<String, Object>>>) (Class<?>) List.class
-            ).getBody();
+        List<Map<String, Object>> body = restTemplate.exchange(
+                uri, HttpMethod.GET, entity,
+                (Class<List<Map<String, Object>>>) (Class<?>) List.class
+        ).getBody();
+        return body != null ? body : List.of();
+    }
 
-            geocodeFetchedAt.put(key, Instant.now().toEpochMilli()); // always mark as attempted
+    private List<String> buildGeocodeQueries(String placeName) {
+        String original = compact(placeName);
+        if (original.isBlank()) {
+            return List.of();
+        }
 
-            if (results != null && !results.isEmpty()) {
-                Map<String, Object> first = results.get(0);
-                double lat = Double.parseDouble(first.get("lat").toString());
-                double lon = Double.parseDouble(first.get("lon").toString());
-                LatLon latLon = new LatLon(lat, lon);
-                geocodeCache.put(key, latLon);
-                log.info("Geocoded '{}' → ({}, {})", placeName, lat, lon);
-                return latLon;
-            } else {
-                log.warn("Nominatim could not resolve '{}'", placeName);
-                return null;
+        LinkedHashSet<String> queries = new LinkedHashSet<>();
+        addVietnamQuery(queries, original);
+
+        String stripped = stripLeadingGenericLocationWords(original);
+        if (!stripped.equalsIgnoreCase(original)) {
+            addVietnamQuery(queries, stripped);
+        }
+
+        String[] parts = original.split(",");
+        if (parts.length >= 2) {
+            String main = compact(parts[0]);
+            String context = compact(String.join(",", List.of(parts).subList(1, parts.length)));
+            String strippedMain = stripLeadingGenericLocationWords(main);
+            if (!strippedMain.equalsIgnoreCase(main) && !context.isBlank()) {
+                addVietnamQuery(queries, strippedMain + ", " + context);
             }
+        }
 
-        } catch (Exception e) {
-            log.warn("Nominatim geocoding failed for '{}': {}", placeName, e.getMessage());
+        return List.copyOf(queries);
+    }
+
+    private void addVietnamQuery(Set<String> queries, String query) {
+        String cleaned = compact(query);
+        if (cleaned.isBlank()) {
+            return;
+        }
+        String normalized = normalizeForSearch(cleaned);
+        if (normalized.contains("viet nam") || normalized.contains("vietnam")) {
+            queries.add(cleaned);
+        } else {
+            queries.add(cleaned + ", Việt Nam");
+        }
+    }
+
+    private String stripLeadingGenericLocationWords(String value) {
+        String stripped = compact(value);
+        boolean changed;
+        do {
+            changed = false;
+            String normalized = normalizeForSearch(stripped);
+            for (String prefix : List.of(
+                    "khu du lich sinh thai ",
+                    "khu du lich ",
+                    "diem du lich ",
+                    "khu nghi duong ",
+                    "nha hang ",
+                    "khach san ",
+                    "resort ")) {
+                if (normalized.startsWith(prefix)) {
+                    stripped = compact(stripped.substring(prefix.length()));
+                    changed = true;
+                    break;
+                }
+            }
+        } while (changed);
+        return stripped;
+    }
+
+    private Map<String, Object> selectBestGeocodeCandidate(String placeName, List<Map<String, Object>> candidates) {
+        Map<String, Object> best = null;
+        int bestScore = Integer.MIN_VALUE;
+        for (Map<String, Object> candidate : candidates) {
+            Double lat = parseDouble(candidate.get("lat"));
+            Double lon = parseDouble(candidate.get("lon"));
+            if (lat == null || lon == null || !isVietnamCoordinate(lat, lon)) {
+                continue;
+            }
+            int score = scoreGeocodeCandidate(placeName, candidate);
+            if (score > bestScore) {
+                bestScore = score;
+                best = candidate;
+            }
+        }
+        return bestScore >= 18 ? best : null;
+    }
+
+    private int scoreGeocodeCandidate(String placeName, Map<String, Object> candidate) {
+        String displayName = String.valueOf(candidate.getOrDefault("display_name", ""));
+        Set<String> expectedTokens = importantTokens(placeName);
+        String normalizedDisplay = " " + normalizeForSearch(displayName) + " ";
+        int score = 0;
+        for (String token : expectedTokens) {
+            if (normalizedDisplay.contains(" " + token + " ")) {
+                score += 8;
+            }
+        }
+        String normalizedInput = normalizeForSearch(placeName);
+        for (String part : normalizedInput.split(",")) {
+            String context = compact(part);
+            if (context.length() >= 4 && normalizedDisplay.contains(context)) {
+                score += 10;
+            }
+        }
+        if (normalizedDisplay.contains(" viet nam ") || normalizedDisplay.contains(" vietnam ")) {
+            score += 8;
+        }
+        Object type = candidate.get("type");
+        if (type != null && List.of("tourism", "attraction", "resort", "hotel", "village", "town", "suburb")
+                .contains(normalizeForSearch(String.valueOf(type)))) {
+            score += 4;
+        }
+        return score;
+    }
+
+    private Set<String> importantTokens(String value) {
+        Set<String> tokens = new LinkedHashSet<>();
+        for (String token : normalizeForSearch(stripLeadingGenericLocationWords(value)).split(" ")) {
+            if (token.length() >= 3 && !GEOCODE_STOP_WORDS.contains(token)) {
+                tokens.add(token);
+            }
+        }
+        return tokens;
+    }
+
+    private static final Set<String> GEOCODE_STOP_WORDS = Set.of(
+            "khu", "du", "lich", "sinh", "thai", "diem", "nha", "hang", "khach", "san",
+            "resort", "tai", "gan", "trung", "tam", "dia", "phuong", "viet", "nam");
+
+    private boolean isVietnamCoordinate(double lat, double lon) {
+        return lat >= 8.0 && lat <= 24.5 && lon >= 102.0 && lon <= 110.5;
+    }
+
+    private Double parseDouble(Object value) {
+        if (value == null) {
             return null;
         }
+        try {
+            return Double.parseDouble(String.valueOf(value));
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private String compact(String value) {
+        return value == null ? "" : value.trim().replaceAll("\\s+", " ");
+    }
+
+    private String normalizeForSearch(String value) {
+        if (value == null) {
+            return "";
+        }
+        return Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replace("đ", "d")
+                .replace("Đ", "D")
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9,]+", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
     }
 
     /**

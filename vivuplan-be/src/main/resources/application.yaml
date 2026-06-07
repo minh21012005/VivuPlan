@@ -60,6 +60,13 @@ app:
     destination-suggest:
       cooldown-seconds: ${AI_DESTINATION_SUGGEST_COOLDOWN_SECONDS:60}
       cache-ttl-hours: ${AI_DESTINATION_SUGGEST_CACHE_TTL_HOURS:24}
+  geocoding:
+    activity:
+      enabled: ${ACTIVITY_GEOCODE_ENABLED:true}
+      nominatim-base-url: ${ACTIVITY_GEOCODE_NOMINATIM_BASE_URL:https://nominatim.openstreetmap.org/search}
+      timeout-ms: ${ACTIVITY_GEOCODE_TIMEOUT_MS:3000}
+      max-per-trip: ${ACTIVITY_GEOCODE_MAX_PER_TRIP:20}
+      min-request-interval-ms: ${ACTIVITY_GEOCODE_MIN_REQUEST_INTERVAL_MS:1000}
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:3000,https://vivuplan.vn}
   admin:

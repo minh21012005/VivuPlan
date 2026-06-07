@@ -289,6 +289,12 @@ export const adminApi = {
     fetch(`${API_BASE}/api/admin/trips/${tripId}`, { headers: authHeaders() })
       .then(handleResponse<AdminTripDetail>),
 
+  resolveActivityCoordinates: (tripId: number, dryRun = true) =>
+    fetch(`${API_BASE}/api/admin/trips/${tripId}/activity-coordinates/resolve?dryRun=${dryRun}`, {
+      method: "POST",
+      headers: authHeaders(),
+    }).then(handleResponse<AdminActivityCoordinateResolutionResponse>),
+
   transactions: (page = 0, size = 20, filters: AdminTransactionFilters = {}) => {
     const query = adminQuery({ page, size, ...filters });
     return fetch(`${API_BASE}/api/admin/transactions?${query}`, { headers: authHeaders() })
@@ -555,6 +561,34 @@ export interface AdminTripDetail {
   user: AdminUserSummary;
 }
 
+export interface AdminActivityCoordinateResolutionResponse {
+  tripId: number;
+  dryRun: boolean;
+  resolvedCount: number;
+  appliedCount: number;
+  items: AdminActivityCoordinateResolutionItem[];
+}
+
+export interface AdminActivityCoordinateResolutionItem {
+  dayNumber?: number;
+  activityId?: number;
+  sortOrder?: number;
+  name?: string;
+  type?: string;
+  location?: string;
+  status: string;
+  query?: string;
+  displayName?: string;
+  latitude?: number;
+  longitude?: number;
+  confidenceScore?: number;
+  coordinateConfidence?: string;
+  coordinateSource?: string;
+  cacheHit?: boolean;
+  applied?: boolean;
+  message?: string;
+}
+
 export interface AdminTransactionSummary {
   id: number;
   orderCode: string;
@@ -683,6 +717,8 @@ export interface ActivityResponse {
   latitude?: number;
   longitude?: number;
   googlePlaceId?: string;
+  coordinateSource?: string;
+  coordinateConfidence?: string;
   sortOrder: number;
 }
 
@@ -697,6 +733,8 @@ export interface ActivityMutationRequest {
   latitude?: number;
   longitude?: number;
   googlePlaceId?: string;
+  coordinateSource?: string;
+  coordinateConfidence?: string;
   sortOrder?: number;
 }
 

@@ -108,6 +108,8 @@ public class TripDto {
         private Double longitude;
         private Long placeId;
         private String googlePlaceId;
+        private String coordinateSource;
+        private String coordinateConfidence;
         private int sortOrder;
 
         public static ActivityResponse from(Activity a) {
@@ -125,6 +127,8 @@ public class TripDto {
             r.setLongitude(a.getLongitude());
             r.setPlaceId(a.getPlace() != null ? a.getPlace().getId() : null);
             r.setGooglePlaceId(a.getGooglePlaceId());
+            r.setCoordinateSource(a.getCoordinateSource() != null ? a.getCoordinateSource().name() : null);
+            r.setCoordinateConfidence(a.getCoordinateConfidence() != null ? a.getCoordinateConfidence().name() : null);
             r.setSortOrder(a.getSortOrder());
             return r;
         }
@@ -165,6 +169,8 @@ public class TripDto {
         private Double latitude;
         private Double longitude;
         private String googlePlaceId;
+        private String coordinateSource;
+        private String coordinateConfidence;
         private int sortOrder;
     }
 

@@ -62,8 +62,18 @@ public class Activity {
     @Column(length = 160)
     private String googlePlaceId;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 32)
+    private CoordinateSource coordinateSource;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 16)
+    private CoordinateConfidence coordinateConfidence;
+
     @Column(nullable = false)
     private Integer sortOrder;
 
-    public enum ActivityType { FOOD, CAFE, ATTRACTION, TRANSPORT, ACCOMMODATION, ACTIVITY }
+    public enum ActivityType { FOOD, CAFE, ATTRACTION, TRANSPORT, ACCOMMODATION, ACTIVITY, NIGHTLIFE }
+    public enum CoordinateSource { VERIFIED_PLACE, AI_PROVIDED, GEOCODED_LOCATION, MANUAL }
+    public enum CoordinateConfidence { HIGH, MEDIUM, LOW }
 }

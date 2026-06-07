@@ -17,6 +17,7 @@ import { useDestinations } from "@/lib/use-destinations";
 import { useWeather } from "@/lib/use-weather";
 import { useGeocode } from "@/lib/use-geocode";
 import { WeatherIcon } from "@/components/travel/WeatherIcon";
+import { DayRouteMap } from "@/components/travel/DayRouteMap";
 import {
   getRescheduleSuggestions,
   getActivityWeatherWarning,
@@ -122,6 +123,7 @@ const typeConfig: Record<string, { icon: typeof Coffee; color: string; bg: strin
   CAFE: { icon: Coffee, color: "#0284C7", bg: "#E0F2FE", label: "Cà phê" },
   ATTRACTION: { icon: Camera, color: "#22C55E", bg: "#F0FDF4", label: "Địa điểm" },
   ACTIVITY: { icon: Camera, color: "#22C55E", bg: "#F0FDF4", label: "Hoạt động" },
+  NIGHTLIFE: { icon: Star, color: "#DB2777", bg: "#FCE7F3", label: "Buổi tối" },
   TRANSPORT: { icon: Navigation, color: "#6366F1", bg: "#EEF2FF", label: "Di chuyển" },
   ACCOMMODATION: { icon: MapPin, color: "#A855F7", bg: "#FAF5FF", label: "Lưu trú" },
 };
@@ -184,6 +186,72 @@ function buildDayDirectionsUrl(activities: ActivityResponse[], destination?: str
   const waypoints = places.slice(1, -1).slice(0, 8);
   if (waypoints.length > 0) query.set("waypoints", waypoints.join("|"));
   return `https://www.google.com/maps/dir/?${query.toString()}`;
+}
+
+function normalizeMapPlaceText(value?: string | null) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const MAP_ADMINISTRATIVE_PREFIXES = [
+  "thanh pho",
+  "tp",
+  "tinh",
+  "huyen",
+  "quan",
+  "thi xa",
+  "thi tran",
+  "xa",
+  "phuong",
+];
+
+function stripMapAdministrativePrefix(value?: string | null) {
+  let normalized = normalizeMapPlaceText(value);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const prefix of MAP_ADMINISTRATIVE_PREFIXES) {
+      if (normalized === prefix) return "";
+      if (normalized.startsWith(`${prefix} `)) {
+        normalized = normalized.slice(prefix.length).trim();
+        changed = true;
+        break;
+      }
+    }
+  }
+  return normalized;
+}
+
+function isSameMapTravelPlace(a?: string | null, b?: string | null) {
+  const normalizedA = normalizeMapPlaceText(a);
+  const normalizedB = normalizeMapPlaceText(b);
+  if (!normalizedA || !normalizedB) return false;
+  if (normalizedA === normalizedB) return true;
+
+  const strippedA = stripMapAdministrativePrefix(a);
+  const strippedB = stripMapAdministrativePrefix(b);
+  return Boolean(strippedA && strippedB && strippedA === strippedB);
+}
+
+function hasValidMapCoordinate(activity: ActivityResponse, departure?: string | null, destination?: string | null) {
+  if (activity.type === "TRANSPORT") return false;
+
+  const normalizedDeparture = normalizeMapPlaceText(departure);
+  const normalizedActivityPlace = normalizeMapPlaceText([activity.name, activity.location].filter(Boolean).join(" "));
+  if (
+    normalizedDeparture
+    && !isSameMapTravelPlace(departure, destination)
+    && normalizedActivityPlace.includes(normalizedDeparture)
+  ) return false;
+
+  const lat = Number(activity.latitude);
+  const lon = Number(activity.longitude);
+  return Number.isFinite(lat) && Number.isFinite(lon) && lat >= 7 && lat <= 24.8 && lon >= 102 && lon <= 110.8;
 }
 
 function buildHotelAffiliateUrl(
@@ -454,6 +522,8 @@ export default function ItineraryPage() {
   const dayTotal = day?.activities?.reduce((sum, activity) => sum + activity.estimatedCost, 0) ?? 0;
   const dayTransportCount = dayActivities.filter((activity) => activity.type === "TRANSPORT").length;
   const dayPlaceCount = dayActivities.filter((activity) => activity.type !== "TRANSPORT").length;
+  const hasDayMapCoordinates = dayActivities.some((activity) =>
+    hasValidMapCoordinate(activity, trip?.departure, trip?.destination));
   const dayTimeRange = getDayTimeRange(dayActivities);
   const dayDirectionsUrl = buildDayDirectionsUrl(dayActivities, trip?.destination);
   const showDayScrollControls = (trip?.schedule?.length ?? 0) > 5;
@@ -991,13 +1061,17 @@ export default function ItineraryPage() {
 
           <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <Card className="map-preview-card" style={{ overflow: "hidden" }}>
-              <div style={{ height: 150, backgroundImage: `linear-gradient(180deg, rgba(15,159,156,0.1), rgba(15,159,156,0.32)), url(${image})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+              {hasDayMapCoordinates ? (
+                <DayRouteMap activities={dayActivities} destination={trip?.destination} departure={trip?.departure} directionsUrl={dayDirectionsUrl} />
+              ) : (
+                <div style={{ height: 150, backgroundImage: `linear-gradient(180deg, rgba(15,159,156,0.1), rgba(15,159,156,0.32)), url(${image})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+              )}
               <div style={{ padding: 18 }}>
                 <h3 style={{ fontSize: 16, marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
-                  <Navigation size={16} style={{ color: "var(--primary)" }} /> Tuyến trong ngày
+                  <Navigation size={16} style={{ color: "var(--primary)" }} /> Các điểm trong ngày
                 </h3>
                 <p className="itinerary-route-summary">
-                  {dayPlaceCount} điểm dừng, {dayTransportCount} chặng di chuyển. Mở tuyến đường để kiểm tra khoảng cách thực tế trước khi đi.
+                  {dayPlaceCount} điểm dừng, {dayTransportCount} chặng di chuyển. Hiển thị theo thứ tự lịch trình, mở Google Maps để xem đường đi thực tế.
                 </p>
                 <Button
                   variant="secondary"
@@ -1109,6 +1183,7 @@ const activityTypeOptions = [
   { value: "CAFE", label: "Cà phê" },
   { value: "ATTRACTION", label: "Địa điểm" },
   { value: "ACTIVITY", label: "Hoạt động" },
+  { value: "NIGHTLIFE", label: "Buổi tối" },
   { value: "TRANSPORT", label: "Di chuyển" },
   { value: "ACCOMMODATION", label: "Lưu trú" },
 ];

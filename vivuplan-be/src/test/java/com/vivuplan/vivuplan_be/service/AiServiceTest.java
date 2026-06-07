@@ -57,6 +57,35 @@ class AiServiceTest {
     }
 
     @Test
+    void itineraryQualityAcceptsNightlifeActivityType() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDestination("Phu Quoc");
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Bay den Phu Quoc", "TRANSPORT",
+                        "San bay Noi Bai -> San bay Phu Quoc", 2_400_000L,
+                        "Ve may bay khu hoi duoc tinh trong chi phi di chuyen."),
+                activity("10:30", "Tham quan Dinh Cau", "ATTRACTION",
+                        "Dinh Cau, Phu Quoc", 0L,
+                        "Diem ngam bien gan trung tam Duong Dong."),
+                activity("12:00", "An trua bun quay Kien Xay", "FOOD",
+                        "Bun quay Kien Xay, Phu Quoc", 180_000L,
+                        "Thu mon dac san dia phuong."),
+                activity("15:00", "Tam bien Bai Sao", "ATTRACTION",
+                        "Bai Sao, Phu Quoc", 0L,
+                        "Bien dep, nen di khi thoi tiet on."),
+                activity("19:30", "Kham pha Grand World Phu Quoc", "NIGHTLIFE",
+                        "Grand World Phu Quoc", 300_000L,
+                        "Trai nghiem khong gian dem va show ngoai troi neu phu hop.")));
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).isTrue();
+    }
+
+    @Test
     void regeneratedDayQualityReplacesOldDayBeforeCheckingIntercityCosts() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();

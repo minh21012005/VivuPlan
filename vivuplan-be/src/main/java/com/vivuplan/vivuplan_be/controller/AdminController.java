@@ -74,6 +74,13 @@ public class AdminController {
         ));
     }
 
+    @PostMapping("/trips/{id}/activity-coordinates/resolve")
+    public ResponseEntity<AdminDto.ActivityCoordinateResolutionResponse> resolveActivityCoordinates(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "true") boolean dryRun) {
+        return ResponseEntity.ok(tripService.resolveActivityCoordinatesForAdmin(id, dryRun));
+    }
+
     @GetMapping("/transactions")
     public ResponseEntity<PageDto.PageResponse<AdminDto.TransactionSummary>> transactions(
             @RequestParam(defaultValue = "0") int page,

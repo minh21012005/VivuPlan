@@ -96,6 +96,7 @@ function activityTypeLabel(value?: string | null) {
     CAFE: "Cà phê",
     ATTRACTION: "Điểm đến",
     ACTIVITY: "Hoạt động",
+    NIGHTLIFE: "Buổi tối",
     TRANSPORT: "Di chuyển",
     ACCOMMODATION: "Lưu trú",
   };
