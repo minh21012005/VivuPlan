@@ -47,6 +47,59 @@ class AiServiceTest {
     }
 
     @Test
+    void itineraryQualityAllowsLocalAirportTransferWhenRoundTripFlightCostIsBundled() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDestination("Quy Nhon");
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Ve may bay khu hoi Ha Noi - Quy Nhon", "TRANSPORT",
+                        "San bay Noi Bai (HAN) <-> San bay Phu Cat (UIH)", 3_800_000L,
+                        "Chi phi khu hoi cho ca nhom, bao gom ca chieu di va chieu ve."),
+                activity("11:30", "An trua bun ca Quy Nhon", "FOOD",
+                        "Trung tam Quy Nhon", 200_000L, null),
+                activity("14:00", "Tham quan Eo Gio", "ATTRACTION",
+                        "Eo Gio, Quy Nhon", 120_000L, null),
+                activity("18:30", "An toi hai san", "FOOD",
+                        "Nha hang hai san Quy Nhon", 350_000L, null),
+                activity("20:00", "Di chuyen ra san bay Phu Cat (UIH)", "TRANSPORT",
+                        "Quy Nhon -> San bay Phu Cat", 250_000L,
+                        "Taxi ra san bay de lam thu tuc chuyen bay ve Ha Noi.")));
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).isTrue();
+    }
+
+    @Test
+    void itineraryQualityStillFlagsPaidFlightLegHiddenBehindAirportTransferText() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDestination("Quy Nhon");
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Ve may bay khu hoi Ha Noi - Quy Nhon", "TRANSPORT",
+                        "San bay Noi Bai (HAN) <-> San bay Phu Cat (UIH)", 3_800_000L,
+                        "Chi phi khu hoi cho ca nhom, bao gom ca chieu di va chieu ve."),
+                activity("11:30", "An trua bun ca Quy Nhon", "FOOD",
+                        "Trung tam Quy Nhon", 200_000L, null),
+                activity("14:00", "Tham quan Eo Gio", "ATTRACTION",
+                        "Eo Gio, Quy Nhon", 120_000L, null),
+                activity("18:30", "An toi hai san", "FOOD",
+                        "Nha hang hai san Quy Nhon", 350_000L, null),
+                activity("20:00", "Di chuyen ra san bay Phu Cat va bay ve Ha Noi", "TRANSPORT",
+                        "Quy Nhon -> San bay Phu Cat -> Ha Noi", 1_800_000L,
+                        "Chi phi cho chuyen bay ve.")));
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).isFalse();
+        assertThat(quality.reason()).contains("intercity transport cost is double-counted");
+    }
+
+    @Test
     void itineraryQualityDoesNotTreatAdvisoryRoundTripTextAsBundledCost() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();

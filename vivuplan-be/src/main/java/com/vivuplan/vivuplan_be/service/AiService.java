@@ -2323,7 +2323,106 @@ public class AiService {
             return false;
         }
 
+        if (isLocalTerminalTransfer(normalizedText)) {
+            return false;
+        }
+
         return normalizedText.contains(departure) && normalizedText.contains(destination);
+    }
+
+    private boolean isLocalTerminalTransfer(String normalizedText) {
+        if (mentionsExplicitIntercityTicketCost(normalizedText)) {
+            return false;
+        }
+
+        boolean mentionsTerminal = containsAny(normalizedText,
+                "san bay",
+                "cang hang khong",
+                "airport",
+                "terminal",
+                "ga tau",
+                "nha ga",
+                "nha ga t1",
+                "nha ga t2",
+                "ben xe",
+                "bus station",
+                "train station");
+        if (!mentionsTerminal) {
+            return false;
+        }
+
+        if (mentionsExplicitLocalTerminalTransferCost(normalizedText)) {
+            return true;
+        }
+
+        if (mentionsLikelyIntercityLeg(normalizedText)) {
+            return false;
+        }
+
+        return containsAny(normalizedText,
+                "di chuyen ra san bay",
+                "ra san bay",
+                "den san bay",
+                "toi san bay",
+                "tu san bay",
+                "don san bay",
+                "dua don san bay",
+                "airport transfer",
+                "ra ga",
+                "den ga",
+                "toi ga",
+                "tu ga",
+                "ra ben xe",
+                "den ben xe",
+                "toi ben xe",
+                "tu ben xe",
+                "xe trung chuyen");
+    }
+
+    private boolean mentionsExplicitLocalTerminalTransferCost(String normalizedText) {
+        return containsAny(normalizedText,
+                "taxi",
+                "grab",
+                "shuttle",
+                "xe trung chuyen",
+                "xe dua don",
+                "dua don",
+                "don san bay",
+                "phi dua don",
+                "chi phi taxi",
+                "chi phi grab",
+                "chi phi dua don");
+    }
+
+    private boolean mentionsLikelyIntercityLeg(String normalizedText) {
+        return containsAny(normalizedText,
+                "chuyen bay",
+                "bay den",
+                "bay ve",
+                "flight",
+                "tau hoa",
+                "xe khach",
+                "limousine");
+    }
+
+    private boolean mentionsExplicitIntercityTicketCost(String normalizedText) {
+        return containsAny(normalizedText,
+                "ve may bay",
+                "gia ve may bay",
+                "chi phi ve may bay",
+                "ve tau",
+                "gia ve tau",
+                "chi phi ve tau",
+                "ve xe khach",
+                "gia ve xe khach",
+                "chi phi xe khach",
+                "ve limousine",
+                "gia ve limousine",
+                "ve khu hoi",
+                "ve mot chieu",
+                "return ticket",
+                "one way ticket",
+                "one-way ticket");
     }
 
     private String accommodationSpecificityIssue(

@@ -1,0 +1,18 @@
+---
+description: VivuPlan project rules for Cursor agents
+globs:
+  - "**/*"
+alwaysApply: true
+---
+
+Read and follow the repository instructions before editing:
+
+- `AGENTS.md`
+- `vivuplan-be/AGENTS.md` for backend work
+- `vivuplan-fe/AGENTS.md` for frontend work
+- relevant files under `docs/`
+
+Do not invent behavior. The current code and tests are the final source of
+truth. Preserve UTF-8 Vietnamese UI copy, security checks, ownership checks,
+billing credit invariants, and AI planning quality gates.
+
