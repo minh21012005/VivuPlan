@@ -1236,15 +1236,20 @@ public class TripService {
 
     private void validateNoTimeOverlap(ItineraryDay day, Activity candidate, Long ignoreActivityId, boolean relaxedForAiProposal) {
         LocalTime candidateStart = parseTime(candidate.getTime());
-        LocalTime candidateEnd = candidateStart.plusMinutes(parseDurationMinutes(candidate.getDuration()));
+        int candidateStartMins = candidateStart.getHour() * 60 + candidateStart.getMinute();
+        int candidateEndMins = candidateStartMins + Math.max(15, parseDurationMinutes(candidate.getDuration()));
         if (day.getActivities() == null)
             return;
         for (Activity other : day.getActivities()) {
             if (ignoreActivityId != null && ignoreActivityId.equals(other.getId()))
                 continue;
             LocalTime otherStart = parseTime(other.getTime());
-            LocalTime otherEnd = otherStart.plusMinutes(parseDurationMinutes(other.getDuration()));
-            if (candidateStart.isBefore(otherEnd) && otherStart.isBefore(candidateEnd)) {
+            int otherStartMins = otherStart.getHour() * 60 + otherStart.getMinute();
+            int otherEndMins = otherStartMins + Math.max(15, parseDurationMinutes(other.getDuration()));
+
+            int overlapStart = Math.max(candidateStartMins, otherStartMins);
+            int overlapEnd = Math.min(candidateEndMins, otherEndMins);
+            if (overlapStart < overlapEnd) {
                 if (relaxedForAiProposal) {
                     if (candidate.getType() == Activity.ActivityType.TRANSPORT
                             || other.getType() == Activity.ActivityType.TRANSPORT
@@ -1252,9 +1257,7 @@ public class TripService {
                             || other.getType() == Activity.ActivityType.ACCOMMODATION) {
                         continue;
                     }
-                    LocalTime overlapStart = candidateStart.isAfter(otherStart) ? candidateStart : otherStart;
-                    LocalTime overlapEnd = candidateEnd.isBefore(otherEnd) ? candidateEnd : otherEnd;
-                    long overlapMinutes = ChronoUnit.MINUTES.between(overlapStart, overlapEnd);
+                    long overlapMinutes = overlapEnd - overlapStart;
                     if (overlapMinutes <= 30) {
                         continue;
                     }
@@ -1282,14 +1285,14 @@ public class TripService {
         int minutes = 0;
 
         java.util.regex.Matcher hourMatcher = java.util.regex.Pattern
-                .compile("(\\d+(?:[\\.,]\\d+)?)\\s*(gio|h)")
+                .compile("(\\d+(?:[\\.,]\\d+)?)\\s*(?:gio|tieng|hour|hours|h)\\b")
                 .matcher(normalized);
         if (hourMatcher.find()) {
             minutes += Math.round(Float.parseFloat(hourMatcher.group(1).replace(",", ".")) * 60);
         }
 
         java.util.regex.Matcher minuteMatcher = java.util.regex.Pattern
-                .compile("(\\d+)\\s*(phut|p|min)")
+                .compile("(\\d+)\\s*(?:phut|minute|minutes|min|p)\\b")
                 .matcher(normalized);
         if (minuteMatcher.find()) {
             minutes += Integer.parseInt(minuteMatcher.group(1));

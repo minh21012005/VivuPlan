@@ -1274,5 +1274,50 @@ class TripServiceTest {
         trip.setItineraryDays(new ArrayList<>(List.of(day)));
         return trip;
     }
+
+    @Test
+    void parseDurationMinutesSupportsVariousUnits() throws Exception {
+        Method method = TripService.class.getDeclaredMethod("parseDurationMinutes", String.class);
+        method.setAccessible(true);
+        TripService service = service();
+
+        assertThat((int) method.invoke(service, "2 tiếng")).isEqualTo(120);
+        assertThat((int) method.invoke(service, "2 tieng")).isEqualTo(120);
+        assertThat((int) method.invoke(service, "1.5 hours")).isEqualTo(90);
+        assertThat((int) method.invoke(service, "1 gio 30 phut")).isEqualTo(90);
+        assertThat((int) method.invoke(service, "45 phut")).isEqualTo(45);
+        assertThat((int) method.invoke(service, "3h")).isEqualTo(180);
+    }
+
+    @Test
+    void validateNoTimeOverlapDetectsMidnightCrossingOverlaps() throws Exception {
+        Method method = TripService.class.getDeclaredMethod(
+                "validateNoTimeOverlap",
+                ItineraryDay.class,
+                Activity.class,
+                Long.class);
+        method.setAccessible(true);
+
+        ItineraryDay day = new ItineraryDay();
+        day.setActivities(new ArrayList<>());
+
+        Activity existing = new Activity();
+        existing.setId(100L);
+        existing.setTime("23:00");
+        existing.setDuration("2 tiếng"); // ends at 01:00 (1380 + 120 = 1500)
+        existing.setName("Existing late night activity");
+        day.getActivities().add(existing);
+
+        Activity candidate = new Activity();
+        candidate.setId(200L);
+        candidate.setTime("22:30");
+        candidate.setDuration("1 giờ"); // ends at 23:30 (1350 + 60 = 1410). Overlaps with existing from 23:00 to 23:30.
+        candidate.setName("Candidate overlapping activity");
+
+        assertThatThrownBy(() -> method.invoke(service(), day, candidate, null))
+                .getCause()
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Thời gian hoạt động bị trùng");
+    }
 }
 
