@@ -138,6 +138,19 @@ normalization, retries, and tests remain the real enforcement layer.
   parsing. Do not silently rewrite or suppress them with a second simplified
   weather interpretation in `TripService`; prompt context and AI quality rules
   own the semantic explanation.
+- Do not turn itinerary text into a forecast bulletin or blanket weather
+  advisory, repeat exact forecast values, or present predicted conditions as
+  certain facts. Concise natural activity-specific context such as "nếu thời
+  tiết thuận" or advice to reconfirm route, site, water-level, sea, or operator
+  conditions is allowed when useful. Do not repeat generic weather disclaimers
+  across activities.
+- Backend quality validation must not classify weather words in day titles,
+  summaries, activity names, or notes as deterministic failures. Keyword
+  matching cannot reliably distinguish a forecast claim from useful outdoor
+  context and must not trigger an AI retry.
+- Explain weather-driven omissions, substitutions, or material weakening of a
+  user request or destination-signature experience through
+  `requestFulfillment`.
 - Persist AI `WEATHER_SAFETY` explanations in `Trip.aiWarnings` with the other
   request-fulfillment messages. They explain why that saved itinerary was
   constructed, so users must still see them after refresh. Current frontend

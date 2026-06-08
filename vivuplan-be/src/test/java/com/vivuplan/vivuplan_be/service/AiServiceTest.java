@@ -1144,6 +1144,46 @@ class AiServiceTest {
     }
 
     @Test
+    void generatedPromptAllowsConciseWeatherContextInActivityNotes() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        String prompt = buildPrompt(service, req);
+
+        assertThat(prompt)
+                .contains("Do not turn itinerary text into a forecast bulletin or blanket weather advisory")
+                .contains("Concise natural context in an activity note is allowed when useful")
+                .contains("nếu thời tiết thuận")
+                .contains("reconfirm route, site, water-level, sea, or operator conditions")
+                .contains("Do not repeat generic weather disclaimers across activities")
+                .contains("Natural activity-specific context such as \"nếu thời tiết thuận\"")
+                .doesNotContain("Never mention the weather in itinerary day titles, summaries, activities, or notes")
+                .doesNotContain("Never mention the weather forecast to the user in the output text");
+    }
+
+    @Test
+    void regenerationPromptAllowsConciseWeatherContextInActivityNotes() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        String prompt = buildDayRegenerationPrompt(
+                service,
+                req,
+                List.of(roundTripBundledDay()),
+                1,
+                "REGENERATE",
+                "thêm trải nghiệm hang động",
+                null);
+
+        assertThat(prompt)
+                .contains("Do not turn the regenerated day into a forecast bulletin or blanket weather advisory")
+                .contains("Concise natural context in an activity note is allowed when useful")
+                .contains("nếu thời tiết thuận")
+                .contains("reconfirm route, site, water-level, sea, or operator conditions")
+                .doesNotContain("Never mention the weather in the regenerated day's title, summary, activities, or notes");
+    }
+
+    @Test
     void generatedPromptTreatsRainFlexAsFlexibleNotIndoorOnly() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
@@ -1170,7 +1210,8 @@ class AiServiceTest {
                 .contains("RAIN FLEX is not an automatic ban")
                 .contains("including access and return time")
                 .contains("thunderstorms, heavy rain, strong wind, flooding, rough seas, slippery trails")
-                .contains("reconfirm conditions and operating status");
+                .contains("reconfirm route, site, water-level, sea, or operator conditions")
+                .contains("use safer timing or a concise backup note when useful");
     }
 
     @Test
