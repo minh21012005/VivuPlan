@@ -90,22 +90,31 @@ final class ItineraryQualityPolicy {
                     || (routeLike && mentionsAtLeastTwoAirportAliases(normalizedText));
         }
         if ("train".equals(mode)) {
-            return containsAny(normalizedText, "tau hoa", "ve tau", "len tau", "den ga bang tau")
+            return containsAny(normalizedText, "tau hoa", "ve tau", "len tau", "den ga bang tau", "di tau", "tau lua", "chuyen tau")
                     || (routeLike && containsAny(normalizedText, "ga ", "nha ga"));
         }
         if ("bus".equals(mode)) {
-            return containsAny(normalizedText, "xe khach", "limousine", "ve xe", "ben xe");
+            return containsAny(normalizedText, "xe khach", "limousine", "ve xe", "ben xe", "xe giuong nam", "xe nam", "xe chat luong cao", "xe du lich");
         }
         if ("personal car".equals(mode) || "personal_car".equals(mode)) {
             return containsAny(normalizedText,
                     "lai xe",
                     "o to ca nhan",
                     "oto ca nhan",
-                    "xe ca nhan")
+                    "xe ca nhan",
+                    "tu lai",
+                    "di o to",
+                    "di oto",
+                    "lai o to",
+                    "lai oto",
+                    "di xe o to",
+                    "di xe oto",
+                    "lai xe o to",
+                    "lai xe oto")
                     || (routeLike && containsAny(normalizedText, "o to", "oto", "xe hoi"));
         }
         if ("personal motorbike".equals(mode) || "personal_motorbike".equals(mode)) {
-            return containsAny(normalizedText, "xe may ca nhan", "chay xe may")
+            return containsAny(normalizedText, "xe may ca nhan", "chay xe may", "di xe may", "di chuyen bang xe may", "phuot xe may", "chay xe")
                     || (routeLike && normalizedText.contains("xe may"));
         }
         return containsAny(normalizedText,
@@ -114,11 +123,19 @@ final class ItineraryQualityPolicy {
                 "tau hoa",
                 "ve tau",
                 "len tau",
+                "di tau",
+                "tau lua",
+                "chuyen tau",
                 "xe khach",
                 "limousine",
+                "xe giuong nam",
+                "xe nam",
                 "lai xe lien tinh",
                 "o to ca nhan",
-                "xe may ca nhan");
+                "di o to",
+                "di oto",
+                "xe may ca nhan",
+                "di xe may");
     }
 
     static String intercityModeKey(String text, String outboundMode) {
@@ -127,16 +144,16 @@ final class ItineraryQualityPolicy {
                 || mentionsAtLeastTwoAirportAliases(normalizedText)) {
             return "plane";
         }
-        if (containsAny(normalizedText, "tau hoa", "ve tau", "len tau", "tau ve", "den ga bang tau")) {
+        if (containsAny(normalizedText, "tau hoa", "ve tau", "len tau", "tau ve", "den ga bang tau", "di tau", "tau lua", "chuyen tau")) {
             return "train";
         }
-        if (containsAny(normalizedText, "xe khach", "limousine", "ve xe khach", "ben xe")) {
+        if (containsAny(normalizedText, "xe khach", "limousine", "ve xe khach", "ben xe", "xe giuong nam", "xe nam")) {
             return "bus";
         }
-        if (containsAny(normalizedText, "xe may ca nhan", "chay xe may")) {
+        if (containsAny(normalizedText, "xe may ca nhan", "chay xe may", "di xe may", "di chuyen bang xe may")) {
             return "personal_motorbike";
         }
-        if (containsAny(normalizedText, "lai xe", "o to ca nhan", "oto ca nhan", "xe ca nhan")) {
+        if (containsAny(normalizedText, "lai xe", "o to ca nhan", "oto ca nhan", "xe ca nhan", "tu lai", "di o to", "di oto")) {
             return "personal_car";
         }
 
@@ -183,7 +200,7 @@ final class ItineraryQualityPolicy {
     static boolean looksLikeRoute(String text) {
         String normalized = normalize(text);
         return containsAny(normalized, "->", "<->", "\u2192", "\u2194", " - ")
-                || normalized.matches(".*\\b(?:tu|from)\\b.+\\b(?:den|toi|to)\\b.+");
+                || normalized.matches(".*\\b(?:tu|from)\\b.+\\b(?:den|toi|to|di|sang|ve)\\b.+");
     }
 
     private static boolean mentionsLocalTerminalTransfer(String text) {

@@ -332,7 +332,7 @@ final class ItineraryQualityValidator {
         String text = evidence.text();
         boolean secondHalf = evidence.day() >= Math.max(1, (req.getDays() + 1) / 2);
         return secondHalf
-                && (containsAny(text, "tro ve", "ve " + departure, "chieu ve", "bay ve", "tau ve")
+                && (containsAny(text, "tro ve", "ve " + departure, "ve lai " + departure, "tro lai " + departure, "chieu ve", "bay ve", "tau ve")
                         || (evidence.day() == Math.max(1, req.getDays())
                                 && ItineraryQualityPolicy.looksLikeRoute(text)));
     }
@@ -557,7 +557,7 @@ final class ItineraryQualityValidator {
         }
         int minutes = 0;
         java.util.regex.Matcher hourMatcher = Pattern
-                .compile("(\\d+(?:[\\.,]\\d+)?)\\s*(?:gio|hour|hours|h)\\b")
+                .compile("(\\d+(?:[\\.,]\\d+)?)\\s*(?:gio|tieng|hour|hours|h)\\b")
                 .matcher(normalized);
         if (hourMatcher.find()) {
             minutes += Math.round(Float.parseFloat(hourMatcher.group(1).replace(",", ".")) * 60);

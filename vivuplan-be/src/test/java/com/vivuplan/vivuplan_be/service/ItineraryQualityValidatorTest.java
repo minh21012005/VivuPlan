@@ -478,6 +478,71 @@ class ItineraryQualityValidatorTest {
         assertThat(result.passed()).as(result.reason()).isTrue();
     }
 
+    @Test
+    void looksLikeRouteRecognizesVietnameseDestinationMarkers() {
+        assertThat(ItineraryQualityPolicy.looksLikeRoute("tu ha noi di sa pa")).isTrue();
+        assertThat(ItineraryQualityPolicy.looksLikeRoute("tu cat bi sang noi bai")).isTrue();
+        assertThat(ItineraryQualityPolicy.looksLikeRoute("tu phong nha ve dong hoi")).isTrue();
+        assertThat(ItineraryQualityPolicy.looksLikeRoute("tu ha noi den dong hoi")).isTrue();
+    }
+
+    @Test
+    void trainClassifierRecognizesDiTauAndTauLua() {
+        assertThat(ItineraryQualityPolicy.isIntercityTransport(
+                "di tau den hue",
+                "TRAIN")).isTrue();
+        assertThat(ItineraryQualityPolicy.isIntercityTransport(
+                "chuyen tau lua di vinh",
+                "TRAIN")).isTrue();
+    }
+
+    @Test
+    void busClassifierRecognizesSleeperBuses() {
+        assertThat(ItineraryQualityPolicy.isIntercityTransport(
+                "di xe giuong nam di sa pa",
+                "BUS")).isTrue();
+        assertThat(ItineraryQualityPolicy.isIntercityTransport(
+                "xe nam chat luong cao",
+                "BUS")).isTrue();
+    }
+
+    @Test
+    void returnEvidenceRecognizesVeLaiAndTroLai() {
+        TripDto.GenerateRequest req = request(3);
+        req.setOutboundTransport("TRAIN");
+
+        TripDto.DayResponse day1 = day(1,
+                activity("06:00", "Ga Ha Noi di ga Dong Hoi", "TRANSPORT",
+                        "Ga Ha Noi", "10 gio", 6_400_000,
+                        "Ve tau khu hoi Ha Noi - Dong Hoi."),
+                activity("17:00", "An toi", "FOOD", "Dong Hoi", "1 gio", 200_000, null));
+        TripDto.DayResponse day3 = day(3,
+                activity("08:00", "Cafe", "CAFE", "Dong Hoi", "1 gio", 50_000, null),
+                activity("10:00", "An trua", "FOOD", "Dong Hoi", "1 gio", 200_000, null),
+                activity("16:00", "Len xe khach ve lai Ha Noi", "TRANSPORT",
+                        "Dong Hoi -> Ha Noi", "10 gio", 0,
+                        "Da tinh trong ve tau ngay 1."));
+
+        ItineraryQualityValidator.Result result = validator.validateFull(
+                List.of(day1, normalDay(2), day3),
+                req);
+        assertThat(result.passed()).as(result.reason()).isTrue();
+    }
+
+    @Test
+    void parseDurationMinutesSupportsTieng() {
+        TripDto.GenerateRequest req = request(1);
+        TripDto.DayResponse day = day(1,
+                activity("08:00", "Tham quan dong", "ATTRACTION", "Phong Nha", "2 tieng", 100_000, null),
+                activity("09:00", "An sang", "FOOD", "Phong Nha", "1.5 tieng", 50_000, null),
+                activity("12:00", "An trua", "FOOD", "Phong Nha", "1 gio", 200_000, null));
+
+        ItineraryQualityValidator.Result result = validator.validateFull(List.of(day), req);
+
+        assertThat(result.passed()).isFalse();
+        assertThat(result.reason()).contains("activity times overlap");
+    }
+
     private TripDto.GenerateRequest request(int days) {
         TripDto.GenerateRequest req = new TripDto.GenerateRequest();
         req.setDeparture(days == 1 ? "Phong Nha - Ke Bang" : "Ha Noi");
