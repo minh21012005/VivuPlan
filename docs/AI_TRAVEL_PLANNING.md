@@ -134,6 +134,16 @@ Avoid:
 
 ## Transport Timeline And Cost Ownership
 
+- Full generation owns the complete trip timeline. Day regeneration owns only
+  transport that genuinely occurs on the target day; surrounding days are
+  immutable context. Regenerating a middle day must not invent outbound or
+  return legs merely because those legs exist elsewhere in the trip.
+- First-day regeneration preserves or adds the real outbound leg when the trip
+  starts with travel from the supplied departure. Final-day regeneration does
+  the same for the real return leg. A one-day regeneration uses the existing
+  day and request context instead of blindly forcing both directions.
+- When departure and destination refer to the same travel area, prompts must
+  not invent an intercity plane, train, or bus round trip.
 - The itinerary must show physical outbound and return legs on the days when
   they occur, even when a single booking owns the round-trip cost.
 - A physical leg moves the traveler from one place to another. A cost-owner
@@ -149,9 +159,12 @@ Avoid:
   three meaningful movement items: origin area to terminal when material, the
   intercity leg including arrival, and arrival terminal to lodging/destination
   when material. Do not add a separate landing or terminal-arrival card after
-  the intercity leg. A separate non-blocking round-trip booking/package cost
-  owner may coexist only when the physical leg cannot accurately own its full
-  cost.
+  the intercity leg.
+- Prefer assigning a round-trip cost to a physical leg when that activity name
+  and note accurately describe the full booking scope. A separate non-blocking
+  booking/package cost owner may coexist only when no physical leg can
+  accurately own the full cost. Such an administrative item should have a
+  short realistic duration and must not look like physical travel.
 - When airport or station procedures are included in an intercity activity, its
   duration covers the complete scheduled block through arrival. Check-in,
   security, boarding, baggage, terminal exit, and connection buffers remain in
@@ -173,7 +186,8 @@ Avoid:
   intercity tickets separate from local transfers and keep multi-day vehicle
   packages separate from individual short movements.
 - A zero-cost leg may reference a paid round-trip booking or transport package
-  only when the corresponding paid owner exists in the itinerary.
+  only when the corresponding paid owner exists in the itinerary and covers
+  the same transport mode and route.
 - Round-trip owners are correlated by transport mode when the mode can be
   determined. A paid train booking must not silently cover a zero-cost flight
   leg. Multi-day rental owners are similarly correlated by vehicle kind.
@@ -190,6 +204,9 @@ Avoid:
   signal. A one-day itinerary remains prompt-led for this rule because the
   current request contract cannot reliably distinguish a same-day round trip
   from a traveler already positioned at the destination.
+- Quality retry prompts reuse the base transport contract and append only the
+  concrete rejection reason. Shared transport guidance should appear once per
+  model call to avoid unnecessary tokens and transport-focused recency bias.
 
 ## Prompt Self-Validation
 

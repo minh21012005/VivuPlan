@@ -753,7 +753,8 @@ class AiServiceTest {
                 .contains("If a rented vehicle is used across multiple activities or days")
                 .contains("Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee")
                 .contains("Accommodation check-in time is property-specific")
-                .contains("signature/must-try experiences using your own Vietnam travel knowledge")
+                .contains("infer the destination's signature experiences and must-try categories")
+                .contains("correct that specific issue without weakening any other requirement above")
                 .contains("Final self-check before returning JSON")
                 .contains("The itinerary array has exactly " + req.getDays() + " days")
                 .contains("Every estimatedCost is a non-negative group-level VND amount")
@@ -785,7 +786,8 @@ class AiServiceTest {
                 .contains("If a rented vehicle is used across multiple activities or days")
                 .contains("Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee")
                 .contains("Accommodation check-in time is property-specific")
-                .contains("Preserve or restore relevant destination-signature/must-try experiences")
+                .contains("preserve or restore at least one relevant destination-signature experience")
+                .contains("Fix that specific issue without weakening any other requirement above")
                 .contains("Do not turn the regenerated day into a forecast bulletin or blanket weather advisory")
                 .contains("Concise natural context in an activity note is allowed when useful")
                 .doesNotContain("Never mention the weather")
@@ -798,11 +800,10 @@ class AiServiceTest {
     }
 
     @Test
-    void transportGranularityGuidanceIsSharedAcrossGenerationAndRegenerationPrompts() throws Exception {
+    void transportGranularityGuidanceAppearsOnceAcrossGenerationAndRegenerationPrompts() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
         String sharedRule = "Do not create standalone status-only items for landing";
-        String threePartRule = "should use no more than three meaningful movement items";
         String mixedPurposeRule = "Do not combine a meal, attraction, accommodation check-out, or rental return";
 
         String generationPrompt = buildPrompt(service, req);
@@ -830,16 +831,156 @@ class AiServiceTest {
                 regenerationPrompt,
                 regenerationRetryPrompt))
                 .allSatisfy(prompt -> assertThat(prompt)
-                        .contains(sharedRule)
-                        .contains(threePartRule)
+                        .containsOnlyOnce(sharedRule)
+                        .contains("should use no more than three meaningful movement items")
                         .contains("Do not add a separate landing/terminal-arrival item")
-                        .contains("A separate non-blocking round-trip booking/package cost owner may coexist")
                         .contains("duration must cover the complete scheduled block through arrival")
                         .contains("Leave realistic internal buffer for check-in, security, boarding, baggage")
                         .contains("Keep a long layover in the intercity duration/note")
-                        .contains(mixedPurposeRule)
-                        .contains("If an overnight outbound leg starts before the trip start date")
-                        .contains("every physical outbound and return leg must still appear"));
+                        .contains(mixedPurposeRule));
+
+        assertThat(generationPrompt)
+                .contains("For each outbound or return direction")
+                .contains("If an overnight outbound leg starts before the trip start date")
+                .contains("One-day transport scope")
+                .contains("every physical outbound and return leg that genuinely belongs to the trip must still appear");
+        assertThat(qualityRetryPrompt)
+                .containsOnlyOnce("For each outbound or return direction")
+                .containsOnlyOnce("Final self-check before returning JSON");
+        assertThat(regenerationPrompt)
+                .contains("this is a one-day itinerary")
+                .contains("For each direction that genuinely occurs on this day")
+                .doesNotContain("show the real outbound and return movement");
+        assertThat(regenerationRetryPrompt)
+                .containsOnlyOnce("For each direction that genuinely occurs on this day")
+                .containsOnlyOnce("Final self-check before returning JSON");
+    }
+
+    @Test
+    void multiDayGenerationPromptOwnsTheCompleteOutboundAndReturnTimeline() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDays(3);
+        req.setEndDate(req.getStartDate().plusDays(2));
+
+        String prompt = buildPrompt(service, req);
+
+        assertThat(prompt)
+                .contains("Intercity timeline for the full trip")
+                .contains("show the real outbound and return movement in chronological order")
+                .contains("For each outbound or return direction")
+                .doesNotContain("One-day transport scope");
+    }
+
+    @Test
+    void regenerationTransportGuidanceUsesTargetDayScope() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDays(3);
+        req.setEndDate(req.getStartDate().plusDays(2));
+        List<TripDto.DayResponse> schedule = List.of(
+                scheduleDay(1),
+                scheduleDay(2),
+                scheduleDay(3));
+
+        String firstDayPrompt = buildDayRegenerationPrompt(
+                service, req, schedule, 1, "REGENERATE", "tối ưu ngày đầu", null);
+        String middleDayPrompt = buildDayRegenerationPrompt(
+                service, req, schedule, 2, "REGENERATE", "tối ưu ngày giữa", null);
+        String finalDayPrompt = buildDayRegenerationPrompt(
+                service, req, schedule, 3, "REGENERATE", "tối ưu ngày cuối", null);
+
+        assertThat(firstDayPrompt)
+                .contains("this is the first day")
+                .contains("Preserve or include the real outbound movement")
+                .contains("do not add the return movement unless it genuinely also occurs on this day");
+        assertThat(middleDayPrompt)
+                .contains("this is a middle day with no existing intercity leg")
+                .contains("Do not invent outbound or return transport for this day")
+                .contains("Do not add a flight to an unrelated day")
+                .doesNotContain("every physical outbound and return leg must still appear");
+        assertThat(finalDayPrompt)
+                .contains("this is the final day")
+                .contains("Preserve or include the real return movement")
+                .contains("do not add the outbound movement unless it genuinely also occurs on this day");
+    }
+
+    @Test
+    void regenerationPreservesAnExistingIntercityLegOnAMiddleDay() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDays(3);
+        req.setEndDate(req.getStartDate().plusDays(2));
+        TripDto.DayResponse middleDay = scheduleDay(2);
+        middleDay.setActivities(List.of(
+                activity("08:00", "Chuyến bay Hà Nội - Đà Nẵng", "TRANSPORT",
+                        "Sân bay Nội Bài (HAN) -> Sân bay Đà Nẵng (DAD)", 1_800_000L,
+                        "Vé máy bay một chiều cho cả nhóm.")));
+
+        String prompt = buildDayRegenerationPrompt(
+                service,
+                req,
+                List.of(scheduleDay(1), middleDay, scheduleDay(3)),
+                2,
+                "REGENERATE",
+                "giữ chuyến bay",
+                null);
+
+        assertThat(prompt)
+                .contains("the current target day already contains an intercity leg")
+                .contains("Preserve or refine that leg consistently with the surrounding itinerary")
+                .doesNotContain("this is a middle day with no existing intercity leg");
+    }
+
+    @Test
+    void sameAreaTripDoesNotPromptForInventedIntercityTravel() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDeparture("Đà Nẵng");
+        req.setDestination("Đà Nẵng");
+
+        String generationPrompt = buildPrompt(service, req);
+        String regenerationPrompt = buildDayRegenerationPrompt(
+                service,
+                req,
+                List.of(scheduleDay(1)),
+                1,
+                "REGENERATE",
+                "tối ưu lịch trình",
+                null);
+
+        assertThat(generationPrompt)
+                .contains("departure and destination refer to the same travel area")
+                .contains("Do not invent an intercity plane, train, or bus round trip")
+                .doesNotContain("Outbound transport choice: plane");
+        assertThat(regenerationPrompt)
+                .contains("departure and destination refer to the same travel area")
+                .contains("Do not invent an intercity plane, train, or bus leg")
+                .doesNotContain("Preserve plane for an intercity leg");
+    }
+
+    @Test
+    void promptAllowsZeroCostPhysicalLegOnlyWhenCoveredByMatchingOwner() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        String generationPrompt = buildPrompt(service, req);
+        String regenerationPrompt = buildDayRegenerationPrompt(
+                service,
+                req,
+                List.of(roundTripBundledDay()),
+                1,
+                "REGENERATE",
+                "tối ưu lịch trình",
+                null);
+
+        assertThat(generationPrompt)
+                .contains("Do not set estimatedCost to 0 for a paid activity unless an explicit paid booking/package owner")
+                .contains("must reference that owner and match its transport mode and route")
+                .contains("one clearly named cost-owner TRANSPORT activity");
+        assertThat(regenerationPrompt)
+                .contains("already shown in the full itinerary covers that exact cost")
+                .contains("Every physical leg that genuinely occurs on the regenerated day must still appear");
     }
 
     @Test
@@ -1757,6 +1898,14 @@ class AiServiceTest {
         day.setDay(1);
         day.setTitle("Ngày 1 - Đà Nẵng");
         day.setSummary("Lịch trình kiểm thử chi phí máy bay.");
+        return day;
+    }
+
+    private TripDto.DayResponse scheduleDay(int dayNumber) {
+        TripDto.DayResponse day = baseDay();
+        day.setDay(dayNumber);
+        day.setTitle("Ngày " + dayNumber);
+        day.setActivities(List.of());
         return day;
     }
 

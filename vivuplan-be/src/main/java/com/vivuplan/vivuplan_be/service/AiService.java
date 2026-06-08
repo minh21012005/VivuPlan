@@ -553,27 +553,36 @@ public class AiService {
     }
 
     private String transportOwnershipGuidance(String outboundTransport, String localTransport) {
+        return transportOwnershipGuidance(outboundTransport, localTransport, true);
+    }
+
+    private String transportOwnershipGuidance(
+            String outboundTransport,
+            String localTransport,
+            boolean includeOutboundGuidance) {
         String outbound = outboundTransport == null ? "" : outboundTransport.trim().toUpperCase(Locale.ROOT);
         String local = localTransport == null ? "" : localTransport.trim().toUpperCase(Locale.ROOT);
         List<String> guidance = new ArrayList<>();
-        if ("MIXED".equals(outbound) || outbound.isBlank()) {
-            guidance.add(
-                    "- Outbound transport choice: choose the simplest practical way to reach the destination based on departure, distance, trip length, budget, group type, weather, and safety. Prefer realistic Vietnamese options such as plane, train, bus, private car, or motorbike only when appropriate; include round-trip cost clearly.");
-        } else if ("PLANE".equals(outbound)) {
-            guidance.add(
-                    "- Outbound transport choice: plane. Include realistic round-trip flight cost for the group and meaningful airport transfers when needed; do not replace it with train, bus, or private car unless explaining a safety/budget constraint.");
-        } else if ("TRAIN".equals(outbound)) {
-            guidance.add(
-                    "- Outbound transport choice: train. Include realistic round-trip train cost for the group plus station transfers when needed; keep departure/arrival timing practical.");
-        } else if ("BUS".equals(outbound)) {
-            guidance.add(
-                    "- Outbound transport choice: bus/coach. Include realistic round-trip bus cost for the group plus terminal transfers when needed; keep travel time realistic.");
-        } else if ("PERSONAL_MOTORBIKE".equals(outbound)) {
-            guidance.add(
-                    "- Outbound transport ownership: the traveler reaches the destination with their own motorbike. Do not create intercity bus/train/flight tickets or motorbike rental for the outbound leg. Include realistic fuel, parking, ferry, toll, safety gear, and rest-stop costs when useful.");
-        } else if ("PERSONAL_CAR".equals(outbound)) {
-            guidance.add(
-                    "- Outbound transport ownership: the traveler reaches the destination with their own car. Do not create intercity bus/train/flight tickets or car rental for the outbound leg. Include realistic fuel, parking, toll, ferry, and rest-stop costs when useful.");
+        if (includeOutboundGuidance) {
+            if ("MIXED".equals(outbound) || outbound.isBlank()) {
+                guidance.add(
+                        "- Outbound transport choice: choose the simplest practical way to reach the destination based on departure, distance, trip length, budget, group type, weather, and safety. Prefer realistic Vietnamese options such as plane, train, bus, private car, or motorbike only when appropriate; include round-trip cost clearly.");
+            } else if ("PLANE".equals(outbound)) {
+                guidance.add(
+                        "- Outbound transport choice: plane. Include realistic round-trip flight cost for the group and meaningful airport transfers when needed; do not replace it with train, bus, or private car unless explaining a safety/budget constraint.");
+            } else if ("TRAIN".equals(outbound)) {
+                guidance.add(
+                        "- Outbound transport choice: train. Include realistic round-trip train cost for the group plus station transfers when needed; keep departure/arrival timing practical.");
+            } else if ("BUS".equals(outbound)) {
+                guidance.add(
+                        "- Outbound transport choice: bus/coach. Include realistic round-trip bus cost for the group plus terminal transfers when needed; keep travel time realistic.");
+            } else if ("PERSONAL_MOTORBIKE".equals(outbound)) {
+                guidance.add(
+                        "- Outbound transport ownership: the traveler reaches the destination with their own motorbike. Do not create intercity bus/train/flight tickets or motorbike rental for the outbound leg. Include realistic fuel, parking, ferry, toll, safety gear, and rest-stop costs when useful.");
+            } else if ("PERSONAL_CAR".equals(outbound)) {
+                guidance.add(
+                        "- Outbound transport ownership: the traveler reaches the destination with their own car. Do not create intercity bus/train/flight tickets or car rental for the outbound leg. Include realistic fuel, parking, toll, ferry, and rest-stop costs when useful.");
+            }
         }
         if ("PERSONAL_MOTORBIKE".equals(local)) {
             guidance.add(
@@ -608,26 +617,195 @@ public class AiService {
         return String.join("\n", guidance);
     }
 
-    private String transportTimelineGuidance(String departure, String destination) {
+    private String fullTripTransportOwnershipGuidance(TripDto.GenerateRequest req) {
+        if (!isSameTravelArea(req.getDeparture(), req.getDestination())) {
+            return transportOwnershipGuidance(req.getOutboundTransport(), req.getLocalTransport());
+        }
+        return "- Outbound transport scope: departure and destination are in the same travel area, so ignore any intercity mode selection and do not invent round-trip tickets."
+                + "\n"
+                + transportOwnershipGuidance(req.getOutboundTransport(), req.getLocalTransport(), false);
+    }
+
+    private String regeneratedDayTransportOwnershipGuidance(TripDto.GenerateRequest req) {
+        String outboundTransport = req.getOutboundTransport();
+        String localTransport = req.getLocalTransport();
+        String outbound = outboundTransport == null ? "" : outboundTransport.trim().toUpperCase(Locale.ROOT);
+        String local = localTransport == null ? "" : localTransport.trim().toUpperCase(Locale.ROOT);
+        List<String> guidance = new ArrayList<>();
+        if (isSameTravelArea(req.getDeparture(), req.getDestination())) {
+            guidance.add(
+                    "- Full-trip outbound transport context: departure and destination are in the same travel area. Ignore any intercity mode selection and do not invent round-trip tickets or intercity legs.");
+        } else if ("PLANE".equals(outbound)) {
+            guidance.add(
+                    "- Full-trip outbound transport context: plane. Preserve plane for an intercity leg that genuinely occurs on the regenerated day, including its physical timeline and cost ownership. Do not add a flight to an unrelated day.");
+        } else if ("TRAIN".equals(outbound)) {
+            guidance.add(
+                    "- Full-trip outbound transport context: train. Preserve train for an intercity leg that genuinely occurs on the regenerated day, including its physical timeline and cost ownership. Do not add a train leg to an unrelated day.");
+        } else if ("BUS".equals(outbound)) {
+            guidance.add(
+                    "- Full-trip outbound transport context: bus/coach. Preserve that mode for an intercity leg that genuinely occurs on the regenerated day, including its physical timeline and cost ownership. Do not add a bus leg to an unrelated day.");
+        } else if ("PERSONAL_MOTORBIKE".equals(outbound)) {
+            guidance.add(
+                    "- Full-trip outbound transport context: personal motorbike. If the regenerated day contains that intercity drive, keep realistic fuel, parking, ferry, toll, safety, and rest-stop costs; do not create public transport tickets or a motorbike rental.");
+        } else if ("PERSONAL_CAR".equals(outbound)) {
+            guidance.add(
+                    "- Full-trip outbound transport context: personal car. If the regenerated day contains that intercity drive, keep realistic fuel, parking, toll, ferry, and rest-stop costs; do not create public transport tickets or a car rental.");
+        } else {
+            guidance.add(
+                    "- Full-trip outbound transport context: choose or preserve the practical intercity mode only when an intercity leg genuinely occurs on the regenerated day. Do not add outbound or return transport solely because this is trip-level context.");
+        }
+
+        if ("PERSONAL_MOTORBIKE".equals(local)) {
+            guidance.add(
+                    "- Local transport ownership: the traveler uses their own motorbike. Do not add a motorbike rental fee. Include only real local fuel, parking, ferry, or toll costs when useful.");
+        } else if ("PERSONAL_CAR".equals(local)) {
+            guidance.add(
+                    "- Local transport ownership: the traveler uses their own car. Do not add a car rental fee. Include only real local fuel, parking, ferry, toll, or rest-stop costs when useful.");
+        } else if ("RENTAL_MOTORBIKE".equals(local)) {
+            guidance.add(
+                    "- Local transport ownership: rented motorbike. If its rental starts or is already covered on this day, keep one clear rental-fee TRANSPORT activity with the covered period; do not invent repeated rental charges.");
+        } else if ("RENTAL_CAR".equals(local)) {
+            guidance.add(
+                    "- Local transport ownership: rented self-drive car. If its rental starts or is already covered on this day, keep one clear rental-fee TRANSPORT activity with the covered period; do not invent repeated rental charges.");
+        } else if ("PRIVATE_CAR_DRIVER".equals(local)) {
+            guidance.add(
+                    "- Local transport ownership: private car with driver. Keep route/package pricing explicit only when that movement or package belongs to the regenerated day.");
+        } else if ("BICYCLE".equals(local)) {
+            guidance.add(
+                    "- Local transport choice: bicycle for safe short routes. Include rental cost only when a rental actually starts or is paid on the regenerated day; use taxi/Grab or walking where cycling is impractical.");
+        } else if ("TAXI_GRAB".equals(local)) {
+            guidance.add(
+                    "- Local transport choice: taxi/Grab. Keep meaningful paid routes explicit on the regenerated day; do not add a daily rental.");
+        } else if ("WALKING".equals(local)) {
+            guidance.add(
+                    "- Local transport choice: walking for close places. Do not create fake walking cards; add paid transport only when distance, weather, accessibility, or safety makes it necessary.");
+        } else if ("PERSONAL_MOTORBIKE".equals(outbound)) {
+            guidance.add(
+                    "- Local transport context: the traveler already has their personal motorbike. Keep using it locally when practical; add another mode only when route, weather, terrain, luggage, or safety justifies it.");
+        } else if ("PERSONAL_CAR".equals(outbound)) {
+            guidance.add(
+                    "- Local transport context: the traveler already has their personal car. Keep using it locally when practical; add another mode only when parking, road access, route, or safety justifies it.");
+        } else {
+            guidance.add(
+                    "- Local transport context: preserve or choose the fewest practical modes needed by the regenerated day. Do not treat MIXED as a request to use every mode.");
+        }
+        return String.join("\n", guidance);
+    }
+
+    private String fullTripTransportTimelineGuidance(TripDto.GenerateRequest req) {
+        String departure = req.getDeparture();
+        String destination = req.getDestination();
         String from = departure == null || departure.isBlank() ? "the departure area" : departure;
         String to = destination == null || destination.isBlank() ? "the destination" : destination;
+        String tripScope;
+        if (isSameTravelArea(departure, destination)) {
+            tripScope = "- Trip transport scope: departure and destination refer to the same travel area. Do not invent an intercity plane, train, or bus round trip; show only real local or regional movement that the itinerary actually needs.";
+        } else if (Math.max(1, req.getDays()) == 1) {
+            tripScope = "- One-day transport scope: include outbound and return physical movement only when the trip genuinely starts at the provided departure and returns within this day. Do not invent both directions when the traveler is already positioned at the destination; keep any movement that does occur explicit and chronological.";
+        } else {
+            tripScope = "- Intercity timeline for the full trip: show the real outbound and return movement in chronological order. For plane, train, or bus travel, include meaningful origin-area to terminal transfer, the intercity leg, and arrival-terminal to lodging/destination transfer when they take meaningful time or cost.";
+        }
         return String.format(
                 """
-                - Intercity timeline: show the real outbound and return movement in chronological order. For plane, train, or bus travel, include meaningful origin-area to terminal transfer, the intercity leg, and arrival-terminal to lodging/destination transfer when they take meaningful time or cost.
+                %s
                 - TRANSPORT activity granularity: create a standalone item only when it represents physical movement from A to B with meaningful time or cost, owns a booking/package cost, or is the overnight-arrival exception below. Its name must describe the route or the full cost scope, not only a travel status.
                 - Do not create standalone status-only items for landing, arriving at a terminal without a route, check-in/security/boarding, disembarking, baggage claim, waiting, a layover, accommodation check-out, or parking/vehicle pickup/return without distinct movement or cost. Fold these milestones into the related leg's name/note or leave realistic buffer in the timeline.
-                - A normal plane/train/bus physical timeline should use no more than three meaningful movement items: origin area -> terminal when material, the intercity leg including its arrival, and arrival terminal -> lodging/destination when material. Do not add a separate landing/terminal-arrival item after the intercity leg. A separate non-blocking round-trip booking/package cost owner may coexist only when the physical intercity leg cannot accurately own that full cost.
+                - For each outbound or return direction, a normal plane/train/bus physical timeline should use no more than three meaningful movement items: origin area -> terminal when material, the intercity leg including its arrival, and arrival terminal -> lodging/destination when material. Do not add a separate landing/terminal-arrival item after the intercity leg.
                 - If an intercity activity includes airport/station procedures, its duration must cover the complete scheduled block through arrival, not only time in the air or onboard. Leave realistic internal buffer for check-in, security, boarding, baggage, terminal exit, transfers, and connections without turning each buffer into an activity. Keep a long layover in the intercity duration/note unless the traveler actually leaves the terminal for a separate meaningful experience.
                 - Keep one primary purpose per activity. Do not combine a meal, attraction, accommodation check-out, or rental return with an unrelated movement just to reduce item count. Keep FOOD as FOOD; when vehicle return has no distinct route, time, or cost, mention it in the final relevant transport/package note instead of merging it into the meal.
-                - Do not invent a home address. Start from a concrete, reasonable area in %s or the relevant terminal.
-                - A round-trip booking may own the full ticket cost once, but every physical outbound and return leg must still appear on its actual day. A zero-cost leg must say which paid round-trip booking or transport package already covers it.
+                - Do not invent a home address, district, or neighborhood. Unless a more specific origin is provided, use the city center or the relevant terminal in %s.
+                - Prefer assigning a round-trip ticket cost to the outbound physical leg when its name and note accurately describe the full round-trip scope. Use a separate non-blocking booking/package cost-owner item only when no physical leg can accurately own that scope; give such an administrative item a short realistic duration and do not present it as physical travel.
+                - A round-trip booking may own the full ticket cost once, but every physical outbound and return leg that genuinely belongs to the trip must still appear on its actual day. A zero-cost physical leg is valid only when its note identifies the earlier paid round-trip booking or transport package that covers the same mode and route.
                 - If an overnight outbound leg starts before the trip start date and arrives on day 1, do not create day 0. Put the arrival activity on day 1, name the mode and full route from %s toward %s, use the arrival time, keep the real total travel duration, and state that departure was the previous evening.
                 - Keep ticket/package ownership separate from local movement. Do not combine an intercity ticket with airport/station/terminal transfers in one estimatedCost, and do not attach a multi-day vehicle package cost to a single short transfer.
                 - The paid activity name must describe the full scope of its estimatedCost, for example "Vé tàu khứ hồi Hà Nội ↔ Đồng Hới" or "Thuê xe riêng ngày 1-2 tại Phong Nha".
                 """,
+                tripScope,
                 from,
                 from,
                 to).stripTrailing();
+    }
+
+    private String regeneratedDayTransportTimelineGuidance(
+            TripDto.GenerateRequest req,
+            List<TripDto.DayResponse> currentSchedule,
+            int dayNumber) {
+        String departure = req.getDeparture();
+        String destination = req.getDestination();
+        String from = departure == null || departure.isBlank() ? "the departure area" : departure;
+        int totalDays = Math.max(
+                Math.max(1, req.getDays()),
+                currentSchedule == null
+                        ? 0
+                        : currentSchedule.stream().mapToInt(TripDto.DayResponse::getDay).max().orElse(0));
+        boolean targetHasIntercity = targetDayHasIntercityTransport(currentSchedule, dayNumber, req);
+
+        String dayScope;
+        if (isSameTravelArea(departure, destination)) {
+            dayScope = "- Regenerated-day transport scope: departure and destination refer to the same travel area. Do not invent an intercity plane, train, or bus leg; keep only local or regional movement that genuinely belongs to this day.";
+        } else if (totalDays == 1) {
+            dayScope = "- Regenerated-day transport scope: this is a one-day itinerary. Use the current day and request to decide which intercity movements genuinely occur; do not add both outbound and return legs merely because they exist in full-trip context.";
+        } else if (dayNumber == 1) {
+            dayScope = "- Regenerated-day transport scope: this is the first day. Preserve or include the real outbound movement when the trip starts by traveling from the provided departure, but do not add the return movement unless it genuinely also occurs on this day.";
+        } else if (dayNumber == totalDays) {
+            dayScope = "- Regenerated-day transport scope: this is the final day. Preserve or include the real return movement when the trip ends by returning to the provided departure, but do not add the outbound movement unless it genuinely also occurs on this day.";
+        } else if (targetHasIntercity) {
+            dayScope = "- Regenerated-day transport scope: the current target day already contains an intercity leg. Preserve or refine that leg consistently with the surrounding itinerary; do not move outbound or return legs from other days into this day.";
+        } else {
+            dayScope = "- Regenerated-day transport scope: this is a middle day with no existing intercity leg. Do not invent outbound or return transport for this day; other days are immutable context.";
+        }
+
+        String overnightRule = dayNumber == 1
+                ? String.format(
+                        "- If an overnight outbound leg starts before the trip start date and arrives on day 1, keep it on day 1 with its route from %s, arrival time, real total duration, and a note that departure was the previous evening.",
+                        from)
+                : "- Do not create a day-1 overnight-arrival activity on this regenerated day.";
+
+        return String.format(
+                """
+                %s
+                - TRANSPORT activity granularity: create a standalone item only when it represents physical movement from A to B with meaningful time or cost, or owns a booking/package cost. Its name must describe the route or full cost scope, not only a travel status.
+                - Do not create standalone status-only items for landing, arriving at a terminal without a route, check-in/security/boarding, disembarking, baggage claim, waiting, a layover, accommodation check-out, or parking/vehicle pickup/return without distinct movement or cost. Fold these milestones into the related leg's name/note or leave realistic buffer in the timeline.
+                - For each direction that genuinely occurs on this day, a normal plane/train/bus physical timeline should use no more than three meaningful movement items: origin area -> terminal when material, the intercity leg including its arrival, and arrival terminal -> lodging/destination when material. Do not add a separate landing/terminal-arrival item.
+                - If an intercity activity includes airport/station procedures, its duration must cover the complete scheduled block through arrival, not only time in the air or onboard. Leave realistic internal buffer for check-in, security, boarding, baggage, terminal exit, transfers, and connections without turning each buffer into an activity. Keep a long layover in the intercity duration/note unless the traveler actually leaves the terminal for a separate meaningful experience.
+                - Keep one primary purpose per activity. Do not combine a meal, attraction, accommodation check-out, or rental return with unrelated movement merely to reduce item count.
+                - Prefer assigning a round-trip ticket cost to a physical leg when it accurately describes the full scope. A separate non-blocking booking/package cost-owner item is allowed only when necessary; give it a short realistic administrative duration and do not present it as physical travel.
+                - A zero-cost physical leg is valid only when its note identifies an existing paid round-trip booking or transport package in the full itinerary that covers the same mode and route. Do not create or duplicate a full-trip booking cost on an unrelated regenerated day.
+                - Keep intercity ticket/package ownership separate from local terminal transfers, and keep multi-day vehicle package costs separate from individual short movements.
+                %s
+                """,
+                dayScope,
+                overnightRule).stripTrailing();
+    }
+
+    private boolean targetDayHasIntercityTransport(
+            List<TripDto.DayResponse> currentSchedule,
+            int dayNumber,
+            TripDto.GenerateRequest req) {
+        if (currentSchedule == null) {
+            return false;
+        }
+        return currentSchedule.stream()
+                .filter(day -> day != null && day.getDay() == dayNumber)
+                .flatMap(day -> day.getActivities() == null ? java.util.stream.Stream.empty()
+                        : day.getActivities().stream())
+                .filter(Objects::nonNull)
+                .filter(activity -> "transport".equals(normalize(activity.getType())))
+                .map(activity -> normalize(String.join(" ",
+                        nullToBlank(activity.getName()),
+                        nullToBlank(activity.getLocation()),
+                        nullToBlank(activity.getNote()))))
+                .anyMatch(text -> isOutboundOrReturnTransport(text, req));
+    }
+
+    private boolean isSameTravelArea(String departure, String destination) {
+        String normalizedDeparture = normalize(departure);
+        String normalizedDestination = normalize(destination);
+        return !normalizedDeparture.isBlank()
+                && !normalizedDestination.isBlank()
+                && (normalizedDeparture.equals(normalizedDestination)
+                        || normalizedDeparture.contains(normalizedDestination)
+                        || normalizedDestination.contains(normalizedDeparture));
     }
 
     private boolean isSevereWeatherForecastLine(String line) {
@@ -689,28 +867,11 @@ public class AiService {
 
                         IMPORTANT RETRY INSTRUCTION:
                         The previous itinerary was rejected because: %s
-                        Regenerate the itinerary from scratch.
+                        Regenerate the itinerary from scratch and correct that specific issue without weakening any other requirement above.
                         Return exactly ONE JSON object with keys "itinerary" and "requestFulfillment". Never return a bare JSON array, and never use "days" or "schedule" instead of "itinerary".
-                        Use named, real public places and clearly findable areas in or near %s. For restaurants, cafes, accommodations, and rental shops, use specific real business names only when confident they exist.
-                        Avoid ANY generic placeholder wording (e.g., "địa điểm nổi bật", "đặc sản địa phương", "nhà hàng hải sản", "ăn tối ở khách sạn", "chợ địa phương", "địa điểm thuê xe"). If you are not confident about a business name, use a concrete neighborhood, market, food street, public venue, lodging area, or pickup area plus the intended experience instead of inventing a business.
-                        Preserve the destination's signature/must-try experiences using your own Vietnam travel knowledge, including specific real places not present in verified candidates. If severe weather, time, budget, safety, or route constraints make a normally expected signature experience unsuitable, explain the omission/substitution in requestFulfillment. Keep these explanations concise and grouped by core experience category; mention 1-3 specific representative missed places/activities when helpful, but do not list every famous place that cannot fit.
-                        Anti-Bias Rule: Do not default to the same well-known corporate chains. Suggest diverse, logically located, and budget-appropriate places.
-                        %s
-                        %s
-                        Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
-                        For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg. Never combine a paid round-trip activity with another paid outbound/return leg, and never describe a round-trip price as only "chiều đi" or only "chiều về".
-                        If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, name a specific rental shop, hotel/homestay pickup point, or concrete pickup area when practical, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
-                        Before returning, sum every activity.estimatedCost and keep the total at or below the total group budget unless the required outbound/return transport alone makes that impossible.
-                        If the budget is tight, keep required transport realistic but reduce optional paid attractions, tours, premium meals, shopping, and accommodation comfort instead of exceeding budget.
-                        If realistic required costs make the budget impossible, return realistic costs anyway. Never understate costs to fit the budget.
-                        Do not repeat the same day structure across days.
+                        Re-run the final self-check silently after making the correction.
                         """,
-                reason,
-                req.getDestination(),
-                ItineraryQualityPolicy.vietnamPacingGuidance(),
-                ItineraryQualityPolicy.localTransportGuidance(req.getDestination())
-                        + "\n"
-                        + transportTimelineGuidance(req.getDeparture(), req.getDestination()));
+                reason);
     }
 
     private String buildDayRegenerationPrompt(
@@ -731,22 +892,12 @@ public class AiService {
 
                                 IMPORTANT RETRY INSTRUCTION:
                                 The previous proposal was rejected because: %s
-                                Fix that issue. Return a safer, more specific version of day %d only.
+                                Fix that specific issue without weakening any other requirement above. Return day %d only.
                                 Return exactly ONE JSON object with keys "day" and "requestFulfillment". Never return a bare JSON array.
-                                Preserve or restore relevant destination-signature/must-try experiences using your own Vietnam travel knowledge, including specific real places not present in verified candidates. If a normally expected signature experience is omitted or substituted for a real constraint, explain it in requestFulfillment. Keep these explanations concise and grouped by core experience category; mention 1-3 specific representative missed places/activities when helpful, but do not list every famous place that cannot fit.
-                                %s
-                                %s
-                                Create a separate TRANSPORT activity with route/mode/cost instead of putting transport cost in an ATTRACTION, FOOD, CAFE, or ACTIVITY note.
-                                Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
-                                For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg. Never combine a paid round-trip activity with another paid outbound/return leg, and never describe a round-trip price as only "chiều đi" or only "chiều về".
-                                If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, name a specific rental shop, hotel/homestay pickup point, or concrete pickup area when practical, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
+                                Re-run the final self-check silently after making the correction.
                                 """,
                         retryReason,
-                        dayNumber,
-                        ItineraryQualityPolicy.vietnamPacingGuidance(),
-                        ItineraryQualityPolicy.localTransportGuidance(req.getDestination())
-                                + "\n"
-                                + transportTimelineGuidance(req.getDeparture(), req.getDestination()));
+                        dayNumber);
 
         return String.format(
                 """
@@ -842,8 +993,8 @@ public class AiService {
                         3. %s
                         4. Keep times in HH:mm 24h format and avoid meaningful overlaps.
                         5. estimatedCost MUST be total VND for the whole group of %d travelers.
-                        5a. Never set estimatedCost to 0 for paid intercity transport such as flights, trains, buses, private cars, airport transfers, vehicle rental pickup, lodging, tickets, tours, shows, or paid experiences.
-                        5b. For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg. Never combine a paid round-trip activity with another paid outbound/return leg, and never describe a round-trip price as only "chiều đi" or only "chiều về".
+                        5a. Do not set estimatedCost to 0 for a paid activity unless an explicit paid booking/package owner already shown in the full itinerary covers that exact cost. A covered zero-cost physical transport leg must reference that owner and match its transport mode and route.
+                        5b. For intercity round-trip transport, use either one clearly named cost-owner TRANSPORT activity that owns the full round-trip price, or separately paid outbound and return legs. Every physical leg that genuinely occurs on the regenerated day must still appear. Never double-count a covered leg, combine intercity tickets with local terminal transfers in one estimatedCost, or describe a round-trip owner as only one direction.
                         5c. If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, name a specific rental shop, hotel/homestay pickup point, or concrete pickup area when practical, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
                         5d. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
                         5e. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
@@ -917,9 +1068,9 @@ public class AiService {
                 req.getGroupType(),
                 req.getOutboundTransport(),
                 req.getLocalTransport(),
-                transportOwnershipGuidance(req.getOutboundTransport(), req.getLocalTransport())
+                regeneratedDayTransportOwnershipGuidance(req)
                         + "\n"
-                        + transportTimelineGuidance(req.getDeparture(), req.getDestination()),
+                        + regeneratedDayTransportTimelineGuidance(req, currentSchedule, dayNumber),
                 req.getMustVisit() != null && !req.getMustVisit().isBlank() ? req.getMustVisit() : "none",
                 req.getAvoid() != null && !req.getAvoid().isBlank() ? req.getAvoid() : "none",
                 req.getNotes() != null && !req.getNotes().isBlank() ? req.getNotes() : "none",
@@ -1086,8 +1237,8 @@ public class AiService {
                         6. For fixed-price items such as cable car, theme park, show, museum, paid tour, boat tour, or entrance ticket, use a realistic recent public-market estimate and mention the unit basis in note, for example "khoảng 850k/người".
                         7. For accommodation, include a clear ACCOMMODATION activity with total lodging cost for all nights and all travelers. Use a specific real hotel, homestay, hostel, or resort name when confident it exists; otherwise use a concrete lodging area/type that fits the route and budget. Do not use the accommodation type for a taxi/check-in only.
                         7a. Accommodation check-in time is property-specific. If arrival may be before the room is available, prefer luggage drop or state that early check-in should be confirmed; do not invent a universal check-in cutoff or claim confirmation without evidence.
-                        8. Never set estimatedCost to 0 for paid intercity transport such as flights, trains, buses, private cars, airport transfers, vehicle rental pickup, lodging, tickets, tours, shows, or paid experiences.
-                        8a. For intercity round-trip transport, either use one clearly named booking/cost-owner TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg. Every physical outbound and return leg must still appear on its actual day. Never combine a paid round-trip activity with another paid outbound/return leg, never combine intercity tickets and local terminal transfers in one estimatedCost, and never describe a round-trip price as only "chiều đi" or only "chiều về".
+                        8. Do not set estimatedCost to 0 for a paid activity unless an explicit paid booking/package owner in the itinerary covers that exact cost. A covered zero-cost physical transport leg must reference that owner and match its transport mode and route.
+                        8a. For intercity round-trip transport, use either one clearly named cost-owner TRANSPORT activity that owns the full round-trip price, or separately paid outbound and return legs. Every physical outbound and return leg must still appear on its actual day. Never double-count a covered leg, combine intercity tickets with local terminal transfers in one estimatedCost, or describe a round-trip owner as only one direction.
                         8b. If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, name a specific rental shop, hotel/homestay pickup point, or concrete pickup area when practical, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
                         9. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
                         10. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
@@ -1193,9 +1344,9 @@ public class AiService {
                 req.getGroupType(),
                 req.getOutboundTransport(),
                 req.getLocalTransport(),
-                transportOwnershipGuidance(req.getOutboundTransport(), req.getLocalTransport())
+                fullTripTransportOwnershipGuidance(req)
                         + "\n"
-                        + transportTimelineGuidance(req.getDeparture(), req.getDestination()),
+                        + fullTripTransportTimelineGuidance(req),
                 req.getMustVisit() != null && !req.getMustVisit().isBlank() ? req.getMustVisit() : "none",
                 req.getAvoid() != null && !req.getAvoid().isBlank() ? req.getAvoid() : "none",
                 req.getNotes() != null && !req.getNotes().isBlank() ? req.getNotes() : "none",
@@ -2263,9 +2414,7 @@ public class AiService {
         // Intra-city trips (departure equals or contains destination, or vice versa)
         // have no concept of "intercity transport", so skip all intercity pricing
         // checks.
-        if (departure.equals(destination)
-                || departure.contains(destination)
-                || destination.contains(departure)) {
+        if (isSameTravelArea(req.getDeparture(), req.getDestination())) {
             return false;
         }
 
