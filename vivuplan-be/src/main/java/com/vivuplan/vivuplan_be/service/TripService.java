@@ -237,7 +237,11 @@ public class TripService {
     @Transactional
     public TripDto.TripResponse updateTripStatus(Long tripId, Long userId, String status) {
         Trip trip = getOwnedTrip(tripId, userId);
-        trip.setStatus(Trip.TripStatus.valueOf(status));
+        try {
+            trip.setStatus(Trip.TripStatus.valueOf(status));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái lịch trình không hợp lệ: " + status);
+        }
         return TripDto.TripResponse.from(tripRepository.save(trip));
     }
 
@@ -1285,7 +1289,7 @@ public class TripService {
         int minutes = 0;
 
         java.util.regex.Matcher hourMatcher = java.util.regex.Pattern
-                .compile("(\\d+(?:[\\.,]\\d+)?)\\s*(?:gio|tieng|hour|hours|h)\\b")
+                .compile("(\\d+(?:[\\.,]\\d+)?)\\s*(?:gio|tieng|hour|hours|h)(?![a-zA-Z])")
                 .matcher(normalized);
         if (hourMatcher.find()) {
             minutes += Math.round(Float.parseFloat(hourMatcher.group(1).replace(",", ".")) * 60);
@@ -1405,7 +1409,8 @@ public class TripService {
                     continue;
                 for (TripDto.ActivityResponse act : day.getActivities()) {
                     long cost = Math.max(0, act.getEstimatedCost());
-                    switch (act.getType()) {
+                    String actType = act.getType() != null ? act.getType().toUpperCase(java.util.Locale.ROOT) : "";
+                    switch (actType) {
                         case "FOOD", "CAFE" -> food += cost;
                         case "TRANSPORT" -> transport += cost;
                         case "ACCOMMODATION" -> accommodation += cost;

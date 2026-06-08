@@ -1287,6 +1287,51 @@ class TripServiceTest {
         assertThat((int) method.invoke(service, "1 gio 30 phut")).isEqualTo(90);
         assertThat((int) method.invoke(service, "45 phut")).isEqualTo(45);
         assertThat((int) method.invoke(service, "3h")).isEqualTo(180);
+        assertThat((int) method.invoke(service, "1h30p")).isEqualTo(90);
+        assertThat((int) method.invoke(service, "1h30phut")).isEqualTo(90);
+    }
+
+    @Test
+    void calculateBudgetCategorizesLowercaseTypeFromAiScheduleCorrectly() throws Exception {
+        // Budget breakdown received when types are lowercase (as from AI output before save).
+        // Before fix: switch used uppercase literals so "food" fell into "activities" bucket.
+        Trip trip = sampleTrip();
+        Method method = TripService.class.getDeclaredMethod(
+                "calculateBudget", Trip.class, List.class);
+        method.setAccessible(true);
+
+        TripDto.ActivityResponse food = activity("08:00", "An sang", "food",
+                "Nha hang", "1 gio", 100_000L, null);
+        TripDto.ActivityResponse transport = activity("10:00", "Taxi noi thanh", "transport",
+                "Trung tam", "30 phut", 80_000L, null);
+        TripDto.ActivityResponse accommodation = activity("14:00", "Nhan phong", "accommodation",
+                "Khach san", "30 phut", 500_000L, null);
+        TripDto.ActivityResponse cafe = activity("16:00", "Ca phe", "cafe",
+                "Quan ca phe", "1 gio", 60_000L, null);
+        TripDto.DayResponse day = new TripDto.DayResponse();
+        day.setDay(1);
+        day.setActivities(List.of(food, transport, accommodation, cafe));
+
+        @SuppressWarnings("unchecked")
+        TripDto.BudgetBreakdown budget = (TripDto.BudgetBreakdown) method.invoke(service(), trip, List.of(day));
+
+        assertThat(budget.getFood()).isEqualTo(160_000L);       // food + cafe
+        assertThat(budget.getTransport()).isEqualTo(80_000L);
+        assertThat(budget.getAccommodation()).isEqualTo(500_000L);
+        assertThat(budget.getActivities()).isZero();
+        assertThat(budget.getTotal()).isEqualTo(740_000L);
+    }
+
+    @Test
+    void updateTripStatusRejectsUnknownStatusWithClearMessage() {
+        Trip trip = sampleTrip();
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+
+        assertThatThrownBy(() -> service.updateTripStatus(1L, 7L, "NONEXISTENT_STATUS"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Trạng thái lịch trình không hợp lệ")
+                .hasMessageContaining("NONEXISTENT_STATUS");
     }
 
     @Test

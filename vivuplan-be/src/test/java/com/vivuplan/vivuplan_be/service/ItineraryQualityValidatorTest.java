@@ -543,6 +543,64 @@ class ItineraryQualityValidatorTest {
         assertThat(result.reason()).contains("activity times overlap");
     }
 
+    @Test
+    void parseDurationMinutesHandlesCompoundHourMinuteFormat() {
+        // "1h30p" should parse as 90 minutes, not just 30.
+        // Before fix: h\b failed when h followed by digit, so only 30 min counted.
+        TripDto.GenerateRequest req = request(1);
+        TripDto.DayResponse day = day(1,
+                activity("08:00", "Tour hang dong", "ACTIVITY", "Phong Nha", "1h30p", 200_000, null),
+                activity("08:30", "An sang", "FOOD", "Phong Nha", "1 gio", 50_000, null),
+                activity("12:00", "An trua", "FOOD", "Phong Nha", "1 gio", 200_000, null));
+
+        // 08:00 + 1h30p = 09:30. An sang at 08:30 overlaps by 60 min (> 30 min threshold fails).
+        ItineraryQualityValidator.Result result = validator.validateFull(List.of(day), req);
+
+        assertThat(result.passed()).isFalse();
+        assertThat(result.reason()).contains("activity times overlap");
+    }
+
+    @Test
+    void tuDoInPlaceNameIsNotFiller() {
+        // "Bai bien Tu Do" contains "tu do" but should NOT be treated as filler.
+        // Before fix: bare "tu do" substring matched any name containing "tu do".
+        TripDto.GenerateRequest req = request(1);
+        TripDto.DayResponse day = day(1,
+                activity("08:00", "Bai bien Tu Do", "ATTRACTION", "Dong Hoi", "2 gio", 0, null),
+                activity("11:00", "An trua hai san", "FOOD", "Dong Hoi", "1 gio", 200_000, null),
+                activity("13:00", "Bao tang Quang Binh", "ATTRACTION", "Dong Hoi", "1 gio", 50_000, null));
+
+        ItineraryQualityValidator.Result result = validator.validateFull(List.of(day), req);
+
+        assertThat(result.passed()).as(result.reason()).isTrue();
+    }
+
+    @Test
+    void prePurchasedPhraseIsRecognizedAsAlreadyIncluded() {
+        // "da mua san" should count as already-included evidence, preventing false
+        // zero-cost reference failure. Before fix, this phrase was not in the list.
+        TripDto.GenerateRequest req = request(3);
+        req.setOutboundTransport("TRAIN");
+
+        TripDto.DayResponse day1 = day(1,
+                activity("06:00", "Tau Ha Noi den Dong Hoi", "TRANSPORT",
+                        "Ga Ha Noi -> Ga Dong Hoi", "10 gio", 6_400_000,
+                        "Ve tau khu hoi cho ca nhom, bao gom chieu ve."),
+                activity("17:00", "An toi", "FOOD", "Dong Hoi", "1 gio", 200_000, null));
+        TripDto.DayResponse day3 = day(3,
+                activity("08:00", "Bao tang Quang Binh", "ATTRACTION", "Dong Hoi", "1 gio", 50_000, null),
+                activity("10:00", "An sang", "FOOD", "Dong Hoi", "1 gio", 200_000, null),
+                activity("16:00", "Len tau Dong Hoi ve Ha Noi", "TRANSPORT",
+                        "Ga Dong Hoi -> Ga Ha Noi", "10 gio", 0,
+                        "Ve da mua san trong goi khu hoi ngay 1."));
+
+        ItineraryQualityValidator.Result result = validator.validateFull(
+                List.of(day1, normalDay(2), day3),
+                req);
+
+        assertThat(result.passed()).as(result.reason()).isTrue();
+    }
+
     private TripDto.GenerateRequest request(int days) {
         TripDto.GenerateRequest req = new TripDto.GenerateRequest();
         req.setDeparture(days == 1 ? "Phong Nha - Ke Bang" : "Ha Noi");

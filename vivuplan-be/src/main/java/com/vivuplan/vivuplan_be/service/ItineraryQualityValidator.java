@@ -307,7 +307,7 @@ final class ItineraryQualityValidator {
                 "nghi ngoi",
                 "thu gian tai phong",
                 "chuan bi",
-                "tu do",
+                "thoi gian tu do",
                 "ve homestay nghi",
                 "ve khach san nghi",
                 "ve noi luu tru nghi");
@@ -513,7 +513,11 @@ final class ItineraryQualityValidator {
                 "da tinh",
                 "da duoc tinh",
                 "bao gom trong",
-                "chi phi da tra");
+                "chi phi da tra",
+                "da mua san",
+                "da dat truoc",
+                "da mua truoc",
+                "da thanh toan");
     }
 
     private boolean isSamePlace(String departure, String destination) {
@@ -557,12 +561,12 @@ final class ItineraryQualityValidator {
         }
         int minutes = 0;
         java.util.regex.Matcher hourMatcher = Pattern
-                .compile("(\\d+(?:[\\.,]\\d+)?)\\s*(?:gio|tieng|hour|hours|h)\\b")
+                .compile("(\\d+(?:[\\.,]\\d+)?)\\s*(?:gio|tieng|hour|hours|h)(?![a-zA-Z])")
                 .matcher(normalized);
         if (hourMatcher.find()) {
             minutes += Math.round(Float.parseFloat(hourMatcher.group(1).replace(",", ".")) * 60);
         }
-        java.util.regex.Matcher minuteMatcher = Pattern.compile("(\\d+)\\s*(?:phut|minute|minutes|min)\\b")
+        java.util.regex.Matcher minuteMatcher = Pattern.compile("(\\d+)\\s*(?:phut|minute|minutes|min|p)\\b")
                 .matcher(normalized);
         if (minuteMatcher.find()) {
             minutes += Integer.parseInt(minuteMatcher.group(1));
