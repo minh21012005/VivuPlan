@@ -7,8 +7,10 @@ import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -43,6 +45,10 @@ final class ItineraryQualityValidator {
         if (days.size() != Math.max(1, req.getDays())) {
             return Result.structural("expected " + req.getDays() + " days but got " + days.size());
         }
+        Result numberingResult = validateDayNumbers(days, Math.max(1, req.getDays()));
+        if (!numberingResult.passed()) {
+            return numberingResult;
+        }
 
         for (TripDto.DayResponse day : days) {
             Result dayResult = validateDay(day, req);
@@ -62,6 +68,9 @@ final class ItineraryQualityValidator {
         if (regeneratedDay == null) {
             return Result.structural("response has no day");
         }
+        if (regeneratedDay.getDay() < 1 || regeneratedDay.getDay() > Math.max(1, req.getDays())) {
+            return Result.structural("regenerated day number is outside the trip range: " + regeneratedDay.getDay());
+        }
         List<TripDto.DayResponse> merged = replaceDay(currentSchedule, regeneratedDay);
         Result dayResult = validateDay(regeneratedDay, req);
         if (!dayResult.passed()) {
@@ -72,7 +81,7 @@ final class ItineraryQualityValidator {
     }
 
     private Result validateDay(TripDto.DayResponse day, TripDto.GenerateRequest req) {
-        if (day == null || day.getActivities() == null) {
+        if (day == null || day.getActivities() == null || day.getActivities().isEmpty()) {
             return Result.structural("day has no activities");
         }
 
@@ -95,6 +104,9 @@ final class ItineraryQualityValidator {
                 return Result.structural("activity has invalid time: " + activity.getTime());
             }
             String type = normalize(activity.getType());
+            if (!isValidType(type)) {
+                return Result.structural("activity has invalid type: " + activity.getType());
+            }
 
             Result costOwnership = validateCostOwnership(activity, type);
             if (!costOwnership.passed()) {
@@ -113,11 +125,41 @@ final class ItineraryQualityValidator {
         }
 
         ranges.sort(Comparator.comparing(ScheduledRange::start));
-        for (int i = 1; i < ranges.size(); i++) {
-            ScheduledRange previous = ranges.get(i - 1);
-            ScheduledRange current = ranges.get(i);
-            if (current.overlapMinutes(previous) > 30) {
-                return Result.quality("activity times overlap: " + previous.name() + " / " + current.name());
+        List<ScheduledRange> activeRanges = new ArrayList<>();
+        for (ScheduledRange current : ranges) {
+            activeRanges.removeIf(previous -> previous.endMinutes() <= current.startMinutes());
+            for (ScheduledRange previous : activeRanges) {
+                if (current.overlapMinutes(previous) > 30) {
+                    return Result.quality("activity times overlap: " + previous.name() + " / " + current.name());
+                }
+            }
+            activeRanges.add(current);
+        }
+        return Result.pass();
+    }
+
+    private Result validateDayNumbers(List<TripDto.DayResponse> days, int expectedDays) {
+        Set<Integer> seen = new HashSet<>();
+        for (int index = 0; index < days.size(); index++) {
+            TripDto.DayResponse day = days.get(index);
+            if (day == null) {
+                return Result.structural("response contains a null day");
+            }
+            int dayNumber = day.getDay();
+            if (dayNumber < 1 || dayNumber > expectedDays) {
+                return Result.structural("day number is outside the trip range: " + dayNumber);
+            }
+            if (!seen.add(dayNumber)) {
+                return Result.structural("duplicate day number: " + dayNumber);
+            }
+            if (dayNumber != index + 1) {
+                return Result.structural(
+                        "days are out of order: expected day " + (index + 1) + " but got " + dayNumber);
+            }
+        }
+        for (int dayNumber = 1; dayNumber <= expectedDays; dayNumber++) {
+            if (!seen.contains(dayNumber)) {
+                return Result.structural("missing day number: " + dayNumber);
             }
         }
         return Result.pass();
@@ -174,8 +216,8 @@ final class ItineraryQualityValidator {
     }
 
     private Result validateZeroCostReferences(List<TripDto.DayResponse> days) {
-        boolean hasPaidRoundTripOwner = false;
-        boolean hasPaidVehiclePackageOwner = false;
+        Set<String> paidRoundTripModes = new HashSet<>();
+        Set<String> paidVehiclePackageKinds = new HashSet<>();
         for (TripDto.DayResponse day : days) {
             if (day == null || day.getActivities() == null) {
                 continue;
@@ -185,9 +227,12 @@ final class ItineraryQualityValidator {
                     continue;
                 }
                 String text = combinedText(activity);
-                hasPaidRoundTripOwner |= mentionsRoundTrip(text) && mentionsIntercityFare(text);
-                hasPaidVehiclePackageOwner |= mentionsVehiclePackage(text)
-                        && nameReflectsVehiclePackage(normalize(activity.getName()));
+                if (mentionsRoundTrip(text) && mentionsIntercityFare(text)) {
+                    paidRoundTripModes.add(ItineraryQualityPolicy.intercityModeKey(text, null));
+                }
+                if (mentionsVehiclePackage(text) && nameReflectsVehiclePackage(normalize(activity.getName()))) {
+                    paidVehiclePackageKinds.add(ItineraryQualityPolicy.vehicleKind(text));
+                }
             }
         }
 
@@ -200,11 +245,23 @@ final class ItineraryQualityValidator {
                     continue;
                 }
                 String text = combinedText(activity);
-                if (mentionsAlreadyIncluded(text) && mentionsIntercityTicket(text) && !hasPaidRoundTripOwner) {
+                String intercityMode = ItineraryQualityPolicy.intercityModeKey(text, null);
+                if (mentionsAlreadyIncluded(text)
+                        && mentionsIntercityTicket(text)
+                        && !ItineraryQualityPolicy.ownerCovers(
+                                paidRoundTripModes,
+                                intercityMode,
+                                "intercity")) {
                     return Result.quality("zero-cost intercity leg references a missing paid round-trip owner: "
                             + activity.getName());
                 }
-                if (mentionsAlreadyIncluded(text) && mentionsVehicleReference(text) && !hasPaidVehiclePackageOwner) {
+                String vehicleKind = ItineraryQualityPolicy.vehicleKind(text);
+                if (mentionsAlreadyIncluded(text)
+                        && mentionsVehicleReference(text)
+                        && !ItineraryQualityPolicy.ownerCovers(
+                                paidVehiclePackageKinds,
+                                vehicleKind,
+                                "vehicle")) {
                     return Result.quality("zero-cost local transfer references a missing paid vehicle package: "
                             + activity.getName());
                 }
@@ -245,12 +302,8 @@ final class ItineraryQualityValidator {
         if (activity == null) {
             return false;
         }
-        String type = normalize(activity.getType());
         String name = normalize(activity.getName());
-        if (!"activity".equals(type)) {
-            return true;
-        }
-        return !containsAny(name,
+        boolean fillerName = containsAny(name,
                 "nghi ngoi",
                 "thu gian tai phong",
                 "chuan bi",
@@ -258,6 +311,7 @@ final class ItineraryQualityValidator {
                 "ve homestay nghi",
                 "ve khach san nghi",
                 "ve noi luu tru nghi");
+        return !fillerName;
     }
 
     private boolean isIntercityTransport(String text, String outboundMode) {
@@ -526,6 +580,17 @@ final class ItineraryQualityValidator {
         } catch (DateTimeParseException ignored) {
             return false;
         }
+    }
+
+    private boolean isValidType(String type) {
+        return Set.of(
+                "food",
+                "cafe",
+                "attraction",
+                "transport",
+                "accommodation",
+                "activity",
+                "nightlife").contains(type);
     }
 
     private String combinedText(TripDto.ActivityResponse activity) {

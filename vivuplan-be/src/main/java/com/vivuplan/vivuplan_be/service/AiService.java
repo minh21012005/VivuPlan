@@ -1663,10 +1663,10 @@ public class AiService {
     private QualityCheck assessItineraryQuality(List<TripDto.DayResponse> days, TripDto.GenerateRequest req) {
         int expectedDays = req.getDays();
         if (days == null) {
-            return QualityCheck.fail("response has no days");
+            return QualityCheck.structural("response has no days");
         }
         if (days.size() != expectedDays) {
-            return QualityCheck.fail("expected " + expectedDays + " days but got " + days.size());
+            return QualityCheck.structural("expected " + expectedDays + " days but got " + days.size());
         }
 
         Set<String> dayFingerprints = new HashSet<>();
@@ -1683,7 +1683,7 @@ public class AiService {
                     deterministic.reason(),
                     deterministic.failureType() == ItineraryQualityValidator.FailureType.STRUCTURAL);
         }
-        boolean bundledIntercityTransportCost = hasBundledIntercityTransportCost(days, req);
+        Set<String> paidBundledIntercityModes = paidBundledIntercityModes(days, req);
         Set<String> paidVehicleRentalKinds = paidVehicleRentalKinds(days);
         String avoid = normalize(String.join("\n",
                 req.getAvoid() != null ? req.getAvoid() : "",
@@ -1698,23 +1698,8 @@ public class AiService {
                 String note = normalize(act.getNote());
                 fingerprint.append(name).append("|");
 
-                if (name.isBlank()) {
-                    return QualityCheck.fail("activity has no name");
-                }
-                if (!isValidType(type)) {
-                    return QualityCheck.fail("activity has invalid type: " + type + " for " + act.getName());
-                }
-                if (!isValidTime(act.getTime())) {
-                    return QualityCheck.fail("activity has invalid time: " + act.getTime());
-                }
-
-                // estimatedCost is clamped to >= 0 at parse time; this check is a safety net
-                // only
-                if (act.getEstimatedCost() < 0) {
-                    act.setEstimatedCost(0);
-                }
                 String costIssue = requiredActivityCostIssue(act, req, type, name, location, note,
-                        bundledIntercityTransportCost, paidVehicleRentalKinds);
+                        paidBundledIntercityModes, paidVehicleRentalKinds);
                 if (costIssue != null) {
                     if (isRecoverableCostQualityIssue(costIssue)) {
                         recoverableCostIssue = recoverableCostIssue == null ? costIssue : recoverableCostIssue;
@@ -1754,7 +1739,7 @@ public class AiService {
             List<TripDto.DayResponse> currentSchedule,
             TripDto.GenerateRequest req) {
         if (day == null) {
-            return QualityCheck.fail("response has no day");
+            return QualityCheck.structural("response has no day");
         }
 
         int genericActivities = 0;
@@ -1773,7 +1758,7 @@ public class AiService {
                     deterministic.reason(),
                     deterministic.failureType() == ItineraryQualityValidator.FailureType.STRUCTURAL);
         }
-        boolean bundledIntercityTransportCost = hasBundledIntercityTransportCost(scheduleForCostContext, req);
+        Set<String> paidBundledIntercityModes = paidBundledIntercityModes(scheduleForCostContext, req);
         Set<String> paidVehicleRentalKinds = paidVehicleRentalKinds(scheduleForCostContext);
         String avoid = normalize(String.join("\n",
                 req.getAvoid() != null ? req.getAvoid() : "",
@@ -1786,22 +1771,8 @@ public class AiService {
             String note = normalize(act.getNote());
             String combined = String.join(" ", name, location, note);
 
-            if (name.isBlank()) {
-                return QualityCheck.fail("activity has no name");
-            }
-            if (!isValidType(type)) {
-                return QualityCheck.fail("activity has invalid type: " + type + " for " + act.getName());
-            }
-            if (!isValidTime(act.getTime())) {
-                return QualityCheck.fail("activity has invalid time: " + act.getTime());
-            }
-            // estimatedCost is clamped to >= 0 at parse time; this check is a safety net
-            // only
-            if (act.getEstimatedCost() < 0) {
-                act.setEstimatedCost(0);
-            }
             String costIssue = requiredActivityCostIssue(act, req, type, name, location, note,
-                    bundledIntercityTransportCost, paidVehicleRentalKinds);
+                    paidBundledIntercityModes, paidVehicleRentalKinds);
             if (costIssue != null) {
                 if (isRecoverableCostQualityIssue(costIssue)) {
                     recoverableCostIssue = recoverableCostIssue == null ? costIssue : recoverableCostIssue;
@@ -1867,19 +1838,28 @@ public class AiService {
             String normalizedName,
             String normalizedLocation,
             String normalizedNote,
-            boolean bundledIntercityTransportCost,
+            Set<String> paidBundledIntercityModes,
             Set<String> paidVehicleRentalKinds) {
         String combined = String.join(" ", normalizedName, normalizedLocation, normalizedNote);
         long cost = Math.max(0, act.getEstimatedCost());
 
         if ("transport".equals(normalizedType) && isOutboundOrReturnTransport(combined, req)) {
-            if (cost == 0 && !bundledIntercityTransportCost) {
+            String mode = ItineraryQualityPolicy.intercityModeKey(combined, req.getOutboundTransport());
+            if (cost == 0
+                    && !ItineraryQualityPolicy.ownerCovers(
+                            paidBundledIntercityModes,
+                            mode,
+                            "intercity")) {
                 return "intercity transport cost is missing: " + act.getName();
             }
         }
         if (isVehicleRentalStartActivity(normalizedType, combined)) {
-            String rentalKind = vehicleRentalKind(combined);
-            if (cost == 0 && !paidVehicleRentalKinds.contains(rentalKind)) {
+            String rentalKind = ItineraryQualityPolicy.vehicleKind(combined);
+            if (cost == 0
+                    && !ItineraryQualityPolicy.ownerCovers(
+                            paidVehicleRentalKinds,
+                            rentalKind,
+                            "vehicle")) {
                 return "vehicle rental cost is missing: " + act.getName();
             }
         }
@@ -1903,26 +1883,15 @@ public class AiService {
      * user can still benefit from it.
      */
     private boolean isStructuralFailure(QualityCheck quality) {
-        if (quality == null) {
-            return false;
-        }
-        if (quality.structural()) {
-            return true;
-        }
-        String reason = quality.reason();
-        if (reason == null || reason.isBlank()) {
-            return false;
-        }
-        return reason.contains("no day") // "response has no days" / "response has no day"
-                || reason.startsWith("expected ") // "expected X days but got Y"
-                || reason.contains("has no name") // "activity has no name"
-                || reason.contains("invalid type") // "activity has invalid type"
-                || reason.contains("invalid time"); // "activity has invalid time"
+        return quality != null && quality.structural();
     }
 
-    private boolean hasBundledIntercityTransportCost(List<TripDto.DayResponse> days, TripDto.GenerateRequest req) {
+    private Set<String> paidBundledIntercityModes(
+            List<TripDto.DayResponse> days,
+            TripDto.GenerateRequest req) {
+        Set<String> paidModes = new HashSet<>();
         if (days == null || days.isEmpty()) {
-            return false;
+            return paidModes;
         }
         for (TripDto.DayResponse day : days) {
             if (day == null || day.getActivities() == null) {
@@ -1938,11 +1907,11 @@ public class AiService {
                         activity.getLocation() != null ? activity.getLocation() : "",
                         activity.getNote() != null ? activity.getNote() : ""));
                 if (isOutboundOrReturnTransport(combined, req) && mentionsBundledIntercityTransportCost(combined)) {
-                    return true;
+                    paidModes.add(ItineraryQualityPolicy.intercityModeKey(combined, req.getOutboundTransport()));
                 }
             }
         }
-        return false;
+        return paidModes;
     }
 
     private String intercityTransportPricingIssue(List<TripDto.DayResponse> days, TripDto.GenerateRequest req) {
@@ -1950,8 +1919,8 @@ public class AiService {
             return null;
         }
 
-        TripDto.ActivityResponse paidBundledActivity = null;
-        TripDto.ActivityResponse paidSeparateLegActivity = null;
+        Map<String, TripDto.ActivityResponse> paidBundledActivities = new HashMap<>();
+        Map<String, TripDto.ActivityResponse> paidSeparateLegActivities = new HashMap<>();
         for (TripDto.DayResponse day : days) {
             if (day == null || day.getActivities() == null) {
                 continue;
@@ -1970,19 +1939,22 @@ public class AiService {
                 }
 
                 boolean bundled = mentionsBundledIntercityTransportCost(combined);
+                String mode = ItineraryQualityPolicy.intercityModeKey(combined, req.getOutboundTransport());
                 if (bundled && mentionsSingleLegIntercityCost(combined)) {
                     return "intercity transport cost is inconsistent: " + activity.getName();
                 }
                 if (bundled) {
-                    paidBundledActivity = activity;
+                    paidBundledActivities.putIfAbsent(mode, activity);
                 } else {
-                    paidSeparateLegActivity = activity;
+                    paidSeparateLegActivities.putIfAbsent(mode, activity);
                 }
             }
         }
 
-        if (paidBundledActivity != null && paidSeparateLegActivity != null) {
-            return "intercity transport cost is double-counted: " + paidSeparateLegActivity.getName();
+        for (Map.Entry<String, TripDto.ActivityResponse> entry : paidSeparateLegActivities.entrySet()) {
+            if (ItineraryQualityPolicy.ownerCovers(paidBundledActivities.keySet(), entry.getKey(), "intercity")) {
+                return "intercity transport cost is double-counted: " + entry.getValue().getName();
+            }
         }
         return null;
     }
@@ -2007,7 +1979,7 @@ public class AiService {
                         activity.getLocation() != null ? activity.getLocation() : "",
                         activity.getNote() != null ? activity.getNote() : ""));
                 if (isVehicleRentalStartActivity(type, combined)) {
-                    paidKinds.add(vehicleRentalKind(combined));
+                    paidKinds.add(ItineraryQualityPolicy.vehicleKind(combined));
                 }
             }
         }
@@ -2110,19 +2082,6 @@ public class AiService {
                 "thue xe tu lai",
                 "o to thue",
                 "oto thue");
-    }
-
-    private String vehicleRentalKind(String normalizedText) {
-        if (containsAny(normalizedText, "xe may", "motorbike", "scooter")) {
-            return "motorbike";
-        }
-        if (containsAny(normalizedText, "xe dap", "bike", "bicycle")) {
-            return "bicycle";
-        }
-        if (containsAny(normalizedText, "o to", "oto", "car")) {
-            return "car";
-        }
-        return "vehicle";
     }
 
     private boolean isVehicleRentalReturnActivity(String normalizedText) {
@@ -2292,14 +2251,6 @@ public class AiService {
 
     private boolean isValidTime(String time) {
         return time != null && time.matches("([01]\\d|2[0-3]):[0-5]\\d");
-    }
-
-    private boolean isValidType(String type) {
-        if (type == null)
-            return false;
-        return type.equals("food") || type.equals("cafe") || type.equals("attraction")
-                || type.equals("transport") || type.equals("accommodation") || type.equals("activity")
-                || type.equals("nightlife");
     }
 
     private boolean isOutboundOrReturnTransport(String normalizedText, TripDto.GenerateRequest req) {
@@ -2721,6 +2672,10 @@ public class AiService {
 
         static QualityCheck fail(String reason, boolean structural) {
             return new QualityCheck(false, reason, structural);
+        }
+
+        static QualityCheck structural(String reason) {
+            return new QualityCheck(false, reason, true);
         }
     }
 }

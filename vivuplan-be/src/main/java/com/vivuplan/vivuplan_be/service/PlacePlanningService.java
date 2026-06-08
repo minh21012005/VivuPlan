@@ -377,7 +377,7 @@ public class PlacePlanningService {
             if (!activityName.isBlank() && placeNames.contains(activityName)) {
                 score += 100;
             } else if (!activityName.isBlank() && placeNames.stream()
-                    .anyMatch(placeName -> activityName.contains(placeName) || placeName.contains(activityName))) {
+                    .anyMatch(placeName -> isStrongPartialNameMatch(activityName, placeName))) {
                 score += 75;
             }
             if (!activityLocation.isBlank() && placeNames.stream()
@@ -397,6 +397,18 @@ public class PlacePlanningService {
             }
         }
         return bestScore >= 75 ? Optional.of(best) : Optional.empty();
+    }
+
+    private boolean isStrongPartialNameMatch(String activityName, String placeName) {
+        if (activityName == null || placeName == null || activityName.isBlank() || placeName.isBlank()) {
+            return false;
+        }
+        if (!activityName.contains(placeName) && !placeName.contains(activityName)) {
+            return false;
+        }
+        int shorterLength = Math.min(activityName.length(), placeName.length());
+        int longerLength = Math.max(activityName.length(), placeName.length());
+        return shorterLength >= 5 && (double) shorterLength / longerLength >= 0.60;
     }
 
     private boolean isCompatiblePlaceType(String activityType, Place.PlaceType placeType) {

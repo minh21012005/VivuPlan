@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -75,6 +76,83 @@ class TripServiceTest {
                 activityCoordinateResolverService,
                 billingService,
                 userPromptGuardService);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void requestFulfillmentKeepsAllDistinctAiMessagesWithoutLegacyCaps() throws Exception {
+        TripDto.RequestFulfillment fulfillment = new TripDto.RequestFulfillment();
+        fulfillment.setOverallStatus("PARTIAL");
+        List<TripDto.RequestFulfillmentItem> items = new ArrayList<>();
+        for (int index = 1; index <= 3; index++) {
+            TripDto.RequestFulfillmentItem item = new TripDto.RequestFulfillmentItem();
+            item.setRequestedText("Yeu cau da ap dung " + index);
+            item.setStatus("FULFILLED");
+            item.setReasonCode("APPLIED");
+            item.setUserMessage("Da ap dung lua chon " + index + " vao lich trinh.");
+            items.add(item);
+        }
+        for (int index = 1; index <= 5; index++) {
+            TripDto.RequestFulfillmentItem item = new TripDto.RequestFulfillmentItem();
+            item.setRequestedText("Yeu cau can luu y " + index);
+            item.setStatus("PARTIAL");
+            item.setReasonCode("CONSTRAINT");
+            item.setUserMessage("Can luu y rang buoc " + index + " cua chuyen di.");
+            items.add(item);
+        }
+        fulfillment.setItems(items);
+
+        Method method = TripService.class.getDeclaredMethod(
+                "buildRequestFulfillmentWarnings",
+                TripDto.RequestFulfillment.class,
+                String.class,
+                String.class);
+        method.setAccessible(true);
+        List<String> warnings = (List<String>) method.invoke(
+                service(),
+                fulfillment,
+                "Yeu cau tong hop",
+                "lich trinh vua tao");
+
+        assertThat(warnings).hasSize(8);
+        assertThat(warnings).anyMatch(message -> message.contains("lua chon 3"));
+        assertThat(warnings).anyMatch(message -> message.contains("rang buoc 5"));
+    }
+
+    @Test
+    void costNormalizationDoesNotUseTrainRoundTripOwnerForZeroCostFlight() throws Exception {
+        Trip trip = sampleTrip();
+        trip.setDeparture("Ha Noi");
+        trip.setDestination("Da Nang");
+        trip.setOutboundTransport(Trip.TransportMode.MIXED);
+        TripDto.ActivityResponse trainOwner = activity(
+                "06:00",
+                "Ve tau khu hoi Ha Noi - Da Nang",
+                "TRANSPORT",
+                "Ga Ha Noi <-> Ga Da Nang",
+                "16 gio",
+                2_000_000,
+                "Chi phi ve tau khu hoi cho ca nhom, bao gom chieu ve.");
+        TripDto.ActivityResponse flight = activity(
+                "18:00",
+                "Chuyen bay Da Nang ve Ha Noi",
+                "TRANSPORT",
+                "San bay Da Nang -> San bay Noi Bai",
+                "2 gio",
+                0,
+                "Ve may bay chieu ve khoang 1.800.000 VND.");
+        TripDto.DayResponse day = new TripDto.DayResponse();
+        day.setDay(1);
+        day.setActivities(List.of(trainOwner, flight));
+
+        Method method = TripService.class.getDeclaredMethod(
+                "normalizeActivityCosts",
+                List.class,
+                Trip.class);
+        method.setAccessible(true);
+        method.invoke(service(), List.of(day), trip);
+
+        assertThat(flight.getEstimatedCost()).isEqualTo(1_800_000L);
     }
 
     @Test

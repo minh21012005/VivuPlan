@@ -109,6 +109,10 @@ Avoid:
 - Backend quality checks should retry only for material, sufficiently
   deterministic problems. Unknown business policies or unparseable descriptive
   text must not be converted into assumed failures.
+- A full itinerary with an empty activity list, a null day, duplicate or
+  out-of-range day numbers, a blank activity name, an unsupported activity
+  type, or an invalid time is structurally unusable. These failures must not be
+  returned as best-effort after the final retry.
 - Accommodation check-in time is property-specific. An early check-in entry
   does not trigger retry by itself; prompts should prefer luggage drop or a
   confirmation note when availability is uncertain.
@@ -117,6 +121,9 @@ Avoid:
   when the itinerary remains usable.
 - Timeline overlap is checked only when both start time and duration can be
   interpreted. An unknown duration is not silently treated as 60 minutes.
+- Overlap validation considers every still-active earlier range, not only
+  adjacent entries after sorting. This prevents a long activity from hiding an
+  overlap with a later activity when a short activity sits between them.
 - Equal start times are not independently rejected. A non-blocking
   booking/package may share a timestamp with a physical activity; only
   determinable blocking overlap triggers a quality issue.
@@ -167,6 +174,9 @@ Avoid:
   packages separate from individual short movements.
 - A zero-cost leg may reference a paid round-trip booking or transport package
   only when the corresponding paid owner exists in the itinerary.
+- Round-trip owners are correlated by transport mode when the mode can be
+  determined. A paid train booking must not silently cover a zero-cost flight
+  leg. Multi-day rental owners are similarly correlated by vehicle kind.
 - Gateway cities may differ from the destination name, such as Đồng Hới for
   Phong Nha - Kẻ Bàng. Validation should use transport mode and route cues
   rather than requiring exact destination-name matching.
@@ -176,6 +186,10 @@ Avoid:
 - Multi-day rental ownership includes normal self-drive wording such as
   `thuê ô tô tự lái`, `xe máy thuê`, or `thuê xe 3 ngày`, not only
   chauffeur, shuttle, and transfer packages.
+- Multi-day itineraries enforce outbound and return evidence as a quality
+  signal. A one-day itinerary remains prompt-led for this rule because the
+  current request contract cannot reliably distinguish a same-day round trip
+  from a traveler already positioned at the destination.
 
 ## Prompt Self-Validation
 
@@ -213,6 +227,11 @@ normalization, retries, and tests remain the real enforcement layer.
 ## Coordinate Rules
 
 - Verified place coordinates are preferred.
+- Canonical verified-place metadata may overwrite AI location text only after a
+  confident match. Exact names and sufficiently strong partial names are
+  accepted; short or low-overlap partial names must not receive a verified
+  place ID or canonical address merely because one candidate shares a generic
+  token.
 - AI-provided coordinates must be validated.
 - Geocoding can be used through the resolver and cache.
 - Transport activities can be skipped for coordinate resolution where the code
@@ -278,8 +297,11 @@ Request fulfillment notes should explain meaningful tradeoffs:
 - Requests that could not be fully satisfied.
 - Safety, weather, budget, or feasibility adjustments.
 
-Persisted warnings should remain curated and useful. Avoid storing noisy,
-duplicative, or irrelevant AI commentary.
+Persist every distinct `requestFulfillment.items[].userMessage` after applying
+the existing positive/caution presentation prefix. Do not cap fulfilled or
+caution messages and do not discard a message merely because the backend
+classifies it as generic. Exact duplicates may still be deduplicated. Fallback
+text is allowed only when the AI omitted a required message.
 
 ## Testing Guidance
 

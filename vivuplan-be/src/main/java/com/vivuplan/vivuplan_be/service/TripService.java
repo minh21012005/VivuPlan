@@ -50,8 +50,6 @@ public class TripService {
     private static final int MISSING_TRANSPORT_WARNING_MIN_ACTIVITIES = 4;
     private static final int MISSING_TRANSPORT_WARNING_MIN_DISTINCT_LOCATIONS = 3;
     private static final double MISSING_TRANSPORT_WARNING_DISTANCE_KM = 2.0;
-    private static final int MAX_OPTIMIZATION_MESSAGES = 2;
-    private static final int MAX_CAUTION_MESSAGES = 4;
     private static final String LEGACY_COST_REVIEW_NOTE =
             "Chi phí cần kiểm tra: hoạt động này có thể phát sinh phí, nhưng AI chưa đưa ra mức ước tính đáng tin cậy.";
 
@@ -1065,9 +1063,7 @@ public class TripService {
                     message = buildFulfilledRequestMessage(item);
                 }
                 if (message != null
-                        && !message.isBlank()
-                        && !isGenericFulfilledPlanningMessage(item, message)
-                        && optimizationMessages.size() < MAX_OPTIMIZATION_MESSAGES) {
+                        && !message.isBlank()) {
                     optimizationMessages.add(toRequestOptimization(message));
                 }
                 continue;
@@ -1085,9 +1081,7 @@ public class TripService {
                         requestedText,
                         contextLabel);
             }
-            if (cautionMessages.size() < MAX_CAUTION_MESSAGES) {
-                cautionMessages.add(toRequestWarning(message));
-            }
+            cautionMessages.add(toRequestWarning(message));
         }
 
         if (cautionMessages.isEmpty() && isUnfulfilledOverallStatus(requestFulfillment.getOverallStatus())) {
@@ -1138,70 +1132,6 @@ public class TripService {
             return "";
         }
         return "Lịch trình đã được cân chỉnh theo \"" + item.getRequestedText().trim() + "\".";
-    }
-
-    private boolean isGenericFulfilledPlanningMessage(TripDto.RequestFulfillmentItem item, String message) {
-        String requestedText = item != null ? item.getRequestedText() : "";
-        String combined = normalizeText(String.join(" ",
-                requestedText != null ? requestedText : "",
-                message != null ? message : ""));
-        if (combined.isBlank()) {
-            return true;
-        }
-
-        boolean hasUserPreferenceSignal = containsAny(combined,
-                "chup anh",
-                "song ao",
-                "check in",
-                "check-in",
-                "canh dep",
-                "view",
-                "dac san",
-                "am thuc",
-                "mon an",
-                "hai san",
-                "ca phe",
-                "cafe",
-                "local",
-                "ban dia",
-                "van hoa",
-                "thien nhien",
-                "nghi duong",
-                "chua lanh",
-                "nhe nhang",
-                "it dong",
-                "tre em",
-                "nguoi lon tuoi",
-                "han che",
-                "tranh",
-                "khong thich",
-                "khong muon",
-                "muon ghe");
-        if (hasUserPreferenceSignal) {
-            return false;
-        }
-
-        return containsAny(combined,
-                "so nguoi",
-                "2 nguoi",
-                "3 nguoi",
-                "4 nguoi",
-                "5 nguoi",
-                "traveler",
-                "travelers",
-                "ngan sach",
-                "chi phi",
-                "tong chi phi",
-                "budget",
-                "vnd",
-                "phu hop cho",
-                "nam trong",
-                "thiet ke phu hop",
-                "ngay di",
-                "ngay ve",
-                "thoi gian chuyen di",
-                "phuong tien",
-                "di chuyen");
     }
 
     private String unverifiedRequestWarning(String contextLabel) {
@@ -1496,13 +1426,13 @@ public class TripService {
     private void normalizeActivityCosts(List<TripDto.DayResponse> schedule, Trip trip) {
         if (schedule == null || schedule.isEmpty())
             return;
-        boolean bundledIntercityTransportCost = hasBundledIntercityTransportCost(schedule, trip);
+        Set<String> paidBundledIntercityModes = paidBundledIntercityModes(schedule, trip);
         for (TripDto.DayResponse day : schedule) {
             if (day.getActivities() == null)
                 continue;
             for (TripDto.ActivityResponse activity : day.getActivities()) {
                 long originalCost = Math.max(0, activity.getEstimatedCost());
-                long normalizedCost = normalizeActivityCost(activity, trip, bundledIntercityTransportCost);
+                long normalizedCost = normalizeActivityCost(activity, trip, paidBundledIntercityModes);
                 activity.setEstimatedCost(normalizedCost);
                 if (normalizedCost > originalCost) {
                     activity.setNote(normalizeIncludedCostNote(activity.getNote()));
@@ -1511,9 +1441,15 @@ public class TripService {
         }
     }
 
-    private long normalizeActivityCost(TripDto.ActivityResponse activity, Trip trip, boolean bundledIntercityTransportCost) {
+    private long normalizeActivityCost(
+            TripDto.ActivityResponse activity,
+            Trip trip,
+            Set<String> paidBundledIntercityModes) {
         long current = Math.max(0, activity.getEstimatedCost());
-        boolean zeroCostBundledIntercity = isZeroCostBundledIntercityActivity(activity, trip, bundledIntercityTransportCost);
+        boolean zeroCostBundledIntercity = isZeroCostBundledIntercityActivity(
+                activity,
+                trip,
+                paidBundledIntercityModes);
         if (!zeroCostBundledIntercity) {
             Long perPersonCost = extractPerPersonCost(activity.getNote());
             if (perPersonCost != null) {
@@ -1521,7 +1457,7 @@ public class TripService {
                 current = reconcileRequiredCost(current, expected, 0.10);
             }
 
-            Long requiredCost = inferRequiredActivityCost(activity, trip, bundledIntercityTransportCost);
+            Long requiredCost = inferRequiredActivityCost(activity, trip, paidBundledIntercityModes);
             if (requiredCost != null) {
                 current = reconcileRequiredCost(current, roundToNearest(requiredCost, 10_000), 0.25);
             }
@@ -1533,8 +1469,10 @@ public class TripService {
     private boolean isZeroCostBundledIntercityActivity(
             TripDto.ActivityResponse activity,
             Trip trip,
-            boolean bundledIntercityTransportCost) {
-        if (!bundledIntercityTransportCost || Math.max(0, activity.getEstimatedCost()) != 0) {
+            Set<String> paidBundledIntercityModes) {
+        if (paidBundledIntercityModes == null
+                || paidBundledIntercityModes.isEmpty()
+                || Math.max(0, activity.getEstimatedCost()) != 0) {
             return false;
         }
         String type = normalizeText(activity.getType());
@@ -1542,7 +1480,13 @@ public class TripService {
                 nullToBlank(activity.getName()),
                 nullToBlank(activity.getLocation()),
                 nullToBlank(activity.getNote())));
-        return isTripIntercityTransportActivity(type, combined, trip);
+        if (!isTripIntercityTransportActivity(type, combined, trip)) {
+            return false;
+        }
+        String mode = ItineraryQualityPolicy.intercityModeKey(
+                combined,
+                trip.getOutboundTransport() != null ? trip.getOutboundTransport().name() : null);
+        return ItineraryQualityPolicy.ownerCovers(paidBundledIntercityModes, mode, "intercity");
     }
 
     private long reconcileRequiredCost(long current, long expected, double allowedUnderrun) {
@@ -1555,7 +1499,10 @@ public class TripService {
         return current < Math.round(expected * (1 - allowedUnderrun)) ? expected : current;
     }
 
-    private Long inferRequiredActivityCost(TripDto.ActivityResponse activity, Trip trip, boolean bundledIntercityTransportCost) {
+    private Long inferRequiredActivityCost(
+            TripDto.ActivityResponse activity,
+            Trip trip,
+            Set<String> paidBundledIntercityModes) {
         long current = Math.max(0, activity.getEstimatedCost());
         String type = normalizeText(activity.getType());
         String combined = normalizeText(String.join(" ",
@@ -1565,7 +1512,14 @@ public class TripService {
 
         Long mentionedCost = extractLargestMentionedCost(activity.getNote());
         if (isTripIntercityTransportActivity(type, combined, trip) && mentionedCost != null) {
-            if (current == 0 && bundledIntercityTransportCost) {
+            String mode = ItineraryQualityPolicy.intercityModeKey(
+                    combined,
+                    trip.getOutboundTransport() != null ? trip.getOutboundTransport().name() : null);
+            if (current == 0
+                    && ItineraryQualityPolicy.ownerCovers(
+                            paidBundledIntercityModes,
+                            mode,
+                            "intercity")) {
                 return null;
             }
             return mentionedCost;
@@ -1579,9 +1533,10 @@ public class TripService {
         return null;
     }
 
-    private boolean hasBundledIntercityTransportCost(List<TripDto.DayResponse> schedule, Trip trip) {
+    private Set<String> paidBundledIntercityModes(List<TripDto.DayResponse> schedule, Trip trip) {
+        Set<String> paidModes = new HashSet<>();
         if (schedule == null || schedule.isEmpty()) {
-            return false;
+            return paidModes;
         }
         for (TripDto.DayResponse day : schedule) {
             if (day == null || day.getActivities() == null) {
@@ -1598,11 +1553,13 @@ public class TripService {
                         nullToBlank(activity.getNote())));
                 if (isTripIntercityTransportActivity(type, combined, trip)
                         && mentionsBundledIntercityTransportCost(combined)) {
-                    return true;
+                    paidModes.add(ItineraryQualityPolicy.intercityModeKey(
+                            combined,
+                            trip.getOutboundTransport() != null ? trip.getOutboundTransport().name() : null));
                 }
             }
         }
-        return false;
+        return paidModes;
     }
 
     private boolean isTripIntercityTransportActivity(String normalizedType, String normalizedText, Trip trip) {
@@ -1611,10 +1568,13 @@ public class TripService {
         }
         String departure = normalizeText(trip.getDeparture());
         String destination = normalizeText(trip.getDestination());
-        return !departure.isBlank()
+        return (!departure.isBlank()
                 && !destination.isBlank()
                 && normalizedText.contains(departure)
-                && normalizedText.contains(destination);
+                && normalizedText.contains(destination))
+                || ItineraryQualityPolicy.isIntercityTransport(
+                        normalizedText,
+                        trip.getOutboundTransport() != null ? trip.getOutboundTransport().name() : null);
     }
 
     private boolean isVehicleRentalStartActivity(String normalizedType, String normalizedText) {

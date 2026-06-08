@@ -4,6 +4,7 @@ import com.vivuplan.vivuplan_be.dto.TripDto;
 
 import java.text.Normalizer;
 import java.util.Locale;
+import java.util.Set;
 
 final class ItineraryQualityPolicy {
 
@@ -118,6 +119,65 @@ final class ItineraryQualityPolicy {
                 "lai xe lien tinh",
                 "o to ca nhan",
                 "xe may ca nhan");
+    }
+
+    static String intercityModeKey(String text, String outboundMode) {
+        String normalizedText = normalize(text);
+        if (containsAny(normalizedText, "chuyen bay", "ve may bay", "bay den", "bay ve")
+                || mentionsAtLeastTwoAirportAliases(normalizedText)) {
+            return "plane";
+        }
+        if (containsAny(normalizedText, "tau hoa", "ve tau", "len tau", "tau ve", "den ga bang tau")) {
+            return "train";
+        }
+        if (containsAny(normalizedText, "xe khach", "limousine", "ve xe khach", "ben xe")) {
+            return "bus";
+        }
+        if (containsAny(normalizedText, "xe may ca nhan", "chay xe may")) {
+            return "personal_motorbike";
+        }
+        if (containsAny(normalizedText, "lai xe", "o to ca nhan", "oto ca nhan", "xe ca nhan")) {
+            return "personal_car";
+        }
+
+        String normalizedMode = normalize(outboundMode).replace(' ', '_');
+        return switch (normalizedMode) {
+            case "plane", "train", "bus", "personal_car", "personal_motorbike" -> normalizedMode;
+            default -> "intercity";
+        };
+    }
+
+    static String vehicleKind(String text) {
+        String normalizedText = normalize(text);
+        if (containsAny(normalizedText, "xe may", "motorbike", "scooter")) {
+            return "motorbike";
+        }
+        if (containsAny(normalizedText, "xe dap", "bike", "bicycle")) {
+            return "bicycle";
+        }
+        if (containsAny(normalizedText, "o to", "oto", "car")) {
+            return "car";
+        }
+        if (containsAny(normalizedText,
+                "xe rieng",
+                "xe co tai xe",
+                "shuttle",
+                "xe trung chuyen",
+                "dua don",
+                "transfer")) {
+            return "chauffeured_vehicle";
+        }
+        return "vehicle";
+    }
+
+    static boolean ownerCovers(Set<String> ownerKinds, String requiredKind, String genericKind) {
+        if (ownerKinds == null || ownerKinds.isEmpty()) {
+            return false;
+        }
+        if (requiredKind == null || requiredKind.isBlank() || genericKind.equals(requiredKind)) {
+            return true;
+        }
+        return ownerKinds.contains(requiredKind) || ownerKinds.contains(genericKind);
     }
 
     static boolean looksLikeRoute(String text) {

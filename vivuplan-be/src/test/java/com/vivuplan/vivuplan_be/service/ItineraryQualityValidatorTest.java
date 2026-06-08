@@ -56,6 +56,58 @@ class ItineraryQualityValidatorTest {
     }
 
     @Test
+    void emptyDayIsStructuralInsteadOfBestEffortQuality() {
+        TripDto.GenerateRequest req = request(1);
+        TripDto.DayResponse emptyDay = day(1);
+
+        ItineraryQualityValidator.Result result = validator.validateFull(List.of(emptyDay), req);
+
+        assertThat(result.failureType()).isEqualTo(ItineraryQualityValidator.FailureType.STRUCTURAL);
+        assertThat(result.reason()).contains("no activities");
+    }
+
+    @Test
+    void duplicateOrMissingDayNumbersAreStructural() {
+        TripDto.GenerateRequest req = request(3);
+
+        ItineraryQualityValidator.Result result = validator.validateFull(
+                List.of(normalDay(1), normalDay(1), normalDay(3)),
+                req);
+
+        assertThat(result.failureType()).isEqualTo(ItineraryQualityValidator.FailureType.STRUCTURAL);
+        assertThat(result.reason()).contains("duplicate day number");
+    }
+
+    @Test
+    void outOfOrderDayNumbersAreStructural() {
+        TripDto.GenerateRequest req = request(3);
+
+        ItineraryQualityValidator.Result result = validator.validateFull(
+                List.of(normalDay(2), normalDay(1), normalDay(3)),
+                req);
+
+        assertThat(result.failureType()).isEqualTo(ItineraryQualityValidator.FailureType.STRUCTURAL);
+        assertThat(result.reason()).contains("out of order");
+    }
+
+    @Test
+    void invalidActivityTypeIsStructuralInSharedValidator() {
+        TripDto.GenerateRequest req = request(1);
+        TripDto.DayResponse invalidDay = day(1,
+                activity("08:00", "Bao tang Quang Binh", "UNKNOWN",
+                        "Dong Hoi", "1 gio", 50_000, null),
+                activity("10:00", "Cho Dong Hoi", "ATTRACTION",
+                        "Dong Hoi", "1 gio", 0, null),
+                activity("12:00", "An chao canh ca loc", "FOOD",
+                        "Cho Dong Hoi", "1 gio", 200_000, null));
+
+        ItineraryQualityValidator.Result result = validator.validateFull(List.of(invalidDay), req);
+
+        assertThat(result.failureType()).isEqualTo(ItineraryQualityValidator.FailureType.STRUCTURAL);
+        assertThat(result.reason()).contains("invalid type");
+    }
+
+    @Test
     void vietnameseFamilyNoteUsesSharedRelaxedMinimum() {
         TripDto.GenerateRequest req = request(1);
         req.setNotes("Chuyen di gia dinh, uu tien nhe nhang.");
@@ -183,6 +235,23 @@ class ItineraryQualityValidatorTest {
     }
 
     @Test
+    void longActivityOverlapIsDetectedBeyondAdjacentSortedRange() {
+        TripDto.GenerateRequest req = request(1);
+        TripDto.DayResponse day = day(1,
+                activity("08:00", "Tour vuon quoc gia", "ACTIVITY",
+                        "Phong Nha", "4 gio", 500_000, null),
+                activity("09:30", "Dung chan chup anh", "ATTRACTION",
+                        "Phong Nha", "30 phut", 0, null),
+                activity("10:30", "Tham quan hang dong", "ATTRACTION",
+                        "Phong Nha", "1 gio", 200_000, null));
+
+        ItineraryQualityValidator.Result result = validator.validateFull(List.of(day), req);
+
+        assertThat(result.failureType()).isEqualTo(ItineraryQualityValidator.FailureType.QUALITY);
+        assertThat(result.reason()).contains("Tour vuon quoc gia / Tham quan hang dong");
+    }
+
+    @Test
     void selfDriveRentalPackageOwnsLaterZeroCostMovement() {
         TripDto.GenerateRequest req = request(1);
         TripDto.DayResponse day = day(1,
@@ -198,6 +267,33 @@ class ItineraryQualityValidatorTest {
         ItineraryQualityValidator.Result result = validator.validateFull(List.of(day), req);
 
         assertThat(result.passed()).as(result.reason()).isTrue();
+    }
+
+    @Test
+    void zeroCostLegRequiresRoundTripOwnerForTheSameTransportMode() {
+        TripDto.GenerateRequest req = request(3);
+        req.setOutboundTransport("MIXED");
+        TripDto.DayResponse day1 = day(1,
+                activity("06:00", "Tau Ha Noi den Dong Hoi", "TRANSPORT",
+                        "Ga Ha Noi -> Ga Dong Hoi", "10 gio", 3_200_000,
+                        "Ve tau khu hoi cho ca nhom, bao gom chieu ve."),
+                activity("17:00", "An chao canh ca loc", "FOOD",
+                        "Cho Dong Hoi", "1 gio", 200_000, null));
+        TripDto.DayResponse day3 = day(3,
+                activity("08:00", "Bao tang Quang Binh", "ATTRACTION",
+                        "Dong Hoi", "1 gio", 50_000, null),
+                activity("10:00", "An sang tai Cho Dong Hoi", "FOOD",
+                        "Cho Dong Hoi", "1 gio", 200_000, null),
+                activity("16:00", "Chuyen bay Dong Hoi ve Noi Bai", "TRANSPORT",
+                        "San bay Dong Hoi -> San bay Noi Bai", "2 gio", 0,
+                        "Chi phi da tinh trong ve khu hoi ngay 1."));
+
+        ItineraryQualityValidator.Result result = validator.validateFull(
+                List.of(day1, normalDay(2), day3),
+                req);
+
+        assertThat(result.failureType()).isEqualTo(ItineraryQualityValidator.FailureType.QUALITY);
+        assertThat(result.reason()).contains("missing paid round-trip owner");
     }
 
     @Test
@@ -384,7 +480,7 @@ class ItineraryQualityValidatorTest {
 
     private TripDto.GenerateRequest request(int days) {
         TripDto.GenerateRequest req = new TripDto.GenerateRequest();
-        req.setDeparture("Ha Noi");
+        req.setDeparture(days == 1 ? "Phong Nha - Ke Bang" : "Ha Noi");
         req.setDestination("Phong Nha - Ke Bang");
         req.setDays(days);
         req.setStyle("ADVENTURE");
