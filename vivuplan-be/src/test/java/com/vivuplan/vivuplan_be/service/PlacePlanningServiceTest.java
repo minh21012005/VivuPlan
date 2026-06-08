@@ -227,6 +227,7 @@ class PlacePlanningServiceTest {
         TripDto.ActivityResponse activity = new TripDto.ActivityResponse();
         activity.setName("Explore Da Nang Museum");
         activity.setType("ATTRACTION");
+        activity.setLocation("Incorrect AI-provided province");
         TripDto.DayResponse day = new TripDto.DayResponse();
         day.setDay(1);
         day.setActivities(List.of(activity));

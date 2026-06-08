@@ -69,7 +69,7 @@ class AiServiceTest {
 
         QualityResult quality = assessItineraryQuality(service, List.of(day), req);
 
-        assertThat(quality.passed()).isTrue();
+        assertThat(quality.passed()).as(quality.reason()).isTrue();
     }
 
     @Test
@@ -119,7 +119,7 @@ class AiServiceTest {
         day.setActivities(List.of(
                 activity("08:00", "Bay den Phu Quoc", "TRANSPORT",
                         "San bay Noi Bai -> San bay Phu Quoc", 2_400_000L,
-                        "Ve may bay khu hoi duoc tinh trong chi phi di chuyen."),
+                        "Ve may bay khu hoi Ha Noi - Phu Quoc duoc tinh trong chi phi di chuyen."),
                 activity("10:30", "Tham quan Dinh Cau", "ATTRACTION",
                         "Dinh Cau, Phu Quoc", 0L,
                         "Diem ngam bien gan trung tam Duong Dong."),
@@ -128,14 +128,17 @@ class AiServiceTest {
                         "Thu mon dac san dia phuong."),
                 activity("15:00", "Tam bien Bai Sao", "ATTRACTION",
                         "Bai Sao, Phu Quoc", 0L,
-                        "Bien dep, nen di khi thoi tiet on."),
+                        "Bien dep, phu hop nghi duong."),
                 activity("19:30", "Kham pha Grand World Phu Quoc", "NIGHTLIFE",
                         "Grand World Phu Quoc", 300_000L,
-                        "Trai nghiem khong gian dem va show ngoai troi neu phu hop.")));
+                        "Trai nghiem khong gian dem va show ngoai troi neu phu hop."),
+                activity("22:00", "Bay ve Ha Noi", "TRANSPORT",
+                        "San bay Phu Quoc -> San bay Noi Bai", 0L,
+                        "Chi phi da tinh trong ve may bay khu hoi o chang di.")));
 
         QualityResult quality = assessItineraryQuality(service, List.of(day), req);
 
-        assertThat(quality.passed()).isTrue();
+        assertThat(quality.passed()).as(quality.reason()).isTrue();
     }
 
     @Test
@@ -475,7 +478,7 @@ class AiServiceTest {
     }
 
     @Test
-    void itineraryQualityAllowsSomeGenericFoodPlaceholders() throws Exception {
+    void itineraryQualityAllowsIsolatedGenericFoodPlaceholderBelowThreshold() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
 
@@ -606,7 +609,7 @@ class AiServiceTest {
     }
 
     @Test
-    void itineraryQualityFlagsGenericAccommodationWithoutSpecificReference() throws Exception {
+    void itineraryQualityAllowsIsolatedGenericAccommodationBelowThreshold() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
         req.setDestination("Sa Pa");
@@ -624,8 +627,55 @@ class AiServiceTest {
 
         QualityResult quality = assessItineraryQuality(service, List.of(day), req);
 
+        assertThat(quality.passed()).isTrue();
+    }
+
+    @Test
+    void itineraryQualityRetriesOnlyWhenGenericActivitiesExceedAggregateThreshold() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDestination("Da Nang");
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Bua sang dia phuong", "FOOD",
+                        "Quan an dia phuong tai Da Nang", 100_000L, null),
+                activity("10:00", "Thuong thuc ca phe dia phuong", "CAFE",
+                        "Quan ca phe tai Da Nang", 150_000L, null),
+                activity("12:00", "Tham quan Bao tang Da Nang", "ATTRACTION",
+                        "24 Tran Phu, Hai Chau, Da Nang", 80_000L, null),
+                activity("14:00", "Nhan phong tai khach san/homestay", "ACCOMMODATION",
+                        "Khu vuc trung tam Da Nang", 1_200_000L,
+                        "Chi phi luu tru 2 dem cho ca nhom.")));
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
         assertThat(quality.passed()).isFalse();
-        assertThat(quality.reason()).contains("accommodation is generic");
+        assertThat(quality.reason()).contains("too many generic activities: 3/4");
+    }
+
+    @Test
+    void regeneratedDayUsesSameGenericThresholdAsFullGeneration() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDestination("Da Nang");
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Bua sang dia phuong", "FOOD",
+                        "Quan an dia phuong tai Da Nang", 100_000L, null),
+                activity("10:00", "Thuong thuc ca phe dia phuong", "CAFE",
+                        "Quan ca phe tai Da Nang", 150_000L, null),
+                activity("12:00", "Tham quan Bao tang Da Nang", "ATTRACTION",
+                        "24 Tran Phu, Hai Chau, Da Nang", 80_000L, null),
+                activity("14:00", "Nhan phong tai khach san/homestay", "ACCOMMODATION",
+                        "Khu vuc trung tam Da Nang", 1_200_000L,
+                        "Chi phi luu tru 2 dem cho ca nhom.")));
+
+        QualityResult quality = assessRegeneratedDayQuality(service, day, List.of(), req);
+
+        assertThat(quality.passed()).isFalse();
+        assertThat(quality.reason()).contains("too many generic activities: 3/4");
     }
 
     @Test
@@ -702,6 +752,7 @@ class AiServiceTest {
                 .contains("For close walkable places, a clear walking note with cost 0 is enough")
                 .contains("If a rented vehicle is used across multiple activities or days")
                 .contains("Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee")
+                .contains("Accommodation check-in time is property-specific")
                 .contains("signature/must-try experiences using your own Vietnam travel knowledge")
                 .contains("Final self-check before returning JSON")
                 .contains("The itinerary array has exactly " + req.getDays() + " days")
@@ -733,13 +784,62 @@ class AiServiceTest {
                 .contains("For close walkable places, a clear walking note with cost 0 is enough")
                 .contains("If a rented vehicle is used across multiple activities or days")
                 .contains("Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee")
+                .contains("Accommodation check-in time is property-specific")
                 .contains("Preserve or restore relevant destination-signature/must-try experiences")
+                .contains("Do not turn the regenerated day into a forecast bulletin or blanket weather advisory")
+                .contains("Concise natural context in an activity note is allowed when useful")
+                .doesNotContain("Never mention the weather")
                 .contains("Final self-check before returning JSON")
                 .contains("The \"day\" object has day value 1 and does not change other days")
                 .contains("Every estimatedCost is a non-negative group-level VND amount")
                 .doesNotContain("The day respects the user request, Must visit, Avoid, weather safety")
                 .doesNotContain("requestFulfillment honestly explains")
                 .contains("The previous proposal was rejected because: missing explicit local transport");
+    }
+
+    @Test
+    void transportGranularityGuidanceIsSharedAcrossGenerationAndRegenerationPrompts() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        String sharedRule = "Do not create standalone status-only items for landing";
+        String threePartRule = "should use no more than three meaningful movement items";
+        String mixedPurposeRule = "Do not combine a meal, attraction, accommodation check-out, or rental return";
+
+        String generationPrompt = buildPrompt(service, req);
+        String qualityRetryPrompt = buildQualityRetryPrompt(service, req, "transport timeline is too fragmented");
+        String regenerationPrompt = buildDayRegenerationPrompt(
+                service,
+                req,
+                List.of(roundTripBundledDay()),
+                1,
+                "REGENERATE",
+                "tối ưu lịch trình",
+                null);
+        String regenerationRetryPrompt = buildDayRegenerationPrompt(
+                service,
+                req,
+                List.of(roundTripBundledDay()),
+                1,
+                "REGENERATE",
+                "tối ưu lịch trình",
+                "transport timeline is too fragmented");
+
+        assertThat(List.of(
+                generationPrompt,
+                qualityRetryPrompt,
+                regenerationPrompt,
+                regenerationRetryPrompt))
+                .allSatisfy(prompt -> assertThat(prompt)
+                        .contains(sharedRule)
+                        .contains(threePartRule)
+                        .contains("Do not add a separate landing/terminal-arrival item")
+                        .contains("A separate non-blocking round-trip booking/package cost owner may coexist")
+                        .contains("duration must cover the complete scheduled block through arrival")
+                        .contains("Leave realistic internal buffer for check-in, security, boarding, baggage")
+                        .contains("Keep a long layover in the intercity duration/note")
+                        .contains(mixedPurposeRule)
+                        .contains("If an overnight outbound leg starts before the trip start date")
+                        .contains("every physical outbound and return leg must still appear"));
     }
 
     @Test
@@ -1170,7 +1270,11 @@ class AiServiceTest {
                 .contains("RAIN FLEX is not an automatic ban")
                 .contains("including access and return time")
                 .contains("thunderstorms, heavy rain, strong wind, flooding, rough seas, slippery trails")
-                .contains("reconfirm conditions and operating status");
+                .contains("Do not turn itinerary text into a forecast bulletin or blanket weather advisory")
+                .contains("Concise natural context in an activity note is allowed when useful")
+                .contains("explain it in requestFulfillment")
+                .doesNotContain("Never mention the weather")
+                .doesNotContain("note that travelers should reconfirm conditions and operating status");
     }
 
     @Test
@@ -1192,6 +1296,53 @@ class AiServiceTest {
     }
 
     @Test
+    void itineraryQualityRecognizesAirportAliasRouteWithoutCityNames() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDeparture("Ha Noi");
+        req.setDestination("Da Lat");
+        req.setStyle("ADVENTURE");
+        req.setGroupType("FRIENDS");
+        req.setNotes(null);
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("06:00", "Noi Bai -> Lien Khuong", "TRANSPORT",
+                        "Noi Bai -> Lien Khuong", 3_600_000L,
+                        "Ve may bay khu hoi cho ca nhom, bao gom chieu ve."),
+                activity("11:00", "An banh can Da Lat", "FOOD",
+                        "Cho Da Lat", 250_000L, null)));
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).as(quality.reason()).isTrue();
+    }
+
+    @Test
+    void shortNamedMarketsAreSpecificEnoughToAvoidGenericRetry() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDeparture("Hue");
+        req.setDestination("Da Nang");
+        req.setStyle("ADVENTURE");
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "Bua sang dia phuong", "FOOD",
+                        "Cho Han, Da Nang", 150_000L, null),
+                activity("10:00", "Thuong thuc ca phe dia phuong", "CAFE",
+                        "Cho Con, Da Nang", 120_000L, null),
+                activity("12:00", "Tham quan diem noi bat", "ATTRACTION",
+                        "Ga Da Nang", 0, null),
+                activity("14:00", "Bao tang Da Nang", "ATTRACTION",
+                        "24 Tran Phu, Hai Chau, Da Nang", 80_000L, null)));
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).as(quality.reason()).isTrue();
+    }
+
+    @Test
     void regeneratedDayQualityAllowsDenseButReasonableCityDay() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
@@ -1207,7 +1358,8 @@ class AiServiceTest {
                 "Bảo tàng Điêu khắc Chăm Đà Nẵng",
                 "Cầu Rồng",
                 "Hải sản Bé Mặn",
-                "Chợ đêm Sơn Trà"
+                "Chợ đêm Sơn Trà",
+                "Công viên APEC"
         };
         String[] locations = {
                 "231 Trần Phú, Hải Châu, Đà Nẵng",
@@ -1218,9 +1370,10 @@ class AiServiceTest {
                 "02 đường 2/9, Hải Châu, Đà Nẵng",
                 "Đường Nguyễn Văn Linh, Hải Châu, Đà Nẵng",
                 "Lô 14 Hoàng Sa, Sơn Trà, Đà Nẵng",
-                "Mai Hắc Đế, Sơn Trà, Đà Nẵng"
+                "Mai Hắc Đế, Sơn Trà, Đà Nẵng",
+                "Đường 2/9, Hải Châu, Đà Nẵng"
         };
-        for (int i = 0; i < ItineraryQualityPolicy.MAX_NON_LOGISTICS_ITEMS_PER_DAY; i++) {
+        for (int i = 0; i < ItineraryQualityPolicy.DENSE_DAY_TARGET_MAX_NON_LOGISTICS_ITEMS; i++) {
             activities.add(activity(
                     String.format("%02d:00", 8 + i),
                     names[i],
@@ -1241,13 +1394,13 @@ class AiServiceTest {
     }
 
     @Test
-    void itineraryQualityRejectsDayWithTooManyNonLogisticsActivities() throws Exception {
+    void itineraryQualityAllowsNonLogisticsCountAbovePacingTarget() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
 
         TripDto.DayResponse day = baseDay();
         List<TripDto.ActivityResponse> activities = new java.util.ArrayList<>();
-        for (int i = 0; i <= ItineraryQualityPolicy.MAX_NON_LOGISTICS_ITEMS_PER_DAY; i++) {
+        for (int i = 0; i <= ItineraryQualityPolicy.DENSE_DAY_TARGET_MAX_NON_LOGISTICS_ITEMS; i++) {
             activities.add(activity(
                     String.format("%02d:00", 7 + i),
                     "Lich trinh day dac " + (i + 1),
@@ -1260,18 +1413,17 @@ class AiServiceTest {
 
         QualityResult quality = assessItineraryQuality(service, List.of(day), req);
 
-        assertThat(quality.passed()).isFalse();
-        assertThat(quality.reason()).contains("too many non-logistics activities");
+        assertThat(quality.passed()).isTrue();
     }
 
     @Test
-    void itineraryQualityAllowsThirteenItemsWhenLogisticsKeepPacingReasonable() throws Exception {
+    void itineraryQualityAllowsFifteenTotalItemsWhenTimelineIsReasonable() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
 
         TripDto.DayResponse day = baseDay();
         List<TripDto.ActivityResponse> activities = new java.util.ArrayList<>();
-        for (int i = 0; i < ItineraryQualityPolicy.MAX_NON_LOGISTICS_ITEMS_PER_DAY; i++) {
+        for (int i = 0; i < ItineraryQualityPolicy.DENSE_DAY_TARGET_MAX_NON_LOGISTICS_ITEMS; i++) {
             activities.add(activity(
                     String.format("%02d:00", 7 + i),
                     "Trai nghiem Da Nang " + (i + 1),
@@ -1288,6 +1440,8 @@ class AiServiceTest {
                 "My Khe -> Cho dem Son Tra", 80_000L, "Taxi/Grab toi cho dem."));
         activities.add(activity("21:30", "Taxi ve khach san", "TRANSPORT",
                 "Cho dem Son Tra -> Khach san My Khe", 80_000L, "Taxi/Grab ve khach san."));
+        activities.add(activity("22:30", "Taxi den san bay Da Nang", "TRANSPORT",
+                "Khach san My Khe -> San bay Da Nang", 100_000L, "Taxi cho ca nhom."));
         day.setActivities(activities);
 
         QualityResult quality = assessItineraryQuality(service, List.of(day), req);
@@ -1302,7 +1456,7 @@ class AiServiceTest {
 
         TripDto.DayResponse day = baseDay();
         List<TripDto.ActivityResponse> activities = new java.util.ArrayList<>();
-        for (int i = 0; i < ItineraryQualityPolicy.MAX_NON_LOGISTICS_ITEMS_PER_DAY; i++) {
+        for (int i = 0; i < ItineraryQualityPolicy.DENSE_DAY_TARGET_MAX_NON_LOGISTICS_ITEMS; i++) {
             activities.add(activity(
                     String.format("%02d:00", 6 + i),
                     "Trai nghiem Da Nang " + (i + 1),
@@ -1312,7 +1466,7 @@ class AiServiceTest {
                     null));
         }
         int logisticsItemsToExceedTotal = ItineraryQualityPolicy.MAX_TOTAL_ITEMS_PER_DAY
-                - ItineraryQualityPolicy.MAX_NON_LOGISTICS_ITEMS_PER_DAY
+                - ItineraryQualityPolicy.DENSE_DAY_TARGET_MAX_NON_LOGISTICS_ITEMS
                 + 1;
         for (int i = 0; i < logisticsItemsToExceedTotal; i++) {
             activities.add(activity(

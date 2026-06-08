@@ -573,7 +573,7 @@ public class TripService {
 
             String risk = switch (dw.outdoorRiskLevel()) {
                 case 2 -> "SEVERE WEATHER RISK - avoid unsafe outdoor/water activities";
-                case 1 -> "RAIN FLEX - outdoor is still allowed; keep signature outdoor activities in the main plan when generally safe, and add indoor backup notes instead of replacing them";
+                case 1 -> "RAIN FLEX - outdoor is still allowed; keep signature outdoor activities in the main plan when generally safe, use safer timing or an internal alternative, and allow concise activity-specific condition or operator-reconfirmation notes when useful";
                 default -> "Good weather - outdoor activities recommended";
             };
 
@@ -691,13 +691,6 @@ public class TripService {
         }
         if (ItineraryQualityPolicy.exceedsTotalItems(proposedDay.getActivities().size())) {
             throw new IllegalArgumentException("Ngày được tạo lại có quá nhiều hoạt động");
-        }
-
-        long nonLogisticsActivities = proposedDay.getActivities().stream()
-                .filter(activity -> !isLogisticsActivityType(normalizeText(activity.getType())))
-                .count();
-        if (ItineraryQualityPolicy.exceedsNonLogisticsItems(nonLogisticsActivities)) {
-            throw new IllegalArgumentException("Ngày được tạo lại có quá nhiều điểm ăn/chơi/tham quan");
         }
 
         ItineraryDay tempDay = new ItineraryDay();

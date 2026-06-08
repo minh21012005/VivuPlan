@@ -426,7 +426,7 @@ public class PlacePlanningService {
             activity.setCoordinateSource(Activity.CoordinateSource.VERIFIED_PLACE.name());
             activity.setCoordinateConfidence(Activity.CoordinateConfidence.HIGH.name());
         }
-        if ((activity.getLocation() == null || activity.getLocation().isBlank()) && place.getAddress() != null) {
+        if (place.getAddress() != null && !place.getAddress().isBlank()) {
             activity.setLocation(place.getAddress());
         }
         if (activity.getRating() <= 0 && place.getRating() != null) {

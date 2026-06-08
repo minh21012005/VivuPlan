@@ -93,6 +93,7 @@ public class AiService {
 
     private final ObjectMapper objectMapper;
     private final AiUsageTrackingService aiUsageTrackingService;
+    private final ItineraryQualityValidator itineraryQualityValidator;
 
     private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
     private static final String AI_GENERATION_USER_MESSAGE = "AI chưa tạo được lịch trình đủ cụ thể cho chuyến đi này. Vui lòng thử lại hoặc bổ sung thêm điểm muốn ghé, điều cần tránh hay ghi chú để VivuPlan lập lại lịch trình.";
@@ -105,6 +106,7 @@ public class AiService {
     public AiService(ObjectMapper objectMapper, AiUsageTrackingService aiUsageTrackingService) {
         this.objectMapper = objectMapper;
         this.aiUsageTrackingService = aiUsageTrackingService;
+        this.itineraryQualityValidator = new ItineraryQualityValidator();
     }
 
     public GeneratedItineraryResult generateItinerary(TripDto.GenerateRequest req) {
@@ -140,7 +142,7 @@ public class AiService {
             }
 
             if (usedRetry) {
-                if (!isStructuralFailure(quality.reason())) {
+                if (!isStructuralFailure(quality)) {
                     log.warn(
                             "AI retry itinerary for {} still has a non-structural quality issue: {}. Returning best-effort itinerary.",
                             req.getDestination(), quality.reason());
@@ -165,7 +167,7 @@ public class AiService {
                 return retryResult;
             }
 
-            if (!isStructuralFailure(retryQuality.reason())) {
+            if (!isStructuralFailure(retryQuality)) {
                 log.warn(
                         "AI retry itinerary for {} still has a non-structural quality issue: {}. Returning best-effort itinerary.",
                         req.getDestination(), retryQuality.reason());
@@ -279,7 +281,7 @@ public class AiService {
             }
 
             if (usedRetry) {
-                if (!isStructuralFailure(quality.reason())) {
+                if (!isStructuralFailure(quality)) {
                     log.warn(
                             "AI retry regenerated day {} for {} still has a non-structural quality issue: {}. Returning best-effort day.",
                             dayNumber, req.getDestination(), quality.reason());
@@ -306,7 +308,7 @@ public class AiService {
                 return retryResult;
             }
 
-            if (!isStructuralFailure(retryQuality.reason())) {
+            if (!isStructuralFailure(retryQuality)) {
                 log.warn(
                         "AI retry regenerated day {} for {} still has a non-structural quality issue: {}. Returning best-effort day.",
                         dayNumber, req.getDestination(), retryQuality.reason());
@@ -606,6 +608,28 @@ public class AiService {
         return String.join("\n", guidance);
     }
 
+    private String transportTimelineGuidance(String departure, String destination) {
+        String from = departure == null || departure.isBlank() ? "the departure area" : departure;
+        String to = destination == null || destination.isBlank() ? "the destination" : destination;
+        return String.format(
+                """
+                - Intercity timeline: show the real outbound and return movement in chronological order. For plane, train, or bus travel, include meaningful origin-area to terminal transfer, the intercity leg, and arrival-terminal to lodging/destination transfer when they take meaningful time or cost.
+                - TRANSPORT activity granularity: create a standalone item only when it represents physical movement from A to B with meaningful time or cost, owns a booking/package cost, or is the overnight-arrival exception below. Its name must describe the route or the full cost scope, not only a travel status.
+                - Do not create standalone status-only items for landing, arriving at a terminal without a route, check-in/security/boarding, disembarking, baggage claim, waiting, a layover, accommodation check-out, or parking/vehicle pickup/return without distinct movement or cost. Fold these milestones into the related leg's name/note or leave realistic buffer in the timeline.
+                - A normal plane/train/bus physical timeline should use no more than three meaningful movement items: origin area -> terminal when material, the intercity leg including its arrival, and arrival terminal -> lodging/destination when material. Do not add a separate landing/terminal-arrival item after the intercity leg. A separate non-blocking round-trip booking/package cost owner may coexist only when the physical intercity leg cannot accurately own that full cost.
+                - If an intercity activity includes airport/station procedures, its duration must cover the complete scheduled block through arrival, not only time in the air or onboard. Leave realistic internal buffer for check-in, security, boarding, baggage, terminal exit, transfers, and connections without turning each buffer into an activity. Keep a long layover in the intercity duration/note unless the traveler actually leaves the terminal for a separate meaningful experience.
+                - Keep one primary purpose per activity. Do not combine a meal, attraction, accommodation check-out, or rental return with an unrelated movement just to reduce item count. Keep FOOD as FOOD; when vehicle return has no distinct route, time, or cost, mention it in the final relevant transport/package note instead of merging it into the meal.
+                - Do not invent a home address. Start from a concrete, reasonable area in %s or the relevant terminal.
+                - A round-trip booking may own the full ticket cost once, but every physical outbound and return leg must still appear on its actual day. A zero-cost leg must say which paid round-trip booking or transport package already covers it.
+                - If an overnight outbound leg starts before the trip start date and arrives on day 1, do not create day 0. Put the arrival activity on day 1, name the mode and full route from %s toward %s, use the arrival time, keep the real total travel duration, and state that departure was the previous evening.
+                - Keep ticket/package ownership separate from local movement. Do not combine an intercity ticket with airport/station/terminal transfers in one estimatedCost, and do not attach a multi-day vehicle package cost to a single short transfer.
+                - The paid activity name must describe the full scope of its estimatedCost, for example "Vé tàu khứ hồi Hà Nội ↔ Đồng Hới" or "Thuê xe riêng ngày 1-2 tại Phong Nha".
+                """,
+                from,
+                from,
+                to).stripTrailing();
+    }
+
     private boolean isSevereWeatherForecastLine(String line) {
         String normalized = line == null ? "" : line.toLowerCase(Locale.ROOT);
         return normalized.contains("severe weather risk") || normalized.contains("high rain risk");
@@ -684,7 +708,9 @@ public class AiService {
                 reason,
                 req.getDestination(),
                 ItineraryQualityPolicy.vietnamPacingGuidance(),
-                ItineraryQualityPolicy.localTransportGuidance(req.getDestination()));
+                ItineraryQualityPolicy.localTransportGuidance(req.getDestination())
+                        + "\n"
+                        + transportTimelineGuidance(req.getDeparture(), req.getDestination()));
     }
 
     private String buildDayRegenerationPrompt(
@@ -718,7 +744,9 @@ public class AiService {
                         retryReason,
                         dayNumber,
                         ItineraryQualityPolicy.vietnamPacingGuidance(),
-                        ItineraryQualityPolicy.localTransportGuidance(req.getDestination()));
+                        ItineraryQualityPolicy.localTransportGuidance(req.getDestination())
+                                + "\n"
+                                + transportTimelineGuidance(req.getDeparture(), req.getDestination()));
 
         return String.format(
                 """
@@ -753,18 +781,19 @@ public class AiService {
 
                         Weather-aware planning rules:
                         1. Each forecast line is "Day N (date): condition, temp, rain chance, rain mm, wind -> risk level", optionally followed by "Outdoor timing windows", "Best daytime outdoor slot", or "Best light outdoor evening slot".
-                        2. For the day being regenerated, honor its risk level: "RAIN FLEX" means outdoor activities are still allowed with safer timing/backup notes; "SEVERE WEATHER RISK" means reduce only unsafe outdoor, water, or adventure activities; "Good weather" means outdoor preferred.
+                        2. For the day being regenerated, honor its risk level: "RAIN FLEX" means outdoor activities are still allowed with safer timing or an internally planned alternative; "SEVERE WEATHER RISK" means reduce only unsafe outdoor, water, or adventure activities; "Good weather" means outdoor preferred.
                         2a. When Outdoor timing windows are present, treat rain as potentially intermittent. Put destination-signature outdoor/scenic/tour/viewpoint activities in the Best daytime outdoor slot or another daytime LOW RAIN WINDOW/RAIN FLEX window instead of replacing them with indoor activities by default. Use evening windows for light outdoor, night market, walking, cafe, food plans, or real destination-signature evening cultural areas when they exist.
-                        3. Never mention the weather in the regenerated day's title, summary, activities, or notes. Just naturally plan appropriate activities.
-                           If weather or another constraint blocks the user's request, explain that in requestFulfillment.items[].userMessage.
+                        3. Do not turn the regenerated day into a forecast bulletin or blanket weather advisory. Do not repeat exact forecast values or present predicted rain, storms, wind, or similar conditions as certain facts.
+                           Concise natural context in an activity note is allowed when useful, for example "if weather permits" or advice to reconfirm route, site, water-level, sea, or operator conditions. Do not repeat generic weather disclaimers across activities.
+                           If weather or another constraint materially changes or blocks the user's request, explain that in requestFulfillment.items[].userMessage.
                         4. If forecast is "none", plan normally without weather constraints.
                         %s
 
                         Important weather interpretation update:
                         - Treat RAIN FLEX or legacy LIGHT RAIN as low-impact weather context, not a reason to reduce outdoor diversity.
                         - If hourly Outdoor timing windows are present, use them to schedule outdoor/scenic highlights into the least rainy practical daytime part of the day.
-                        - Keep destination-defining outdoor/scenic places in the main plan when generally safe; add backup notes instead of replacing them.
-                        - For safety-sensitive outdoor activities that require sustained suitable conditions, such as trekking, hiking, climbing, caving, canyoning, boat/island trips, diving, paddling, or paragliding, RAIN FLEX is not an automatic ban. Include them only when the full activity, including access and return time, fits suitable non-severe forecast windows. Move, shorten, substitute, or omit them when thunderstorms, heavy rain, strong wind, flooding, rough seas, slippery trails, or other relevant hazards make them unsafe. For activities dependent on local route/site conditions or an operator, note that travelers should reconfirm conditions and operating status.
+                        - Keep destination-defining outdoor/scenic places in the main plan when generally safe; use safer timing or an internal alternative. A concise activity-specific condition or operator-reconfirmation note is allowed when useful.
+                        - For safety-sensitive outdoor activities that require sustained suitable conditions, such as trekking, hiking, climbing, caving, canyoning, boat/island trips, diving, paddling, or paragliding, RAIN FLEX is not an automatic ban. Include them only when the full activity, including access and return time, fits suitable non-severe forecast windows. Move, shorten, substitute, or omit them when thunderstorms, heavy rain, strong wind, flooding, rough seas, slippery trails, or other relevant hazards make them unsafe. If this changes a requested or signature experience, explain it in requestFulfillment.
                         - Treat SEVERE WEATHER RISK or legacy HIGH RAIN RISK as a hard safety constraint only for unsafe outdoor/water/adventure activities on the affected day.
                         - If weather blocks or weakens a user request or a destination-signature experience, explain it in requestFulfillment.items[].userMessage with reasonCode WEATHER_SAFETY.
 
@@ -818,6 +847,7 @@ public class AiService {
                         5c. If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, name a specific rental shop, hotel/homestay pickup point, or concrete pickup area when practical, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
                         5d. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
                         5e. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
+                        5f. Accommodation check-in time is property-specific. If arrival may be before the room is available, prefer luggage drop or state that early check-in should be confirmed; do not invent a universal check-in cutoff or claim confirmation without evidence.
                         6. Preserve user constraints: avoid banned items, respect must-visit where relevant, respect style/group.
                         7. Treat Local transport as the user's preference, not an absolute law. Follow it when practical; if a different mode is safer or more realistic in Vietnam, explain briefly in a TRANSPORT note.
                         8. %s
@@ -887,7 +917,9 @@ public class AiService {
                 req.getGroupType(),
                 req.getOutboundTransport(),
                 req.getLocalTransport(),
-                transportOwnershipGuidance(req.getOutboundTransport(), req.getLocalTransport()),
+                transportOwnershipGuidance(req.getOutboundTransport(), req.getLocalTransport())
+                        + "\n"
+                        + transportTimelineGuidance(req.getDeparture(), req.getDestination()),
                 req.getMustVisit() != null && !req.getMustVisit().isBlank() ? req.getMustVisit() : "none",
                 req.getAvoid() != null && !req.getAvoid().isBlank() ? req.getAvoid() : "none",
                 req.getNotes() != null && !req.getNotes().isBlank() ? req.getNotes() : "none",
@@ -1015,19 +1047,19 @@ public class AiService {
 
                         Weather-aware planning rules:
                         1. Read the Weather Forecast carefully. Each line is labeled "Day N (date): condition, temp, rain chance, rain mm, wind -> risk level", optionally followed by "Outdoor timing windows", "Best daytime outdoor slot", or "Best light outdoor evening slot".
-                        2. For days labeled "RAIN FLEX": outdoor activities are still allowed. Keep signature scenic/outdoor experiences in the main plan when generally safe, choose better time windows, and add indoor backup notes instead of replacing them.
+                        2. For days labeled "RAIN FLEX": outdoor activities are still allowed. Keep signature scenic/outdoor experiences in the main plan when generally safe, choose better time windows, and keep any alternative internal.
                         3. For days labeled "SEVERE WEATHER RISK" or legacy "HIGH RAIN RISK": reduce only unsafe outdoor, water, or adventure activities on the affected day. Prefer moving signature experiences to a safer day before omitting them.
                         4. For days labeled "Good weather": maximize outdoor, scenic, or active experiences.
                         5. When Outdoor timing windows are present, treat rain as potentially intermittent. Put destination-signature outdoor/scenic/tour/viewpoint activities in the Best daytime outdoor slot or another daytime LOW RAIN WINDOW/RAIN FLEX window instead of replacing them with indoor activities by default. Use evening windows for light outdoor, night market, walking, cafe, food plans, or real destination-signature evening cultural areas when they exist.
-                        6. Never mention the weather forecast to the user in the output text. Just naturally plan the right activities.
+                        6. Do not turn itinerary text into a forecast bulletin or blanket weather advisory. Do not repeat exact forecast values or present predicted rain, storms, wind, or similar conditions as certain facts. Concise natural context in an activity note is allowed when useful, for example "if weather permits" or advice to reconfirm route, site, water-level, sea, or operator conditions. Do not repeat generic weather disclaimers across activities.
                         7. If forecast is "none" or unavailable, plan normally without weather constraints.
                         %s
 
                         Important weather interpretation update:
                         - Treat RAIN FLEX or legacy LIGHT RAIN as low-impact weather context, not a reason to reduce outdoor diversity.
                         - If hourly Outdoor timing windows are present, use them to schedule outdoor/scenic highlights into the least rainy practical daytime part of the day.
-                        - Keep destination-defining outdoor/scenic places in the main plan when generally safe; add backup notes instead of replacing them.
-                        - For safety-sensitive outdoor activities that require sustained suitable conditions, such as trekking, hiking, climbing, caving, canyoning, boat/island trips, diving, paddling, or paragliding, RAIN FLEX is not an automatic ban. Include them only when the full activity, including access and return time, fits suitable non-severe forecast windows. Move, shorten, substitute, or omit them when thunderstorms, heavy rain, strong wind, flooding, rough seas, slippery trails, or other relevant hazards make them unsafe. For activities dependent on local route/site conditions or an operator, note that travelers should reconfirm conditions and operating status.
+                        - Keep destination-defining outdoor/scenic places in the main plan when generally safe; use safer timing or an internal alternative. A concise activity-specific condition or operator-reconfirmation note is allowed when useful.
+                        - For safety-sensitive outdoor activities that require sustained suitable conditions, such as trekking, hiking, climbing, caving, canyoning, boat/island trips, diving, paddling, or paragliding, RAIN FLEX is not an automatic ban. Include them only when the full activity, including access and return time, fits suitable non-severe forecast windows. Move, shorten, substitute, or omit them when thunderstorms, heavy rain, strong wind, flooding, rough seas, slippery trails, or other relevant hazards make them unsafe. If this changes a requested or signature experience, explain it in requestFulfillment.
                         - Treat SEVERE WEATHER RISK or legacy HIGH RAIN RISK as a hard safety constraint only for unsafe outdoor/water/adventure activities on the affected day.
                         - If weather blocks all or most destination-signature scenic experiences, explain the omission/substitution in requestFulfillment.items[].userMessage with reasonCode WEATHER_SAFETY so the user knows the plan changed for safety, not because the system missed them.
 
@@ -1041,7 +1073,7 @@ public class AiService {
                         2. The verified candidates are helpful evidence, not the full universe. If a signature experience is missing from the candidate list, you may still include a specific real public place, clearly named area, or real activity with a realistic location.
                         3. Across the full trip, include a representative set of destination-signature experiences when they fit duration, route, weather, budget, and group needs. For short trips, prioritize the most iconic 1-3 experiences instead of padding with generic indoor stops.
                         4. If the trip includes an evening and the destination has a real notable night/evening experience such as an old town, night market, walking street, riverside wharf, light show, food street, or cultural square, consider including one concise evening activity when it fits pacing. For Ninh Bình, Phố cổ Hoa Lư is a notable evening cultural/walking option.
-                        5. Do not reduce outdoor diversity just because there is RAIN FLEX or normal rain chance. Prefer safer timing, shorter windows, backup notes, or moving signature experiences to a better day.
+                        5. Do not reduce outdoor diversity just because there is RAIN FLEX or normal rain chance. Prefer safer timing, shorter windows, an internal alternative, or moving signature experiences to a better day.
                         6. If normally expected signature experiences are omitted, weakened, or substituted because of severe weather, time, budget, group safety, duplication, or route constraints, add PARTIAL or NOT_APPLIED requestFulfillment items explaining the reason in Vietnamese. Do this even when the user did not explicitly request those places, so the user knows the plan changed for a real reason.
                         7. Keep destination-signature requestFulfillment concise: add at most 1-3 items, grouped by core experience category (for example boat/scenic landscape, viewpoint, beach/island, heritage/culture, local food), not one item per missed place. In each grouped item, mention 1-3 representative missed places/activities when helpful, for example "Tràng An, Tam Cốc, Hang Múa" for Ninh Bình, but do not list every famous place that cannot fit the itinerary.
 
@@ -1053,8 +1085,9 @@ public class AiService {
                         5. Include realistic major costs: round-trip outbound transport, local transport, accommodation, food, entrance tickets, paid tours, shows, and shopping only if useful.
                         6. For fixed-price items such as cable car, theme park, show, museum, paid tour, boat tour, or entrance ticket, use a realistic recent public-market estimate and mention the unit basis in note, for example "khoảng 850k/người".
                         7. For accommodation, include a clear ACCOMMODATION activity with total lodging cost for all nights and all travelers. Use a specific real hotel, homestay, hostel, or resort name when confident it exists; otherwise use a concrete lodging area/type that fits the route and budget. Do not use the accommodation type for a taxi/check-in only.
+                        7a. Accommodation check-in time is property-specific. If arrival may be before the room is available, prefer luggage drop or state that early check-in should be confirmed; do not invent a universal check-in cutoff or claim confirmation without evidence.
                         8. Never set estimatedCost to 0 for paid intercity transport such as flights, trains, buses, private cars, airport transfers, vehicle rental pickup, lodging, tickets, tours, shows, or paid experiences.
-                        8a. For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg. Never combine a paid round-trip activity with another paid outbound/return leg, and never describe a round-trip price as only "chiều đi" or only "chiều về".
+                        8a. For intercity round-trip transport, either use one clearly named booking/cost-owner TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg. Every physical outbound and return leg must still appear on its actual day. Never combine a paid round-trip activity with another paid outbound/return leg, never combine intercity tickets and local terminal transfers in one estimatedCost, and never describe a round-trip price as only "chiều đi" or only "chiều về".
                         8b. If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, name a specific rental shop, hotel/homestay pickup point, or concrete pickup area when practical, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
                         9. If a note mentions a required price, that price MUST be included in estimatedCost. Do not write "not included", "khong bao gom", or "chua bao gom" for required trip costs.
                         10. Check-in/check-out or returning a rented vehicle may be 0 only when the actual lodging or rental fee is already counted in another activity.
@@ -1093,7 +1126,7 @@ public class AiService {
                         2. %s
                         3. FOOD/CAFE activities must name a specific dish or restaurant/cafe.
                         4. ATTRACTION/ACTIVITY/NIGHTLIFE activities must name a specific real place in or near %s.
-                        5. TRANSPORT activities must include outbound/return travel and local travel between distant clusters of places. Walking between nearby places can be documented in notes.
+                        5. TRANSPORT activities must include the physical outbound and return timeline plus local travel between distant clusters of places. Booking/package activities must be named for the full cost they own; walking between nearby places can be documented in notes.
                         6. Do not use generic names like "ăn sáng đặc sản địa phương", "tham quan điểm nổi bật", "khám phá khu vực lân cận", "nhà hàng địa phương", "cà phê view đẹp", or "nhận phòng tại homestay/khách sạn".
                         7. Days must be clearly different and should not repeat the same activity sequence.
 
@@ -1107,7 +1140,7 @@ public class AiService {
                         7. Create positive fulfilled requestFulfillment items only for user-authored qualitative preferences or concrete requested places, foods, experiences, and constraints. Do not create them just to restate form-derived planning context or system constraints. If group context matters, mention the experience fit, for example "hợp cặp đôi" or "nhẹ nhàng cho gia đình", not the numeric traveler count.
                         8. If there is no meaningful user-specific request and no destination-signature omission/substitution needs explanation, set overallStatus to NO_REQUEST and items to []. If a signature experience category is omitted or substituted for a real constraint, return PARTIAL or NOT_FULFILLED with a concise grouped requestFulfillment item even without a user-specific request.
                         9. If you are unsure whether a request was satisfied, mark the item UNCLEAR and explain what the user should check.
-                        10. Never mention the weather in itinerary day titles, summaries, activities, or notes. If weather blocks a user request, explain it only in requestFulfillment.items[].userMessage.
+                        10. Do not copy detailed forecast values or turn itinerary text into a forecast bulletin or blanket advisory. Natural activity-specific context such as "if weather permits" or a concise reminder to reconfirm route, site, water-level, sea, or operator conditions is allowed. If weather materially changes, substitutes, or blocks a user request or signature experience, explain that impact in requestFulfillment.items[].userMessage.
 
                         %s
 
@@ -1160,7 +1193,9 @@ public class AiService {
                 req.getGroupType(),
                 req.getOutboundTransport(),
                 req.getLocalTransport(),
-                transportOwnershipGuidance(req.getOutboundTransport(), req.getLocalTransport()),
+                transportOwnershipGuidance(req.getOutboundTransport(), req.getLocalTransport())
+                        + "\n"
+                        + transportTimelineGuidance(req.getDeparture(), req.getDestination()),
                 req.getMustVisit() != null && !req.getMustVisit().isBlank() ? req.getMustVisit() : "none",
                 req.getAvoid() != null && !req.getAvoid().isBlank() ? req.getAvoid() : "none",
                 req.getNotes() != null && !req.getNotes().isBlank() ? req.getNotes() : "none",
@@ -1642,21 +1677,18 @@ public class AiService {
         if (intercityPricingIssue != null) {
             return QualityCheck.fail(intercityPricingIssue);
         }
+        ItineraryQualityValidator.Result deterministic = itineraryQualityValidator.validateFull(days, req);
+        if (!deterministic.passed()) {
+            return QualityCheck.fail(
+                    deterministic.reason(),
+                    deterministic.failureType() == ItineraryQualityValidator.FailureType.STRUCTURAL);
+        }
         boolean bundledIntercityTransportCost = hasBundledIntercityTransportCost(days, req);
         Set<String> paidVehicleRentalKinds = paidVehicleRentalKinds(days);
         String avoid = normalize(String.join("\n",
                 req.getAvoid() != null ? req.getAvoid() : "",
                 extractNegativeInstruction(req.getNotes())));
         for (TripDto.DayResponse day : days) {
-            int minActivities = minimumActivitiesForDay(day, req);
-            if (day.getActivities() == null || day.getActivities().size() < minActivities) {
-                return QualityCheck.fail("day " + day.getDay() + " has fewer than " + minActivities + " activities");
-            }
-            if (ItineraryQualityPolicy.exceedsTotalItems(day.getActivities().size())) {
-                return QualityCheck.fail("day " + day.getDay() + " has too many activities");
-            }
-            int dayNonLogisticsActivities = 0;
-            Set<String> seenTimes = new HashSet<>();
             StringBuilder fingerprint = new StringBuilder();
             for (TripDto.ActivityResponse act : day.getActivities()) {
                 totalActivities++;
@@ -1674,9 +1706,6 @@ public class AiService {
                 }
                 if (!isValidTime(act.getTime())) {
                     return QualityCheck.fail("activity has invalid time: " + act.getTime());
-                }
-                if (!seenTimes.add(act.getTime())) {
-                    return QualityCheck.fail("multiple activities start at the same time: " + act.getTime());
                 }
 
                 // estimatedCost is clamped to >= 0 at parse time; this check is a safety net
@@ -1697,19 +1726,9 @@ public class AiService {
                 if (!avoid.isBlank() && containsAvoidedContent(combined, avoid)) {
                     return QualityCheck.fail("activity appears to violate avoid instruction: " + act.getName());
                 }
-                String accommodationIssue = accommodationSpecificityIssue(act, req, name, location, type);
-                if (accommodationIssue != null) {
-                    return QualityCheck.fail(accommodationIssue);
-                }
                 if (isGenericActivityForQuality(act, req, name, location, type)) {
                     genericActivities++;
                 }
-                if (!isLogisticsType(type)) {
-                    dayNonLogisticsActivities++;
-                }
-            }
-            if (ItineraryQualityPolicy.exceedsNonLogisticsItems(dayNonLogisticsActivities)) {
-                return QualityCheck.fail("day " + day.getDay() + " has too many non-logistics activities");
             }
             dayFingerprints.add(fingerprint.toString());
         }
@@ -1718,7 +1737,7 @@ public class AiService {
             return QualityCheck.fail("all days have identical activity sequences");
         }
 
-        int maxGenericAllowed = Math.max(2, totalActivities / 4);
+        int maxGenericAllowed = ItineraryQualityPolicy.maxGenericActivitiesAllowed(totalActivities);
         if (genericActivities > maxGenericAllowed) {
             return QualityCheck.fail("too many generic activities: " + genericActivities + "/" + totalActivities);
         }
@@ -1737,23 +1756,22 @@ public class AiService {
         if (day == null) {
             return QualityCheck.fail("response has no day");
         }
-        int minActivities = minimumActivitiesForDay(day, req);
-        if (day.getActivities() == null || day.getActivities().size() < minActivities) {
-            return QualityCheck.fail("regenerated day has fewer than " + minActivities + " activities");
-        }
-        if (ItineraryQualityPolicy.exceedsTotalItems(day.getActivities().size())) {
-            return QualityCheck.fail("regenerated day has too many activities");
-        }
 
         int genericActivities = 0;
-        int nonLogisticsActivities = 0;
         String recoverableCostIssue = null;
-        Set<String> seenTimes = new HashSet<>();
-        List<TimeRange> ranges = new ArrayList<>();
         List<TripDto.DayResponse> scheduleForCostContext = scheduleWithRegeneratedDay(day, currentSchedule);
         String intercityPricingIssue = intercityTransportPricingIssue(scheduleForCostContext, req);
         if (intercityPricingIssue != null) {
             return QualityCheck.fail(intercityPricingIssue);
+        }
+        ItineraryQualityValidator.Result deterministic = itineraryQualityValidator.validateRegenerated(
+                day,
+                currentSchedule,
+                req);
+        if (!deterministic.passed()) {
+            return QualityCheck.fail(
+                    deterministic.reason(),
+                    deterministic.failureType() == ItineraryQualityValidator.FailureType.STRUCTURAL);
         }
         boolean bundledIntercityTransportCost = hasBundledIntercityTransportCost(scheduleForCostContext, req);
         Set<String> paidVehicleRentalKinds = paidVehicleRentalKinds(scheduleForCostContext);
@@ -1777,9 +1795,6 @@ public class AiService {
             if (!isValidTime(act.getTime())) {
                 return QualityCheck.fail("activity has invalid time: " + act.getTime());
             }
-            if (!seenTimes.add(act.getTime())) {
-                return QualityCheck.fail("multiple activities start at the same time: " + act.getTime());
-            }
             // estimatedCost is clamped to >= 0 at parse time; this check is a safety net
             // only
             if (act.getEstimatedCost() < 0) {
@@ -1797,39 +1812,14 @@ public class AiService {
             if (!avoid.isBlank() && containsAvoidedContent(combined, avoid)) {
                 return QualityCheck.fail("activity appears to violate avoid instruction: " + act.getName());
             }
-            String accommodationIssue = accommodationSpecificityIssue(act, req, name, location, type);
-            if (accommodationIssue != null) {
-                return QualityCheck.fail(accommodationIssue);
-            }
             if (isGenericActivityForQuality(act, req, name, location, type)) {
                 genericActivities++;
             }
-            if (!isLogisticsType(type)) {
-                nonLogisticsActivities++;
-            }
-
-            ranges.add(new TimeRange(act.getTime(), parseActivityDurationMinutes(act.getDuration()), type));
         }
 
-        ranges.sort(Comparator.comparing(TimeRange::start));
-        for (int i = 1; i < ranges.size(); i++) {
-            // TRANSPORT activities are bookings/rentals that do not block a fixed time
-            // slot;
-            // exclude them from strict overlap checking to avoid false positives.
-            TimeRange previous = ranges.get(i - 1);
-            TimeRange current = ranges.get(i);
-            if (previous.isLogistics() || current.isLogistics())
-                continue;
-            if (current.overlapMinutes(previous) > 30) {
-                return QualityCheck.fail("activity times overlap");
-            }
-        }
-
-        if (genericActivities > Math.max(2, day.getActivities().size() / 2)) {
-            return QualityCheck.fail("too many generic activities in regenerated day");
-        }
-        if (ItineraryQualityPolicy.exceedsNonLogisticsItems(nonLogisticsActivities)) {
-            return QualityCheck.fail("regenerated day has too many non-logistics activities");
+        if (genericActivities > ItineraryQualityPolicy.maxGenericActivitiesAllowed(day.getActivities().size())) {
+            return QualityCheck.fail(
+                    "too many generic activities: " + genericActivities + "/" + day.getActivities().size());
         }
         if (hasTooManyDuplicatePlaces(day, currentSchedule)) {
             return QualityCheck.fail("regenerated day repeats too many places from other days");
@@ -1882,7 +1872,7 @@ public class AiService {
         String combined = String.join(" ", normalizedName, normalizedLocation, normalizedNote);
         long cost = Math.max(0, act.getEstimatedCost());
 
-        if (isOutboundOrReturnTransport(combined, req)) {
+        if ("transport".equals(normalizedType) && isOutboundOrReturnTransport(combined, req)) {
             if (cost == 0 && !bundledIntercityTransportCost) {
                 return "intercity transport cost is missing: " + act.getName();
             }
@@ -1907,12 +1897,19 @@ public class AiService {
     /**
      * Returns true when the quality-check failure reason indicates a structural
      * problem that makes the itinerary unusable (e.g. wrong day count, blank
-     * activity names, invalid types/times, AI loop). Content-quality issues
+     * activity names, or invalid types/times). Content-quality issues
      * (generic names, avoid-instruction violations, duplicate places, cost
      * completeness) are NOT structural — the itinerary is renderable and the
      * user can still benefit from it.
      */
-    private boolean isStructuralFailure(String reason) {
+    private boolean isStructuralFailure(QualityCheck quality) {
+        if (quality == null) {
+            return false;
+        }
+        if (quality.structural()) {
+            return true;
+        }
+        String reason = quality.reason();
         if (reason == null || reason.isBlank()) {
             return false;
         }
@@ -1920,9 +1917,7 @@ public class AiService {
                 || reason.startsWith("expected ") // "expected X days but got Y"
                 || reason.contains("has no name") // "activity has no name"
                 || reason.contains("invalid type") // "activity has invalid type"
-                || reason.contains("invalid time") // "activity has invalid time"
-                || reason.contains("identical activity") // "all days have identical activity sequences"
-                || reason.contains("fewer than"); // "day X has fewer than Y activities"
+                || reason.contains("invalid time"); // "activity has invalid time"
     }
 
     private boolean hasBundledIntercityTransportCost(List<TripDto.DayResponse> days, TripDto.GenerateRequest req) {
@@ -2083,6 +2078,7 @@ public class AiService {
                 "nhan xe dap",
                 "thue o to",
                 "thue oto",
+                "thue xe tu lai",
                 "nhan o to",
                 "nhan oto",
                 "lay o to",
@@ -2111,6 +2107,7 @@ public class AiService {
                 "xe dap thue",
                 "thue o to",
                 "thue oto",
+                "thue xe tu lai",
                 "o to thue",
                 "oto thue");
     }
@@ -2305,63 +2302,6 @@ public class AiService {
                 || type.equals("nightlife");
     }
 
-    private int parseActivityDurationMinutes(String duration) {
-        if (duration == null || duration.isBlank())
-            return 60;
-        String normalized = normalize(duration);
-        int minutes = 0;
-
-        java.util.regex.Matcher hourMatcher = java.util.regex.Pattern
-                .compile("(\\d+(?:[\\.,]\\d+)?)\\s*(gio|h)")
-                .matcher(normalized);
-        if (hourMatcher.find()) {
-            minutes += Math.round(Float.parseFloat(hourMatcher.group(1).replace(",", ".")) * 60);
-        }
-
-        java.util.regex.Matcher minuteMatcher = java.util.regex.Pattern
-                .compile("(\\d+)\\s*(phut|p|min)")
-                .matcher(normalized);
-        if (minuteMatcher.find()) {
-            minutes += Integer.parseInt(minuteMatcher.group(1));
-        }
-
-        return minutes > 0 ? minutes : 60;
-    }
-
-    private int minimumActivitiesForDay(TripDto.DayResponse day, TripDto.GenerateRequest req) {
-        if (day == null) {
-            return 3;
-        }
-        boolean edgeDay = day.getDay() <= 1 || day.getDay() >= Math.max(1, req.getDays());
-        boolean hasIntercityTransport = day.getActivities() != null && day.getActivities().stream()
-                .anyMatch(activity -> isOutboundOrReturnTransport(normalize(String.join(" ",
-                        nullToBlank(activity.getName()),
-                        nullToBlank(activity.getLocation()),
-                        nullToBlank(activity.getNote()))), req));
-        return edgeDay || hasIntercityTransport || isRelaxedPacing(req)
-                ? ItineraryQualityPolicy.MIN_ACTIVITIES_LIGHT_DAY
-                : ItineraryQualityPolicy.MIN_ACTIVITIES_DEFAULT;
-    }
-
-    private boolean isRelaxedPacing(TripDto.GenerateRequest req) {
-        String context = normalize(String.join(" ",
-                nullToBlank(req.getStyle()),
-                nullToBlank(req.getGroupType()),
-                nullToBlank(req.getNotes())));
-        return containsAny(context,
-                "relaxing",
-                "nghi duong",
-                "family",
-                "tre em",
-                "nguoi lon tuoi",
-                "nhe nhang",
-                "thu gian");
-    }
-
-    private boolean isLogisticsType(String normalizedType) {
-        return normalizedType.equals("transport") || normalizedType.equals("accommodation");
-    }
-
     private boolean isOutboundOrReturnTransport(String normalizedText, TripDto.GenerateRequest req) {
         String departure = normalize(req.getDeparture());
         String destination = normalize(req.getDestination());
@@ -2382,7 +2322,8 @@ public class AiService {
             return false;
         }
 
-        return normalizedText.contains(departure) && normalizedText.contains(destination);
+        return (normalizedText.contains(departure) && normalizedText.contains(destination))
+                || ItineraryQualityPolicy.isIntercityTransport(normalizedText, req.getOutboundTransport());
     }
 
     private boolean isLocalTerminalTransfer(String normalizedText) {
@@ -2564,7 +2505,7 @@ public class AiService {
                 .replaceAll("\\s+", "")
                 .trim();
 
-        return meaningful.length() >= 4;
+        return meaningful.length() >= 2;
     }
 
     private String foodSpecificityIssue(
@@ -2593,12 +2534,21 @@ public class AiService {
         boolean genericName = isGenericActivity(normalizedName, normalizedLocation, normalizedType)
                 || destinationOnlyMeal
                 || containsAny(searchableName,
+                        "bua sang dia phuong",
+                        "bua trua dia phuong",
+                        "bua toi dia phuong",
+                        "bua sang tai homestay",
+                        "bua sang tai khach san",
+                        "bua an tai khu vuc",
                         "nha hang dia phuong",
                         "quan an dia phuong",
                         "quan dia phuong",
                         "cac quan dia phuong",
                         "mon an dia phuong",
                         "dac san dia phuong",
+                        "ca phe dia phuong",
+                        "cafe dia phuong",
+                        "thuong thuc ca phe dia phuong",
                         "quan an gan do",
                         "khach san hoac quan an",
                         "hoac quan an dia phuong",
@@ -2630,18 +2580,18 @@ public class AiService {
             String normalizedName,
             String normalizedLocation,
             String normalizedType) {
+        if ("accommodation".equals(normalizedType)) {
+            return accommodationSpecificityIssue(act, req, normalizedName, normalizedLocation, normalizedType) != null;
+        }
+        if ("food".equals(normalizedType) || "cafe".equals(normalizedType)) {
+            return foodSpecificityIssue(act, req, normalizedName, normalizedLocation, normalizedType) != null;
+        }
         if (!isGenericActivity(normalizedName, normalizedLocation, normalizedType)) {
             return false;
         }
         String searchableName = normalizeSearchText(normalizedName);
         String searchableLocation = normalizeSearchText(normalizedLocation);
         String searchableNote = normalizeSearchText(normalize(act.getNote()));
-        if ("accommodation".equals(normalizedType)) {
-            return !hasSpecificAccommodationReference(req, searchableName, searchableLocation, searchableNote);
-        }
-        if ("food".equals(normalizedType) || "cafe".equals(normalizedType)) {
-            return foodSpecificityIssue(act, req, normalizedName, normalizedLocation, normalizedType) != null;
-        }
         return !hasSpecificPlaceReference(req, searchableLocation, searchableNote);
     }
 
@@ -2703,7 +2653,7 @@ public class AiService {
                 .replaceAll("\\s+", "")
                 .trim();
 
-        return meaningful.length() >= 4;
+        return meaningful.length() >= 2;
     }
 
     private String normalizeSearchText(String text) {
@@ -2760,36 +2710,17 @@ public class AiService {
                 .trim();
     }
 
-    private record TimeRange(String start, int durationMinutes, String type) {
-        java.time.LocalTime end() {
-            return java.time.LocalTime.parse(start).plusMinutes(Math.max(15, durationMinutes));
-        }
-
-        boolean isLogistics() {
-            return "transport".equals(type) || "accommodation".equals(type);
-        }
-
-        long overlapMinutes(TimeRange other) {
-            java.time.LocalTime startTime = java.time.LocalTime.parse(start);
-            java.time.LocalTime endTime = end();
-            java.time.LocalTime otherStart = java.time.LocalTime.parse(other.start());
-            java.time.LocalTime otherEnd = other.end();
-            java.time.LocalTime overlapStart = startTime.isAfter(otherStart) ? startTime : otherStart;
-            java.time.LocalTime overlapEnd = endTime.isBefore(otherEnd) ? endTime : otherEnd;
-            if (!overlapStart.isBefore(overlapEnd)) {
-                return 0;
-            }
-            return java.time.Duration.between(overlapStart, overlapEnd).toMinutes();
-        }
-    }
-
-    private record QualityCheck(boolean passed, String reason) {
+    private record QualityCheck(boolean passed, String reason, boolean structural) {
         static QualityCheck pass() {
-            return new QualityCheck(true, "ok");
+            return new QualityCheck(true, "ok", false);
         }
 
         static QualityCheck fail(String reason) {
-            return new QualityCheck(false, reason);
+            return new QualityCheck(false, reason, false);
+        }
+
+        static QualityCheck fail(String reason, boolean structural) {
+            return new QualityCheck(false, reason, structural);
         }
     }
 }
