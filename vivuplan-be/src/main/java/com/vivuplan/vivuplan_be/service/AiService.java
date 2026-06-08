@@ -1698,10 +1698,6 @@ public class AiService {
                 if (!avoid.isBlank() && containsAvoidedContent(combined, avoid)) {
                     return QualityCheck.fail("activity appears to violate avoid instruction: " + act.getName());
                 }
-                String accommodationIssue = accommodationSpecificityIssue(act, req, name, location, type);
-                if (accommodationIssue != null) {
-                    return QualityCheck.fail(accommodationIssue);
-                }
                 if (isGenericActivityForQuality(act, req, name, location, type)) {
                     genericActivities++;
                 }
@@ -1797,10 +1793,6 @@ public class AiService {
             }
             if (!avoid.isBlank() && containsAvoidedContent(combined, avoid)) {
                 return QualityCheck.fail("activity appears to violate avoid instruction: " + act.getName());
-            }
-            String accommodationIssue = accommodationSpecificityIssue(act, req, name, location, type);
-            if (accommodationIssue != null) {
-                return QualityCheck.fail(accommodationIssue);
             }
             if (isGenericActivityForQuality(act, req, name, location, type)) {
                 genericActivities++;
@@ -2481,48 +2473,6 @@ public class AiService {
                 "one-way ticket");
     }
 
-    private String accommodationSpecificityIssue(
-            TripDto.ActivityResponse act,
-            TripDto.GenerateRequest req,
-            String normalizedName,
-            String normalizedLocation,
-            String normalizedType) {
-        if (!"accommodation".equals(normalizedType)) {
-            return null;
-        }
-
-        String searchableName = normalizeSearchText(normalizedName);
-        String searchableLocation = normalizeSearchText(normalizedLocation);
-        String searchableNote = normalizeSearchText(normalize(act.getNote()));
-        String searchable = normalizeSearchText(
-                normalizedName + " " + normalizedLocation + " " + normalize(act.getNote()));
-        boolean hasSpecificAccommodationReference = hasSpecificAccommodationReference(
-                req,
-                searchableName,
-                searchableLocation,
-                searchableNote);
-        boolean genericPlaceholder = isGenericActivity(normalizedName, normalizedLocation, normalizedType)
-                || containsAny(searchableName,
-                        "homestay khach san",
-                        "khach san homestay",
-                        "hotel homestay",
-                        "homestay hotel",
-                        "nha nghi khach san",
-                        "noi luu tru",
-                        "co so luu tru",
-                        "khach san khu vuc",
-                        "homestay khu vuc",
-                        "nha nghi khu vuc",
-                        "khach san trung tam",
-                        "homestay trung tam")
-                || (containsAny(searchable, "homestay khach san", "khach san homestay")
-                        && !containsAny(searchableName, "hotel", "khach san", "homestay", "hostel", "resort"));
-
-        return genericPlaceholder && !hasSpecificAccommodationReference
-                ? "accommodation is generic: " + act.getName()
-                : null;
-    }
-
     private boolean hasSpecificAccommodationReference(
             TripDto.GenerateRequest req,
             String searchableName,
@@ -2631,19 +2581,58 @@ public class AiService {
             String normalizedName,
             String normalizedLocation,
             String normalizedType) {
-        if (!isGenericActivity(normalizedName, normalizedLocation, normalizedType)) {
-            return false;
-        }
         String searchableName = normalizeSearchText(normalizedName);
         String searchableLocation = normalizeSearchText(normalizedLocation);
         String searchableNote = normalizeSearchText(normalize(act.getNote()));
         if ("accommodation".equals(normalizedType)) {
-            return !hasSpecificAccommodationReference(req, searchableName, searchableLocation, searchableNote);
+            return isGenericAccommodationForQuality(
+                    req,
+                    normalizedName,
+                    normalizedLocation,
+                    normalizedType,
+                    searchableName,
+                    searchableLocation,
+                    searchableNote,
+                    act);
+        }
+        if (!isGenericActivity(normalizedName, normalizedLocation, normalizedType)) {
+            return false;
         }
         if ("food".equals(normalizedType) || "cafe".equals(normalizedType)) {
             return foodSpecificityIssue(act, req, normalizedName, normalizedLocation, normalizedType) != null;
         }
         return !hasSpecificPlaceReference(req, searchableLocation, searchableNote);
+    }
+
+    private boolean isGenericAccommodationForQuality(
+            TripDto.GenerateRequest req,
+            String normalizedName,
+            String normalizedLocation,
+            String normalizedType,
+            String searchableName,
+            String searchableLocation,
+            String searchableNote,
+            TripDto.ActivityResponse act) {
+        String searchable = normalizeSearchText(
+                normalizedName + " " + normalizedLocation + " " + normalize(act.getNote()));
+        boolean genericPlaceholder = isGenericActivity(normalizedName, normalizedLocation, normalizedType)
+                || containsAny(searchableName,
+                        "homestay khach san",
+                        "khach san homestay",
+                        "hotel homestay",
+                        "homestay hotel",
+                        "nha nghi khach san",
+                        "noi luu tru",
+                        "co so luu tru",
+                        "khach san khu vuc",
+                        "homestay khu vuc",
+                        "nha nghi khu vuc",
+                        "khach san trung tam",
+                        "homestay trung tam")
+                || (containsAny(searchable, "homestay khach san", "khach san homestay")
+                        && !containsAny(searchableName, "hotel", "khach san", "homestay", "hostel", "resort"));
+        return genericPlaceholder
+                && !hasSpecificAccommodationReference(req, searchableName, searchableLocation, searchableNote);
     }
 
     private boolean hasSpecificFoodReference(

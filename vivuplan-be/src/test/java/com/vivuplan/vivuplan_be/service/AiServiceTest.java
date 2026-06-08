@@ -606,7 +606,7 @@ class AiServiceTest {
     }
 
     @Test
-    void itineraryQualityFlagsGenericAccommodationWithoutSpecificReference() throws Exception {
+    void itineraryQualityAllowsSingleGenericAccommodationWithoutSpecificReference() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
         req.setDestination("Sa Pa");
@@ -624,8 +624,33 @@ class AiServiceTest {
 
         QualityResult quality = assessItineraryQuality(service, List.of(day), req);
 
+        assertThat(quality.passed()).isTrue();
+    }
+
+    @Test
+    void itineraryQualityFlagsTooManyGenericActivitiesIncludingAccommodation() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDestination("Sa Pa");
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("08:00", "An sang dac san dia phuong", "FOOD",
+                        "Khu vuc trung tam Sa Pa", 100_000L, null),
+                activity("09:30", "Tham quan diem noi bat", "ATTRACTION",
+                        "Khu vuc trung tam Sa Pa", 140_000L, null),
+                activity("12:00", "Kham pha van hoa dia phuong", "ACTIVITY",
+                        "Khu vuc trung tam Sa Pa", 120_000L, null),
+                activity("14:00", "Nhan phong tai khach san/homestay", "ACCOMMODATION",
+                        "Khu vuc trung tam Sa Pa", 1_200_000L,
+                        "Chi phi luu tru 2 dem cho ca nhom."),
+                activity("18:30", "An toi tai nha hang dia phuong", "FOOD",
+                        "Khu vuc trung tam Sa Pa", 250_000L, null)));
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
         assertThat(quality.passed()).isFalse();
-        assertThat(quality.reason()).contains("accommodation is generic");
+        assertThat(quality.reason()).contains("too many generic activities");
     }
 
     @Test
