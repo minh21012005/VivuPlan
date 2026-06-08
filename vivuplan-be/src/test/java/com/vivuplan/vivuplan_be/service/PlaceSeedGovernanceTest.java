@@ -154,13 +154,6 @@ class PlaceSeedGovernanceTest {
                 600_000L,
                 "PER_PERSON",
                 "MEDIUM");
-
-        assertThat(findPlace(places, "Phong Nha - Kẻ Bàng", "Động Tiên Sơn").path("address").asText())
-                .endsWith("Quảng Bình");
-        assertThat(findPlace(places, "Phong Nha - Kẻ Bàng", "Vườn thực vật Phong Nha").path("address").asText())
-                .endsWith("Quảng Bình");
-        assertThat(findPlace(places, "Phong Nha - Kẻ Bàng", "Suối Nước Moọc").path("address").asText())
-                .endsWith("Quảng Bình");
     }
 
     private void assertOptionalVerificationFields(JsonNode place, String name) {

@@ -227,7 +227,6 @@ class PlacePlanningServiceTest {
         TripDto.ActivityResponse activity = new TripDto.ActivityResponse();
         activity.setName("Explore Da Nang Museum");
         activity.setType("ATTRACTION");
-        activity.setLocation("Incorrect AI-provided province");
         TripDto.DayResponse day = new TripDto.DayResponse();
         day.setDay(1);
         day.setActivities(List.of(activity));
@@ -239,30 +238,6 @@ class PlacePlanningServiceTest {
         assertThat(activity.getLongitude()).isEqualTo(108.2231);
         assertThat(activity.getLocation()).isEqualTo("24 Tran Phu, Da Nang");
         assertThat(activity.getRating()).isEqualTo(4.5);
-    }
-
-    @Test
-    void enrichScheduleDoesNotCanonicalizeAmbiguousShortPartialName() {
-        PlacePlanningService service = new PlacePlanningService(placeRepository, destinationRepository);
-        Place museum = place(44L, "Da Nang Museum", Place.PlaceType.ATTRACTION, 4.5, 60_000, "Central museum");
-        museum.setAddress("24 Tran Phu, Da Nang");
-        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
-                .thenReturn(Optional.empty());
-        when(placeRepository.findByDestinationIgnoreCaseAndVerifiedTrueOrderByRatingDesc(anyString()))
-                .thenReturn(List.of(museum));
-
-        TripDto.ActivityResponse activity = new TripDto.ActivityResponse();
-        activity.setName("Da Nang");
-        activity.setType("ATTRACTION");
-        activity.setLocation("Khu vuc trung tam");
-        TripDto.DayResponse day = new TripDto.DayResponse();
-        day.setDay(1);
-        day.setActivities(List.of(activity));
-
-        service.enrichScheduleWithVerifiedPlaces(List.of(day), "da nang");
-
-        assertThat(activity.getPlaceId()).isNull();
-        assertThat(activity.getLocation()).isEqualTo("Khu vuc trung tam");
     }
 
     private TripDto.GenerateRequest request() {

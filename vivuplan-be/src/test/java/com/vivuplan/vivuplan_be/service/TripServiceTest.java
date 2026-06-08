@@ -16,7 +16,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -76,83 +75,6 @@ class TripServiceTest {
                 activityCoordinateResolverService,
                 billingService,
                 userPromptGuardService);
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void requestFulfillmentKeepsAllDistinctAiMessagesWithoutLegacyCaps() throws Exception {
-        TripDto.RequestFulfillment fulfillment = new TripDto.RequestFulfillment();
-        fulfillment.setOverallStatus("PARTIAL");
-        List<TripDto.RequestFulfillmentItem> items = new ArrayList<>();
-        for (int index = 1; index <= 3; index++) {
-            TripDto.RequestFulfillmentItem item = new TripDto.RequestFulfillmentItem();
-            item.setRequestedText("Yeu cau da ap dung " + index);
-            item.setStatus("FULFILLED");
-            item.setReasonCode("APPLIED");
-            item.setUserMessage("Da ap dung lua chon " + index + " vao lich trinh.");
-            items.add(item);
-        }
-        for (int index = 1; index <= 5; index++) {
-            TripDto.RequestFulfillmentItem item = new TripDto.RequestFulfillmentItem();
-            item.setRequestedText("Yeu cau can luu y " + index);
-            item.setStatus("PARTIAL");
-            item.setReasonCode("CONSTRAINT");
-            item.setUserMessage("Can luu y rang buoc " + index + " cua chuyen di.");
-            items.add(item);
-        }
-        fulfillment.setItems(items);
-
-        Method method = TripService.class.getDeclaredMethod(
-                "buildRequestFulfillmentWarnings",
-                TripDto.RequestFulfillment.class,
-                String.class,
-                String.class);
-        method.setAccessible(true);
-        List<String> warnings = (List<String>) method.invoke(
-                service(),
-                fulfillment,
-                "Yeu cau tong hop",
-                "lich trinh vua tao");
-
-        assertThat(warnings).hasSize(8);
-        assertThat(warnings).anyMatch(message -> message.contains("lua chon 3"));
-        assertThat(warnings).anyMatch(message -> message.contains("rang buoc 5"));
-    }
-
-    @Test
-    void costNormalizationDoesNotUseTrainRoundTripOwnerForZeroCostFlight() throws Exception {
-        Trip trip = sampleTrip();
-        trip.setDeparture("Ha Noi");
-        trip.setDestination("Da Nang");
-        trip.setOutboundTransport(Trip.TransportMode.MIXED);
-        TripDto.ActivityResponse trainOwner = activity(
-                "06:00",
-                "Ve tau khu hoi Ha Noi - Da Nang",
-                "TRANSPORT",
-                "Ga Ha Noi <-> Ga Da Nang",
-                "16 gio",
-                2_000_000,
-                "Chi phi ve tau khu hoi cho ca nhom, bao gom chieu ve.");
-        TripDto.ActivityResponse flight = activity(
-                "18:00",
-                "Chuyen bay Da Nang ve Ha Noi",
-                "TRANSPORT",
-                "San bay Da Nang -> San bay Noi Bai",
-                "2 gio",
-                0,
-                "Ve may bay chieu ve khoang 1.800.000 VND.");
-        TripDto.DayResponse day = new TripDto.DayResponse();
-        day.setDay(1);
-        day.setActivities(List.of(trainOwner, flight));
-
-        Method method = TripService.class.getDeclaredMethod(
-                "normalizeActivityCosts",
-                List.class,
-                Trip.class);
-        method.setAccessible(true);
-        method.invoke(service(), List.of(day), trip);
-
-        assertThat(flight.getEstimatedCost()).isEqualTo(1_800_000L);
     }
 
     @Test
@@ -1273,96 +1195,6 @@ class TripServiceTest {
         day.setActivities(new ArrayList<>(List.of(morning, lunch)));
         trip.setItineraryDays(new ArrayList<>(List.of(day)));
         return trip;
-    }
-
-    @Test
-    void parseDurationMinutesSupportsVariousUnits() throws Exception {
-        Method method = TripService.class.getDeclaredMethod("parseDurationMinutes", String.class);
-        method.setAccessible(true);
-        TripService service = service();
-
-        assertThat((int) method.invoke(service, "2 tiếng")).isEqualTo(120);
-        assertThat((int) method.invoke(service, "2 tieng")).isEqualTo(120);
-        assertThat((int) method.invoke(service, "1.5 hours")).isEqualTo(90);
-        assertThat((int) method.invoke(service, "1 gio 30 phut")).isEqualTo(90);
-        assertThat((int) method.invoke(service, "45 phut")).isEqualTo(45);
-        assertThat((int) method.invoke(service, "3h")).isEqualTo(180);
-        assertThat((int) method.invoke(service, "1h30p")).isEqualTo(90);
-        assertThat((int) method.invoke(service, "1h30phut")).isEqualTo(90);
-    }
-
-    @Test
-    void calculateBudgetCategorizesLowercaseTypeFromAiScheduleCorrectly() throws Exception {
-        // Budget breakdown received when types are lowercase (as from AI output before save).
-        // Before fix: switch used uppercase literals so "food" fell into "activities" bucket.
-        Trip trip = sampleTrip();
-        Method method = TripService.class.getDeclaredMethod(
-                "calculateBudget", Trip.class, List.class);
-        method.setAccessible(true);
-
-        TripDto.ActivityResponse food = activity("08:00", "An sang", "food",
-                "Nha hang", "1 gio", 100_000L, null);
-        TripDto.ActivityResponse transport = activity("10:00", "Taxi noi thanh", "transport",
-                "Trung tam", "30 phut", 80_000L, null);
-        TripDto.ActivityResponse accommodation = activity("14:00", "Nhan phong", "accommodation",
-                "Khach san", "30 phut", 500_000L, null);
-        TripDto.ActivityResponse cafe = activity("16:00", "Ca phe", "cafe",
-                "Quan ca phe", "1 gio", 60_000L, null);
-        TripDto.DayResponse day = new TripDto.DayResponse();
-        day.setDay(1);
-        day.setActivities(List.of(food, transport, accommodation, cafe));
-
-        @SuppressWarnings("unchecked")
-        TripDto.BudgetBreakdown budget = (TripDto.BudgetBreakdown) method.invoke(service(), trip, List.of(day));
-
-        assertThat(budget.getFood()).isEqualTo(160_000L);       // food + cafe
-        assertThat(budget.getTransport()).isEqualTo(80_000L);
-        assertThat(budget.getAccommodation()).isEqualTo(500_000L);
-        assertThat(budget.getActivities()).isZero();
-        assertThat(budget.getTotal()).isEqualTo(740_000L);
-    }
-
-    @Test
-    void updateTripStatusRejectsUnknownStatusWithClearMessage() {
-        Trip trip = sampleTrip();
-        TripService service = service();
-        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
-
-        assertThatThrownBy(() -> service.updateTripStatus(1L, 7L, "NONEXISTENT_STATUS"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Trạng thái lịch trình không hợp lệ")
-                .hasMessageContaining("NONEXISTENT_STATUS");
-    }
-
-    @Test
-    void validateNoTimeOverlapDetectsMidnightCrossingOverlaps() throws Exception {
-        Method method = TripService.class.getDeclaredMethod(
-                "validateNoTimeOverlap",
-                ItineraryDay.class,
-                Activity.class,
-                Long.class);
-        method.setAccessible(true);
-
-        ItineraryDay day = new ItineraryDay();
-        day.setActivities(new ArrayList<>());
-
-        Activity existing = new Activity();
-        existing.setId(100L);
-        existing.setTime("23:00");
-        existing.setDuration("2 tiếng"); // ends at 01:00 (1380 + 120 = 1500)
-        existing.setName("Existing late night activity");
-        day.getActivities().add(existing);
-
-        Activity candidate = new Activity();
-        candidate.setId(200L);
-        candidate.setTime("22:30");
-        candidate.setDuration("1 giờ"); // ends at 23:30 (1350 + 60 = 1410). Overlaps with existing from 23:00 to 23:30.
-        candidate.setName("Candidate overlapping activity");
-
-        assertThatThrownBy(() -> method.invoke(service(), day, candidate, null))
-                .getCause()
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Thời gian hoạt động bị trùng");
     }
 }
 

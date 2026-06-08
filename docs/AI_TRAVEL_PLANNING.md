@@ -73,141 +73,6 @@ Avoid:
 - Guessing exact coordinates for unverified places.
 - Ignoring explicit user constraints.
 
-## Pacing Policy
-
-- Normal sightseeing days target 5-10 displayed items.
-- Travel-constrained, partially usable, relaxing, or family days may use 3-7
-  items.
-- Do not classify every first or last day as light. An early arrival or late
-  departure can still leave a normal sightseeing day.
-- Dense but realistic days target 6-10 non-logistics items. Ten is a pacing
-  target, not an independent upper guard, so a coherent day may exceed it.
-- A day may contain at most 15 total items. Exceeding this upper guard triggers
-  an AI retry; renderable results remain best-effort after the final retry and
-  are never truncated by the backend.
-- Normal days need at least three meaningful items. Days with genuine
-  intercity travel or relaxed pacing may use two.
-- Rest, preparation, and free-time filler do not satisfy the meaningful-item
-  minimum.
-
-## Specificity Retry Policy
-
-- Generic food, cafe, accommodation, and sightseeing entries are counted as
-  aggregate quality signals. No single generic entry triggers a retry by
-  itself, including accommodation.
-- Full itinerary generation and day regeneration use the same threshold:
-  generic entries must exceed `max(2, evaluatedActivities / 4)` before retry.
-- Verified place IDs, specific venue names, searchable markets or food areas,
-  and concrete location or note references prevent an entry from being counted
-  as generic.
-- Short but recognizable named references such as `Chợ Hàn`, `Chợ Cồn`, or
-  `Ga Đà Nẵng` must not be rejected only because few characters remain after
-  generic words and the destination name are removed.
-
-## Uncertainty And Retry Discipline
-
-- Backend quality checks should retry only for material, sufficiently
-  deterministic problems. Unknown business policies or unparseable descriptive
-  text must not be converted into assumed failures.
-- A full itinerary with an empty activity list, a null day, duplicate or
-  out-of-range day numbers, a blank activity name, an unsupported activity
-  type, or an invalid time is structurally unusable. These failures must not be
-  returned as best-effort after the final retry.
-- Accommodation check-in time is property-specific. An early check-in entry
-  does not trigger retry by itself; prompts should prefer luggage drop or a
-  confirmation note when availability is uncertain.
-- Falling below the meaningful-activity target is a renderable quality issue,
-  not a structural contract failure. Retry once, then allow best-effort return
-  when the itinerary remains usable.
-- Timeline overlap is checked only when both start time and duration can be
-  interpreted. An unknown duration is not silently treated as 60 minutes.
-- Overlap validation considers every still-active earlier range, not only
-  adjacent entries after sorting. This prevents a long activity from hiding an
-  overlap with a later activity when a short activity sits between them.
-- Equal start times are not independently rejected. A non-blocking
-  booking/package may share a timestamp with a physical activity; only
-  determinable blocking overlap triggers a quality issue.
-- Overnight transport route evidence may be distributed across activity name,
-  location, and note. It is not required to appear entirely in the name.
-- Duplicate or identical days remain quality issues, but renderable results are
-  eligible for best-effort return after the final retry.
-
-## Transport Timeline And Cost Ownership
-
-- Full generation owns the complete trip timeline. Day regeneration owns only
-  transport that genuinely occurs on the target day; surrounding days are
-  immutable context. Regenerating a middle day must not invent outbound or
-  return legs merely because those legs exist elsewhere in the trip.
-- First-day regeneration preserves or adds the real outbound leg when the trip
-  starts with travel from the supplied departure. Final-day regeneration does
-  the same for the real return leg. A one-day regeneration uses the existing
-  day and request context instead of blindly forcing both directions.
-- When departure and destination refer to the same travel area, prompts must
-  not invent an intercity plane, train, or bus round trip.
-- The itinerary must show physical outbound and return legs on the days when
-  they occur, even when a single booking owns the round-trip cost.
-- A physical leg moves the traveler from one place to another. A cost-owner
-  activity represents a booking or package whose name describes the full cost
-  scope, such as a round-trip ticket or multi-day vehicle rental.
-- A status-only milestone does not independently represent movement, a distinct
-  cost, or cost ownership. Landing, terminal arrival without a
-  route, check-in/security/boarding, disembarking, baggage claim, waiting,
-  layovers, accommodation check-out, and parking or vehicle pickup/return
-  without distinct movement or cost should normally be folded into the related
-  activity or represented as timeline buffer rather than separate cards.
-- For each direction of a normal flight, train, or bus journey, prefer at most
-  three meaningful movement items: origin area to terminal when material, the
-  intercity leg including arrival, and arrival terminal to lodging/destination
-  when material. Do not add a separate landing or terminal-arrival card after
-  the intercity leg.
-- Prefer assigning a round-trip cost to a physical leg when that activity name
-  and note accurately describe the full booking scope. A separate non-blocking
-  booking/package cost owner may coexist only when no physical leg can
-  accurately own the full cost. Such an administrative item should have a
-  short realistic duration and must not look like physical travel.
-- When airport or station procedures are included in an intercity activity, its
-  duration covers the complete scheduled block through arrival. Check-in,
-  security, boarding, baggage, terminal exit, and connection buffers remain in
-  that block or its note instead of becoming separate activities.
-- Meaningful transfers to or from airports, train stations, and bus terminals
-  should be separate timeline items. Do not invent a home address when only a
-  departure city or area is known.
-- For an overnight outbound leg that arrives on day 1, keep the arrival on day
-  1, name the mode and route, use the real travel duration, and note that
-  departure occurred the previous evening. Do not create day 0.
-- A long layover normally remains in the intercity duration and note. It becomes
-  a separate activity only when the traveler leaves the terminal for a genuine
-  experience or movement with its own time or cost.
-- Keep one primary purpose per activity. Do not merge meals, attractions,
-  accommodation check-out, or vehicle return into unrelated movement merely to
-  reduce card count. A no-cost vehicle return with no separate route or
-  meaningful duration belongs in the relevant transport/package note.
-- A paid activity name must describe the full scope of its cost. Keep
-  intercity tickets separate from local transfers and keep multi-day vehicle
-  packages separate from individual short movements.
-- A zero-cost leg may reference a paid round-trip booking or transport package
-  only when the corresponding paid owner exists in the itinerary and covers
-  the same transport mode and route.
-- Round-trip owners are correlated by transport mode when the mode can be
-  determined. A paid train booking must not silently cover a zero-cost flight
-  leg. Multi-day rental owners are similarly correlated by vehicle kind.
-- Gateway cities may differ from the destination name, such as Đồng Hới for
-  Phong Nha - Kẻ Bàng. Validation should use transport mode and route cues
-  rather than requiring exact destination-name matching.
-- Airport or station aliases may identify an intercity route without repeating
-  the request's city names, for example `Nội Bài → Liên Khương`. Generation and
-  regeneration must use the same intercity and relaxed-pacing classification.
-- Multi-day rental ownership includes normal self-drive wording such as
-  `thuê ô tô tự lái`, `xe máy thuê`, or `thuê xe 3 ngày`, not only
-  chauffeur, shuttle, and transfer packages.
-- Multi-day itineraries enforce outbound and return evidence as a quality
-  signal. A one-day itinerary remains prompt-led for this rule because the
-  current request contract cannot reliably distinguish a same-day round trip
-  from a traveler already positioned at the destination.
-- Quality retry prompts reuse the base transport contract and append only the
-  concrete rejection reason. Shared transport guidance should appear once per
-  model call to avoid unnecessary tokens and transport-focused recency bias.
-
 ## Prompt Self-Validation
 
 Prompts should include a short final self-check before the JSON schema. The
@@ -244,11 +109,6 @@ normalization, retries, and tests remain the real enforcement layer.
 ## Coordinate Rules
 
 - Verified place coordinates are preferred.
-- Canonical verified-place metadata may overwrite AI location text only after a
-  confident match. Exact names and sufficiently strong partial names are
-  accepted; short or low-overlap partial names must not receive a verified
-  place ID or canonical address merely because one candidate shares a generic
-  token.
 - AI-provided coordinates must be validated.
 - Geocoding can be used through the resolver and cache.
 - Transport activities can be skipped for coordinate resolution where the code
@@ -278,19 +138,6 @@ normalization, retries, and tests remain the real enforcement layer.
   parsing. Do not silently rewrite or suppress them with a second simplified
   weather interpretation in `TripService`; prompt context and AI quality rules
   own the semantic explanation.
-- Do not turn itinerary text into a forecast bulletin or blanket weather
-  advisory, repeat exact forecast values, or present predicted conditions as
-  certain facts. Concise natural activity-specific context such as "if weather
-  permits" or advice to reconfirm route, site, water-level, sea, or operator
-  conditions is allowed when useful. Do not repeat generic weather disclaimers
-  across activities.
-- Backend quality validation must not classify weather words in day titles,
-  summaries, activity names, or notes as deterministic failures. Keyword
-  matching cannot reliably distinguish a forecast claim from useful outdoor
-  context and must not trigger an AI retry.
-- Explain weather-driven omissions, substitutions, or material weakening of a
-  user request or destination-signature experience through
-  `requestFulfillment`.
 - Persist AI `WEATHER_SAFETY` explanations in `Trip.aiWarnings` with the other
   request-fulfillment messages. They explain why that saved itinerary was
   constructed, so users must still see them after refresh. Current frontend
@@ -314,11 +161,8 @@ Request fulfillment notes should explain meaningful tradeoffs:
 - Requests that could not be fully satisfied.
 - Safety, weather, budget, or feasibility adjustments.
 
-Persist every distinct `requestFulfillment.items[].userMessage` after applying
-the existing positive/caution presentation prefix. Do not cap fulfilled or
-caution messages and do not discard a message merely because the backend
-classifies it as generic. Exact duplicates may still be deduplicated. Fallback
-text is allowed only when the AI omitted a required message.
+Persisted warnings should remain curated and useful. Avoid storing noisy,
+duplicative, or irrelevant AI commentary.
 
 ## Testing Guidance
 
