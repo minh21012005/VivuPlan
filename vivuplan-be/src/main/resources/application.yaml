@@ -67,6 +67,11 @@ app:
       timeout-ms: ${ACTIVITY_GEOCODE_TIMEOUT_MS:3000}
       max-per-trip: ${ACTIVITY_GEOCODE_MAX_PER_TRIP:20}
       min-request-interval-ms: ${ACTIVITY_GEOCODE_MIN_REQUEST_INTERVAL_MS:1000}
+    cache-cleanup:
+      scan-ms: ${GEOCODE_CACHE_CLEANUP_SCAN_MS:86400000}          # 24h
+      stale-success-days: ${GEOCODE_CACHE_STALE_SUCCESS_DAYS:180} # xóa SUCCESS không dùng quá 180 ngày
+      stale-negative-days: ${GEOCODE_CACHE_STALE_NEGATIVE_DAYS:30} # xóa NO_RESULT/LOW_CONFIDENCE sau 30 ngày
+      stale-error-days: ${GEOCODE_CACHE_STALE_ERROR_DAYS:7}       # xóa ERROR sau 7 ngày
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:3000,https://vivuplan.vn}
   admin:
