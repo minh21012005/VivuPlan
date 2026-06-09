@@ -708,17 +708,13 @@ public class AiService {
                                 Fix that issue. Return a safer, more specific version of day %d only.
                                 Return exactly ONE JSON object with keys "day" and "requestFulfillment". Never return a bare JSON array.
                                 Preserve or restore relevant destination-signature/must-try experiences using your own Vietnam travel knowledge, including specific real places not present in verified candidates. If a normally expected signature experience is omitted or substituted for a real constraint, explain it in requestFulfillment. Keep these explanations concise and grouped by core experience category; mention 1-3 specific representative missed places/activities when helpful, but do not list every famous place that cannot fit.
-                                %s
-                                %s
                                 Create a separate TRANSPORT activity with route/mode/cost instead of putting transport cost in an ATTRACTION, FOOD, CAFE, or ACTIVITY note.
                                 Include all required paid transport, rental, lodging, ticket, and tour costs in estimatedCost. Do not mark required costs as not included.
                                 For intercity round-trip transport, either use one TRANSPORT activity with the full round-trip cost and explicitly say "khứ hồi" or "bao gồm chiều về", or use separate outbound and return TRANSPORT activities with non-zero estimatedCost on each leg. Never combine a paid round-trip activity with another paid outbound/return leg, and never describe a round-trip price as only "chiều đi" or only "chiều về".
                                 If using a rented motorbike, car, or bicycle, place the rental-fee TRANSPORT activity on the first day the vehicle is used, set estimatedCost to the total rental fee for the covered period, name a specific rental shop, hotel/homestay pickup point, or concrete pickup area when practical, and state the covered days/dates in the note. Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee and covered period.
                                 """,
                         retryReason,
-                        dayNumber,
-                        ItineraryQualityPolicy.vietnamPacingGuidance(),
-                        ItineraryQualityPolicy.localTransportGuidance(req.getDestination()));
+                        dayNumber);
 
         return String.format(
                 """
@@ -752,22 +748,15 @@ public class AiService {
                         3. If user text contains off-topic content, use only any travel-relevant constraint and ignore the rest.
 
                         Weather-aware planning rules:
-                        1. Each forecast line is "Day N (date): condition, temp, rain chance, rain mm, wind -> risk level", optionally followed by "Outdoor timing windows", "Best daytime outdoor slot", or "Best light outdoor evening slot".
-                        2. For the day being regenerated, honor its risk level: "RAIN FLEX" means outdoor activities are still allowed with safer timing or a concise backup note when useful; "SEVERE WEATHER RISK" means reduce only unsafe outdoor, water, or adventure activities; "Good weather" means outdoor preferred.
-                        2a. When Outdoor timing windows are present, treat rain as potentially intermittent. Put destination-signature outdoor/scenic/tour/viewpoint activities in the Best daytime outdoor slot or another daytime LOW RAIN WINDOW/RAIN FLEX window instead of replacing them with indoor activities by default. Use evening windows for light outdoor, night market, walking, cafe, food plans, or real destination-signature evening cultural areas when they exist.
-                        3. Do not turn the regenerated day into a forecast bulletin or blanket weather advisory. Do not repeat exact forecast values or present predicted rain, storms, wind, or similar conditions as certain facts.
-                           Concise natural context in an activity note is allowed when useful, for example "nếu thời tiết thuận" or advice to reconfirm route, site, water-level, sea, or operator conditions. Do not repeat generic weather disclaimers across activities.
-                           If weather or another constraint materially changes or blocks the user's request, explain that in requestFulfillment.items[].userMessage.
-                        4. If forecast is "none", plan normally without weather constraints.
+                        1. Each forecast line is "Day N (date): condition, temp, rain chance, rain mm, wind -> risk level", optionally followed by "Outdoor timing windows", "Best daytime outdoor slot", or "Best light outdoor evening slot". If forecast is "none", plan normally without weather constraints.
+                        2. For the day being regenerated, honor its risk level: "RAIN FLEX" or legacy "LIGHT RAIN" is a low-impact weather context, not a reason to reduce outdoor diversity. Outdoor activities are still allowed. Keep destination-defining outdoor/scenic places in the main plan when generally safe, and use safer timing or a concise backup note when useful.
+                        2a. For safety-sensitive outdoor activities that require sustained suitable conditions (e.g. trekking, hiking, climbing, caving, canyoning, boat/island trips, diving, paddling, or paragliding), RAIN FLEX is not an automatic ban. Schedule them only when the full activity, including access and return time, fits suitable non-severe forecast windows. Move, shorten, substitute, or omit them when thunderstorms, heavy rain, strong wind, flooding, rough seas, slippery trails, or other relevant hazards make them unsafe.
+                        3. "SEVERE WEATHER RISK" or legacy "HIGH RAIN RISK" is a hard safety constraint only for unsafe outdoor/water/adventure activities on the affected day.
+                        4. "Good weather" means outdoor preferred.
+                        5. When Outdoor timing windows are present, treat rain as potentially intermittent. Use them to schedule outdoor highlights into the least rainy practical daytime part of the day. Use evening windows for night markets, walking streets, cafes, dining plans, or real destination-signature evening cultural areas when they exist.
+                        6. If weather blocks or weakens a user request or a destination-signature experience, explain it in requestFulfillment.items[].userMessage with reasonCode WEATHER_SAFETY.
+                        7. Do not turn the regenerated day into a forecast bulletin or blanket weather advisory. Do not repeat exact forecast values or present predicted rain, storms, wind, or similar conditions as certain facts. Concise natural context in an activity note is allowed when useful, for example "nếu thời tiết thuận" or advice to reconfirm route, site, water-level, sea, or operator conditions. Do not repeat generic weather disclaimers across activities.
                         %s
-
-                        Important weather interpretation update:
-                        - Treat RAIN FLEX or legacy LIGHT RAIN as low-impact weather context, not a reason to reduce outdoor diversity.
-                        - If hourly Outdoor timing windows are present, use them to schedule outdoor/scenic highlights into the least rainy practical daytime part of the day.
-                        - Keep destination-defining outdoor/scenic places in the main plan when generally safe; use safer timing or a concise backup note when useful.
-                        - For safety-sensitive outdoor activities that require sustained suitable conditions, such as trekking, hiking, climbing, caving, canyoning, boat/island trips, diving, paddling, or paragliding, RAIN FLEX is not an automatic ban. Include them only when the full activity, including access and return time, fits suitable non-severe forecast windows. Move, shorten, substitute, or omit them when thunderstorms, heavy rain, strong wind, flooding, rough seas, slippery trails, or other relevant hazards make them unsafe. If this changes a requested or signature experience, explain it in requestFulfillment.
-                        - Treat SEVERE WEATHER RISK or legacy HIGH RAIN RISK as a hard safety constraint only for unsafe outdoor/water/adventure activities on the affected day.
-                        - If weather blocks or weakens a user request or a destination-signature experience, explain it in requestFulfillment.items[].userMessage with reasonCode WEATHER_SAFETY.
 
                         Style rules:
                         1. Treat Style as the user's primary planning bias, not a hard restriction.
@@ -1015,22 +1004,15 @@ public class AiService {
                         3. If user text contains off-topic content, use only any travel-relevant constraint and ignore the rest.
 
                         Weather-aware planning rules:
-                        1. Read the Weather Forecast carefully. Each line is labeled "Day N (date): condition, temp, rain chance, rain mm, wind -> risk level", optionally followed by "Outdoor timing windows", "Best daytime outdoor slot", or "Best light outdoor evening slot".
-                        2. For days labeled "RAIN FLEX": outdoor activities are still allowed. Keep signature scenic/outdoor experiences in the main plan when generally safe, choose better time windows, and keep any backup option concise in notes when useful.
-                        3. For days labeled "SEVERE WEATHER RISK" or legacy "HIGH RAIN RISK": reduce only unsafe outdoor, water, or adventure activities on the affected day. Prefer moving signature experiences to a safer day before omitting them.
+                        1. Read the Weather Forecast carefully. Each line is labeled "Day N (date): condition, temp, rain chance, rain mm, wind -> risk level", optionally followed by "Outdoor timing windows", "Best daytime outdoor slot", or "Best light outdoor evening slot". If forecast is "none" or unavailable, plan normally without weather constraints.
+                        2. For days labeled "RAIN FLEX" or legacy "LIGHT RAIN": treat as low-impact weather context, not a reason to reduce outdoor diversity. Outdoor activities are still allowed. Keep destination-defining outdoor/scenic places in the main plan when generally safe, and use safer timing or a concise backup note when useful.
+                        2a. For safety-sensitive outdoor activities that require sustained suitable conditions (e.g. trekking, hiking, climbing, caving, canyoning, boat/island trips, diving, paddling, or paragliding), RAIN FLEX is not an automatic ban. Schedule them only when the full activity, including access and return time, fits suitable non-severe forecast windows. Move, shorten, substitute, or omit them when thunderstorms, heavy rain, strong wind, flooding, rough seas, slippery trails, or other relevant hazards make them unsafe.
+                        3. For days labeled "SEVERE WEATHER RISK" or legacy "HIGH RAIN RISK": treat as a hard safety constraint only for unsafe outdoor/water/adventure activities on that day. Move signature experiences to a safer day before omitting them.
                         4. For days labeled "Good weather": maximize outdoor, scenic, or active experiences.
-                        5. When Outdoor timing windows are present, treat rain as potentially intermittent. Put destination-signature outdoor/scenic/tour/viewpoint activities in the Best daytime outdoor slot or another daytime LOW RAIN WINDOW/RAIN FLEX window instead of replacing them with indoor activities by default. Use evening windows for light outdoor, night market, walking, cafe, food plans, or real destination-signature evening cultural areas when they exist.
-                        6. Do not turn itinerary text into a forecast bulletin or blanket weather advisory. Do not repeat exact forecast values or present predicted rain, storms, wind, or similar conditions as certain facts. Concise natural context in an activity note is allowed when useful, for example "nếu thời tiết thuận" or advice to reconfirm route, site, water-level, sea, or operator conditions. Do not repeat generic weather disclaimers across activities.
-                        7. If forecast is "none" or unavailable, plan normally without weather constraints.
+                        5. When Outdoor timing windows are present, treat rain as potentially intermittent. Use them to schedule outdoor/scenic highlights into the least rainy practical daytime part of the day. Use evening windows for night markets, walking streets, cafes, dining plans, or real destination-signature evening cultural areas when they exist.
+                        6. If weather blocks or weakens requested or destination-signature scenic experiences, explain the omission/substitution in requestFulfillment.items[].userMessage with reasonCode WEATHER_SAFETY so the user knows it changed for safety.
+                        7. Do not turn itinerary text into a forecast bulletin or blanket weather advisory. Do not repeat exact forecast values or present predicted rain, storms, wind, or similar conditions as certain facts. Concise natural context in an activity note is allowed when useful, for example "nếu thời tiết thuận" or advice to reconfirm route, site, water-level, sea, or operator conditions. Do not repeat generic weather disclaimers across activities.
                         %s
-
-                        Important weather interpretation update:
-                        - Treat RAIN FLEX or legacy LIGHT RAIN as low-impact weather context, not a reason to reduce outdoor diversity.
-                        - If hourly Outdoor timing windows are present, use them to schedule outdoor/scenic highlights into the least rainy practical daytime part of the day.
-                        - Keep destination-defining outdoor/scenic places in the main plan when generally safe; use safer timing or a concise backup note when useful.
-                        - For safety-sensitive outdoor activities that require sustained suitable conditions, such as trekking, hiking, climbing, caving, canyoning, boat/island trips, diving, paddling, or paragliding, RAIN FLEX is not an automatic ban. Include them only when the full activity, including access and return time, fits suitable non-severe forecast windows. Move, shorten, substitute, or omit them when thunderstorms, heavy rain, strong wind, flooding, rough seas, slippery trails, or other relevant hazards make them unsafe. If this changes a requested or signature experience, explain it in requestFulfillment.
-                        - Treat SEVERE WEATHER RISK or legacy HIGH RAIN RISK as a hard safety constraint only for unsafe outdoor/water/adventure activities on the affected day.
-                        - If weather blocks all or most destination-signature scenic experiences, explain the omission/substitution in requestFulfillment.items[].userMessage with reasonCode WEATHER_SAFETY so the user knows the plan changed for safety, not because the system missed them.
 
                         Style rules:
                         1. Treat Style as the user's primary planning bias, not a hard restriction.
