@@ -518,13 +518,13 @@ public class AiService {
                 .count();
         if (severeRiskDays == dayLines.size()) {
             return """
-                    7. Weather safety override: every trip day is SEVERE WEATHER RISK or legacy HIGH RAIN RISK. Do not schedule unsafe weather-dependent outdoor, open-air adventure, water, beach, boat, paddling, trekking, paragliding, or similar safety-sensitive activities. If destination-signature scenic places would normally be expected but cannot be included safely, add a PARTIAL or NOT_APPLIED requestFulfillment item with reasonCode WEATHER_SAFETY and a brief Vietnamese userMessage.
+                    8. Weather safety override: every trip day is SEVERE WEATHER RISK or legacy HIGH RAIN RISK. Do not schedule unsafe weather-dependent outdoor, open-air adventure, water, beach, boat, paddling, trekking, paragliding, or similar safety-sensitive activities. If destination-signature scenic places would normally be expected but cannot be included safely, add a PARTIAL or NOT_APPLIED requestFulfillment item with reasonCode WEATHER_SAFETY and a brief Vietnamese userMessage.
                     """
                     .stripTrailing();
         }
         if (severeRiskDays > 0) {
             return """
-                    7. Weather safety override: SEVERE WEATHER RISK or legacy HIGH RAIN RISK is a hard safety constraint only for unsafe outdoor/water/adventure activities on those days. Move destination-signature outdoor/scenic places to safer days when possible. If no safer day exists, include only a safe short/covered version when realistic, or explain the omission/substitution in requestFulfillment with reasonCode WEATHER_SAFETY.
+                    8. Weather safety override: SEVERE WEATHER RISK or legacy HIGH RAIN RISK is a hard safety constraint only for unsafe outdoor/water/adventure activities on those days. Move destination-signature outdoor/scenic places to safer days when possible. If no safer day exists, include only a safe short/covered version when realistic, or explain the omission/substitution in requestFulfillment with reasonCode WEATHER_SAFETY.
                     """
                     .stripTrailing();
         }
