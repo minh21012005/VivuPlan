@@ -212,6 +212,7 @@ public class TripService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public TripDto.TripResponse getTrip(Long tripId, Long userId) {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("Lịch trình không tồn tại"));
@@ -412,7 +413,7 @@ public class TripService {
     @Transactional
     public AdminDto.ActivityCoordinateResolutionResponse resolveActivityCoordinatesForAdmin(Long tripId, boolean dryRun) {
         Trip trip = tripRepository.findById(tripId)
-                .orElseThrow(() -> new RuntimeException("Lá»‹ch trÃ¬nh khÃ´ng tá»“n táº¡i"));
+                .orElseThrow(() -> new RuntimeException("Lịch trình không tồn tại"));
         ActivityCoordinateResolverService.BatchResult batch = activityCoordinateResolverService.resolveTrip(trip, dryRun);
         if (!dryRun && batch.appliedCount() > 0) {
             tripRepository.saveAndFlush(trip);
@@ -429,6 +430,7 @@ public class TripService {
                 });
     }
 
+    @Transactional
     public TripDto.TripResponse getByShareCode(String code) {
         Trip trip = tripRepository.findByShareCode(code)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch trình"));

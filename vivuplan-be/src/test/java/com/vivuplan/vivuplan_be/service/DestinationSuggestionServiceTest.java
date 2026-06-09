@@ -377,7 +377,7 @@ class DestinationSuggestionServiceTest {
         suggestion.setRegion(region);
         suggestion.setReason("PhÃ¹ há»£p vá»›i thá»i gian, ngÃ¢n sÃ¡ch vÃ  phong cÃ¡ch chuyáº¿n Ä‘i.");
         suggestion.setOverallFit("Rất phù hợp");
-        suggestion.setOverallNote("CÃ¢n báº±ng tá»‘t giá»¯a tráº£i nghiá»‡m, chi phÃ­ vÃ  lá»‹ch trÃ¬nh.");
+        suggestion.setOverallNote("Cân bằng tốt giữa trải nghiệm, chi phí và lịch trình.");
         suggestion.setBudgetFit("Phù hợp");
         suggestion.setBudgetNote("NgÃ¢n sÃ¡ch Ä‘á»§ thoáº£i mÃ¡i cho cÃ¡c tráº£i nghiá»‡m chÃ­nh.");
         suggestion.setDurationFit("Phù hợp");
