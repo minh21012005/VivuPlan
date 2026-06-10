@@ -20,7 +20,6 @@ import {
   X,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import {
   adminApi,
@@ -1324,7 +1323,6 @@ export default function AdminPage() {
           )}
         </section>
       </main>
-      <Footer />
       {selectedTransaction && (
         <TransactionDrawer
           transaction={selectedTransaction}

@@ -17,7 +17,6 @@ import {
   Wallet,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { adminApi, type AdminUserDetail } from "@/lib/api";
 
@@ -258,7 +257,6 @@ export default function AdminUserDetailPage() {
           ) : null}
         </section>
       </main>
-      <Footer />
     </>
   );
 }

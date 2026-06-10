@@ -69,10 +69,10 @@ export default function Footer() {
         </div>
 
         <div className="site-footer-bottom">
-          <p>© 2026 VivuPlan. Mọi quyền được bảo lưu.</p>
+          <p>© 2026 VivuPlan. All rights reserved.</p>
 
           <p className="site-footer-made">
-            Tạo ra với <Heart size={14} fill="#F43F5E" color="#F43F5E" /> tại Việt Nam
+            Made with <Heart size={14} fill="#F43F5E" color="#F43F5E" /> in Vietnam
           </p>
         </div>
       </div>

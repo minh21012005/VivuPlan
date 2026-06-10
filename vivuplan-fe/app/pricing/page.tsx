@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 import { PurchaseModal } from "@/components/billing/PurchaseModal";
 import { billingApi, type BillingPackage } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -184,6 +185,8 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
+
+      <Footer />
 
       <PurchaseModal
         open={purchaseOpen}

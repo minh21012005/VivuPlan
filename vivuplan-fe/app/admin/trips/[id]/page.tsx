@@ -20,7 +20,6 @@ import {
   Wallet,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { adminApi, type ActivityResponse, type AdminUserSummary, type TripResponse } from "@/lib/api";
 
@@ -364,7 +363,6 @@ export default function AdminTripDetailPage() {
           ) : null}
         </section>
       </main>
-      <Footer />
     </>
   );
 }

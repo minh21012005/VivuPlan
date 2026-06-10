@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -269,6 +270,8 @@ export default function ItineraryLibraryPage() {
           </>
         )}
       </main>
+
+      <Footer />
 
       {deleteCandidate && (
         <DeleteTripDialog
