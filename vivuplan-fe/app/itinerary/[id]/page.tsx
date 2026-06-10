@@ -368,7 +368,6 @@ export default function ItineraryPage() {
   const [redirectingForbidden, setRedirectingForbidden] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
-  const [dayCopied, setDayCopied] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [shareError, setShareError] = useState("");
   const [exportingPdf, setExportingPdf] = useState(false);
@@ -424,7 +423,6 @@ export default function ItineraryPage() {
         setTrip(data);
         setActiveDay(0);
         setCopied(false);
-        setDayCopied(false);
         setShareError("");
         setClientWarnings([]);
         setAiWarningsCollapsed(false);
@@ -625,18 +623,6 @@ export default function ItineraryPage() {
       setShareError(e instanceof Error ? e.message : "Không thể tạo link chia sẻ. Vui lòng thử lại.");
     } finally {
       setSharing(false);
-    }
-  };
-
-  const copyDayPlan = async () => {
-    if (!trip || !day) return;
-    setActivityError("");
-    try {
-      await copyTextToClipboard(buildDayCopyText(trip, day));
-      setDayCopied(true);
-      window.setTimeout(() => setDayCopied(false), 1600);
-    } catch (e) {
-      setActivityError(e instanceof Error ? e.message : "Không thể copy lịch trình ngày này");
     }
   };
 
@@ -848,7 +834,7 @@ export default function ItineraryPage() {
                 aria-busy={exportingPdf}
               >
                 {exportingPdf ? <span className="spinner spinner-inline" /> : <Printer size={14} />}
-                {exportingPdf ? "Đang tải PDF..." : "Tải PDF"}
+                {exportingPdf ? "Đang tải" : "Tải PDF"}
               </Button>
               <Button
                 variant="secondary"
@@ -1005,7 +991,6 @@ export default function ItineraryPage() {
                       onClick={() => {
                         setActiveDay(index);
                         setExpanded(null);
-                        setDayCopied(false);
                         setRegenerateOpen(false);
                         setRegeneratePreview(null);
                       }}
@@ -1048,10 +1033,6 @@ export default function ItineraryPage() {
                       setRegenerateOpen(true);
                     }}>
                       <Sparkles size={13} /> Tạo lại ngày
-                    </Button>
-                    <Button type="button" variant="secondary" size="sm" onClick={copyDayPlan}>
-                      {dayCopied ? <CheckCircle2 size={13} /> : <ListChecks size={13} />}
-                      {dayCopied ? "Đã copy" : "Copy ngày"}
                     </Button>
                   </div>
                 </div>
