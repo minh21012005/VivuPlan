@@ -1,4 +1,6 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
+
 
 import React, { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -45,6 +47,7 @@ import {
   Navigation,
   Plus,
   RefreshCw,
+  Printer,
   Save,
   Share2,
   Sparkles,
@@ -348,6 +351,13 @@ function getAiMessageDisplayText(message: string) {
 export default function ItineraryPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const formatDayTitle = (dayNum: number, titleStr: string) => {
+    const clean = titleStr.trim();
+    if (clean.toLowerCase().startsWith(`ngày ${dayNum}`)) {
+      return clean;
+    }
+    return `Ngày ${dayNum}: ${clean}`;
+  };
   const { user: authUser, loading: authLoading } = useRequireAuth();
   const { destinations, loading: destinationsLoading } = useDestinations();
   const [trip, setTrip] = useState<TripResponse | null>(null);
@@ -361,6 +371,8 @@ export default function ItineraryPage() {
   const [dayCopied, setDayCopied] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [shareError, setShareError] = useState("");
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const logoUrl = typeof window !== "undefined" ? window.location.origin + "/logo.png" : "/logo.png";
   const [editor, setEditor] = useState<{ mode: "add" | "edit"; dayNumber: number; activity?: ActivityResponse } | null>(null);
   const [savingActivity, setSavingActivity] = useState(false);
   const [activityError, setActivityError] = useState("");
@@ -479,7 +491,6 @@ export default function ItineraryPage() {
   const positiveMessages = useMemo(() => aiMessages.filter((message) => message.kind === "positive"), [aiMessages]);
   const cautionMessages = useMemo(() => aiMessages.filter((message) => message.kind === "caution"), [aiMessages]);
   const shownAiMessages = useMemo(() => [...positiveMessages, ...cautionMessages], [cautionMessages, positiveMessages]);
-  const warningSignature = visibleWarnings.join("\u001f");
 
   const weatherSignature = useMemo(() => {
     if (!trip?.id || !trip.startDate || forecast.length === 0) return "";
@@ -554,6 +565,42 @@ export default function ItineraryPage() {
       ["Tham quan", budget.activities],
     ]
     : [];
+
+  const exportPDF = async () => {
+    if (!trip) return;
+    setExportingPdf(true);
+    const element = document.getElementById("pdf-booklet");
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
+      if (!element) {
+        showToast("Không tìm thấy dữ liệu lịch trình để xuất PDF", "error");
+        return;
+      }
+
+      const opt = {
+        margin: 0,
+        filename: `VivuPlan_${trip.destination.replace(/\s+/g, "_")}.pdf`,
+        image: { type: "jpeg" as const, quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          letterRendering: true,
+          windowWidth: 1024,
+          width: 794,
+        },
+        jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
+        pagebreak: { mode: "css" as const },
+      };
+
+      await html2pdf().set(opt).from(element).save();
+    } catch (e) {
+      console.error(e);
+      showToast("Gặp lỗi khi xuất file PDF. Vui lòng thử lại.", "error");
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
   const shareTrip = async () => {
     if (!trip?.shareCode) {
@@ -777,7 +824,7 @@ export default function ItineraryPage() {
                 <div className="itinerary-meta-divider" />
                 <div className="itinerary-meta-item">
                   <Wallet size={15} />
-                  <span>{fmtCost(trip.budgetTotal || trip.budgetPerPerson * (trip.travelerCount || 1))}</span>
+                  <span>{fmtCost(trip.budget?.total || trip.budgetTotal || trip.budgetPerPerson * (trip.travelerCount || 1))}</span>
                 </div>
                 <div className="itinerary-meta-divider" />
                 <div className="itinerary-meta-item">
@@ -792,6 +839,17 @@ export default function ItineraryPage() {
               </div>
             </div>
             <div className="itinerary-share-actions">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="itinerary-print-button no-print"
+                onClick={exportPDF}
+                disabled={exportingPdf}
+                aria-busy={exportingPdf}
+              >
+                {exportingPdf ? <span className="spinner spinner-inline" /> : <Printer size={14} />}
+                {exportingPdf ? "Đang tải PDF..." : "Tải PDF"}
+              </Button>
               <Button
                 variant="secondary"
                 size="sm"
@@ -1174,6 +1232,81 @@ export default function ItineraryPage() {
         reason="EDIT"
         onClose={() => setPurchaseOpen(false)}
       />
+
+      {/* ── PDF Booklet (hidden, rendered by html2pdf) ── */}
+      <div style={{ position: "absolute", left: -9999, top: -9999, width: 794, height: "auto", overflow: "hidden" }}>
+        <div id="pdf-booklet" className="pdf">
+          {/* Cover / Header */}
+          <div className="pdf-header">
+            <div className="pdf-header-top">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={logoUrl} alt="" width={48} height={72} className="pdf-logo" />
+              <span className="pdf-brand">
+                <span className="pdf-brand-v">Vivu</span><span className="pdf-brand-p">Plan</span>
+              </span>
+            </div>
+            <h1 className="pdf-destination">{trip.destination}</h1>
+            <p className="pdf-subtitle">Lịch trình {trip.days} ngày {trip.days - 1} đêm</p>
+          </div>
+
+          {/* Trip meta */}
+          <div className="pdf-meta">
+            <div className="pdf-meta-item">
+              <span className="pdf-meta-label">Xuất phát</span>
+              <span className="pdf-meta-value">{trip.departure || "—"}</span>
+            </div>
+            {trip.startDate && trip.endDate && (
+              <div className="pdf-meta-item">
+                <span className="pdf-meta-label">Ngày đi</span>
+                <span className="pdf-meta-value">{fmtDate(trip.startDate)} – {fmtDate(trip.endDate)}</span>
+              </div>
+            )}
+            <div className="pdf-meta-item">
+              <span className="pdf-meta-label">Thành viên</span>
+              <span className="pdf-meta-value">{groupLabel[trip.groupType] ?? trip.groupType} · {trip.travelerCount || 1} người</span>
+            </div>
+            <div className="pdf-meta-item">
+              <span className="pdf-meta-label">Ngân sách</span>
+              <span className="pdf-meta-value">{fmtCost(trip.budget?.total || trip.budgetTotal || trip.budgetPerPerson * (trip.travelerCount || 1))}</span>
+            </div>
+          </div>
+
+          {/* Day sections */}
+          {trip.schedule?.map((item) => (
+            <div key={item.day} className="pdf-day">
+              <div className="pdf-day-head">
+                <h2 className="pdf-day-title">{formatDayTitle(item.day, item.title)}</h2>
+                {item.summary && <p className="pdf-day-summary">{item.summary}</p>}
+              </div>
+
+              <table className="pdf-table">
+                <thead>
+                  <tr>
+                    <th className="pdf-th-time">Giờ</th>
+                    <th className="pdf-th-detail">Hoạt động</th>
+                    <th className="pdf-th-dur">Thời lượng</th>
+                    <th className="pdf-th-cost">Chi phí</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {item.activities?.map((a) => (
+                    <tr key={a.id} className="pdf-row">
+                      <td className="pdf-td-time">{a.time}</td>
+                      <td className="pdf-td-detail">
+                        <strong className="pdf-act-name">{a.name}</strong>
+                        <span className="pdf-act-loc">{a.location}</span>
+                        {a.note && <span className="pdf-act-note">{a.note}</span>}
+                      </td>
+                      <td className="pdf-td-dur">{a.duration}</td>
+                      <td className="pdf-td-cost">{fmtActivityCost(a)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

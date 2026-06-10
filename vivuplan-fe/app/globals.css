@@ -79,13 +79,13 @@
   padding: 26px;
 }
 
-.admin-header > div:first-child {
+.admin-header>div:first-child {
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
-.admin-header > .btn {
+.admin-header>.btn {
   align-self: flex-start;
 }
 
@@ -695,11 +695,11 @@
   padding: 22px;
 }
 
-.admin-drawer-header > div {
+.admin-drawer-header>div {
   min-width: 0;
 }
 
-.admin-drawer-header > div > span {
+.admin-drawer-header>div>span {
   display: block;
   color: var(--primary);
   font-size: 12px;
@@ -727,7 +727,7 @@
   min-width: 0;
 }
 
-.admin-drawer-header-meta > span:not(.admin-badge) {
+.admin-drawer-header-meta>span:not(.admin-badge) {
   color: var(--text-4);
   font-size: 12px;
   font-weight: 800;
@@ -2377,14 +2377,14 @@ textarea.input.textarea-compact {
   cursor: pointer;
 }
 
-.destination-suggestion-modal-panel > .modal-close-anchor {
+.destination-suggestion-modal-panel>.modal-close-anchor {
   position: absolute;
   top: 18px;
   right: 18px;
   z-index: 25;
 }
 
-.destination-suggestion-modal-panel > .modal-close-anchor .destination-suggestion-modal-close {
+.destination-suggestion-modal-panel>.modal-close-anchor .destination-suggestion-modal-close {
   position: static;
 }
 
@@ -2561,7 +2561,7 @@ textarea.input.textarea-compact {
   height: 14px;
 }
 
-.destination-suggestion-skeleton-card p + p {
+.destination-suggestion-skeleton-card p+p {
   width: 82%;
 }
 
@@ -2610,7 +2610,7 @@ textarea.input.textarea-compact {
   text-transform: uppercase;
 }
 
-.destination-suggestion-card-top > span:first-child {
+.destination-suggestion-card-top>span:first-child {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3578,7 +3578,7 @@ textarea.input.textarea-compact {
   align-items: center;
 }
 
-.itinerary-ai-messages-head > svg {
+.itinerary-ai-messages-head>svg {
   flex-shrink: 0;
   color: #0F9F9C;
 }
@@ -4027,7 +4027,7 @@ textarea.input.textarea-compact {
   flex-direction: column;
 }
 
-.day-route-popup-item + .day-route-popup-item {
+.day-route-popup-item+.day-route-popup-item {
   border-top: 1px solid var(--border);
   padding-top: 10px;
 }
@@ -4935,7 +4935,7 @@ textarea.input.textarea-compact {
   line-height: 1.55;
 }
 
-.modal-close-popconfirm > div:last-child {
+.modal-close-popconfirm>div:last-child {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -6240,7 +6240,7 @@ textarea.input.textarea-compact {
     width: min(300px, calc(100vw - 28px));
   }
 
-  .modal-close-popconfirm > div:last-child {
+  .modal-close-popconfirm>div:last-child {
     flex-wrap: wrap;
   }
 
@@ -6271,7 +6271,7 @@ textarea.input.textarea-compact {
     right: 14px;
   }
 
-  .destination-suggestion-modal-panel > .modal-close-anchor {
+  .destination-suggestion-modal-panel>.modal-close-anchor {
     top: 14px;
     right: 14px;
   }
@@ -7061,7 +7061,7 @@ textarea.input.textarea-compact {
   margin-bottom: 12px;
 }
 
-.pricing-card-head > div {
+.pricing-card-head>div {
   min-width: 0;
 }
 
@@ -7120,7 +7120,7 @@ textarea.input.textarea-compact {
   margin-top: 2px;
 }
 
-.pricing-price > span {
+.pricing-price>span {
   display: block;
   color: var(--text-4);
   font-size: 13px;
@@ -7772,11 +7772,11 @@ textarea.input.textarea-compact {
   grid-template-columns: 1fr;
 }
 
-.admin-ai-grid-balanced > .admin-ai-card:last-child {
+.admin-ai-grid-balanced>.admin-ai-card:last-child {
   grid-column: 1 / -1;
 }
 
-.admin-ai-grid-balanced > .admin-ai-card:nth-child(-n + 2) {
+.admin-ai-grid-balanced>.admin-ai-card:nth-child(-n + 2) {
   height: 210px;
   min-height: 0;
 }
@@ -7785,7 +7785,7 @@ textarea.input.textarea-compact {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.admin-ai-grid-balanced .admin-ai-average-list > div {
+.admin-ai-grid-balanced .admin-ai-average-list>div {
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -7870,7 +7870,7 @@ textarea.input.textarea-compact {
   gap: 10px;
 }
 
-.admin-ai-trend-row > div {
+.admin-ai-trend-row>div {
   overflow: hidden;
   height: 9px;
   border-radius: var(--r-full);
@@ -7892,13 +7892,13 @@ textarea.input.textarea-compact {
   text-align: right;
 }
 
-.admin-ai-token-breakdown > div {
+.admin-ai-token-breakdown>div {
   display: grid;
   gap: 7px;
 }
 
-.admin-ai-token-breakdown > div > div,
-.admin-ai-average-list > div {
+.admin-ai-token-breakdown>div>div,
+.admin-ai-average-list>div {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -7912,7 +7912,7 @@ textarea.input.textarea-compact {
   font-weight: 850;
 }
 
-.admin-ai-token-breakdown > div > i {
+.admin-ai-token-breakdown>div>i {
   overflow: hidden;
   height: 8px;
   border-radius: var(--r-full);
@@ -7928,7 +7928,7 @@ textarea.input.textarea-compact {
   background: #fbfefd;
 }
 
-.admin-ai-health-item > div:first-child {
+.admin-ai-health-item>div:first-child {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -7977,6 +7977,7 @@ textarea.input.textarea-compact {
 }
 
 @media (max-width: 1180px) {
+
   .admin-ai-overview,
   .admin-ai-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7988,6 +7989,7 @@ textarea.input.textarea-compact {
 }
 
 @media (max-width: 720px) {
+
   .admin-ai-overview,
   .admin-ai-grid {
     grid-template-columns: 1fr;
@@ -8008,7 +8010,7 @@ textarea.input.textarea-compact {
     flex-direction: column;
   }
 
-  .admin-ai-health-item > div:first-child {
+  .admin-ai-health-item>div:first-child {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -8019,5 +8021,316 @@ textarea.input.textarea-compact {
 
   .admin-ai-trend-row strong {
     text-align: left;
+  }
+}
+
+/* ─── PDF Export Styling ───────────────────────────────────────────────── */
+
+/* Container — normal layout inside offscreen React wrapper, A4 width */
+.pdf {
+  width: 794px !important;
+  background: #fff !important;
+  color: #0f172a !important;
+  font-family: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 10pt !important;
+  line-height: 1.5 !important;
+  padding: 40px 44px !important;
+  box-sizing: border-box !important;
+}
+
+/* ── Header ── */
+.pdf-header {
+  width: 100% !important;
+  text-align: center !important;
+  padding-bottom: 28px !important;
+  border-bottom: 3px solid #0F9F9C !important;
+  margin-bottom: 28px !important;
+}
+
+.pdf-header-top {
+  text-align: center !important;
+  margin-bottom: 16px !important;
+}
+
+.pdf-logo {
+  width: 80px !important;
+  height: 120px !important;
+  object-fit: contain !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  margin-right: -6px !important;
+  position: relative !important;
+  top: 16px !important;
+}
+
+.pdf-brand {
+  font-size: 28pt !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  margin-right: 14px !important;
+  line-height: 64px !important;
+}
+
+.pdf-brand-v {
+  color: #0F9F9C !important;
+}
+
+.pdf-brand-p {
+  color: #042f2e !important;
+}
+
+.pdf-destination {
+  text-align: center !important;
+  font-size: 28pt !important;
+  font-weight: 700 !important;
+  color: #042f2e !important;
+  margin: -20px auto 16px !important;
+  letter-spacing: -0.03em !important;
+  line-height: 1 !important;
+  display: block !important;
+}
+
+.pdf-subtitle {
+  text-align: center !important;
+  font-size: 12pt !important;
+  color: #64748b !important;
+  font-weight: 600 !important;
+  margin: 0 auto !important;
+  display: block !important;
+}
+
+/* ── Meta grid ── */
+.pdf-meta {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 0 !important;
+  margin-bottom: 32px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+.pdf-meta-item {
+  padding: 12px 16px !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  border-right: 1px solid #e2e8f0 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+
+/* Remove right border on even items (column 2) */
+.pdf-meta-item:nth-child(2n) {
+  border-right: none !important;
+}
+
+/* Remove bottom border on the last row items (items 3 and 4) */
+.pdf-meta-item:nth-child(3),
+.pdf-meta-item:nth-child(4) {
+  border-bottom: none !important;
+}
+
+.pdf-meta-label {
+  font-size: 8pt !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: #94a3b8 !important;
+}
+
+.pdf-meta-value {
+  font-size: 10.5pt !important;
+  font-weight: 600 !important;
+  color: #0f172a !important;
+}
+
+/* ── Day section ── */
+.pdf-day {
+  padding-top: 12px !important;
+}
+
+.pdf-day+.pdf-day {
+  page-break-before: always !important;
+  break-before: page !important;
+}
+
+.pdf-day-head {
+  margin-bottom: 18px !important;
+  page-break-after: avoid !important;
+  break-after: avoid !important;
+}
+
+.pdf-day-title {
+  font-size: 16pt !important;
+  font-weight: 800 !important;
+  color: #042f2e !important;
+  margin: 0 0 6px !important;
+  line-height: 1.25 !important;
+}
+
+.pdf-day-summary {
+  font-size: 10pt !important;
+  color: #475569 !important;
+  margin: 0 !important;
+  line-height: 1.6 !important;
+}
+
+/* ── Activity table ── */
+.pdf-table {
+  width: 706px !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin-top: 4px !important;
+}
+
+.pdf-table thead {
+  page-break-after: avoid !important;
+  break-after: avoid !important;
+}
+
+.pdf-table thead tr {
+  border-bottom: 2px solid #0F9F9C !important;
+}
+
+.pdf-table th {
+  text-align: left !important;
+  font-size: 8pt !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: #0F9F9C !important;
+  padding: 8px 6px !important;
+  box-sizing: border-box !important;
+}
+
+.pdf-th-time {
+  width: 70px !important;
+}
+
+.pdf-th-detail {
+  width: 416px !important;
+}
+
+.pdf-th-dur {
+  width: 100px !important;
+}
+
+.pdf-th-cost {
+  width: 120px !important;
+  text-align: left !important;
+}
+
+.pdf-row {
+  border-bottom: 1px solid #f1f5f9 !important;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+.pdf-row:last-child {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.pdf-table td {
+  padding: 12px 6px !important;
+  vertical-align: top !important;
+  font-size: 10pt !important;
+  box-sizing: border-box !important;
+}
+
+.pdf-td-time {
+  width: 70px !important;
+  font-weight: 700 !important;
+  color: #0F9F9C !important;
+  white-space: nowrap !important;
+}
+
+.pdf-td-detail {
+  width: 416px !important;
+  vertical-align: top !important;
+}
+
+.pdf-td-dur {
+  width: 100px !important;
+  color: #475569 !important;
+}
+
+.pdf-td-cost {
+  width: 120px !important;
+  text-align: left !important;
+  font-weight: 600 !important;
+  color: #0f172a !important;
+}
+
+.pdf-act-name {
+  font-size: 10.5pt !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  display: block !important;
+  margin-bottom: 2px !important;
+}
+
+.pdf-act-loc {
+  font-size: 9pt !important;
+  color: #64748b !important;
+  display: inline-block !important;
+  width: 100% !important;
+  margin-bottom: 4px !important;
+  box-sizing: border-box !important;
+}
+
+.pdf-act-note {
+  font-size: 8.5pt !important;
+  color: #64748b !important;
+  background: #f8fafc !important;
+  border-left: 2px solid #cbd5e1 !important;
+  padding: 5px 10px !important;
+  margin-top: 8px !important;
+  border-radius: 0 4px 4px 0 !important;
+  display: inline-block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* ── @media print (fallback for window.print) ── */
+@media print {
+
+  html,
+  body {
+    background: #fff !important;
+    color: #0f172a !important;
+  }
+
+  .pdf {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .no-print,
+  nav,
+  footer,
+  .site-header,
+  header,
+  .itinerary-day-toolbar,
+  .itinerary-day-overview,
+  .itinerary-grid,
+  .itinerary-share-actions,
+  .itinerary-ai-messages,
+  .itinerary-weather-messages-collapsed,
+  .itinerary-ai-summary-list,
+  button,
+  .PurchaseModal,
+  .PurchaseModal-backdrop,
+  .toast,
+  #nprogress {
+    display: none !important;
   }
 }
