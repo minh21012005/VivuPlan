@@ -2,6 +2,9 @@ version: '3.8'
 
 services:
   backend:
+    build:
+      context: ./vivuplan-be
+      dockerfile: Dockerfile
     image: ${DOCKER_USERNAME}/vivuplan-be:latest
     container_name: vivuplan-backend
     restart: always
