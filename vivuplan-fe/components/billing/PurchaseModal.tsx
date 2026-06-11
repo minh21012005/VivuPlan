@@ -117,14 +117,17 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
 
   useEffect(() => {
     if (!open) return;
-    setOrder(null);
-    setMessage("");
-    setCloseConfirmOpen(false);
-    setSelectedCode(initialPackageCode ?? "PLAN_STANDARD");
-    setPickerManuallyOpened(false);
+    const timer = setTimeout(() => {
+      setOrder(null);
+      setMessage("");
+      setCloseConfirmOpen(false);
+      setSelectedCode(initialPackageCode ?? "PLAN_STANDARD");
+      setPickerManuallyOpened(false);
+    }, 0);
     billingApi.packages()
       .then(setPackages)
       .catch(() => setPackages(fallbackPackages));
+    return () => clearTimeout(timer);
   }, [open, reason, initialPackageCode, isLoggedIn]);
 
   useEffect(() => {
@@ -134,7 +137,10 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
 
   useEffect(() => {
     if (order?.status && order.status !== "PENDING") {
-      setCloseConfirmOpen(false);
+      const timer = setTimeout(() => {
+        setCloseConfirmOpen(false);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [order?.status]);
 
@@ -145,15 +151,35 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
     void createOrder(initialPackageCode);
   }, [open, initialPackageCode, authLoading, isLoggedIn, packagePickerVisible, createOrder]);
 
+  // 1. Smooth Countdown Logic (depends only on expiresAt and status)
+  const expiresAt = order?.expiresAt;
+  const orderStatus = order?.status;
   useEffect(() => {
-    if (!order || order.status !== "PENDING") return;
-    setRemaining(secondsLeft(order.expiresAt));
+    if (!expiresAt || orderStatus !== "PENDING") {
+      const timer = setTimeout(() => {
+        setRemaining(0);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+    const timer = setTimeout(() => {
+      setRemaining(secondsLeft(expiresAt));
+    }, 0);
     const countdown = window.setInterval(() => {
-      setRemaining(secondsLeft(order.expiresAt));
+      setRemaining(secondsLeft(expiresAt));
     }, 1000);
+    return () => {
+      clearTimeout(timer);
+      window.clearInterval(countdown);
+    };
+  }, [expiresAt, orderStatus]);
+
+  // 2. Webhook / API Polling Logic (depends on orderCode and status)
+  const orderCode = order?.orderCode;
+  useEffect(() => {
+    if (!orderCode || orderStatus !== "PENDING") return;
     const poll = window.setInterval(async () => {
       try {
-        const latest = await billingApi.getOrder(order.orderCode);
+        const latest = await billingApi.getOrder(orderCode);
         setOrder(latest);
         if (latest.status === "PAID") {
           await refreshWallet();
@@ -171,10 +197,9 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
       }
     }, 2500);
     return () => {
-      window.clearInterval(countdown);
       window.clearInterval(poll);
     };
-  }, [order, onPaid, refreshWallet]);
+  }, [orderCode, orderStatus, onPaid, refreshWallet]);
 
   if (!open) return null;
 
