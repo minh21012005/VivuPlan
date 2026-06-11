@@ -2,15 +2,15 @@ version: '3.8'
 
 services:
   backend:
-    image: ${DOCKER_USERNAME}/vivuplan-be:latest
+    build:
+      context: ./vivuplan-be
+      dockerfile: Dockerfile
+    image: vivuplan-be:latest
     container_name: vivuplan-backend
     restart: always
     ports:
       - "8080:8080"
+    env_file:
+      - .env
     environment:
-      - DB_URL=${DB_URL}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
       - server.port=8080
-      # Các cấu hình khác có thể được truyền thông qua file .env trên VPS của bạn
-      # VD: JWT_SECRET, GEMINI_API_KEY, SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, SEPAY_WEBHOOK_SECRET...

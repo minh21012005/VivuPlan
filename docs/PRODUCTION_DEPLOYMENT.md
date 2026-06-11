@@ -114,9 +114,17 @@ DATA_INITIALIZER_ENABLED=true
 
 ---
 
-## 5. Cấu hình biến môi trường phía Frontend (Vercel)
+## 5. Triển khai Frontend lên Vercel
 
-Khi bạn triển khai dự án `vivuplan-fe` lên Vercel, hãy vào phần **Project Settings > Environment Variables** để thiết lập các biến sau:
+Dự án VivuPlan chứa cả thư mục Backend (`vivuplan-be`) và Frontend (`vivuplan-fe`) trong cùng một repository. Khi tạo dự án mới trên Vercel từ Git repository này, bạn **bắt buộc** phải thực hiện cấu hình sau:
+
+### Bước 1: Cấu hình thư mục gốc (Root Directory)
+- Trong bước thiết lập dự án (**Configure Project**) trên Vercel, tìm mục **Root Directory**.
+- Nhấp nút **Edit** (hoặc **Browse**) và chọn thư mục `vivuplan-fe` (thay vì để mặc định là thư mục gốc của repository).
+- Lúc này, Vercel sẽ tự động phát hiện framework là **Next.js** và cấu hình các lệnh build (`npm run build`) cũng như thư mục output tương ứng.
+
+### Bước 2: Cấu hình biến môi trường (Environment Variables)
+Sau khi thiết lập thư mục gốc, hãy vào phần **Project Settings > Environment Variables** để thiết lập các biến sau:
 
 | Tên biến | Giá trị khuyên dùng | Ghi chú |
 | :--- | :--- | :--- |
