@@ -32,7 +32,7 @@ graph TD
 4. Nhấp vào Client ID của ứng dụng trong phần **OAuth 2.0 Client IDs**.
 5. Cấu hình các tham số sau:
    - **Authorized JavaScript origins** (Nguồn gốc JavaScript được ủy quyền):
-     - Thêm tên miền chính thức của bạn (ví dụ: `https://vivuplan.vn`).
+     - Thêm tên miền chính thức của bạn (ví dụ: `https://vivuplan.xyz`).
      - Thêm tên miền preview của Vercel (ví dụ: `https://vivuplan-fe.vercel.app`).
    - **Authorized redirect URIs** (URI chuyển hướng được ủy quyền): 
      - *Lưu ý*: Cơ chế đăng nhập của VivuPlan là lấy mã token trực tiếp từ phía client rồi gửi POST lên backend (`/api/auth/google`), do đó bạn không cần cấu hình Redirect URI cho backend. Chỉ cần khai báo chính xác tên miền ở mục **Authorized JavaScript origins** là đủ.
@@ -50,7 +50,7 @@ Cổng thanh toán SePay cần biết chính xác địa chỉ Backend để g�
 3. Cấu hình các thông số sau:
    - **Địa chỉ URL nhận Webhook (API URL)**: Trỏ trực tiếp đến API công khai của backend của bạn.
      - Định dạng: `https://<DOMAIN_BACKEND_CUA_BAN>/api/billing/sepay/webhook`
-     - Ví dụ: `https://api.vivuplan.vn/api/billing/sepay/webhook` (hoặc `http://<IP_VPS>:8080/api/billing/sepay/webhook` nếu chưa có tên miền).
+     - Ví dụ: `https://api.vivuplan.xyz/api/billing/sepay/webhook` (hoặc `http://<IP_VPS>:8080/api/billing/sepay/webhook` nếu chưa có tên miền).
    - **Loại dữ liệu gửi đi (Payload Type)**: Chọn **JSON**.
    - **Chữ ký bảo mật (Webhook Secret)**: Nhập một chuỗi ký tự ngẫu nhiên, dài và bảo mật (ví dụ: `MyVivuPlanSecret2026`). SePay sẽ dùng chuỗi này để tạo mã băm HMAC-SHA256 nhằm bảo mật thông tin.
 4. Nhấp **Lưu cấu hình**.
@@ -120,9 +120,9 @@ Khi bạn triển khai dự án `vivuplan-fe` lên Vercel, hãy vào phần **Pr
 
 | Tên biến | Giá trị khuyên dùng | Ghi chú |
 | :--- | :--- | :--- |
-| `NEXT_PUBLIC_API_URL` | `https://api.vivuplan.vn` | **Cực kỳ quan trọng**: Phải dùng giao thức `https://`. Vì Vercel chạy HTTPS, nếu gọi sang backend chạy HTTP (`http://`) trình duyệt sẽ chặn cuộc gọi (lỗi Mixed Content). |
+| `NEXT_PUBLIC_API_URL` | `https://api.vivuplan.xyz` | **Cực kỳ quan trọng**: Phải dùng giao thức `https://`. Vì Vercel chạy HTTPS, nếu gọi sang backend chạy HTTP (`http://`) trình duyệt sẽ chặn cuộc gọi (lỗi Mixed Content). |
 | `NEXT_PUBLIC_APP_NAME` | `VivuPlan` | Tên thương hiệu hiển thị trên thanh tiêu đề và email. |
-| `NEXT_PUBLIC_APP_URL` | `https://vivuplan.vn` | Tên miền chính thức của website. |
+| `NEXT_PUBLIC_APP_URL` | `https://vivuplan.xyz` | Tên miền chính thức của website. |
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | `xxx.apps.googleusercontent.com` | Phải trùng khớp với Client ID đã dùng ở cấu hình Google và Backend. |
 
 ---
@@ -142,7 +142,7 @@ Tạo file cấu hình `/etc/nginx/sites-available/vivuplan-backend` với nội
 ```nginx
 server {
     listen 80;
-    server_name api.vivuplan.vn; # Thay thế bằng domain backend của bạn
+    server_name api.vivuplan.xyz; # Thay thế bằng domain backend của bạn
 
     location / {
         proxy_pass http://127.0.0.1:8080; # Chuyển tiếp tới cổng Spring Boot chạy trên VPS
@@ -164,7 +164,7 @@ sudo systemctl restart nginx
 ### Bước 3: Cấu hình chứng chỉ SSL HTTPS miễn phí bằng Certbot
 Chạy lệnh sau và làm theo hướng dẫn trên màn hình để sinh chứng chỉ SSL tự động:
 ```bash
-sudo certbot --nginx -d api.vivuplan.vn
+sudo certbot --nginx -d api.vivuplan.xyz
 ```
 Certbot sẽ tự động cấu hình lại Nginx để chuyển hướng toàn bộ lưu lượng HTTP sang HTTPS và cài đặt chứng chỉ bảo mật có thời hạn tự động gia hạn.
 

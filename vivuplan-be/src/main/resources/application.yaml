@@ -73,7 +73,7 @@ app:
       stale-negative-days: ${GEOCODE_CACHE_STALE_NEGATIVE_DAYS:30} # xóa NO_RESULT/LOW_CONFIDENCE sau 30 ngày
       stale-error-days: ${GEOCODE_CACHE_STALE_ERROR_DAYS:7}       # xóa ERROR sau 7 ngày
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,https://vivuplan.vn}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,https://vivuplan.xyz}
   admin:
     bootstrap-email: ${ADMIN_BOOTSTRAP_EMAIL:}
   auth:
@@ -81,7 +81,7 @@ app:
     registration-otp-cleanup-scan-ms: ${REGISTRATION_OTP_CLEANUP_SCAN_MS:10800000}
   frontend-url: ${APP_FRONTEND_URL:http://localhost:3000}
   email:
-    from: ${SMTP_FROM:no-reply@vivuplan.vn}
+    from: ${SMTP_FROM:no-reply@vivuplan.xyz}
     from-name: ${SMTP_FROM_NAME:VivuPlan}
   data-initializer:
     enabled: ${DATA_INITIALIZER_ENABLED:true}

@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://vivuplan.vn";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://vivuplan.xyz";
   const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
   const staticRoutes: MetadataRoute.Sitemap = [

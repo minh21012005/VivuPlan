@@ -20,13 +20,13 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${app.email.from:${SMTP_FROM:no-reply@vivuplan.vn}}")
+    @Value("${app.email.from:${SMTP_FROM:no-reply@vivuplan.xyz}}")
     private String fromEmail;
 
     @Value("${app.email.from-name:${SMTP_FROM_NAME:VivuPlan}}")
     private String fromName;
 
-    @Value("${app.frontend-url:${APP_FRONTEND_URL:https://vivuplan.vn}}")
+    @Value("${app.frontend-url:${APP_FRONTEND_URL:https://vivuplan.xyz}}")
     private String frontendUrl;
 
     @Async
