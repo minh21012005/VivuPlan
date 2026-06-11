@@ -1,34 +1,16 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: vivuplan-postgres
-    restart: always
-    environment:
-      POSTGRES_DB: vivuplan
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: your_secure_db_password
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
   backend:
     image: ${DOCKER_USERNAME}/vivuplan-be:latest
     container_name: vivuplan-backend
     restart: always
-    depends_on:
-      - postgres
     ports:
       - "8080:8080"
     environment:
-      - DB_URL=jdbc:postgresql://postgres:5432/vivuplan
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=your_secure_db_password
+      - DB_URL=${DB_URL}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
       - server.port=8080
       # Các cấu hình khác có thể được truyền thông qua file .env trên VPS của bạn
       # VD: JWT_SECRET, GEMINI_API_KEY, SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, SEPAY_WEBHOOK_SECRET...
-
-volumes:
-  pgdata:
