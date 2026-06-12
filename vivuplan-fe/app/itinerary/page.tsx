@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Badge } from "@/components/ui/Badge";
@@ -130,10 +131,10 @@ export default function ItineraryLibraryPage() {
     const shareUrl = getTripShareUrl(trip.shareCode);
     const copyAttempt = copyTextToClipboard(shareUrl);
     try {
-      const shareableTrip = trip.isPublic ? trip : await tripApi.toggleVisibility(trip.id);
+      const shareableTrip = trip.isPublic ? trip : await tripApi.ensurePublicShare(trip.id);
 
       if (!trip.isPublic) {
-        setTrips((prev) => prev.map((item) => (item.id === trip.id ? { ...item, isPublic: shareableTrip.isPublic } : item)));
+        setTrips((prev) => prev.map((item) => (item.id === trip.id ? { ...item, ...shareableTrip, isPublic: true } : item)));
       }
 
       const copied = await copyAttempt;
@@ -281,16 +282,24 @@ export default function ItineraryLibraryPage() {
 
       <Footer />
 
-      {deleteCandidate && (
-        <DeleteTripDialog
-          trip={deleteCandidate}
-          deleting={deleting === deleteCandidate.id}
-          onCancel={() => setDeleteCandidate(null)}
-          onConfirm={handleDelete}
-        />
-      )}
+      {deleteCandidate &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <DeleteTripDialog
+            trip={deleteCandidate}
+            deleting={deleting === deleteCandidate.id}
+            onCancel={() => setDeleteCandidate(null)}
+            onConfirm={handleDelete}
+          />,
+          document.body,
+        )}
 
-      {toast && <div className={`itinerary-toast itinerary-toast-${toast.tone}`}>{toast.message}</div>}
+      {toast &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className={`itinerary-toast itinerary-toast-${toast.tone}`}>{toast.message}</div>,
+          document.body,
+        )}
     </div>
   );
 }

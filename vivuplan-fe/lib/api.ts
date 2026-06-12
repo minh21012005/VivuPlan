@@ -42,6 +42,23 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json();
 }
 
+type RawTripResponse = Omit<TripResponse, "isPublic"> & {
+  isPublic?: boolean;
+  public?: boolean;
+};
+
+type RawAdminTripDetail = Omit<AdminTripDetail, "trip"> & {
+  trip: RawTripResponse;
+};
+
+function normalizeTripResponse(trip: RawTripResponse): TripResponse {
+  const { public: legacyPublic, ...rest } = trip;
+  return {
+    ...rest,
+    isPublic: trip.isPublic ?? legacyPublic ?? false,
+  };
+}
+
 // ─── Auth API ─────────────────────────────────────────────────────────────────
 
 export const authApi = {
@@ -114,7 +131,7 @@ export const tripApi = {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify(data),
-    }).then(handleResponse<TripResponse>),
+    }).then(handleResponse<RawTripResponse>).then(normalizeTripResponse),
 
   suggestDestinations: (data: DestinationSuggestionRequest) =>
     fetch(`${API_BASE}/api/trips/destination-suggestions`, {
@@ -125,11 +142,13 @@ export const tripApi = {
 
   myTrips: () =>
     fetch(`${API_BASE}/api/trips`, { headers: authHeaders() })
-      .then(handleResponse<TripResponse[]>),
+      .then(handleResponse<RawTripResponse[]>)
+      .then((trips) => trips.map(normalizeTripResponse)),
 
   getTrip: (id: string | number) =>
     fetch(`${API_BASE}/api/trips/${id}`, { headers: authHeaders() })
-      .then(handleResponse<TripResponse>),
+      .then(handleResponse<RawTripResponse>)
+      .then(normalizeTripResponse),
 
   deleteTrip: (id: number) =>
     fetch(`${API_BASE}/api/trips/${id}`, {
@@ -137,38 +156,38 @@ export const tripApi = {
       headers: authHeaders(),
     }).then(handleResponse<{ message: string }>),
 
-  toggleVisibility: (id: number) =>
+  ensurePublicShare: (id: number) =>
     fetch(`${API_BASE}/api/trips/${id}/visibility`, {
       method: "PATCH",
       headers: authHeaders(),
-    }).then(handleResponse<TripResponse>),
+    }).then(handleResponse<RawTripResponse>).then(normalizeTripResponse),
 
   updateStatus: (id: number, status: string) =>
     fetch(`${API_BASE}/api/trips/${id}/status`, {
       method: "PATCH",
       headers: authHeaders(),
       body: JSON.stringify({ status }),
-    }).then(handleResponse<TripResponse>),
+    }).then(handleResponse<RawTripResponse>).then(normalizeTripResponse),
 
   addActivity: (tripId: number, dayNumber: number, data: ActivityMutationRequest) =>
     fetch(`${API_BASE}/api/trips/${tripId}/days/${dayNumber}/activities`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify(data),
-    }).then(handleResponse<TripResponse>),
+    }).then(handleResponse<RawTripResponse>).then(normalizeTripResponse),
 
   updateActivity: (tripId: number, activityId: number, data: ActivityMutationRequest) =>
     fetch(`${API_BASE}/api/trips/${tripId}/activities/${activityId}`, {
       method: "PATCH",
       headers: authHeaders(),
       body: JSON.stringify(data),
-    }).then(handleResponse<TripResponse>),
+    }).then(handleResponse<RawTripResponse>).then(normalizeTripResponse),
 
   deleteActivity: (tripId: number, activityId: number) =>
     fetch(`${API_BASE}/api/trips/${tripId}/activities/${activityId}`, {
       method: "DELETE",
       headers: authHeaders(),
-    }).then(handleResponse<TripResponse>),
+    }).then(handleResponse<RawTripResponse>).then(normalizeTripResponse),
 
   previewRegenerateDay: (tripId: number, dayNumber: number, data: RegenerateDayRequest) =>
     fetch(`${API_BASE}/api/trips/${tripId}/days/${dayNumber}/regenerate-preview`, {
@@ -182,15 +201,12 @@ export const tripApi = {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({ proposalId, selectedActivityIndexes }),
-    }).then(handleResponse<TripResponse>),
-
-  publicTrips: (page = 0, size = 12) =>
-    fetch(`${API_BASE}/api/trips/public?page=${page}&size=${size}`)
-      .then(handleResponse<{ content: TripResponse[]; totalElements: number }>),
+    }).then(handleResponse<RawTripResponse>).then(normalizeTripResponse),
 
   getByShareCode: (code: string) =>
     fetch(`${API_BASE}/api/trips/public/share/${code}`)
-      .then(handleResponse<TripResponse>),
+      .then(handleResponse<RawTripResponse>)
+      .then(normalizeTripResponse),
 };
 
 // ─── Destination API ─────────────────────────────────────────────────────────
@@ -294,7 +310,8 @@ export const adminApi = {
 
   tripDetail: (tripId: number) =>
     fetch(`${API_BASE}/api/admin/trips/${tripId}`, { headers: authHeaders() })
-      .then(handleResponse<AdminTripDetail>),
+      .then(handleResponse<RawAdminTripDetail>)
+      .then((response) => ({ ...response, trip: normalizeTripResponse(response.trip) })),
 
   resolveActivityCoordinates: (tripId: number, dryRun = true) =>
     fetch(`${API_BASE}/api/admin/trips/${tripId}/activity-coordinates/resolve?dryRun=${dryRun}`, {

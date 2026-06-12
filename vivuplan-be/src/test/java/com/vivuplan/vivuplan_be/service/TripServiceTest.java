@@ -127,6 +127,32 @@ class TripServiceTest {
     }
 
     @Test
+    void ensurePublicMakesPrivateTripShareable() {
+        Trip trip = sampleTrip();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(tripRepository.save(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TripDto.TripResponse response = service().ensurePublic(1L, trip.getUser().getId());
+
+        assertThat(trip.getIsPublic()).isTrue();
+        assertThat(response.isPublic()).isTrue();
+        verify(tripRepository).save(trip);
+    }
+
+    @Test
+    void ensurePublicDoesNotMakeAlreadyPublicTripPrivate() {
+        Trip trip = sampleTrip();
+        trip.setIsPublic(true);
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+
+        TripDto.TripResponse response = service().ensurePublic(1L, trip.getUser().getId());
+
+        assertThat(trip.getIsPublic()).isTrue();
+        assertThat(response.isPublic()).isTrue();
+        verify(tripRepository, never()).save(any(Trip.class));
+    }
+
+    @Test
     void addActivitySortsByTimeAndRecalculatesBudget() {
         Trip trip = sampleTrip();
         TripService service = service();

@@ -35,7 +35,7 @@ claims and some legacy role handling.
 - `POST /api/auth/logout`
 - `GET /api/billing/packages`
 - `POST /api/billing/sepay/webhook`
-- `GET /api/trips/public/**`
+- `GET /api/trips/public/share/**`
 - `GET /api/destinations/**`
 - `GET /actuator/health`
 
@@ -90,12 +90,14 @@ Primary frontend methods are grouped in `tripApi`:
 - `GET /api/trips`: list user trips.
 - `GET /api/trips/{id}`: read owned or public trip.
 - `DELETE /api/trips/{id}`: delete owned trip.
-- `PATCH /api/trips/{id}/visibility`: public/private toggle.
+- `PATCH /api/trips/{id}/visibility`: make the owned trip public/shareable.
+  This operation is idempotent; calling it again must not make the trip private.
 - `PATCH /api/trips/{id}/status`: update status.
 - Activity add/update/delete endpoints under a trip/day.
 - Preview and apply day regeneration.
-- Public trip list and public share-code read. Share-code reads return only
-  trips whose current visibility is public.
+- Public share-code read. There is no public trip listing endpoint; shared
+  trips are link-only and readable only through their share code while sharing
+  is enabled.
 
 Trip responses include itinerary days and activities. Activity estimated costs
 are group-level VND values.

@@ -47,7 +47,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/billing/packages").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/billing/sepay/webhook").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/trips/public/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/trips/public/share/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/destinations/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/actuator/health").permitAll()

@@ -635,8 +635,8 @@ export default function ItineraryPage() {
     try {
       let shareableTrip = trip;
       if (!trip.isPublic) {
-        const updated = await tripApi.toggleVisibility(trip.id);
-        shareableTrip = { ...trip, isPublic: updated.isPublic, shareCode: updated.shareCode };
+        const updated = await tripApi.ensurePublicShare(trip.id);
+        shareableTrip = { ...trip, ...updated, isPublic: true };
         setTrip(shareableTrip);
       }
 
@@ -869,19 +869,23 @@ export default function ItineraryPage() {
                 {exportingPdf ? <span className="spinner spinner-inline" /> : <Printer size={14} />}
                 {exportingPdf ? "Đang tải" : "Tải PDF"}
               </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                className={`trip-share-button itinerary-share-button${trip.isPublic ? " is-public" : ""}`}
-                onClick={shareTrip}
-                disabled={sharing}
-                aria-busy={sharing}
-              >
-                {sharing ? <span className="spinner spinner-inline" /> : copied ? <CheckCircle2 size={14} /> : <Share2 size={14} />}
-                {sharing ? "Đang chia sẻ..." : copied ? "Đã copy link" : "Chia sẻ"}
-              </Button>
-              {trip.isPublic && <Badge tone="teal">Đang chia sẻ</Badge>}
-              {shareError && <span className="itinerary-share-error">{shareError}</span>}
+              {!readOnlyShareView && (
+                <>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className={`trip-share-button itinerary-share-button${trip.isPublic ? " is-public" : ""}`}
+                    onClick={shareTrip}
+                    disabled={sharing}
+                    aria-busy={sharing}
+                  >
+                    {sharing ? <span className="spinner spinner-inline" /> : copied ? <CheckCircle2 size={14} /> : <Share2 size={14} />}
+                    {sharing ? "Đang chia sẻ..." : copied ? "Đã copy link" : "Chia sẻ"}
+                  </Button>
+                  {trip.isPublic && <Badge tone="teal">Đang chia sẻ</Badge>}
+                  {shareError && <span className="itinerary-share-error">{shareError}</span>}
+                </>
+              )}
             </div>
           </div>
         </div>

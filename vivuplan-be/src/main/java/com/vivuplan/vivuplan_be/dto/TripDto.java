@@ -1,5 +1,6 @@
 package com.vivuplan.vivuplan_be.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.vivuplan.vivuplan_be.entity.Activity;
 import com.vivuplan.vivuplan_be.entity.Trip;
 import lombok.Data;
@@ -42,6 +43,16 @@ public class TripDto {
         private List<String> warnings;
         private RequestFulfillment requestFulfillment;
         private String createdAt;
+
+        @JsonProperty("isPublic")
+        public boolean isPublic() {
+            return isPublic;
+        }
+
+        @JsonProperty("isPublic")
+        public void setPublic(boolean isPublic) {
+            this.isPublic = isPublic;
+        }
 
         public static TripResponse from(Trip trip) {
             TripResponse r = new TripResponse();

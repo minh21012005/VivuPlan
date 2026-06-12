@@ -1,6 +1,5 @@
 package com.vivuplan.vivuplan_be.controller;
 
-import com.vivuplan.vivuplan_be.dto.PageDto;
 import com.vivuplan.vivuplan_be.dto.TripDto;
 import com.vivuplan.vivuplan_be.service.DestinationSuggestionService;
 import com.vivuplan.vivuplan_be.service.TripService;
@@ -65,12 +64,12 @@ public class TripController {
         return ResponseEntity.ok(Map.of("message", "Đã xóa lịch trình"));
     }
 
-    /** Toggle public/private */
+    /** Make a trip shareable. This is intentionally idempotent. */
     @PatchMapping("/{id}/visibility")
-    public ResponseEntity<TripDto.TripResponse> toggleVisibility(
+    public ResponseEntity<TripDto.TripResponse> ensurePublicVisibility(
             @PathVariable Long id,
             Authentication auth) {
-        return ResponseEntity.ok(tripService.togglePublic(id, (Long) auth.getPrincipal()));
+        return ResponseEntity.ok(tripService.ensurePublic(id, (Long) auth.getPrincipal()));
     }
 
     /** Update status (DRAFT, PLANNED, COMPLETED) */
@@ -129,14 +128,6 @@ public class TripController {
             @Valid @RequestBody TripDto.ApplyRegenerateDayRequest req,
             Authentication auth) {
         return ResponseEntity.ok(tripService.applyRegeneratedDay(id, (Long) auth.getPrincipal(), dayNumber, req));
-    }
-
-    /** Public trips feed */
-    @GetMapping("/public")
-    public ResponseEntity<PageDto.PageResponse<TripDto.TripResponse>> publicTrips(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "12") int size) {
-        return ResponseEntity.ok(PageDto.PageResponse.from(tripService.getPublicTrips(page, size)));
     }
 
     /** Get trip by share code */

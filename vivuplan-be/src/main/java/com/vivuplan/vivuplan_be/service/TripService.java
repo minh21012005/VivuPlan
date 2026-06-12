@@ -10,8 +10,6 @@ import com.vivuplan.vivuplan_be.repository.TripRepository;
 import com.vivuplan.vivuplan_be.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -249,10 +247,13 @@ public class TripService {
     }
 
     @Transactional
-    public TripDto.TripResponse togglePublic(Long tripId, Long userId) {
+    public TripDto.TripResponse ensurePublic(Long tripId, Long userId) {
         Trip trip = getOwnedTrip(tripId, userId);
-        trip.setIsPublic(!trip.getIsPublic());
-        return TripDto.TripResponse.from(tripRepository.save(trip));
+        if (!trip.getIsPublic()) {
+            trip.setIsPublic(true);
+            trip = tripRepository.save(trip);
+        }
+        return TripDto.TripResponse.from(trip);
     }
 
     @Transactional
@@ -427,15 +428,6 @@ public class TripService {
             tripRepository.saveAndFlush(trip);
         }
         return AdminDto.ActivityCoordinateResolutionResponse.from(tripId, dryRun, batch);
-    }
-
-    public Page<TripDto.TripResponse> getPublicTrips(int page, int size) {
-        return tripRepository.findByIsPublicTrueOrderByViewCountDesc(PageRequest.of(page, size))
-                .map(trip -> {
-                    TripDto.TripResponse response = TripDto.TripResponse.from(trip);
-                    response.setWarnings(filterPersistentWarnings(response.getWarnings()));
-                    return response;
-                });
     }
 
     @Transactional

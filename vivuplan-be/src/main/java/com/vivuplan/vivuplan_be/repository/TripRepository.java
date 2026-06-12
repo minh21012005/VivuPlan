@@ -1,8 +1,6 @@
 package com.vivuplan.vivuplan_be.repository;
 
 import com.vivuplan.vivuplan_be.entity.Trip;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -17,8 +15,6 @@ public interface TripRepository extends JpaRepository<Trip, Long>, JpaSpecificat
     List<Trip> findByUserIdOrderByCreatedAtDesc(Long userId);
 
     List<Trip> findTop8ByUserIdOrderByCreatedAtDesc(Long userId);
-
-    Page<Trip> findByIsPublicTrueOrderByViewCountDesc(Pageable pageable);
 
     Optional<Trip> findByShareCodeAndIsPublicTrue(String shareCode);
 
