@@ -3,6 +3,8 @@ package com.vivuplan.vivuplan_be.service;
 import com.vivuplan.vivuplan_be.dto.AdminDto;
 import com.vivuplan.vivuplan_be.dto.TripDto;
 import com.vivuplan.vivuplan_be.entity.*;
+import com.vivuplan.vivuplan_be.repository.AiUsageLogRepository;
+import com.vivuplan.vivuplan_be.repository.CreditLedgerRepository;
 import com.vivuplan.vivuplan_be.repository.DestinationRepository;
 import com.vivuplan.vivuplan_be.repository.TripRepository;
 import com.vivuplan.vivuplan_be.repository.UserRepository;
@@ -44,6 +46,8 @@ public class TripService {
     private final ActivityCoordinateResolverService activityCoordinateResolverService;
     private final BillingService billingService;
     private final UserPromptGuardService userPromptGuardService;
+    private final CreditLedgerRepository creditLedgerRepository;
+    private final AiUsageLogRepository aiUsageLogRepository;
     private final Map<String, DayRegenerationProposal> dayRegenerationProposals = new ConcurrentHashMap<>();
     private static final int REGENERATION_PROPOSAL_TTL_MINUTES = 30;
     private static final long REGENERATION_COST_INCREASE_WARNING_MIN_DELTA = 200_000L;
@@ -254,7 +258,11 @@ public class TripService {
     @Transactional
     public void deleteTrip(Long tripId, Long userId) {
         Trip trip = getOwnedTrip(tripId, userId);
+        creditLedgerRepository.detachFromTrip(tripId);
+        aiUsageLogRepository.detachFromTrip(tripId);
+        dayRegenerationProposals.entrySet().removeIf(entry -> entry.getValue().tripId().equals(tripId));
         tripRepository.delete(trip);
+        tripRepository.flush();
     }
 
     @Transactional

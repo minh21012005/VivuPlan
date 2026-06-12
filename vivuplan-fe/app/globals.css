@@ -6623,9 +6623,12 @@ textarea.input.textarea-compact {
   }
 
   .itinerary-toast {
+    top: auto;
+    left: 12px;
     right: 12px;
     bottom: 12px;
-    max-width: calc(100vw - 24px);
+    width: auto;
+    max-width: none;
   }
 
   .itinerary-share-actions {

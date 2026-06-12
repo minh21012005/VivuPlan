@@ -151,10 +151,6 @@ export default function ItineraryLibraryPage() {
       window.setTimeout(() => {
         setCopiedTripId((current) => (current === trip.id ? null : current));
       }, 1600);
-      setToast({
-        message: trip.isPublic ? "Đã copy link chia sẻ." : "Đã bật chia sẻ và copy link.",
-        tone: "success",
-      });
     } catch {
       setToast({ message: "Không thể tạo link chia sẻ. Vui lòng thử lại.", tone: "error" });
     } finally {

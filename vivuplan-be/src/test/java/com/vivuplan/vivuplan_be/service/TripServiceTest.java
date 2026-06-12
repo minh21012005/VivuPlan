@@ -7,6 +7,8 @@ import com.vivuplan.vivuplan_be.entity.Place;
 import com.vivuplan.vivuplan_be.entity.Trip;
 import com.vivuplan.vivuplan_be.entity.User;
 import com.vivuplan.vivuplan_be.exception.BillingException;
+import com.vivuplan.vivuplan_be.repository.AiUsageLogRepository;
+import com.vivuplan.vivuplan_be.repository.CreditLedgerRepository;
 import com.vivuplan.vivuplan_be.repository.DestinationRepository;
 import com.vivuplan.vivuplan_be.repository.TripRepository;
 import com.vivuplan.vivuplan_be.repository.UserRepository;
@@ -31,6 +33,7 @@ import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -62,6 +65,12 @@ class TripServiceTest {
     @Mock
     private BillingService billingService;
 
+    @Mock
+    private CreditLedgerRepository creditLedgerRepository;
+
+    @Mock
+    private AiUsageLogRepository aiUsageLogRepository;
+
     private final UserPromptGuardService userPromptGuardService = new UserPromptGuardService();
 
     private TripService service() {
@@ -74,7 +83,23 @@ class TripServiceTest {
                 placePlanningService,
                 activityCoordinateResolverService,
                 billingService,
-                userPromptGuardService);
+                userPromptGuardService,
+                creditLedgerRepository,
+                aiUsageLogRepository);
+    }
+
+    @Test
+    void deleteTripDetachesAuditHistoryBeforeDeletingTrip() {
+        Trip trip = sampleTrip();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+
+        service().deleteTrip(1L, trip.getUser().getId());
+
+        var ordered = inOrder(creditLedgerRepository, aiUsageLogRepository, tripRepository);
+        ordered.verify(creditLedgerRepository).detachFromTrip(1L);
+        ordered.verify(aiUsageLogRepository).detachFromTrip(1L);
+        ordered.verify(tripRepository).delete(trip);
+        ordered.verify(tripRepository).flush();
     }
 
     @Test

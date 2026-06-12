@@ -178,7 +178,8 @@ Wallet updates should go through `BillingService`.
 ### `CreditLedger`
 
 Audit log for credit grants and consumption. Keep ledger writes aligned with
-wallet mutations.
+wallet mutations. Deleting a trip preserves ledger history and clears the
+optional trip reference before removing the trip.
 
 ### `PaymentOrder`
 
@@ -197,6 +198,9 @@ Stores webhook transaction records. SePay ID idempotency matters.
 
 Tracks AI usage, status, operation, request IDs, attempts, tokens, and cost
 estimates.
+
+Deleting a trip preserves AI usage history and clears the optional trip
+reference before removing the trip.
 
 Important operations include:
 
@@ -219,4 +223,3 @@ vivuplan-be/src/main/resources/data/
 
 Treat seed files as product behavior. They influence destination search,
 verified place context, coordinate quality, and AI output.
-
