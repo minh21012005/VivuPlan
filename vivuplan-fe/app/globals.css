@@ -3634,6 +3634,70 @@ textarea.input.textarea-compact {
   flex-wrap: wrap;
 }
 
+.itinerary-detail-page,
+.itinerary-detail-hero,
+.itinerary-detail-hero-inner,
+.itinerary-detail-hero-layout,
+.itinerary-detail-hero-content,
+.itinerary-detail-main,
+.itinerary-detail-grid,
+.itinerary-detail-primary,
+.itinerary-detail-aside,
+.itinerary-activity-timeline {
+  min-width: 0;
+}
+
+.itinerary-detail-page,
+.itinerary-detail-hero {
+  width: 100%;
+  max-width: 100%;
+}
+
+.itinerary-detail-hero {
+  overflow: hidden;
+}
+
+.itinerary-detail-hero-inner {
+  padding-top: 54px;
+  padding-bottom: 42px;
+}
+
+.itinerary-detail-hero-layout {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.itinerary-detail-hero-content {
+  flex: 1 1 680px;
+  max-width: 100%;
+}
+
+.itinerary-detail-title {
+  max-width: 100%;
+  margin-bottom: 12px;
+  color: #fff;
+  font-size: clamp(30px, 5vw, 52px);
+  font-weight: 900;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+
+.itinerary-detail-main {
+  padding-top: 30px;
+  padding-bottom: 80px;
+}
+
+.itinerary-detail-grid,
+.itinerary-detail-primary,
+.itinerary-detail-aside,
+.map-preview-card {
+  width: 100%;
+  max-width: 100%;
+}
+
 .itinerary-share-button {
   min-width: 122px;
 }
@@ -3895,6 +3959,13 @@ textarea.input.textarea-compact {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.itinerary-meta-item span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .itinerary-meta-item svg {
@@ -3975,6 +4046,54 @@ textarea.input.textarea-compact {
   overflow: hidden;
   color: var(--text);
   font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itinerary-activity-row {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 16px;
+  padding-left: 8px;
+}
+
+.itinerary-activity-card {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 0;
+  overflow: visible;
+}
+
+.itinerary-activity-toggle {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.itinerary-activity-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  overflow: hidden;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itinerary-activity-title>span:first-child {
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -6510,7 +6629,29 @@ textarea.input.textarea-compact {
   }
 
   .itinerary-share-actions {
+    width: 100%;
     justify-content: flex-start;
+  }
+
+  .itinerary-detail-hero-inner {
+    padding-top: 38px;
+    padding-bottom: 32px;
+  }
+
+  .itinerary-detail-hero-layout {
+    align-items: flex-start;
+    gap: 18px;
+  }
+
+  .itinerary-detail-title {
+    margin-bottom: 14px;
+    font-size: 30px;
+    line-height: 1.16;
+  }
+
+  .itinerary-detail-main {
+    padding-top: 22px;
+    padding-bottom: 56px;
   }
 
   .itinerary-share-error {
@@ -6518,7 +6659,8 @@ textarea.input.textarea-compact {
   }
 
   .itinerary-header-meta {
-    gap: 12px;
+    align-items: flex-start;
+    gap: 8px 12px;
     font-size: 13px;
   }
 
@@ -6565,6 +6707,20 @@ textarea.input.textarea-compact {
 
   .itinerary-day-insights {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .itinerary-activity-row {
+    gap: 10px;
+    padding-left: 0;
+  }
+
+  .itinerary-activity-toggle {
+    gap: 10px;
+    padding: 13px;
+  }
+
+  .itinerary-activity-title {
+    font-size: 14px;
   }
 
   .section-header {

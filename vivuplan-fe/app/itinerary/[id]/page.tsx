@@ -765,27 +765,27 @@ export default function ItineraryPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+    <div className="itinerary-detail-page" style={{ minHeight: "100vh", background: "var(--bg)" }}>
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <Navbar />
 
       <section
+        className="itinerary-detail-hero"
         style={{
           paddingTop: 64,
           backgroundImage: `linear-gradient(90deg, rgba(4,47,46,0.56), rgba(4,47,46,0.12)), url(${image})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           color: "white",
-          minWidth: "100vh",
         }}
       >
-        <div className="container" style={{ paddingTop: 54, paddingBottom: 42 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 20, alignItems: "end", flexWrap: "wrap" }}>
-            <div>
+        <div className="container itinerary-detail-hero-inner">
+          <div className="itinerary-detail-hero-layout">
+            <div className="itinerary-detail-hero-content">
               <Badge tone="glass" style={{ marginBottom: 14 }}>
                 <MapPin size={13} /> {trip.destination}
               </Badge>
-              <h1 style={{ color: "white", fontSize: "clamp(30px, 5vw, 52px)", fontWeight: 900, marginBottom: 12 }}>
+              <h1 className="itinerary-detail-title">
                 Lịch trình {trip.destination} {trip.days} ngày
               </h1>
               <div className="itinerary-header-meta">
@@ -854,7 +854,7 @@ export default function ItineraryPage() {
         </div>
       </section>
 
-      <main className="container" style={{ paddingTop: 30, paddingBottom: 80 }}>
+      <main className="container itinerary-detail-main">
         {aiMessages.length > 0 && (
           <section className="itinerary-ai-messages" aria-label="Thông điệp từ AI">
             <div
@@ -965,8 +965,8 @@ export default function ItineraryPage() {
           );
         })()}
 
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 320px", gap: 24 }} className="itinerary-grid">
-          <section>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 320px", gap: 24 }} className="itinerary-grid itinerary-detail-grid">
+          <section className="itinerary-detail-primary">
 
             <div className="itinerary-day-toolbar">
               <div className="itinerary-day-tabs-wrap">
@@ -1066,7 +1066,7 @@ export default function ItineraryPage() {
               </div>
             </Card>
 
-            <div style={{ position: "relative" }}>
+            <div className="itinerary-activity-timeline" style={{ position: "relative" }}>
               <div style={{ position: "absolute", left: 22, top: 18, bottom: 18, width: 2, background: "linear-gradient(to bottom, var(--primary), var(--border))", borderRadius: 99 }} />
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1098,7 +1098,7 @@ export default function ItineraryPage() {
             </div>
           </section>
 
-          <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <aside className="itinerary-detail-aside" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <Card className="map-preview-card" style={{ overflow: "hidden" }}>
               {hasDayMapCoordinates ? (
                 <DayRouteMap activities={dayActivities} destination={trip?.destination} departure={trip?.departure} directionsUrl={dayDirectionsUrl} />
@@ -1892,7 +1892,7 @@ function ActivityItem({
   const hotelAffiliateUrl = buildHotelAffiliateUrl(activity, tripContext);
 
   return (
-    <div style={{ display: "flex", gap: 16, alignItems: "flex-start", paddingLeft: 8 }}>
+    <div className="itinerary-activity-row">
       <div
         style={{
           width: 30,
@@ -1910,17 +1910,17 @@ function ActivityItem({
       >
         <Icon size={13} style={{ color: cfg.color }} />
       </div>
-      <article className="card" style={{ flex: 1, overflow: "visible" }}>
+      <article className="card itinerary-activity-card">
         <button
+          className="itinerary-activity-toggle"
           onClick={onToggle}
-          style={{ width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: 16, display: "flex", gap: 12, alignItems: "center", textAlign: "left" }}
         >
           <span style={{ fontSize: 12, fontWeight: 800, color: cfg.color, background: cfg.bg, padding: "4px 9px", borderRadius: 999, whiteSpace: "nowrap" }}>
             {activity.time}
           </span>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <h3 style={{ fontSize: 15, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{activity.name}</span>
+            <h3 className="itinerary-activity-title">
+              <span>{activity.name}</span>
               {warning && (
                 <span
                   style={{
