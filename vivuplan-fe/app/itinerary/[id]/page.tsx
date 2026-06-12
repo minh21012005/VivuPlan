@@ -1513,22 +1513,6 @@ function RegenerateDayModal({
               <button type="button" className="btn btn-ghost btn-icon" onClick={onCancel} disabled={applying} aria-label="Đóng tạo lại ngày">
                 <X size={16} />
               </button>
-              {closeConfirmOpen && (
-                <div className="modal-close-popconfirm" role="alertdialog" aria-label="Xác nhận đóng tạo lại ngày">
-                  <div>
-                    <strong>AI vẫn đang tạo phương án mới</strong>
-                    <p>Nếu đóng bây giờ, kết quả tạo lại ngày sẽ không được hiển thị.</p>
-                  </div>
-                  <div>
-                    <button type="button" onClick={onContinueWaiting}>
-                      Tiếp tục chờ
-                    </button>
-                    <button type="button" className="danger" onClick={onForceClose}>
-                      Đóng
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
@@ -1717,6 +1701,22 @@ function RegenerateDayModal({
           )}
         </Card>
       </div>
+      {closeConfirmOpen && (
+        <div className="modal-confirm-backdrop">
+          <div className="modal-confirm-dialog" role="alertdialog" aria-modal="true" aria-label="Xác nhận đóng tạo lại ngày">
+            <strong>AI vẫn đang tạo phương án mới</strong>
+            <p>Nếu đóng bây giờ, kết quả tạo lại ngày sẽ không được hiển thị.</p>
+            <div>
+              <button type="button" onClick={onContinueWaiting}>
+                Tiếp tục chờ
+              </button>
+              <button type="button" className="danger" onClick={onForceClose}>
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

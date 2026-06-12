@@ -252,27 +252,9 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
                 : "Chọn gói bạn cần, quét mã để thanh toán và VivuPlan sẽ cộng lượt vào tài khoản ngay khi giao dịch hoàn tất."}
             </p>
           </div>
-          <div className="modal-close-anchor">
-            <button type="button" onClick={requestClose} aria-label="Đóng" style={{ border: 0, background: "transparent", cursor: "pointer", color: "var(--text-3)" }}>
-              <X size={22} />
-            </button>
-            {closeConfirmOpen && (
-              <div className="modal-close-popconfirm" role="alertdialog" aria-label="Xác nhận đóng thanh toán">
-                <div>
-                  <strong>Thanh toán vẫn đang chờ xử lý</strong>
-                  <p>Nếu đóng bây giờ, giao dịch vẫn có thể được ghi nhận sau vài phút.</p>
-                </div>
-                <div>
-                  <button type="button" onClick={() => setCloseConfirmOpen(false)}>
-                    Tiếp tục chờ
-                  </button>
-                  <button type="button" className="danger" onClick={onClose}>
-                    Đóng
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <button type="button" onClick={requestClose} aria-label="Đóng" style={{ border: 0, background: "transparent", cursor: "pointer", color: "var(--text-3)" }}>
+            <X size={22} />
+          </button>
         </div>
 
         <div style={{ padding: 22 }}>
@@ -390,6 +372,22 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
           )}
         </div>
       </div>
+      {closeConfirmOpen && (
+        <div className="purchase-close-confirm-backdrop">
+          <div className="purchase-close-confirm" role="alertdialog" aria-modal="true" aria-label="Xác nhận đóng thanh toán">
+            <strong>Thanh toán vẫn đang chờ xử lý</strong>
+            <p>Nếu đóng bây giờ, giao dịch vẫn có thể được ghi nhận sau vài phút.</p>
+            <div>
+              <button type="button" onClick={() => setCloseConfirmOpen(false)}>
+                Tiếp tục chờ
+              </button>
+              <button type="button" className="danger" onClick={onClose}>
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

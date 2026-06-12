@@ -5182,6 +5182,85 @@ textarea.input.textarea-compact {
   background: #FEF2F2;
 }
 
+.modal-confirm-backdrop,
+.purchase-close-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  display: grid;
+  place-items: center;
+  padding: max(18px, env(safe-area-inset-top, 0px)) 18px max(18px, env(safe-area-inset-bottom, 0px));
+  background: rgba(15, 23, 42, 0.28);
+}
+
+.modal-confirm-dialog,
+.purchase-close-confirm {
+  width: min(360px, 100%);
+  padding: 18px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 18px;
+  background: #FFFBEB;
+  box-shadow: 0 22px 70px rgba(15, 23, 42, 0.24);
+  color: #92400E;
+}
+
+.modal-confirm-dialog strong,
+.purchase-close-confirm strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #78350F;
+  font-size: 16px;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.modal-confirm-dialog p,
+.purchase-close-confirm p {
+  margin: 0;
+  color: #92400E;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.modal-confirm-dialog>div,
+.purchase-close-confirm>div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.modal-confirm-dialog button,
+.purchase-close-confirm button {
+  border: 1px solid rgba(146, 64, 14, 0.18);
+  border-radius: var(--r-full);
+  background: #fff;
+  color: #78350F;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 9px 13px;
+  white-space: nowrap;
+}
+
+.modal-confirm-dialog button:hover,
+.purchase-close-confirm button:hover {
+  border-color: rgba(146, 64, 14, 0.34);
+  background: #FEF3C7;
+}
+
+.modal-confirm-dialog button.danger,
+.purchase-close-confirm button.danger {
+  border-color: rgba(185, 28, 28, 0.24);
+  color: #B91C1C;
+}
+
+.modal-confirm-dialog button.danger:hover,
+.purchase-close-confirm button.danger:hover {
+  background: #FEF2F2;
+}
+
 .itinerary-activity-delete-popconfirm {
   top: auto;
   bottom: calc(100% + 10px);
