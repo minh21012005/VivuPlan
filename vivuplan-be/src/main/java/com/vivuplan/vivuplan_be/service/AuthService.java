@@ -46,6 +46,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final BillingService billingService;
     private final EmailService emailService;
+    private final EmailDomainPolicyService emailDomainPolicyService;
 
     @Value("${app.admin.bootstrap-email:}")
     private String bootstrapAdminEmail;
@@ -59,6 +60,7 @@ public class AuthService {
     @Transactional
     public AuthDto.RegisterOtpResponse requestRegistrationOtp(AuthDto.RegisterRequest req) {
         String email = normalizeEmail(req.getEmail());
+        emailDomainPolicyService.assertRegistrationEmailAllowed(email);
         String name = req.getName() == null ? "" : req.getName().trim();
         if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email đã được sử dụng");
@@ -88,6 +90,7 @@ public class AuthService {
     @Transactional
     public AuthDto.AuthResponse verifyRegistrationOtp(AuthDto.VerifyRegisterOtpRequest req) {
         String email = normalizeEmail(req.getEmail());
+        emailDomainPolicyService.assertRegistrationEmailAllowed(email);
         if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email đã được sử dụng");
         }

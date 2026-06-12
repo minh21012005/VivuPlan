@@ -25,6 +25,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -56,6 +57,9 @@ class AuthServiceTest {
     @Mock
     private EmailService emailService;
 
+    @Mock
+    private EmailDomainPolicyService emailDomainPolicyService;
+
     private AuthService service() {
         AuthService service = new AuthService(
                 userRepository,
@@ -65,7 +69,8 @@ class AuthServiceTest {
                 passwordEncoder,
                 jwtUtil,
                 billingService,
-                emailService);
+                emailService,
+                emailDomainPolicyService);
         ReflectionTestUtils.setField(service, "registrationOtpExpiryMinutes", 10L);
         return service;
     }
@@ -167,6 +172,44 @@ class AuthServiceTest {
 
         verify(registrationOtpRepository, never()).save(any());
         verify(emailService, never()).sendRegistrationOtpAsync(any(), any(), any(), any(Long.class));
+    }
+
+    @Test
+    void requestRegistrationOtpRejectsBlockedDisposableEmailDomain() {
+        AuthService service = service();
+        AuthDto.RegisterRequest req = new AuthDto.RegisterRequest();
+        req.setName("Minh");
+        req.setEmail("minh@Yopmail.com ");
+        req.setPassword("password123");
+        doThrow(new IllegalArgumentException("Vui lòng sử dụng email cá nhân hoặc email công việc hợp lệ."))
+                .when(emailDomainPolicyService).assertRegistrationEmailAllowed("minh@yopmail.com");
+
+        assertThatThrownBy(() -> service.requestRegistrationOtp(req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Vui lòng sử dụng email cá nhân hoặc email công việc hợp lệ.");
+
+        verify(userRepository, never()).existsByEmail(any());
+        verify(registrationOtpRepository, never()).save(any());
+        verify(emailService, never()).sendRegistrationOtpAsync(any(), any(), any(), any(Long.class));
+    }
+
+    @Test
+    void verifyRegistrationOtpRejectsBlockedDisposableEmailDomain() {
+        AuthService service = service();
+        AuthDto.VerifyRegisterOtpRequest req = new AuthDto.VerifyRegisterOtpRequest();
+        req.setEmail("minh@yopmail.com");
+        req.setOtp("123456");
+        doThrow(new IllegalArgumentException("Vui lòng sử dụng email cá nhân hoặc email công việc hợp lệ."))
+                .when(emailDomainPolicyService).assertRegistrationEmailAllowed("minh@yopmail.com");
+
+        assertThatThrownBy(() -> service.verifyRegistrationOtp(req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Vui lòng sử dụng email cá nhân hoặc email công việc hợp lệ.");
+
+        verify(userRepository, never()).existsByEmail(any());
+        verify(registrationOtpRepository, never()).findByEmail(any());
+        verify(userRepository, never()).save(any(User.class));
+        verify(billingService, never()).grantSignupCredits(any(User.class));
     }
 
     @Test
@@ -502,6 +545,34 @@ class AuthServiceTest {
         assertThat(existing.getEmailVerified()).isTrue();
         assertThat(existing.getAvatarUrl()).isEqualTo("https://example.com/avatar.png");
         verify(billingService, never()).grantSignupCredits(any(User.class));
+    }
+
+    @Test
+    void loginWithGoogleCreatesNewAccountWithoutLocalRegistrationEmailPolicy() {
+        AuthService service = service();
+        Role userRole = Role.builder().id(1L).name(Role.RoleName.USER).build();
+
+        when(userRepository.findByGoogleId("google-1")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("minh@example.com")).thenReturn(Optional.empty());
+        when(roleRepository.findByName(Role.RoleName.USER)).thenReturn(Optional.of(userRole));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            user.setId(10L);
+            return user;
+        });
+        when(jwtUtil.generateToken(any(), any(), any())).thenReturn("token");
+
+        AuthDto.AuthResponse response = service.loginWithGoogle(
+                "google-1",
+                "Minh@Example.com ",
+                "Google Minh",
+                "https://example.com/avatar.png");
+
+        assertThat(response.getToken()).isEqualTo("token");
+        assertThat(response.getUser().getEmail()).isEqualTo("minh@example.com");
+        assertThat(response.getUser().getProvider()).isEqualTo("GOOGLE");
+        verify(emailDomainPolicyService, never()).assertRegistrationEmailAllowed(any());
+        verify(billingService).grantSignupCredits(any(User.class));
     }
 
     @Test

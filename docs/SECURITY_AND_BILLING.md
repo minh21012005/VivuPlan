@@ -62,6 +62,8 @@ changes therefore take effect without waiting for an older token to expire.
 Local accounts:
 
 - Register through OTP verification.
+- New local registrations reject disposable email domains before OTP delivery.
+  The denylist is vendored under backend resources.
 - Can use password reset OTP.
 - Can update local profile and password where supported.
 
