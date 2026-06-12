@@ -4,7 +4,7 @@
 
 import React, { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/layout/Navbar";
 import { PurchaseModal } from "@/components/billing/PurchaseModal";
 import { Badge } from "@/components/ui/Badge";
@@ -351,6 +351,7 @@ function getAiMessageDisplayText(message: string) {
 export default function ItineraryPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const routeLooksLikeTripId = /^\d+$/.test(params.id);
   const formatDayTitle = (dayNum: number, titleStr: string) => {
     const clean = titleStr.trim();
     if (clean.toLowerCase().startsWith(`ngày ${dayNum}`)) {
@@ -358,7 +359,7 @@ export default function ItineraryPage() {
     }
     return `Ngày ${dayNum}: ${clean}`;
   };
-  const { user: authUser, loading: authLoading } = useRequireAuth();
+  const { user: authUser, loading: authLoading } = useAuth();
   const { destinations, loading: destinationsLoading } = useDestinations();
   const [trip, setTrip] = useState<TripResponse | null>(null);
   const [activeDay, setActiveDay] = useState(0);
@@ -366,6 +367,7 @@ export default function ItineraryPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [redirectingForbidden, setRedirectingForbidden] = useState(false);
+  const [readOnlyShareView, setReadOnlyShareView] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -410,7 +412,7 @@ export default function ItineraryPage() {
   const { forecast, getByDayIndex } = useWeather(destCoords?.lat, destCoords?.lon);
 
   useEffect(() => {
-    if (authLoading || !authUser) return;
+    if (authLoading) return;
     let cancelled = false;
 
     async function loadTrip() {
@@ -418,9 +420,26 @@ export default function ItineraryPage() {
       setLoading(true);
       setError("");
       try {
-        const data = await (/^\d+$/.test(id) ? tripApi.getTrip(id) : tripApi.getByShareCode(id));
+        let data: TripResponse;
+        let sharedView = true;
+
+        if (routeLooksLikeTripId && authUser) {
+          try {
+            data = await tripApi.getTrip(id);
+            sharedView = false;
+          } catch (ownerRouteError) {
+            if (!(ownerRouteError instanceof ApiError) || ![403, 404].includes(ownerRouteError.status)) {
+              throw ownerRouteError;
+            }
+            data = await tripApi.getByShareCode(id);
+          }
+        } else {
+          data = await tripApi.getByShareCode(id);
+        }
+
         if (cancelled) return;
         setTrip(data);
+        setReadOnlyShareView(sharedView);
         setActiveDay(0);
         setCopied(false);
         setShareError("");
@@ -433,9 +452,11 @@ export default function ItineraryPage() {
       } catch (e) {
         if (cancelled) return;
         const isForbidden =
-          e instanceof ApiError
+          routeLooksLikeTripId
+          && Boolean(authUser)
+          && (e instanceof ApiError
             ? e.status === 403
-            : e instanceof Error && (e.message.includes("không có quyền") || e.message.includes("quyền"));
+            : e instanceof Error && (e.message.includes("không có quyền") || e.message.includes("quyền")));
 
         if (isForbidden) {
           setRedirectingForbidden(true);
@@ -453,7 +474,7 @@ export default function ItineraryPage() {
     return () => {
       cancelled = true;
     };
-  }, [params.id, authLoading, authUser, router]);
+  }, [params.id, authLoading, authUser, routeLooksLikeTripId, router]);
 
   useEffect(() => {
     if (!trip?.id || typeof window === "undefined") return;
@@ -527,6 +548,7 @@ export default function ItineraryPage() {
   };
 
   const day = trip?.schedule?.[activeDay];
+  const canEdit = Boolean(authUser) && !readOnlyShareView;
   const dayActivities = day?.activities ?? [];
   const dayTotal = day?.activities?.reduce((sum, activity) => sum + activity.estimatedCost, 0) ?? 0;
   const dayTransportCount = dayActivities.filter((activity) => activity.type === "TRANSPORT").length;
@@ -752,8 +774,8 @@ export default function ItineraryPage() {
     }
   };
 
-  // Don't render anything until auth is resolved or while redirecting to 403.
-  if (authLoading || !authUser || redirectingForbidden) return null;
+  // Wait for auth resolution so numeric owner routes can be distinguished from public share links.
+  if (authLoading || redirectingForbidden) return null;
 
   if (loading) {
     return <ItineraryLoadingState message="Đang tải lịch trình..." />;
@@ -1028,24 +1050,28 @@ export default function ItineraryPage() {
                   </button>
                 )}
               </div>
-              <Button variant="primary" size="sm" onClick={() => setEditor({ mode: "add", dayNumber: day.day })}>
-                <Plus size={13} /> Thêm hoạt động
-              </Button>
+              {canEdit && (
+                <Button variant="primary" size="sm" onClick={() => setEditor({ mode: "add", dayNumber: day.day })}>
+                  <Plus size={13} /> Thêm hoạt động
+                </Button>
+              )}
             </div>
 
             <Card className="itinerary-day-overview">
               <div className="itinerary-day-overview-head">
                 <div className="itinerary-day-title-row">
                   <h2>{day.title}</h2>
-                  <div className="itinerary-day-actions">
-                    <Button type="button" variant="secondary" size="sm" onClick={() => {
-                      setRegeneratePreviewError("");
-                      setRegenerateCloseConfirmOpen(false);
-                      setRegenerateOpen(true);
-                    }}>
-                      <Sparkles size={13} /> Tạo lại ngày
-                    </Button>
-                  </div>
+                  {canEdit && (
+                    <div className="itinerary-day-actions">
+                      <Button type="button" variant="secondary" size="sm" onClick={() => {
+                        setRegeneratePreviewError("");
+                        setRegenerateCloseConfirmOpen(false);
+                        setRegenerateOpen(true);
+                      }}>
+                        <Sparkles size={13} /> Tạo lại ngày
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <p style={{ color: "var(--text-3)", fontSize: 14, lineHeight: 1.65, margin: 0 }}>{day.summary}</p>
               </div>
@@ -1097,6 +1123,7 @@ export default function ItineraryPage() {
                       warning={warning}
                       expanded={expanded === `${activeDay}-${index}`}
                       onToggle={() => setExpanded(expanded === `${activeDay}-${index}` ? null : `${activeDay}-${index}`)}
+                      canEdit={canEdit}
                       onEdit={() => {
                         setActivityError("");
                         setEditor({ mode: "edit", dayNumber: day.day, activity });
@@ -1186,7 +1213,7 @@ export default function ItineraryPage() {
         </div>
       </main>
 
-      {editor && (
+      {canEdit && editor && (
         <ActivityEditorModal
           key={`${editor.mode}-${editor.activity?.id ?? editor.dayNumber}`}
           activity={editor.activity}
@@ -1200,7 +1227,7 @@ export default function ItineraryPage() {
         />
       )}
 
-      {regenerateOpen && day && (
+      {canEdit && regenerateOpen && day && (
         <RegenerateDayModal
           day={day}
           preview={regeneratePreview}
@@ -1220,7 +1247,7 @@ export default function ItineraryPage() {
         />
       )}
       <PurchaseModal
-        open={purchaseOpen}
+        open={canEdit && purchaseOpen}
         reason="EDIT"
         onClose={() => setPurchaseOpen(false)}
       />
@@ -1877,6 +1904,7 @@ function ActivityItem({
   warning,
   expanded,
   onToggle,
+  canEdit,
   onEdit,
   onDelete,
 }: {
@@ -1890,6 +1918,7 @@ function ActivityItem({
   warning?: { icon: "wind" | "rain" | "fog"; message: string } | null;
   expanded: boolean;
   onToggle: () => void;
+  canEdit: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -2036,42 +2065,46 @@ function ActivityItem({
               <a href={mapUrl} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">
                 <ExternalLink size={12} /> Mở bản đồ
               </a>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={onEdit}>
-                <Edit3 size={12} /> Sửa
-              </button>
-              <div className="modal-close-anchor">
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => setDeleteConfirmOpen(true)}
-                  style={{ color: "#B91C1C" }}
-                >
-                  <Trash2 size={12} /> Xóa
-                </button>
-                {deleteConfirmOpen && (
-                  <div className="modal-close-popconfirm itinerary-activity-delete-popconfirm" role="alertdialog" aria-label="Xác nhận xóa hoạt động">
-                    <div>
-                      <strong>Xóa hoạt động này?</strong>
-                      <p>Hoạt động “{activity.name}” sẽ được gỡ khỏi ngày hiện tại.</p>
-                    </div>
-                    <div>
-                      <button type="button" onClick={() => setDeleteConfirmOpen(false)}>
-                        Giữ lại
-                      </button>
-                      <button
-                        type="button"
-                        className="danger"
-                        onClick={() => {
-                          setDeleteConfirmOpen(false);
-                          onDelete();
-                        }}
-                      >
-                        Xóa hoạt động
-                      </button>
-                    </div>
+              {canEdit && (
+                <>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={onEdit}>
+                    <Edit3 size={12} /> Sửa
+                  </button>
+                  <div className="modal-close-anchor">
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setDeleteConfirmOpen(true)}
+                      style={{ color: "#B91C1C" }}
+                    >
+                      <Trash2 size={12} /> Xóa
+                    </button>
+                    {deleteConfirmOpen && (
+                      <div className="modal-close-popconfirm itinerary-activity-delete-popconfirm" role="alertdialog" aria-label="Xác nhận xóa hoạt động">
+                        <div>
+                          <strong>Xóa hoạt động này?</strong>
+                          <p>Hoạt động “{activity.name}” sẽ được gỡ khỏi ngày hiện tại.</p>
+                        </div>
+                        <div>
+                          <button type="button" onClick={() => setDeleteConfirmOpen(false)}>
+                            Giữ lại
+                          </button>
+                          <button
+                            type="button"
+                            className="danger"
+                            onClick={() => {
+                              setDeleteConfirmOpen(false);
+                              onDelete();
+                            }}
+                          >
+                            Xóa hoạt động
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </>
+              )}
               <span className="badge badge-teal">{cfg.label}</span>
             </div>
           </div>

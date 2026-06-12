@@ -6,6 +6,7 @@ import com.vivuplan.vivuplan_be.service.DestinationSuggestionService;
 import com.vivuplan.vivuplan_be.service.TripService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -141,6 +142,8 @@ public class TripController {
     /** Get trip by share code */
     @GetMapping("/public/share/{code}")
     public ResponseEntity<TripDto.TripResponse> getByShareCode(@PathVariable String code) {
-        return ResponseEntity.ok(tripService.getByShareCode(code));
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(tripService.getByShareCode(code));
     }
 }

@@ -440,7 +440,7 @@ public class TripService {
 
     @Transactional
     public TripDto.TripResponse getByShareCode(String code) {
-        Trip trip = tripRepository.findByShareCode(code)
+        Trip trip = tripRepository.findByShareCodeAndIsPublicTrue(code)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch trình"));
         trip.setViewCount(trip.getViewCount() + 1);
         tripRepository.save(trip);
@@ -1458,7 +1458,7 @@ public class TripService {
 
     private String generateUniqueShareCode() {
         for (int i = 0; i < 5; i++) {
-            String code = UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
+            String code = "S" + UUID.randomUUID().toString().replace("-", "").substring(0, 9).toUpperCase();
             if (!tripRepository.existsByShareCode(code)) {
                 return code;
             }

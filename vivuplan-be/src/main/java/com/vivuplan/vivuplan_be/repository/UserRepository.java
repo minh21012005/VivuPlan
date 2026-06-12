@@ -17,9 +17,6 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     @Query("select count(distinct u) from User u join u.roles r where r.name = :roleName")
     long countByRoleName(com.vivuplan.vivuplan_be.entity.Role.RoleName roleName);
 
-    @Query("select count(u) > 0 from User u where u.id = :id and (u.accountLocked = false or u.accountLocked is null)")
-    boolean existsActiveById(@Param("id") Long id);
-
     @Query("select count(distinct u) from User u join u.roles r where r.name = :roleName and (u.accountLocked = false or u.accountLocked is null)")
     long countUnlockedByRoleName(@Param("roleName") com.vivuplan.vivuplan_be.entity.Role.RoleName roleName);
 }

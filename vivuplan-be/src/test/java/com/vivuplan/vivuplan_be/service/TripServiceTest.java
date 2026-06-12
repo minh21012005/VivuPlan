@@ -103,6 +103,30 @@ class TripServiceTest {
     }
 
     @Test
+    void getByShareCodeRejectsPrivateOrUnknownTrip() {
+        when(tripRepository.findByShareCodeAndIsPublicTrue("TESTCODE")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service().getByShareCode("TESTCODE"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Không tìm thấy lịch trình");
+
+        verify(tripRepository, never()).save(any(Trip.class));
+    }
+
+    @Test
+    void getByShareCodeReturnsPublicTripAndIncrementsViews() {
+        Trip trip = sampleTrip();
+        trip.setIsPublic(true);
+        trip.setViewCount(3);
+        when(tripRepository.findByShareCodeAndIsPublicTrue("TESTCODE")).thenReturn(Optional.of(trip));
+
+        TripDto.TripResponse response = service().getByShareCode("TESTCODE");
+
+        assertThat(response.getViewCount()).isEqualTo(4);
+        verify(tripRepository).save(trip);
+    }
+
+    @Test
     void addActivitySortsByTimeAndRecalculatesBudget() {
         Trip trip = sampleTrip();
         TripService service = service();
@@ -248,6 +272,7 @@ class TripServiceTest {
     @Test
     void generateAndSaveConsumesPlanCreditOnlyAfterSuccessfulSave() {
         TripService service = service();
+        AtomicReference<Trip> savedTrip = new AtomicReference<>();
         when(userRepository.findById(7L)).thenReturn(Optional.of(sampleUser()));
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
                 .thenReturn(Optional.empty());
@@ -259,6 +284,7 @@ class TripServiceTest {
         when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> {
             Trip saved = invocation.getArgument(0);
             saved.setId(1L);
+            savedTrip.set(saved);
             return saved;
         });
 
@@ -266,6 +292,7 @@ class TripServiceTest {
 
         verify(billingService).requirePlanCredit(7L);
         verify(billingService).consumePlanCredit(eq(7L), any(Trip.class));
+        assertThat(savedTrip.get().getShareCode()).matches("S[A-F0-9]{9}");
     }
 
     @Test

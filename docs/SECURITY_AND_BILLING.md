@@ -50,6 +50,13 @@ Trip, activity, and regeneration operations must verify ownership unless the
 flow is explicitly public. Public visibility and share codes are intentional
 access mechanisms, not a reason to skip ownership checks elsewhere.
 
+A share code grants read access only while the trip is public. Switching a trip
+back to private must immediately make its existing share URL unavailable.
+
+JWT identity remains token-based, but account lock state and authorities are
+resolved from the current user record on every authenticated request. Role
+changes therefore take effect without waiting for an older token to expire.
+
 ## Local And Google Accounts
 
 Local accounts:
@@ -122,4 +129,3 @@ When adding new billing failures, update:
 - Frontend `ApiError` handling if needed.
 - Affected purchase or wallet UI.
 - Tests.
-

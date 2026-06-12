@@ -15,8 +15,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
-
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -34,13 +32,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(token) && jwtUtil.isValid(token)) {
             try {
                 Long userId = jwtUtil.getUserId(token);
-                if (!userRepository.existsActiveById(userId)) {
+                var user = userRepository.findById(userId).orElse(null);
+                if (user == null || user.isAccountLocked()) {
                     chain.doFilter(request, response);
                     return;
                 }
 
-                String email = jwtUtil.getEmail(token);
-                List<SimpleGrantedAuthority> authorities = jwtUtil.getRoles(token).stream()
+                var authorities = user.getRoleNames().stream()
                         .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                         .toList();
 
@@ -48,7 +46,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                         userId, null,
                         authorities
                 );
-                auth.setDetails(email);
+                auth.setDetails(user.getEmail());
                 SecurityContextHolder.getContext().setAuthentication(auth);
             } catch (Exception e) {
                 log.warn("Could not set authentication: {}", e.getMessage());

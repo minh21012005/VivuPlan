@@ -20,7 +20,7 @@ public interface TripRepository extends JpaRepository<Trip, Long>, JpaSpecificat
 
     Page<Trip> findByIsPublicTrueOrderByViewCountDesc(Pageable pageable);
 
-    Optional<Trip> findByShareCode(String shareCode);
+    Optional<Trip> findByShareCodeAndIsPublicTrue(String shareCode);
 
     boolean existsByShareCode(String shareCode);
 

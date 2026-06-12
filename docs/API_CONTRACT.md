@@ -94,7 +94,8 @@ Primary frontend methods are grouped in `tripApi`:
 - `PATCH /api/trips/{id}/status`: update status.
 - Activity add/update/delete endpoints under a trip/day.
 - Preview and apply day regeneration.
-- Public trip list and public share-code read.
+- Public trip list and public share-code read. Share-code reads return only
+  trips whose current visibility is public.
 
 Trip responses include itinerary days and activities. Activity estimated costs
 are group-level VND values.
@@ -148,4 +149,3 @@ When changing API shape:
 4. Update affected route/components.
 5. Update this file if the contract changed.
 6. Run backend tests and frontend lint/build when practical.
-
