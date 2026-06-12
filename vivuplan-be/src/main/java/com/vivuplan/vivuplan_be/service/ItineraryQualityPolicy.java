@@ -21,7 +21,7 @@ final class ItineraryQualityPolicy {
                 "Keep each day realistic for Vietnam: normal sightseeing days should have %d-%d display items; "
                         + "first/last travel days and relaxing/family days may have %d-%d items; "
                         + "dense but realistic city/food/adventure days may have %d-%d FOOD/CAFE/ATTRACTION/ACTIVITY/NIGHTLIFE items when distances are close and pacing is believable. "
-                        + "Never return more than %d total items in one day. Treat %d FOOD/CAFE/ATTRACTION/ACTIVITY/NIGHTLIFE items as a soft pacing ceiling, and do not pad the itinerary just to hit a count.",
+                        + "Never exceed %d total items in one day. On normal days, keep FOOD/CAFE/ATTRACTION/ACTIVITY/NIGHTLIFE items at %d or fewer for realistic pacing. Do not pad the itinerary just to hit a count.",
                 NORMAL_DAY_MIN_DISPLAY_ITEMS,
                 NORMAL_DAY_MAX_DISPLAY_ITEMS,
                 LIGHT_DAY_MIN_DISPLAY_ITEMS,

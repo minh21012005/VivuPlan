@@ -723,7 +723,9 @@ class AiServiceTest {
         String prompt = buildQualityRetryPrompt(service, req, "missing explicit local transport");
 
         assertThat(prompt)
-                .contains("Never return more than " + ItineraryQualityPolicy.MAX_TOTAL_ITEMS_PER_DAY + " total items")
+                .contains("Never exceed " + ItineraryQualityPolicy.MAX_TOTAL_ITEMS_PER_DAY + " total items")
+                .contains("On normal days, keep FOOD/CAFE/ATTRACTION/ACTIVITY/NIGHTLIFE items at "
+                        + ItineraryQualityPolicy.MAX_NON_LOGISTICS_ITEMS_PER_DAY + " or fewer for realistic pacing")
                 .contains("For close walkable places, a clear walking note with cost 0 is enough")
                 .contains("If a rented vehicle is used across multiple activities or days")
                 .contains("Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee")
@@ -754,7 +756,9 @@ class AiServiceTest {
                 "missing explicit local transport");
 
         assertThat(prompt)
-                .contains("Never return more than " + ItineraryQualityPolicy.MAX_TOTAL_ITEMS_PER_DAY + " total items")
+                .contains("Never exceed " + ItineraryQualityPolicy.MAX_TOTAL_ITEMS_PER_DAY + " total items")
+                .contains("On normal days, keep FOOD/CAFE/ATTRACTION/ACTIVITY/NIGHTLIFE items at "
+                        + ItineraryQualityPolicy.MAX_NON_LOGISTICS_ITEMS_PER_DAY + " or fewer for realistic pacing")
                 .contains("For close walkable places, a clear walking note with cost 0 is enough")
                 .contains("If a rented vehicle is used across multiple activities or days")
                 .contains("Do not create a 0-cost pickup/receive-rental activity unless another TRANSPORT activity clearly includes that rental fee")
