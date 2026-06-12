@@ -1035,22 +1035,6 @@ function PlanContent() {
               >
                 <X size={18} />
               </button>
-              {destinationSuggestionCloseConfirmOpen && (
-                <div className="modal-close-popconfirm" role="alertdialog" aria-label="Xác nhận đóng gợi ý điểm đến">
-                  <div>
-                    <strong>Vẫn đang tìm điểm đến</strong>
-                    <p>Nếu đóng bây giờ, kết quả gợi ý sẽ không được hiển thị.</p>
-                  </div>
-                  <div>
-                    <button type="button" onClick={() => setDestinationSuggestionCloseConfirmOpen(false)}>
-                      Tiếp tục chờ
-                    </button>
-                    <button type="button" className="danger" onClick={() => closeDestinationSuggestionModal(true)}>
-                      Đóng
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="destination-suggestion-modal-head">
@@ -1178,6 +1162,22 @@ function PlanContent() {
               </>
             )}
           </div>
+          {destinationSuggestionCloseConfirmOpen && (
+            <div className="modal-confirm-backdrop">
+              <div className="modal-confirm-dialog" role="alertdialog" aria-modal="true" aria-label="Xác nhận đóng gợi ý điểm đến">
+                <strong>Vẫn đang tìm điểm đến</strong>
+                <p>Nếu đóng bây giờ, kết quả gợi ý sẽ không được hiển thị.</p>
+                <div>
+                  <button type="button" onClick={() => setDestinationSuggestionCloseConfirmOpen(false)}>
+                    Tiếp tục chờ
+                  </button>
+                  <button type="button" className="danger" onClick={() => closeDestinationSuggestionModal(true)}>
+                    Đóng
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
       <PurchaseModal
