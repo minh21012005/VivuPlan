@@ -31,6 +31,8 @@ export default function RegisterPage() {
     }
   }, [auth.loading, auth.user, router]);
 
+  if (auth.loading || auth.user) return null;
+
   const strength = form.password.length === 0 ? 0 : form.password.length < 6 ? 1 : form.password.length < 10 ? 2 : 3;
   const strengthColors = ["", "#EF4444", "#F59E0B", "#10B981"];
   const strengthLabels = ["", "Yếu", "Trung bình", "Mạnh"];

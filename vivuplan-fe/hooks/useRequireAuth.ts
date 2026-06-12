@@ -4,6 +4,9 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 
+const LOGOUT_REDIRECT_FLAG = "vp_logout_redirect";
+const LOGOUT_REDIRECT_WINDOW_MS = 5000;
+
 /**
  * Redirects to /unauthorized if the user is not logged in.
  * Optionally redirects to /forbidden if a custom condition is met.
@@ -20,12 +23,19 @@ export function useRequireAuth(forbiddenCondition?: (user: NonNullable<ReturnTyp
     if (loading) return;
 
     if (!user) {
-      router.push("/unauthorized");
+      const logoutAt = Number(window.sessionStorage.getItem(LOGOUT_REDIRECT_FLAG) ?? 0);
+      if (logoutAt > 0 && Date.now() - logoutAt < LOGOUT_REDIRECT_WINDOW_MS) {
+        window.sessionStorage.removeItem(LOGOUT_REDIRECT_FLAG);
+        router.replace("/");
+        return;
+      }
+      window.sessionStorage.removeItem(LOGOUT_REDIRECT_FLAG);
+      router.replace("/unauthorized");
       return;
     }
 
     if (isForbidden) {
-      router.push("/forbidden");
+      router.replace("/forbidden");
     }
   }, [loading, user, router, isForbidden]);
 

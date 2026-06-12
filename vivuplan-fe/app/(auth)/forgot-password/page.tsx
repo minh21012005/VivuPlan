@@ -30,6 +30,8 @@ export default function ForgotPasswordPage() {
     }
   }, [auth.loading, auth.user, router]);
 
+  if (auth.loading || auth.user) return null;
+
   const requestOtp = async (targetEmail = email) => {
     setError("");
     setLoading(true);
