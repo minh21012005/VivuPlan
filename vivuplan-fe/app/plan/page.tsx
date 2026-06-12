@@ -108,6 +108,12 @@ function getTripDays(startDate: string, endDate: string) {
   return Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
 }
 
+function formatPlannerDate(dateValue: string) {
+  const [year, month, day] = dateValue.split("-").map(Number);
+  if (!year || !month || !day) return "";
+  return `ngày ${day} thg ${month}, ${year}`;
+}
+
 function getTodayDateInput() {
   const today = new Date();
   const year = today.getFullYear();
@@ -735,6 +741,12 @@ function PlanContent() {
               <div className="planner-date-row">
                 <div className="input-with-icon planner-date-field">
                   <Clock size={16} />
+                  <span
+                    className={`planner-date-display${form.startDate ? "" : " is-placeholder"}`}
+                    aria-hidden="true"
+                  >
+                    {form.startDate ? formatPlannerDate(form.startDate) : "Chọn ngày đi"}
+                  </span>
                   <input
                     className="input planner-date-input"
                     type="date"
@@ -752,12 +764,28 @@ function PlanContent() {
 
                 <div className="input-with-icon planner-date-field">
                   <Clock size={16} />
+                  <span
+                    className={`planner-date-display${form.endDate ? "" : " is-placeholder"}`}
+                    aria-hidden="true"
+                  >
+                    {form.endDate ? formatPlannerDate(form.endDate) : "Chọn ngày về"}
+                  </span>
                   <input
                     className="input planner-date-input"
                     type="date"
                     value={form.endDate}
                     min={form.startDate || todayInput}
-                    onChange={(event) => setForm((prev) => ({ ...prev, endDate: event.target.value }))}
+                    onChange={(event) => {
+                      const selectedEndDate = event.currentTarget.value;
+                      setForm((prev) => {
+                        if (selectedEndDate && prev.startDate && selectedEndDate < prev.startDate) {
+                          const previousValidEndDate =
+                            prev.endDate && prev.endDate >= prev.startDate ? prev.endDate : prev.startDate;
+                          return { ...prev, endDate: previousValidEndDate };
+                        }
+                        return { ...prev, endDate: selectedEndDate };
+                      });
+                    }}
                     aria-label="Ngày về"
                   />
                 </div>
