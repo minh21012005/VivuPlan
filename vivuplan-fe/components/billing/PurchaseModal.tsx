@@ -373,8 +373,8 @@ export function PurchaseModal({ open, reason = "PLAN", initialPackageCode, onClo
         </div>
       </div>
       {closeConfirmOpen && (
-        <div className="purchase-close-confirm-backdrop">
-          <div className="purchase-close-confirm" role="alertdialog" aria-modal="true" aria-label="Xác nhận đóng thanh toán">
+        <div className="modal-confirm-backdrop">
+          <div className="modal-confirm-dialog" role="alertdialog" aria-modal="true" aria-label="Xác nhận đóng thanh toán">
             <strong>Thanh toán vẫn đang chờ xử lý</strong>
             <p>Nếu đóng bây giờ, giao dịch vẫn có thể được ghi nhận sau vài phút.</p>
             <div>

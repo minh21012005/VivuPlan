@@ -5182,8 +5182,7 @@ textarea.input.textarea-compact {
   background: #FEF2F2;
 }
 
-.modal-confirm-backdrop,
-.purchase-close-confirm-backdrop {
+.modal-confirm-backdrop {
   position: fixed;
   inset: 0;
   z-index: 10020;
@@ -5193,8 +5192,7 @@ textarea.input.textarea-compact {
   background: rgba(15, 23, 42, 0.28);
 }
 
-.modal-confirm-dialog,
-.purchase-close-confirm {
+.modal-confirm-dialog {
   width: min(360px, 100%);
   padding: 18px;
   border: 1px solid rgba(245, 158, 11, 0.3);
@@ -5204,8 +5202,7 @@ textarea.input.textarea-compact {
   color: #92400E;
 }
 
-.modal-confirm-dialog strong,
-.purchase-close-confirm strong {
+.modal-confirm-dialog strong {
   display: block;
   margin-bottom: 6px;
   color: #78350F;
@@ -5214,16 +5211,14 @@ textarea.input.textarea-compact {
   line-height: 1.35;
 }
 
-.modal-confirm-dialog p,
-.purchase-close-confirm p {
+.modal-confirm-dialog p {
   margin: 0;
   color: #92400E;
   font-size: 13px;
   line-height: 1.6;
 }
 
-.modal-confirm-dialog>div,
-.purchase-close-confirm>div {
+.modal-confirm-dialog>div {
   display: flex;
   justify-content: flex-end;
   gap: 9px;
@@ -5231,8 +5226,7 @@ textarea.input.textarea-compact {
   margin-top: 15px;
 }
 
-.modal-confirm-dialog button,
-.purchase-close-confirm button {
+.modal-confirm-dialog button {
   border: 1px solid rgba(146, 64, 14, 0.18);
   border-radius: var(--r-full);
   background: #fff;
@@ -5244,20 +5238,17 @@ textarea.input.textarea-compact {
   white-space: nowrap;
 }
 
-.modal-confirm-dialog button:hover,
-.purchase-close-confirm button:hover {
+.modal-confirm-dialog button:hover {
   border-color: rgba(146, 64, 14, 0.34);
   background: #FEF3C7;
 }
 
-.modal-confirm-dialog button.danger,
-.purchase-close-confirm button.danger {
+.modal-confirm-dialog button.danger {
   border-color: rgba(185, 28, 28, 0.24);
   color: #B91C1C;
 }
 
-.modal-confirm-dialog button.danger:hover,
-.purchase-close-confirm button.danger:hover {
+.modal-confirm-dialog button.danger:hover {
   background: #FEF2F2;
 }
 
@@ -8641,6 +8632,70 @@ textarea.input.textarea-compact {
 }
 
 /* ── @media print (fallback for window.print) ── */
+@media (max-width: 720px) {
+  .planner-preview {
+    display: none;
+  }
+
+  .admin-filter-bar,
+  .admin-ai-filter-bar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .admin-search-field {
+    flex: 0 0 auto;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .admin-search-field svg {
+    left: 13px;
+  }
+
+  .admin-search-field input,
+  .admin-filter-select {
+    width: 100%;
+    height: 42px;
+    min-height: 42px;
+    font-size: 13px;
+  }
+
+  .admin-search-field input {
+    padding: 0 13px 0 38px;
+  }
+
+  .admin-filter-select {
+    padding: 0 34px 0 13px;
+  }
+
+  .admin-pagination {
+    align-items: center;
+    justify-content: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px;
+  }
+
+  .admin-page-numbers {
+    display: inline-flex;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+  }
+
+  .admin-page-btn {
+    flex: 0 0 38px;
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+  }
+}
+
 @media print {
 
   html,
