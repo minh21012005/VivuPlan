@@ -127,6 +127,8 @@ export default function ItineraryLibraryPage() {
     }
 
     setSharingTripId(trip.id);
+    const shareUrl = getTripShareUrl(trip.shareCode);
+    const copyAttempt = copyTextToClipboard(shareUrl);
     try {
       const shareableTrip = trip.isPublic ? trip : await tripApi.toggleVisibility(trip.id);
 
@@ -134,7 +136,17 @@ export default function ItineraryLibraryPage() {
         setTrips((prev) => prev.map((item) => (item.id === trip.id ? { ...item, isPublic: shareableTrip.isPublic } : item)));
       }
 
-      await copyTextToClipboard(getTripShareUrl(shareableTrip.shareCode));
+      const copied = await copyAttempt;
+      if (!copied) {
+        setToast({
+          message: trip.isPublic
+            ? "Không thể sao chép link. Hãy thử lại hoặc sao chép từ thanh địa chỉ."
+            : "Đã bật chia sẻ nhưng không thể sao chép link. Hãy thử lại.",
+          tone: "error",
+        });
+        return;
+      }
+
       setCopiedTripId(trip.id);
       window.setTimeout(() => {
         setCopiedTripId((current) => (current === trip.id ? null : current));

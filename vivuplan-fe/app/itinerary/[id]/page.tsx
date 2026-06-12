@@ -608,6 +608,8 @@ export default function ItineraryPage() {
 
     setSharing(true);
     setShareError("");
+    const shareUrl = getTripShareUrl(trip.shareCode);
+    const copyAttempt = copyTextToClipboard(shareUrl);
     try {
       let shareableTrip = trip;
       if (!trip.isPublic) {
@@ -616,7 +618,16 @@ export default function ItineraryPage() {
         setTrip(shareableTrip);
       }
 
-      await copyTextToClipboard(getTripShareUrl(shareableTrip.shareCode));
+      const copied = await copyAttempt;
+      if (!copied) {
+        setShareError(
+          trip.isPublic
+            ? "Không thể sao chép link. Hãy thử lại hoặc sao chép từ thanh địa chỉ."
+            : "Đã bật chia sẻ nhưng không thể sao chép link. Hãy thử lại.",
+        );
+        return;
+      }
+
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
     } catch (e) {
