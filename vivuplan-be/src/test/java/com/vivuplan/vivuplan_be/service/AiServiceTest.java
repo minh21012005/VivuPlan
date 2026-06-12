@@ -1273,7 +1273,8 @@ class AiServiceTest {
                 "Bảo tàng Điêu khắc Chăm Đà Nẵng",
                 "Cầu Rồng",
                 "Hải sản Bé Mặn",
-                "Chợ đêm Sơn Trà"
+                "Chợ đêm Sơn Trà",
+                "Bánh xèo Bà Dưỡng"
         };
         String[] locations = {
                 "231 Trần Phú, Hải Châu, Đà Nẵng",
@@ -1284,7 +1285,8 @@ class AiServiceTest {
                 "02 đường 2/9, Hải Châu, Đà Nẵng",
                 "Đường Nguyễn Văn Linh, Hải Châu, Đà Nẵng",
                 "Lô 14 Hoàng Sa, Sơn Trà, Đà Nẵng",
-                "Mai Hắc Đế, Sơn Trà, Đà Nẵng"
+                "Mai Hắc Đế, Sơn Trà, Đà Nẵng",
+                "K280/23 Hoàng Diệu, Hải Châu, Đà Nẵng"
         };
         for (int i = 0; i < ItineraryQualityPolicy.MAX_NON_LOGISTICS_ITEMS_PER_DAY; i++) {
             activities.add(activity(
@@ -1307,18 +1309,44 @@ class AiServiceTest {
     }
 
     @Test
-    void itineraryQualityRejectsDayWithTooManyNonLogisticsActivities() throws Exception {
+    void itineraryQualityAllowsNonLogisticsOverSoftPacingCeilingWhenTotalItemsFit() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
 
         TripDto.DayResponse day = baseDay();
         List<TripDto.ActivityResponse> activities = new java.util.ArrayList<>();
+        String[] names = {
+                "Chợ Cồn Đà Nẵng",
+                "Bảo tàng Điêu khắc Chăm Đà Nẵng",
+                "Nhà thờ Chính tòa Đà Nẵng",
+                "Cầu Rồng Đà Nẵng",
+                "Bánh xèo Bà Dưỡng",
+                "Cà phê Cộng Bạch Đằng",
+                "Bãi biển Mỹ Khê",
+                "Chùa Linh Ứng Sơn Trà",
+                "Hải sản Bé Mặn",
+                "Cầu Tình Yêu Đà Nẵng",
+                "Chợ đêm Sơn Trà"
+        };
+        String[] locations = {
+                "290 Hùng Vương, Hải Châu, Đà Nẵng",
+                "02 đường 2/9, Hải Châu, Đà Nẵng",
+                "156 Trần Phú, Hải Châu, Đà Nẵng",
+                "Đường Nguyễn Văn Linh, Hải Châu, Đà Nẵng",
+                "K280/23 Hoàng Diệu, Hải Châu, Đà Nẵng",
+                "96 Bạch Đằng, Hải Châu, Đà Nẵng",
+                "Võ Nguyên Giáp, Sơn Trà, Đà Nẵng",
+                "Bán đảo Sơn Trà, Đà Nẵng",
+                "Lô 14 Hoàng Sa, Sơn Trà, Đà Nẵng",
+                "Trần Hưng Đạo, Sơn Trà, Đà Nẵng",
+                "Mai Hắc Đế, Sơn Trà, Đà Nẵng"
+        };
         for (int i = 0; i <= ItineraryQualityPolicy.MAX_NON_LOGISTICS_ITEMS_PER_DAY; i++) {
             activities.add(activity(
                     String.format("%02d:00", 7 + i),
-                    "Lich trinh day dac " + (i + 1),
+                    names[i],
                     i % 3 == 0 ? "FOOD" : "ATTRACTION",
-                    "Dia diem cu the " + (i + 1),
+                    locations[i],
                     100_000L,
                     null));
         }
@@ -1326,8 +1354,7 @@ class AiServiceTest {
 
         QualityResult quality = assessItineraryQuality(service, List.of(day), req);
 
-        assertThat(quality.passed()).isFalse();
-        assertThat(quality.reason()).contains("too many non-logistics activities");
+        assertThat(quality.passed()).isTrue();
     }
 
     @Test

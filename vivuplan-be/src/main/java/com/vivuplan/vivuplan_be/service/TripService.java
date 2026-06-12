@@ -683,13 +683,6 @@ public class TripService {
             throw new IllegalArgumentException("Ngày được tạo lại có quá nhiều hoạt động");
         }
 
-        long nonLogisticsActivities = proposedDay.getActivities().stream()
-                .filter(activity -> !isLogisticsActivityType(normalizeText(activity.getType())))
-                .count();
-        if (ItineraryQualityPolicy.exceedsNonLogisticsItems(nonLogisticsActivities)) {
-            throw new IllegalArgumentException("Ngày được tạo lại có quá nhiều điểm ăn/chơi/tham quan");
-        }
-
         ItineraryDay tempDay = new ItineraryDay();
         tempDay.setDayNumber(proposedDay.getDay());
         tempDay.setActivities(new ArrayList<>());
@@ -718,10 +711,6 @@ public class TripService {
         return edgeDay || hasIntercityTransport || isRelaxedPacing(trip)
                 ? ItineraryQualityPolicy.MIN_ACTIVITIES_LIGHT_DAY
                 : ItineraryQualityPolicy.MIN_ACTIVITIES_DEFAULT;
-    }
-
-    private boolean isLogisticsActivityType(String normalizedType) {
-        return normalizedType.equals("transport") || normalizedType.equals("accommodation");
     }
 
     private boolean isRelaxedPacing(Trip trip) {

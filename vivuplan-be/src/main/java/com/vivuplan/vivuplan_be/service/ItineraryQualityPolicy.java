@@ -10,8 +10,8 @@ final class ItineraryQualityPolicy {
     static final int LIGHT_DAY_MIN_DISPLAY_ITEMS = 3;
     static final int LIGHT_DAY_MAX_DISPLAY_ITEMS = 6;
     static final int DENSE_DAY_MIN_NON_LOGISTICS_ITEMS = 6;
-    static final int MAX_TOTAL_ITEMS_PER_DAY = 14;
-    static final int MAX_NON_LOGISTICS_ITEMS_PER_DAY = 9;
+    static final int MAX_TOTAL_ITEMS_PER_DAY = 15;
+    static final int MAX_NON_LOGISTICS_ITEMS_PER_DAY = 10;
 
     private ItineraryQualityPolicy() {
     }
@@ -21,7 +21,7 @@ final class ItineraryQualityPolicy {
                 "Keep each day realistic for Vietnam: normal sightseeing days should have %d-%d display items; "
                         + "first/last travel days and relaxing/family days may have %d-%d items; "
                         + "dense but realistic city/food/adventure days may have %d-%d FOOD/CAFE/ATTRACTION/ACTIVITY/NIGHTLIFE items when distances are close and pacing is believable. "
-                        + "Never return more than %d total items in one day or more than %d FOOD/CAFE/ATTRACTION/ACTIVITY/NIGHTLIFE items in one day, and do not pad the itinerary just to hit a count.",
+                        + "Never return more than %d total items in one day. Treat %d FOOD/CAFE/ATTRACTION/ACTIVITY/NIGHTLIFE items as a soft pacing ceiling, and do not pad the itinerary just to hit a count.",
                 NORMAL_DAY_MIN_DISPLAY_ITEMS,
                 NORMAL_DAY_MAX_DISPLAY_ITEMS,
                 LIGHT_DAY_MIN_DISPLAY_ITEMS,
@@ -46,7 +46,4 @@ final class ItineraryQualityPolicy {
         return itemCount > MAX_TOTAL_ITEMS_PER_DAY;
     }
 
-    static boolean exceedsNonLogisticsItems(long itemCount) {
-        return itemCount > MAX_NON_LOGISTICS_ITEMS_PER_DAY;
-    }
 }

@@ -1638,7 +1638,6 @@ public class AiService {
             if (ItineraryQualityPolicy.exceedsTotalItems(day.getActivities().size())) {
                 return QualityCheck.fail("day " + day.getDay() + " has too many activities");
             }
-            int dayNonLogisticsActivities = 0;
             Set<String> seenTimes = new HashSet<>();
             StringBuilder fingerprint = new StringBuilder();
             for (TripDto.ActivityResponse act : day.getActivities()) {
@@ -1683,12 +1682,6 @@ public class AiService {
                 if (isGenericActivityForQuality(act, req, name, location, type)) {
                     genericActivities++;
                 }
-                if (!isLogisticsType(type)) {
-                    dayNonLogisticsActivities++;
-                }
-            }
-            if (ItineraryQualityPolicy.exceedsNonLogisticsItems(dayNonLogisticsActivities)) {
-                return QualityCheck.fail("day " + day.getDay() + " has too many non-logistics activities");
             }
             dayFingerprints.add(fingerprint.toString());
         }
@@ -1725,7 +1718,6 @@ public class AiService {
         }
 
         int genericActivities = 0;
-        int nonLogisticsActivities = 0;
         String recoverableCostIssue = null;
         Set<String> seenTimes = new HashSet<>();
         List<TimeRange> ranges = new ArrayList<>();
@@ -1779,10 +1771,6 @@ public class AiService {
             if (isGenericActivityForQuality(act, req, name, location, type)) {
                 genericActivities++;
             }
-            if (!isLogisticsType(type)) {
-                nonLogisticsActivities++;
-            }
-
             ranges.add(new TimeRange(act.getTime(), parseActivityDurationMinutes(act.getDuration()), type));
         }
 
@@ -1802,9 +1790,6 @@ public class AiService {
 
         if (genericActivities > Math.max(2, day.getActivities().size() / 2)) {
             return QualityCheck.fail("too many generic activities in regenerated day");
-        }
-        if (ItineraryQualityPolicy.exceedsNonLogisticsItems(nonLogisticsActivities)) {
-            return QualityCheck.fail("regenerated day has too many non-logistics activities");
         }
         if (hasTooManyDuplicatePlaces(day, currentSchedule)) {
             return QualityCheck.fail("regenerated day repeats too many places from other days");
@@ -2331,10 +2316,6 @@ public class AiService {
                 "nguoi lon tuoi",
                 "nhe nhang",
                 "thu gian");
-    }
-
-    private boolean isLogisticsType(String normalizedType) {
-        return normalizedType.equals("transport") || normalizedType.equals("accommodation");
     }
 
     private boolean isOutboundOrReturnTransport(String normalizedText, TripDto.GenerateRequest req) {
