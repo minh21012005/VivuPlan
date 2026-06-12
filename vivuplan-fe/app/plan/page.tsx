@@ -733,10 +733,10 @@ function PlanContent() {
                 </span>
               </div>
               <div className="planner-date-row">
-                <div className="input-with-icon">
+                <div className="input-with-icon planner-date-field">
                   <Clock size={16} />
                   <input
-                    className="input"
+                    className="input planner-date-input"
                     type="date"
                     min={todayInput}
                     max={oneYearLaterInput}
@@ -750,10 +750,10 @@ function PlanContent() {
                   />
                 </div>
 
-                <div className="input-with-icon">
+                <div className="input-with-icon planner-date-field">
                   <Clock size={16} />
                   <input
-                    className="input"
+                    className="input planner-date-input"
                     type="date"
                     value={form.endDate}
                     min={form.startDate || todayInput}
