@@ -3,8 +3,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { authApi, type AuthResponse, type RegisterOtpResponse, type User } from "@/lib/api";
 
-const LOGOUT_REDIRECT_FLAG = "vp_logout_redirect";
-
 interface AuthState {
   user: User | null;
   token: string | null;
@@ -42,11 +40,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
-    sessionStorage.setItem(LOGOUT_REDIRECT_FLAG, String(Date.now()));
     localStorage.removeItem("vp_token");
     // Clean up legacy cached user data from older builds.
     localStorage.removeItem("vp_user");
-    setState({ user: null, token: null, loading: false, error: null });
     window.location.replace("/");
   }, []);
 
