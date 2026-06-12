@@ -2344,7 +2344,9 @@ textarea.input.textarea-compact {
   z-index: 2100;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: max(24px, env(safe-area-inset-top, 0px)) 24px max(24px, env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: rgba(15, 23, 42, 0.42);
   backdrop-filter: blur(8px);
 }
@@ -2352,7 +2354,7 @@ textarea.input.textarea-compact {
 .destination-suggestion-modal-panel {
   position: relative;
   width: min(980px, 100%);
-  max-height: min(86vh, 760px);
+  max-height: min(calc(100dvh - 48px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)), 760px);
   overflow: auto;
   padding: 28px;
   border: 1px solid rgba(15, 159, 156, 0.16);
@@ -3488,12 +3490,6 @@ textarea.input.textarea-compact {
 .trip-card-actions .trip-share-button {
   flex: 1 1 118px;
   min-width: 118px;
-}
-
-.trip-share-button.is-public {
-  border-color: rgba(15, 159, 156, 0.32);
-  background: var(--primary-light);
-  color: var(--primary-hover);
 }
 
 .trip-card-actions .btn-icon {
@@ -4976,14 +4972,16 @@ textarea.input.textarea-compact {
   z-index: 2100;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: max(24px, env(safe-area-inset-top, 0px)) 24px max(24px, env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(6px);
 }
 
 .activity-editor-modal-panel {
   width: min(860px, 100%);
-  max-height: min(86vh, 760px);
+  max-height: min(calc(100dvh - 48px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)), 760px);
   overflow: auto;
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-xl);
@@ -6475,12 +6473,14 @@ textarea.input.textarea-compact {
   }
 
   .destination-suggestion-modal-backdrop {
-    align-items: end;
-    padding: 12px;
+    align-items: center;
+    justify-items: center;
+    padding: max(16px, env(safe-area-inset-top, 0px)) 14px max(16px, env(safe-area-inset-bottom, 0px));
   }
 
   .destination-suggestion-modal-panel {
-    max-height: calc(100dvh - 24px);
+    width: min(100%, 980px);
+    max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     padding: 22px 16px 16px;
     border-radius: 22px;
   }
@@ -6536,8 +6536,9 @@ textarea.input.textarea-compact {
   }
 
   .activity-editor-modal-backdrop {
-    padding: 12px;
-    align-items: end;
+    align-items: center;
+    justify-items: center;
+    padding: max(16px, env(safe-area-inset-top, 0px)) 14px max(16px, env(safe-area-inset-bottom, 0px));
   }
 
   .regenerate-day-modal-backdrop {
@@ -6547,7 +6548,8 @@ textarea.input.textarea-compact {
   }
 
   .activity-editor-modal-panel {
-    max-height: 88vh;
+    width: min(100%, 860px);
+    max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   }
 
   .regenerate-day-modal-panel {

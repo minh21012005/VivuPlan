@@ -334,7 +334,6 @@ function TripCard({
       <div className="trip-card-media" style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.46)), url(${getDestinationImage(trip.destination, destinations)})` }}>
         <div>
           <Badge tone={timingBadge.tone}>{timingBadge.label}</Badge>
-          {trip.isPublic && <Badge tone="teal">Đang chia sẻ</Badge>}
         </div>
         <h3>{trip.destination}</h3>
       </div>
@@ -382,7 +381,7 @@ function TripCard({
             type="button"
             variant="secondary"
             size="sm"
-            className={`trip-share-button${trip.isPublic ? " is-public" : ""}`}
+            className="trip-share-button"
             onClick={onShare}
             disabled={sharing}
             aria-busy={sharing}

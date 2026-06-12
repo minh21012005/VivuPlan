@@ -88,7 +88,7 @@ Primary frontend methods are grouped in `tripApi`:
 - `POST /api/trips/generate`: generate and save a trip.
 - `POST /api/trips/destination-suggestions`: suggest destinations.
 - `GET /api/trips`: list user trips.
-- `GET /api/trips/{id}`: read owned or public trip.
+- `GET /api/trips/{id}`: read an owned trip by numeric id.
 - `DELETE /api/trips/{id}`: delete owned trip.
 - `PATCH /api/trips/{id}/visibility`: make the owned trip public/shareable.
   This operation is idempotent; calling it again must not make the trip private.

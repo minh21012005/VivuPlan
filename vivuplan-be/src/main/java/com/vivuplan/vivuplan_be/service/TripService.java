@@ -216,19 +216,7 @@ public class TripService {
 
     @Transactional
     public TripDto.TripResponse getTrip(Long tripId, Long userId) {
-        Trip trip = tripRepository.findById(tripId)
-                .orElseThrow(() -> new RuntimeException("Lịch trình không tồn tại"));
-
-        if (!trip.getIsPublic() && (userId == null || !trip.getUser().getId().equals(userId))) {
-            throw new RuntimeException("Bạn không có quyền xem lịch trình này");
-        }
-
-        // Increment view count for public trips
-        if (trip.getIsPublic() && (userId == null || !trip.getUser().getId().equals(userId))) {
-            trip.setViewCount(trip.getViewCount() + 1);
-            tripRepository.save(trip);
-        }
-
+        Trip trip = getOwnedTrip(tripId, userId);
         return toTripResponse(trip);
     }
 

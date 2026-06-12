@@ -874,7 +874,7 @@ export default function ItineraryPage() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className={`trip-share-button itinerary-share-button${trip.isPublic ? " is-public" : ""}`}
+                    className="trip-share-button itinerary-share-button"
                     onClick={shareTrip}
                     disabled={sharing}
                     aria-busy={sharing}
@@ -882,7 +882,6 @@ export default function ItineraryPage() {
                     {sharing ? <span className="spinner spinner-inline" /> : copied ? <CheckCircle2 size={14} /> : <Share2 size={14} />}
                     {sharing ? "Đang chia sẻ..." : copied ? "Đã copy link" : "Chia sẻ"}
                   </Button>
-                  {trip.isPublic && <Badge tone="teal">Đang chia sẻ</Badge>}
                   {shareError && <span className="itinerary-share-error">{shareError}</span>}
                 </>
               )}

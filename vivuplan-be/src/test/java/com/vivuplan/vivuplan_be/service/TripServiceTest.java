@@ -127,6 +127,19 @@ class TripServiceTest {
     }
 
     @Test
+    void getTripRejectsNonOwnerEvenWhenTripIsShareable() {
+        Trip trip = sampleTrip();
+        trip.setIsPublic(true);
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+
+        assertThatThrownBy(() -> service().getTrip(1L, 99L))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Không có quyền");
+
+        verify(tripRepository, never()).save(any(Trip.class));
+    }
+
+    @Test
     void ensurePublicMakesPrivateTripShareable() {
         Trip trip = sampleTrip();
         when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
