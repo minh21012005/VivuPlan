@@ -1253,6 +1253,65 @@ class TripServiceTest {
     }
 
     @Test
+    void modifiedActivityPersistsReconciledMetadataThroughApply() {
+        Trip trip = sampleTrip();
+        Activity morning = trip.getItineraryDays().get(0).getActivities().get(0);
+        morning.setName("Tham quan Động Phong Nha");
+        morning.setLocation("Phong Nha, Quảng Bình");
+        morning.setLatitude(17.577);
+        morning.setLongitude(106.283);
+        morning.setCoordinateSource(Activity.CoordinateSource.MANUAL);
+        morning.setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+
+        TripDto.DayResponse proposed = proposedDaySameAsSampleTrip();
+        TripDto.ActivityResponse proposedMorning = proposed.getActivities().get(0);
+        proposedMorning.setName("Khám phá Động Phong Nha");
+        proposedMorning.setLocation("Phong Nha, Quảng Bình");
+        proposedMorning.setNote("Bổ sung mô tả trải nghiệm.");
+        proposedMorning.setPlaceId(77L);
+        proposedMorning.setGooglePlaceId("verified-phong-nha");
+        proposedMorning.setLatitude(17.58);
+        proposedMorning.setLongitude(106.29);
+        proposedMorning.setCoordinateSource("VERIFIED_PLACE");
+        proposedMorning.setCoordinateConfidence("HIGH");
+        proposedMorning.setRating(4.9);
+
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class), any(), any()))
+                .thenReturn(new AiService.RegeneratedDayResult(
+                        proposed,
+                        noRequestFulfillment(),
+                        Map.of(0, 0, 1, 1),
+                        new AiService.ReferenceDiagnostics(2, 0, 0, 0)));
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TripDto.RegenerateDayRequest previewReq = new TripDto.RegenerateDayRequest();
+        previewReq.setInstruction("Viết lại mô tả tham quan");
+        TripDto.RegenerateDayPreviewResponse preview =
+                service.previewRegenerateDay(1L, 7L, 1, previewReq);
+        String modifiedChangeId = preview.getChanges().stream()
+                .filter(change -> "MODIFIED".equals(change.getType()))
+                .map(TripDto.RegenerateActivityChange::getChangeId)
+                .findFirst()
+                .orElseThrow();
+
+        TripDto.ApplyRegenerateDayRequest applyReq = new TripDto.ApplyRegenerateDayRequest();
+        applyReq.setProposalId(preview.getProposalId());
+        applyReq.setSelectedChangeIds(List.of(modifiedChangeId));
+
+        service.applyRegeneratedDay(1L, 7L, 1, applyReq);
+
+        Activity persistedMorning = trip.getItineraryDays().get(0).getActivities().get(0);
+        assertThat(persistedMorning.getName()).isEqualTo("Khám phá Động Phong Nha");
+        assertThat(persistedMorning.getLatitude()).isEqualTo(17.577);
+        assertThat(persistedMorning.getLongitude()).isEqualTo(106.283);
+        assertThat(persistedMorning.getCoordinateSource()).isEqualTo(Activity.CoordinateSource.MANUAL);
+        assertThat(persistedMorning.getGooglePlaceId()).isEqualTo("verified-phong-nha");
+        assertThat(persistedMorning.getRating()).isEqualTo(4.9);
+    }
+
+    @Test
     void applyRegeneratedDayRejectsDuplicateChangeIds() {
         Trip trip = sampleTrip();
         TripService service = service();

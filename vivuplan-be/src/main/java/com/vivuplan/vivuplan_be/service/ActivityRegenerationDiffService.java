@@ -77,10 +77,15 @@ public class ActivityRegenerationDiffService {
             TripDto.ActivityResponse newActivity = newActivities.get(match.newIndex());
             List<String> changedFields = changedFields(oldActivity, newActivity);
             if (!changedFields.isEmpty()) {
+                TripDto.ActivityResponse resolvedNewActivity =
+                        metadataReconciliationService.reconcileModifiedActivity(
+                                oldActivity,
+                                newActivity,
+                                changedFields);
                 pendingChanges.add(new PendingChange(
                         "MODIFIED",
                         oldActivity,
-                        newActivity,
+                        resolvedNewActivity,
                         changedFields,
                         match.oldIndex(),
                         match.newIndex()));

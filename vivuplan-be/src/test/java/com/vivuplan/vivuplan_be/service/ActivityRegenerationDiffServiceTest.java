@@ -882,6 +882,555 @@ class ActivityRegenerationDiffServiceTest {
     }
 
     @Test
+    void modifiedNoteUsesMoreTrustedNewMetadata() {
+        ItineraryDay oldDay = day(
+                activity(1L, "08:00", "Breakfast", "FOOD", "Market", "1 hour", 50_000L, "Old note", 0));
+        oldDay.getActivities().get(0).setLatitude(10.1);
+        oldDay.getActivities().get(0).setLongitude(106.1);
+        oldDay.getActivities().get(0).setCoordinateSource(Activity.CoordinateSource.AI_PROVIDED);
+        oldDay.getActivities().get(0).setCoordinateConfidence(Activity.CoordinateConfidence.LOW);
+
+        TripDto.ActivityResponse proposed = response(
+                "08:00", "Breakfast", "FOOD", "Market", "1 hour", 50_000L, "Better note", 0);
+        proposed.setPlaceId(99L);
+        proposed.setGooglePlaceId("verified-market");
+        proposed.setLatitude(10.2);
+        proposed.setLongitude(106.2);
+        proposed.setCoordinateSource("VERIFIED_PLACE");
+        proposed.setCoordinateConfidence("HIGH");
+        proposed.setRating(4.8);
+
+        ActivityRegenerationDiffService.DiffResult diff =
+                service.diff(oldDay, proposedDay(proposed), "proposal-modified-metadata");
+
+        assertThat(diff.changes()).singleElement().satisfies(change -> {
+            assertThat(change.getType()).isEqualTo("MODIFIED");
+            assertThat(change.getChangedFields()).containsExactly("NOTE");
+            assertThat(change.getNewActivity()).satisfies(activity -> {
+                assertThat(activity.getLatitude()).isEqualTo(10.2);
+                assertThat(activity.getLongitude()).isEqualTo(106.2);
+                assertThat(activity.getCoordinateSource()).isEqualTo("VERIFIED_PLACE");
+                assertThat(activity.getPlaceId()).isEqualTo(99L);
+                assertThat(activity.getRating()).isEqualTo(4.8);
+            });
+        });
+    }
+
+    @Test
+    void modifiedNotePreservesManualCoordinatesWhileAcceptingVerifiedPlaceData() {
+        ItineraryDay oldDay = day(
+                activity(1L, "08:00", "Breakfast", "FOOD", "Market", "1 hour", 50_000L, "Old note", 0));
+        oldDay.getActivities().get(0).setLatitude(10.1);
+        oldDay.getActivities().get(0).setLongitude(106.1);
+        oldDay.getActivities().get(0).setCoordinateSource(Activity.CoordinateSource.MANUAL);
+        oldDay.getActivities().get(0).setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+
+        TripDto.ActivityResponse proposed = response(
+                "08:00", "Breakfast", "FOOD", "Market", "1 hour", 50_000L, "Better note", 0);
+        proposed.setPlaceId(99L);
+        proposed.setGooglePlaceId("verified-market");
+        proposed.setLatitude(10.2);
+        proposed.setLongitude(106.2);
+        proposed.setCoordinateSource("VERIFIED_PLACE");
+        proposed.setCoordinateConfidence("HIGH");
+        proposed.setRating(4.8);
+
+        ActivityRegenerationDiffService.DiffResult diff =
+                service.diff(oldDay, proposedDay(proposed), "proposal-modified-manual");
+
+        assertThat(diff.changes()).singleElement().satisfies(change ->
+                assertThat(change.getNewActivity()).satisfies(activity -> {
+                    assertThat(activity.getLatitude()).isEqualTo(10.1);
+                    assertThat(activity.getLongitude()).isEqualTo(106.1);
+                    assertThat(activity.getCoordinateSource()).isEqualTo("MANUAL");
+                    assertThat(activity.getPlaceId()).isEqualTo(99L);
+                    assertThat(activity.getGooglePlaceId()).isEqualTo("verified-market");
+                    assertThat(activity.getRating()).isEqualTo(4.8);
+                }));
+    }
+
+    @Test
+    void modifiedPlaceUsesEnrichedNewMetadataEvenWhenOldCoordinatesWereManual() {
+        ItineraryDay oldDay = day(
+                activity(1L, "08:00", "Breakfast at hotel", "FOOD", "Old Hotel", "1 hour", 50_000L, null, 0));
+        oldDay.getActivities().get(0).setLatitude(10.1);
+        oldDay.getActivities().get(0).setLongitude(106.1);
+        oldDay.getActivities().get(0).setCoordinateSource(Activity.CoordinateSource.MANUAL);
+        oldDay.getActivities().get(0).setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+
+        TripDto.ActivityResponse proposed = response(
+                "08:00", "Breakfast at riverside cafe", "FOOD", "New Riverside Cafe",
+                "1 hour", 80_000L, null, 0);
+        proposed.setPlaceId(99L);
+        proposed.setGooglePlaceId("verified-riverside");
+        proposed.setLatitude(10.2);
+        proposed.setLongitude(106.2);
+        proposed.setCoordinateSource("VERIFIED_PLACE");
+        proposed.setCoordinateConfidence("HIGH");
+
+        ActivityRegenerationDiffService.DiffResult diff = service.diff(
+                oldDay,
+                proposedDay(proposed),
+                "proposal-new-place",
+                Map.of(0, 0));
+
+        assertThat(diff.changes()).singleElement().satisfies(change -> {
+            assertThat(change.getType()).isEqualTo("MODIFIED");
+            assertThat(change.getChangedFields()).contains("NAME", "LOCATION");
+            assertThat(change.getNewActivity()).satisfies(activity -> {
+                assertThat(activity.getLatitude()).isEqualTo(10.2);
+                assertThat(activity.getLongitude()).isEqualTo(106.2);
+                assertThat(activity.getCoordinateSource()).isEqualTo("VERIFIED_PLACE");
+                assertThat(activity.getPlaceId()).isEqualTo(99L);
+            });
+        });
+    }
+
+    @Test
+    void nameRewriteAtSameLocationKeepsStrongerOldMetadata() {
+        ItineraryDay oldDay = day(
+                activity(
+                        1L, "14:00", "Tham quan Động Phong Nha", "ATTRACTION",
+                        "Phong Nha, Quảng Bình", "2 giờ", 500_000L, null, 0));
+        oldDay.getActivities().get(0).setPlace(
+                com.vivuplan.vivuplan_be.entity.Place.builder().id(10L).build());
+        oldDay.getActivities().get(0).setGooglePlaceId("verified-phong-nha");
+        oldDay.getActivities().get(0).setLatitude(17.577);
+        oldDay.getActivities().get(0).setLongitude(106.283);
+        oldDay.getActivities().get(0).setCoordinateSource(Activity.CoordinateSource.VERIFIED_PLACE);
+        oldDay.getActivities().get(0).setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+        oldDay.getActivities().get(0).setRating(4.8);
+
+        TripDto.ActivityResponse proposed = response(
+                "14:00", "Khám phá Động Phong Nha", "ATTRACTION",
+                "Phong Nha, Quảng Bình", "2 giờ", 500_000L, null, 0);
+
+        ActivityRegenerationDiffService.DiffResult diff =
+                service.diff(oldDay, proposedDay(proposed), "proposal-name-rewrite", Map.of(0, 0));
+
+        assertThat(diff.changes()).singleElement().satisfies(change -> {
+            assertThat(change.getChangedFields()).containsExactly("NAME");
+            assertThat(change.getNewActivity()).satisfies(activity -> {
+                assertThat(activity.getLatitude()).isEqualTo(17.577);
+                assertThat(activity.getLongitude()).isEqualTo(106.283);
+                assertThat(activity.getPlaceId()).isEqualTo(10L);
+                assertThat(activity.getGooglePlaceId()).isEqualTo("verified-phong-nha");
+                assertThat(activity.getCoordinateSource()).isEqualTo("VERIFIED_PLACE");
+                assertThat(activity.getRating()).isEqualTo(4.8);
+            });
+        });
+    }
+
+    @Test
+    void equivalentLocationRefinementKeepsStrongerOldMetadata() {
+        ItineraryDay oldDay = day(
+                activity(
+                        1L, "14:00", "Khám phá Động Phong Nha", "ATTRACTION",
+                        "Phong Nha, Quảng Bình", "2 giờ", 500_000L, null, 0));
+        oldDay.getActivities().get(0).setPlace(
+                com.vivuplan.vivuplan_be.entity.Place.builder().id(10L).build());
+        oldDay.getActivities().get(0).setLatitude(17.577);
+        oldDay.getActivities().get(0).setLongitude(106.283);
+        oldDay.getActivities().get(0).setCoordinateSource(Activity.CoordinateSource.VERIFIED_PLACE);
+        oldDay.getActivities().get(0).setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+
+        TripDto.ActivityResponse proposed = response(
+                "14:00", "Khám phá Động Phong Nha", "ATTRACTION",
+                "Khu vực Phong Nha, Quảng Bình", "2 giờ", 500_000L, null, 0);
+
+        ActivityRegenerationDiffService.DiffResult diff =
+                service.diff(oldDay, proposedDay(proposed), "proposal-location-refinement", Map.of(0, 0));
+
+        assertThat(diff.changes()).singleElement().satisfies(change -> {
+            assertThat(change.getChangedFields()).containsExactly("LOCATION");
+            assertThat(change.getNewActivity()).satisfies(activity -> {
+                assertThat(activity.getLocation()).isEqualTo("Khu vực Phong Nha, Quảng Bình");
+                assertThat(activity.getLatitude()).isEqualTo(17.577);
+                assertThat(activity.getLongitude()).isEqualTo(106.283);
+                assertThat(activity.getPlaceId()).isEqualTo(10L);
+                assertThat(activity.getCoordinateSource()).isEqualTo("VERIFIED_PLACE");
+            });
+        });
+    }
+
+    @Test
+    void locationAddedFromBlankDoesNotReuseOldCoordinatesWithoutStableIdentity() {
+        ItineraryDay oldDay = day(
+                activity(
+                        1L, "10:00", "Coffee break", "CAFE",
+                        "", "1 hour", 50_000L, null, 0));
+        oldDay.getActivities().get(0).setLatitude(10.1);
+        oldDay.getActivities().get(0).setLongitude(106.1);
+        oldDay.getActivities().get(0).setCoordinateSource(Activity.CoordinateSource.MANUAL);
+        oldDay.getActivities().get(0).setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+
+        TripDto.ActivityResponse proposed = response(
+                "10:00", "Coffee break", "CAFE",
+                "Riverside Coffee Station", "1 hour", 50_000L, null, 0);
+
+        ActivityRegenerationDiffService.DiffResult diff =
+                service.diff(oldDay, proposedDay(proposed), "proposal-location-added", Map.of(0, 0));
+
+        assertThat(diff.changes()).singleElement().satisfies(change ->
+                assertThat(change.getNewActivity()).satisfies(activity -> {
+                    assertThat(activity.getLatitude()).isNull();
+                    assertThat(activity.getLongitude()).isNull();
+                    assertThat(activity.getCoordinateSource()).isNull();
+                }));
+    }
+
+    @Test
+    void genericAreaToSpecificVenueWithDifferentNameUsesNewMetadata() {
+        ItineraryDay oldDay = day(
+                activity(
+                        1L, "20:00", "Dạo quanh khu vực trung tâm Phong Nha", "NIGHTLIFE",
+                        "Phong Nha, Quảng Bình", "1 giờ", 0, null, 0));
+        oldDay.getActivities().get(0).setLatitude(17.61);
+        oldDay.getActivities().get(0).setLongitude(106.31);
+        oldDay.getActivities().get(0).setCoordinateSource(Activity.CoordinateSource.MANUAL);
+        oldDay.getActivities().get(0).setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+
+        TripDto.ActivityResponse proposed = response(
+                "20:00", "Thư giãn tại Phong Nha Coffee Station", "CAFE",
+                "Phong Nha Coffee Station, Quảng Bình", "1 giờ 30 phút", 200_000L, null, 0);
+        proposed.setPlaceId(99L);
+        proposed.setGooglePlaceId("verified-coffee-station");
+        proposed.setLatitude(17.62);
+        proposed.setLongitude(106.32);
+        proposed.setCoordinateSource("VERIFIED_PLACE");
+        proposed.setCoordinateConfidence("HIGH");
+
+        ActivityRegenerationDiffService.DiffResult diff =
+                service.diff(oldDay, proposedDay(proposed), "proposal-specific-venue", Map.of(0, 0));
+
+        assertThat(diff.changes()).singleElement().satisfies(change ->
+                assertThat(change.getNewActivity()).satisfies(activity -> {
+                    assertThat(activity.getPlaceId()).isEqualTo(99L);
+                    assertThat(activity.getGooglePlaceId()).isEqualTo("verified-coffee-station");
+                    assertThat(activity.getLatitude()).isEqualTo(17.62);
+                    assertThat(activity.getLongitude()).isEqualTo(106.32);
+                    assertThat(activity.getCoordinateSource()).isEqualTo("VERIFIED_PLACE");
+                }));
+    }
+
+    @Test
+    void unrelatedActivityAtSameGenericLocationDoesNotReuseOldMetadata() {
+        ItineraryDay oldDay = day(
+                activity(
+                        1L, "10:00", "Visit local museum", "ATTRACTION",
+                        "City Center", "1 hour", 50_000L, null, 0));
+        oldDay.getActivities().get(0).setLatitude(10.1);
+        oldDay.getActivities().get(0).setLongitude(106.1);
+        oldDay.getActivities().get(0).setCoordinateSource(Activity.CoordinateSource.MANUAL);
+        oldDay.getActivities().get(0).setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+
+        TripDto.ActivityResponse proposed = response(
+                "10:00", "Coffee at riverside cafe", "CAFE",
+                "City Center", "1 hour", 80_000L, null, 0);
+        proposed.setLatitude(10.2);
+        proposed.setLongitude(106.2);
+        proposed.setCoordinateSource("GEOCODED_LOCATION");
+        proposed.setCoordinateConfidence("HIGH");
+
+        ActivityRegenerationDiffService.DiffResult diff =
+                service.diff(oldDay, proposedDay(proposed), "proposal-same-area-new-place", Map.of(0, 0));
+
+        assertThat(diff.changes()).singleElement().satisfies(change ->
+                assertThat(change.getNewActivity()).satisfies(activity -> {
+                    assertThat(activity.getLatitude()).isEqualTo(10.2);
+                    assertThat(activity.getLongitude()).isEqualTo(106.2);
+                    assertThat(activity.getCoordinateSource()).isEqualTo("GEOCODED_LOCATION");
+                }));
+    }
+
+    @Test
+    void conflictingVerifiedIdentityUsesNewMetadataEvenWhenLocationTextIsUnchanged() {
+        ItineraryDay oldDay = day(
+                activity(
+                        1L, "08:00", "Breakfast at hotel", "FOOD",
+                        "City Center", "1 hour", 50_000L, null, 0));
+        oldDay.getActivities().get(0).setPlace(
+                com.vivuplan.vivuplan_be.entity.Place.builder().id(10L).build());
+        oldDay.getActivities().get(0).setGooglePlaceId("verified-old");
+        oldDay.getActivities().get(0).setLatitude(10.1);
+        oldDay.getActivities().get(0).setLongitude(106.1);
+        oldDay.getActivities().get(0).setCoordinateSource(Activity.CoordinateSource.VERIFIED_PLACE);
+        oldDay.getActivities().get(0).setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+
+        TripDto.ActivityResponse proposed = response(
+                "08:00", "Breakfast at riverside cafe", "FOOD",
+                "City Center", "1 hour", 80_000L, null, 0);
+        proposed.setPlaceId(11L);
+        proposed.setGooglePlaceId("verified-new");
+        proposed.setLatitude(10.2);
+        proposed.setLongitude(106.2);
+        proposed.setCoordinateSource("VERIFIED_PLACE");
+        proposed.setCoordinateConfidence("HIGH");
+
+        ActivityRegenerationDiffService.DiffResult diff =
+                service.diff(oldDay, proposedDay(proposed), "proposal-conflicting-identity", Map.of(0, 0));
+
+        assertThat(diff.changes()).singleElement().satisfies(change ->
+                assertThat(change.getNewActivity()).satisfies(activity -> {
+                    assertThat(activity.getPlaceId()).isEqualTo(11L);
+                    assertThat(activity.getGooglePlaceId()).isEqualTo("verified-new");
+                    assertThat(activity.getLatitude()).isEqualTo(10.2);
+                    assertThat(activity.getLongitude()).isEqualTo(106.2);
+                }));
+    }
+
+    @Test
+    void sameGooglePlaceIdTreatsDuplicateCatalogIdsAsTheSamePlace() {
+        ItineraryDay oldDay = day(
+                activity(
+                        1L, "08:00", "Breakfast", "FOOD",
+                        "City Center", "1 hour", 50_000L, null, 0));
+        oldDay.getActivities().get(0).setPlace(
+                com.vivuplan.vivuplan_be.entity.Place.builder().id(10L).build());
+        oldDay.getActivities().get(0).setGooglePlaceId("same-google-place");
+        oldDay.getActivities().get(0).setLatitude(10.1);
+        oldDay.getActivities().get(0).setLongitude(106.1);
+        oldDay.getActivities().get(0).setCoordinateSource(Activity.CoordinateSource.VERIFIED_PLACE);
+        oldDay.getActivities().get(0).setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+
+        TripDto.ActivityResponse proposed = response(
+                "08:00", "Local breakfast", "FOOD",
+                "City Center", "1 hour", 70_000L, null, 0);
+        proposed.setPlaceId(11L);
+        proposed.setGooglePlaceId("same-google-place");
+        proposed.setLatitude(10.2);
+        proposed.setLongitude(106.2);
+        proposed.setCoordinateSource("VERIFIED_PLACE");
+        proposed.setCoordinateConfidence("HIGH");
+
+        ActivityRegenerationDiffService.DiffResult diff =
+                service.diff(oldDay, proposedDay(proposed), "proposal-duplicate-catalog", Map.of(0, 0));
+
+        assertThat(diff.changes()).singleElement().satisfies(change ->
+                assertThat(change.getNewActivity()).satisfies(activity -> {
+                    assertThat(activity.getPlaceId()).isEqualTo(11L);
+                    assertThat(activity.getGooglePlaceId()).isEqualTo("same-google-place");
+                    assertThat(activity.getLatitude()).isEqualTo(10.2);
+                    assertThat(activity.getLongitude()).isEqualTo(106.2);
+                }));
+    }
+
+    @Test
+    void sameCatalogPlaceRefreshesVerifiedCoordinatesAtEqualConfidence() {
+        ItineraryDay oldDay = day(
+                activity(
+                        1L, "08:00", "Breakfast", "FOOD",
+                        "City Center", "1 hour", 50_000L, "Old note", 0));
+        oldDay.getActivities().get(0).setPlace(
+                com.vivuplan.vivuplan_be.entity.Place.builder().id(10L).build());
+        oldDay.getActivities().get(0).setGooglePlaceId("same-google-place");
+        oldDay.getActivities().get(0).setLatitude(10.1);
+        oldDay.getActivities().get(0).setLongitude(106.1);
+        oldDay.getActivities().get(0).setCoordinateSource(Activity.CoordinateSource.VERIFIED_PLACE);
+        oldDay.getActivities().get(0).setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+
+        TripDto.ActivityResponse proposed = response(
+                "08:00", "Breakfast", "FOOD",
+                "City Center", "1 hour", 50_000L, "Updated note", 0);
+        proposed.setPlaceId(10L);
+        proposed.setGooglePlaceId("same-google-place");
+        proposed.setLatitude(10.2);
+        proposed.setLongitude(106.2);
+        proposed.setCoordinateSource("VERIFIED_PLACE");
+        proposed.setCoordinateConfidence("HIGH");
+        proposed.setRating(4.9);
+
+        ActivityRegenerationDiffService.DiffResult diff =
+                service.diff(oldDay, proposedDay(proposed), "proposal-current-catalog", Map.of(0, 0));
+
+        assertThat(diff.changes()).singleElement().satisfies(change ->
+                assertThat(change.getNewActivity()).satisfies(activity -> {
+                    assertThat(activity.getLatitude()).isEqualTo(10.2);
+                    assertThat(activity.getLongitude()).isEqualTo(106.2);
+                    assertThat(activity.getCoordinateSource()).isEqualTo("VERIFIED_PLACE");
+                    assertThat(activity.getRating()).isEqualTo(4.9);
+                }));
+    }
+
+    @Test
+    void equalConfidenceGeocodedCoordinatesDoNotReplaceEachOther() {
+        ItineraryDay oldDay = day(
+                activity(
+                        1L, "08:00", "Breakfast", "FOOD",
+                        "City Center", "1 hour", 50_000L, "Old note", 0));
+        oldDay.getActivities().get(0).setLatitude(10.1);
+        oldDay.getActivities().get(0).setLongitude(106.1);
+        oldDay.getActivities().get(0).setCoordinateSource(Activity.CoordinateSource.GEOCODED_LOCATION);
+        oldDay.getActivities().get(0).setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+
+        TripDto.ActivityResponse proposed = response(
+                "08:00", "Breakfast", "FOOD",
+                "City Center", "1 hour", 50_000L, "Updated note", 0);
+        proposed.setLatitude(10.2);
+        proposed.setLongitude(106.2);
+        proposed.setCoordinateSource("GEOCODED_LOCATION");
+        proposed.setCoordinateConfidence("HIGH");
+
+        ActivityRegenerationDiffService.DiffResult diff =
+                service.diff(oldDay, proposedDay(proposed), "proposal-geocoded-stability", Map.of(0, 0));
+
+        assertThat(diff.changes()).singleElement().satisfies(change ->
+                assertThat(change.getNewActivity()).satisfies(activity -> {
+                    assertThat(activity.getLatitude()).isEqualTo(10.1);
+                    assertThat(activity.getLongitude()).isEqualTo(106.1);
+                    assertThat(activity.getCoordinateSource()).isEqualTo("GEOCODED_LOCATION");
+                }));
+    }
+
+    @Test
+    void sameNameAtDifferentLocationDoesNotReuseOldMetadata() {
+        ItineraryDay oldDay = day(
+                activity(
+                        1L, "08:00", "Breakfast at hotel", "FOOD",
+                        "Old Hotel, Hanoi", "1 hour", 50_000L, null, 0));
+        oldDay.getActivities().get(0).setLatitude(21.01);
+        oldDay.getActivities().get(0).setLongitude(105.81);
+        oldDay.getActivities().get(0).setCoordinateSource(Activity.CoordinateSource.MANUAL);
+        oldDay.getActivities().get(0).setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+
+        TripDto.ActivityResponse proposed = response(
+                "08:00", "Breakfast at hotel", "FOOD",
+                "Beach Hotel, Da Nang", "1 hour", 50_000L, null, 0);
+        proposed.setLatitude(16.06);
+        proposed.setLongitude(108.22);
+        proposed.setCoordinateSource("GEOCODED_LOCATION");
+        proposed.setCoordinateConfidence("HIGH");
+
+        ActivityRegenerationDiffService.DiffResult diff =
+                service.diff(oldDay, proposedDay(proposed), "proposal-new-hotel", Map.of(0, 0));
+
+        assertThat(diff.changes()).singleElement().satisfies(change ->
+                assertThat(change.getNewActivity()).satisfies(activity -> {
+                    assertThat(activity.getLatitude()).isEqualTo(16.06);
+                    assertThat(activity.getLongitude()).isEqualTo(108.22);
+                    assertThat(activity.getCoordinateSource()).isEqualTo("GEOCODED_LOCATION");
+                }));
+    }
+
+    @Test
+    void equivalentNamesWithoutLocationsKeepSamePlaceMetadata() {
+        ItineraryDay oldDay = day(
+                activity(
+                        1L, "14:00", "Khám phá Động Phong Nha", "ATTRACTION",
+                        "", "2 giờ", 500_000L, null, 0));
+        oldDay.getActivities().get(0).setLatitude(17.577);
+        oldDay.getActivities().get(0).setLongitude(106.283);
+        oldDay.getActivities().get(0).setCoordinateSource(Activity.CoordinateSource.MANUAL);
+        oldDay.getActivities().get(0).setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+
+        TripDto.ActivityResponse proposed = response(
+                "14:00", "Khám phá Động Phong Nha Cave", "ATTRACTION",
+                "", "2 giờ", 500_000L, null, 0);
+
+        ActivityRegenerationDiffService.DiffResult diff =
+                service.diff(oldDay, proposedDay(proposed), "proposal-empty-locations", Map.of(0, 0));
+
+        assertThat(diff.changes()).singleElement().satisfies(change ->
+                assertThat(change.getNewActivity()).satisfies(activity -> {
+                    assertThat(activity.getLatitude()).isEqualTo(17.577);
+                    assertThat(activity.getLongitude()).isEqualTo(106.283);
+                    assertThat(activity.getCoordinateSource()).isEqualTo("MANUAL");
+                }));
+    }
+
+    @Test
+    void unrelatedNamesWithoutLocationsDoNotReuseOldMetadata() {
+        ItineraryDay oldDay = day(
+                activity(
+                        1L, "14:00", "Visit museum", "ATTRACTION",
+                        "", "2 hours", 50_000L, null, 0));
+        oldDay.getActivities().get(0).setLatitude(10.1);
+        oldDay.getActivities().get(0).setLongitude(106.1);
+        oldDay.getActivities().get(0).setCoordinateSource(Activity.CoordinateSource.MANUAL);
+        oldDay.getActivities().get(0).setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+
+        TripDto.ActivityResponse proposed = response(
+                "14:00", "Coffee by the river", "CAFE",
+                "", "2 hours", 80_000L, null, 0);
+
+        ActivityRegenerationDiffService.DiffResult diff =
+                service.diff(oldDay, proposedDay(proposed), "proposal-empty-location-new-place", Map.of(0, 0));
+
+        assertThat(diff.changes()).singleElement().satisfies(change ->
+                assertThat(change.getNewActivity()).satisfies(activity -> {
+                    assertThat(activity.getLatitude()).isNull();
+                    assertThat(activity.getLongitude()).isNull();
+                    assertThat(activity.getCoordinateSource()).isNull();
+                }));
+    }
+
+    @Test
+    void invalidCandidateCoordinatesDoNotEraseTrustedSamePlaceMetadata() {
+        ItineraryDay oldDay = day(
+                activity(
+                        1L, "08:00", "Breakfast", "FOOD",
+                        "City Center", "1 hour", 50_000L, "Old note", 0));
+        oldDay.getActivities().get(0).setLatitude(10.1);
+        oldDay.getActivities().get(0).setLongitude(106.1);
+        oldDay.getActivities().get(0).setCoordinateSource(Activity.CoordinateSource.GEOCODED_LOCATION);
+        oldDay.getActivities().get(0).setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+
+        TripDto.ActivityResponse proposed = response(
+                "08:00", "Breakfast", "FOOD",
+                "City Center", "1 hour", 50_000L, "Updated note", 0);
+        proposed.setLatitude(0.0);
+        proposed.setLongitude(0.0);
+        proposed.setCoordinateSource("AI_PROVIDED");
+        proposed.setCoordinateConfidence("LOW");
+
+        ActivityRegenerationDiffService.DiffResult diff =
+                service.diff(oldDay, proposedDay(proposed), "proposal-invalid-coordinate", Map.of(0, 0));
+
+        assertThat(diff.changes()).singleElement().satisfies(change ->
+                assertThat(change.getNewActivity()).satisfies(activity -> {
+                    assertThat(activity.getLatitude()).isEqualTo(10.1);
+                    assertThat(activity.getLongitude()).isEqualTo(106.1);
+                    assertThat(activity.getCoordinateSource()).isEqualTo("GEOCODED_LOCATION");
+                }));
+    }
+
+    @Test
+    void modifiedNonPlaceFieldsKeepOldMetadataWhenVerifiedIdentitiesConflict() {
+        ItineraryDay oldDay = day(
+                activity(1L, "08:00", "Breakfast", "FOOD", "Market", "1 hour", 50_000L, "Old note", 0));
+        oldDay.getActivities().get(0).setPlace(
+                com.vivuplan.vivuplan_be.entity.Place.builder().id(10L).build());
+        oldDay.getActivities().get(0).setGooglePlaceId("verified-old");
+        oldDay.getActivities().get(0).setLatitude(10.1);
+        oldDay.getActivities().get(0).setLongitude(106.1);
+        oldDay.getActivities().get(0).setCoordinateSource(Activity.CoordinateSource.VERIFIED_PLACE);
+        oldDay.getActivities().get(0).setCoordinateConfidence(Activity.CoordinateConfidence.HIGH);
+        oldDay.getActivities().get(0).setRating(4.5);
+
+        TripDto.ActivityResponse proposed = response(
+                "08:00", "Breakfast", "FOOD", "Market", "1 hour", 50_000L, "Better note", 0);
+        proposed.setPlaceId(11L);
+        proposed.setGooglePlaceId("verified-new");
+        proposed.setLatitude(10.2);
+        proposed.setLongitude(106.2);
+        proposed.setCoordinateSource("VERIFIED_PLACE");
+        proposed.setCoordinateConfidence("HIGH");
+        proposed.setRating(4.9);
+
+        ActivityRegenerationDiffService.DiffResult diff =
+                service.diff(oldDay, proposedDay(proposed), "proposal-conflicting-place");
+
+        assertThat(diff.changes()).singleElement().satisfies(change ->
+                assertThat(change.getNewActivity()).satisfies(activity -> {
+                    assertThat(activity.getLatitude()).isEqualTo(10.1);
+                    assertThat(activity.getLongitude()).isEqualTo(106.1);
+                    assertThat(activity.getPlaceId()).isEqualTo(10L);
+                    assertThat(activity.getGooglePlaceId()).isEqualTo("verified-old");
+                    assertThat(activity.getRating()).isEqualTo(4.5);
+                }));
+    }
+
+    @Test
     void rejectsMetadataPatchWhenVerifiedPlaceIdentifiersConflict() {
         ItineraryDay oldDay = day(
                 activity(1L, "08:00", "Breakfast", "FOOD", "Market", "1 hour", 50_000L, null, 0));

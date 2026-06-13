@@ -105,9 +105,10 @@ Day regeneration previews include:
   user-visible difference in time, name, type, location, duration, cost, or
   note.
 - `unchangedActivities`: activities whose user-visible content is equivalent,
-  including whether a trusted map metadata upgrade is available.
+  including backend metadata flags used for system-managed reconciliation.
 - `metadataUpgradeCount`: number of unchanged activities with a trusted
-  system-managed metadata upgrade.
+  system-managed metadata upgrade. This is not presented as a user-facing
+  choice in the frontend.
 
 The temporary `sourceActivityRef` used between the backend and Gemini is an
 internal matching hint. It is not part of `ActivityResponse`, the preview
@@ -123,10 +124,19 @@ returned them. Applying a preview after the persisted day changes returns
 `409 Conflict`.
 
 The backend always merges from the persisted day. Full actionable selection
-uses the proposed title and summary; partial or metadata-only apply keeps the
-current title and summary. Trusted metadata upgrades are applied by the backend
-when a preview is applied, never overwrite manual coordinates, and do not create
-an actionable activity change by themselves.
+uses the proposed title and summary; partial apply keeps the current title and
+summary. Trusted metadata upgrades are applied by the backend when a preview is
+applied, never overwrite manual coordinates, and do not create an actionable
+activity change or a separate frontend action by themselves. For a selected `MODIFIED`
+activity, stable place identifiers take priority. Conflicting catalog
+identifiers use proposal metadata only when the user-visible activity actually
+changes place; changes limited to time, cost, duration, type, or note keep the
+current place identity. Without stable identifiers, the backend conservatively
+combines normalized name, location, and type evidence, and a location missing
+on only one side is not equivalent. For the same place, current catalog metadata
+can refresh older verified data, verified data replaces weaker AI/geocoded
+data, equal-trust non-catalog coordinates remain stable, and manual coordinates
+are never overwritten.
 
 Trip responses include itinerary days and activities. Activity estimated costs
 are group-level VND values.

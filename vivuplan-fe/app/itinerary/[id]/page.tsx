@@ -1502,7 +1502,6 @@ function RegenerateDayModal({
   const [localError, setLocalError] = useState("");
   const allChangeIds = preview?.changes.map((change) => change.changeId) ?? [];
   const unchangedActivities = preview?.unchangedActivities ?? [];
-  const metadataUpgradeCount = preview?.metadataUpgradeCount ?? 0;
   const selectedChangeIdSet = useMemo(() => new Set(selectedChangeIds), [selectedChangeIds]);
   const allSelected = preview
     ? preview.changes.length > 0
@@ -1533,8 +1532,7 @@ function RegenerateDayModal({
     () => preview ? findActivityTimeConflicts(mergedActivities) : [],
     [mergedActivities, preview],
   );
-  const hasSystemMetadataUpdate = metadataUpgradeCount > 0;
-  const hasApplicableSelection = selectedChangeIds.length > 0 || hasSystemMetadataUpdate;
+  const hasApplicableSelection = selectedChangeIds.length > 0;
 
   const renderPreviewActivity = (
     activity: NonNullable<TripResponse["schedule"]>[number]["activities"][number],
@@ -1694,16 +1692,6 @@ function RegenerateDayModal({
                 </div>
               )}
 
-              {hasSystemMetadataUpdate && (
-                <div className="regenerate-metadata-option regenerate-metadata-info">
-                  <MapPin size={15} />
-                  <span>
-                    Hệ thống sẽ cập nhật dữ liệu bản đồ đáng tin cậy hơn cho {metadataUpgradeCount} hoạt động khi bạn áp dụng
-                    <small>Chỉ dùng nguồn tọa độ đã qua kiểm tra chính sách và không ghi đè vị trí bạn đã chỉnh thủ công.</small>
-                  </span>
-                </div>
-              )}
-
               {selectionTimeConflicts.length > 0 && (
                 <div className="regenerate-merge-conflicts" role="alert">
                   <AlertCircle size={14} />
@@ -1721,16 +1709,8 @@ function RegenerateDayModal({
                 <div className="regenerate-no-changes" role="status">
                   <CheckCircle2 size={18} />
                   <div>
-                    <strong>
-                      {hasSystemMetadataUpdate
-                        ? "Nội dung hoạt động không đổi, hệ thống tìm thấy dữ liệu bản đồ đáng tin cậy hơn."
-                        : "AI chưa tạo ra thay đổi cho ngày này."}
-                    </strong>
-                    <p>
-                      {hasSystemMetadataUpdate
-                        ? "Bạn có thể áp dụng để hệ thống cập nhật dữ liệu kỹ thuật đã qua kiểm tra, hoặc viết yêu cầu khác để tạo lại preview."
-                        : "Bạn có thể viết yêu cầu cụ thể hơn và tạo lại preview."}
-                    </p>
+                    <strong>AI chưa tạo ra thay đổi cho ngày này.</strong>
+                    <p>Bạn có thể viết yêu cầu cụ thể hơn và tạo lại preview.</p>
                   </div>
                 </div>
               ) : (
@@ -1816,11 +1796,6 @@ function RegenerateDayModal({
                         key={`${item.activity.id ?? "unchanged"}-${item.activity.time}-${index}`}
                       >
                         {renderPreviewActivity(item.activity)}
-                        {item.metadataUpgradeAvailable && (
-                          <small className="regenerate-metadata-badge">
-                            <MapPin size={12} /> Có vị trí bản đồ chính xác hơn
-                          </small>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -1855,11 +1830,9 @@ function RegenerateDayModal({
                   {applying ? <span className="spinner spinner-inline spinner-on-primary" /> : <Save size={14} />}
                   {applying
                     ? "Đang áp dụng..."
-                    : selectedChangeIds.length === 0 && hasSystemMetadataUpdate
-                      ? "Cập nhật dữ liệu bản đồ"
-                      : allSelected
-                        ? "Áp dụng toàn bộ thay đổi"
-                        : "Áp dụng thay đổi đã chọn"}
+                    : allSelected
+                      ? "Áp dụng toàn bộ thay đổi"
+                      : "Áp dụng thay đổi đã chọn"}
                 </Button>
               </div>
             </section>

@@ -107,14 +107,21 @@ The frontend is a Next.js App Router application.
    the activity diff without pairing activities by list index.
 8. Edit credit is consumed during preview.
 9. Preview stores actionable user-facing changes, unchanged activities,
-   optional trusted metadata patches, and the original-day fingerprint.
+   system-managed metadata patches, and the original-day fingerprint.
+   Modified activities resolve place identity from stable identifiers first,
+   then from conservative, symmetric name/location/type evidence. A location
+   missing on only one side is not equivalent. New or uncertain places keep the
+   enriched proposal metadata; same-place activities reconcile by trust level.
+   Current verified catalog data may refresh older verified data, equal-trust
+   non-catalog coordinates remain stable, and manual coordinates are never
+   overwritten. Non-place field changes cannot silently switch conflicting
+   place identities.
 10. Apply always starts from the persisted day, merges selected modified, added,
    or removed activities by change ID, applies trusted metadata patches decided
-   by backend policy, rejects stale previews, and does not consume another edit
-   credit.
+   by backend policy without exposing a separate metadata choice in the UI,
+   rejects stale previews, and does not consume another edit credit.
 11. Only a full actionable apply persists the proposal request-fulfillment
-   warnings. Partial and metadata-only apply preserve the trip's current
-   warnings.
+   warnings. Partial apply preserves the trip's current warnings.
 
 ### Billing
 
