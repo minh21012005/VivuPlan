@@ -16,10 +16,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -72,6 +75,8 @@ class TripServiceTest {
     private AiUsageLogRepository aiUsageLogRepository;
 
     private final UserPromptGuardService userPromptGuardService = new UserPromptGuardService();
+    private final ActivityRegenerationDiffService activityRegenerationDiffService =
+            new ActivityRegenerationDiffService(new ActivityMetadataReconciliationService());
 
     private TripService service() {
         return new TripService(
@@ -82,6 +87,7 @@ class TripServiceTest {
                 weatherService,
                 placePlanningService,
                 activityCoordinateResolverService,
+                activityRegenerationDiffService,
                 billingService,
                 userPromptGuardService,
                 creditLedgerRepository,
@@ -870,6 +876,29 @@ class TripServiceTest {
     }
 
     @Test
+    void previewRegenerateDayRejectsAiDayMismatchBeforeConsumingCredit() {
+        Trip trip = sampleTrip();
+        trip.setDays(2);
+        TripDto.DayResponse wrongDay = proposedDayWithoutRequestedActivity();
+        wrongDay.setDay(2);
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class), any(), any()))
+                .thenReturn(new AiService.RegeneratedDayResult(wrongDay, noRequestFulfillment()));
+
+        TripDto.RegenerateDayRequest req = new TripDto.RegenerateDayRequest();
+        req.setInstruction("Change day one only");
+
+        assertThatThrownBy(() -> service.previewRegenerateDay(1L, 7L, 1, req))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("sai");
+
+        verify(billingService).requireEditCredit(7L);
+        verify(billingService, never()).consumeEditCredit(any(), any());
+        verify(tripRepository, never()).saveAndFlush(any(Trip.class));
+    }
+
+    @Test
     void applyRegeneratedDayDoesNotConsumeAdditionalEditCredit() {
         Trip trip = sampleTrip();
         TripService service = service();
@@ -890,6 +919,437 @@ class TripServiceTest {
         service.applyRegeneratedDay(1L, 7L, 1, req);
 
         verify(billingService, never()).consumeEditCredit(any(), any());
+    }
+
+    @Test
+    void applyAllRegenerationChangesRemovesOldTailActivity() {
+        Trip trip = sampleTrip();
+        ItineraryDay day = trip.getItineraryDays().get(0);
+        day.getActivities().add(Activity.builder()
+                .id(102L)
+                .itineraryDay(day)
+                .time("16:00")
+                .name("Old tail cafe")
+                .type(Activity.ActivityType.CAFE)
+                .location("City center")
+                .duration("1 hour")
+                .estimatedCost(50_000L)
+                .sortOrder(2)
+                .build());
+
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class), any(), any()))
+                .thenReturn(new AiService.RegeneratedDayResult(proposedDaySameAsSampleTrip(), noRequestFulfillment()));
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TripDto.RegenerateDayRequest previewReq = new TripDto.RegenerateDayRequest();
+        previewReq.setInstruction("Remove the final cafe activity");
+        TripDto.RegenerateDayPreviewResponse preview =
+                service.previewRegenerateDay(1L, 7L, 1, previewReq);
+
+        assertThat(preview.getChanges())
+                .extracting(TripDto.RegenerateActivityChange::getType)
+                .containsExactly("REMOVED");
+
+        TripDto.ApplyRegenerateDayRequest applyReq = new TripDto.ApplyRegenerateDayRequest();
+        applyReq.setProposalId(preview.getProposalId());
+        applyReq.setSelectedChangeIds(preview.getChanges().stream()
+                .map(TripDto.RegenerateActivityChange::getChangeId)
+                .toList());
+
+        service.applyRegeneratedDay(1L, 7L, 1, applyReq);
+
+        assertThat(day.getActivities())
+                .extracting(Activity::getName)
+                .containsExactly(
+                        proposedDaySameAsSampleTrip().getActivities().get(0).getName(),
+                        proposedDaySameAsSampleTrip().getActivities().get(1).getName());
+    }
+
+    @Test
+    void legacyApplyAllActivityIndexesAlsoAppliesRemovalChanges() {
+        Trip trip = sampleTrip();
+        ItineraryDay day = trip.getItineraryDays().get(0);
+        day.getActivities().add(Activity.builder()
+                .id(102L)
+                .itineraryDay(day)
+                .time("16:00")
+                .name("Old tail cafe")
+                .type(Activity.ActivityType.CAFE)
+                .location("City center")
+                .duration("1 hour")
+                .estimatedCost(50_000L)
+                .sortOrder(2)
+                .build());
+
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class), any(), any()))
+                .thenReturn(new AiService.RegeneratedDayResult(proposedDaySameAsSampleTrip(), noRequestFulfillment()));
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TripDto.RegenerateDayRequest previewReq = new TripDto.RegenerateDayRequest();
+        previewReq.setInstruction("Remove the final cafe activity");
+        TripDto.RegenerateDayPreviewResponse preview =
+                service.previewRegenerateDay(1L, 7L, 1, previewReq);
+
+        assertThat(preview.getChanges())
+                .extracting(TripDto.RegenerateActivityChange::getType)
+                .containsExactly("REMOVED");
+
+        TripDto.ApplyRegenerateDayRequest applyReq = new TripDto.ApplyRegenerateDayRequest();
+        applyReq.setProposalId(preview.getProposalId());
+        applyReq.setSelectedActivityIndexes(List.of(0, 1));
+
+        service.applyRegeneratedDay(1L, 7L, 1, applyReq);
+
+        assertThat(day.getActivities())
+                .extracting(Activity::getName)
+                .containsExactly(
+                        proposedDaySameAsSampleTrip().getActivities().get(0).getName(),
+                        proposedDaySameAsSampleTrip().getActivities().get(1).getName());
+    }
+
+    @Test
+    void legacyPartialActivityIndexesKeepUnselectedRemovalAndOldTitle() {
+        Trip trip = sampleTrip();
+        ItineraryDay day = trip.getItineraryDays().get(0);
+        day.getActivities().add(Activity.builder()
+                .id(102L)
+                .itineraryDay(day)
+                .time("16:00")
+                .name("Old tail cafe")
+                .type(Activity.ActivityType.CAFE)
+                .location("City center")
+                .duration("1 hour")
+                .estimatedCost(50_000L)
+                .sortOrder(2)
+                .build());
+
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class), any(), any()))
+                .thenReturn(new AiService.RegeneratedDayResult(proposedDayWithModifiedMorningAndNoTail(), noRequestFulfillment()));
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TripDto.RegenerateDayRequest previewReq = new TripDto.RegenerateDayRequest();
+        previewReq.setInstruction("Change morning only");
+        TripDto.RegenerateDayPreviewResponse preview =
+                service.previewRegenerateDay(1L, 7L, 1, previewReq);
+
+        assertThat(preview.getChanges())
+                .extracting(TripDto.RegenerateActivityChange::getType)
+                .containsExactlyInAnyOrder("MODIFIED", "REMOVED");
+
+        TripDto.ApplyRegenerateDayRequest applyReq = new TripDto.ApplyRegenerateDayRequest();
+        applyReq.setProposalId(preview.getProposalId());
+        applyReq.setSelectedActivityIndexes(List.of(0));
+
+        service.applyRegeneratedDay(1L, 7L, 1, applyReq);
+
+        assertThat(day.getTitle()).isEqualTo("Ngày 1");
+        assertThat(day.getActivities())
+                .extracting(Activity::getName)
+                .containsExactly(
+                        proposedDayWithModifiedMorningAndNoTail().getActivities().get(0).getName(),
+                        proposedDaySameAsSampleTrip().getActivities().get(1).getName(),
+                        "Old tail cafe");
+    }
+
+    @Test
+    void selectedRemovalChangeDeletesOldActivityWithoutApplyingUnselectedModification() {
+        Trip trip = sampleTrip();
+        ItineraryDay day = trip.getItineraryDays().get(0);
+        day.getActivities().add(Activity.builder()
+                .id(102L)
+                .itineraryDay(day)
+                .time("16:00")
+                .name("Old tail cafe")
+                .type(Activity.ActivityType.CAFE)
+                .location("City center")
+                .duration("1 hour")
+                .estimatedCost(50_000L)
+                .sortOrder(2)
+                .build());
+
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class), any(), any()))
+                .thenReturn(new AiService.RegeneratedDayResult(proposedDayWithModifiedMorningAndNoTail(), noRequestFulfillment()));
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TripDto.RegenerateDayRequest previewReq = new TripDto.RegenerateDayRequest();
+        previewReq.setInstruction("Remove only the tail activity");
+        TripDto.RegenerateDayPreviewResponse preview =
+                service.previewRegenerateDay(1L, 7L, 1, previewReq);
+        String removalId = preview.getChanges().stream()
+                .filter(change -> "REMOVED".equals(change.getType()))
+                .findFirst()
+                .orElseThrow()
+                .getChangeId();
+
+        TripDto.ApplyRegenerateDayRequest applyReq = new TripDto.ApplyRegenerateDayRequest();
+        applyReq.setProposalId(preview.getProposalId());
+        applyReq.setSelectedChangeIds(List.of(removalId));
+
+        service.applyRegeneratedDay(1L, 7L, 1, applyReq);
+
+        assertThat(day.getActivities())
+                .extracting(Activity::getName)
+                .containsExactly(
+                        proposedDaySameAsSampleTrip().getActivities().get(0).getName(),
+                        proposedDaySameAsSampleTrip().getActivities().get(1).getName());
+    }
+
+    @Test
+    void previewWithoutMeaningfulActivityChangesStillConsumesEditCredit() {
+        Trip trip = sampleTrip();
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class), any(), any()))
+                .thenReturn(new AiService.RegeneratedDayResult(proposedDaySameAsSampleTrip(), noRequestFulfillment()));
+
+        TripDto.RegenerateDayRequest req = new TripDto.RegenerateDayRequest();
+        req.setInstruction("Giữ lịch trình gần như hiện tại");
+
+        TripDto.RegenerateDayPreviewResponse preview =
+                service.previewRegenerateDay(1L, 7L, 1, req);
+
+        assertThat(preview.getChanges()).isEmpty();
+        assertThat(preview.getUnchangedActivityCount()).isEqualTo(2);
+        verify(billingService).consumeEditCredit(7L, trip);
+    }
+
+    @Test
+    void previewRegenerateDayPassesAuthoritativeReferencesIntoTheDiff() {
+        Trip trip = sampleTrip();
+        TripDto.ActivityResponse unchangedLunch =
+                TripDto.ActivityResponse.from(trip.getItineraryDays().get(0).getActivities().get(1));
+        unchangedLunch.setId(null);
+        TripDto.DayResponse proposed = new TripDto.DayResponse();
+        proposed.setDay(1);
+        proposed.setTitle("Replacement day");
+        proposed.setSummary("The first activity is intentionally unrelated by text.");
+        proposed.setActivities(List.of(
+                activity(
+                        "09:30",
+                        "Kayak on the lake",
+                        "ACTIVITY",
+                        "Lakeside pier",
+                        "3 hours",
+                        350_000L,
+                        "A completely different replacement."),
+                unchangedLunch));
+
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class), any(), any()))
+                .thenReturn(new AiService.RegeneratedDayResult(
+                        proposed,
+                        noRequestFulfillment(),
+                        Map.of(0, 0, 1, 1),
+                        new AiService.ReferenceDiagnostics(2, 0, 0, 0)));
+
+        TripDto.RegenerateDayRequest request = new TripDto.RegenerateDayRequest();
+        request.setInstruction("Replace the morning activity");
+
+        TripDto.RegenerateDayPreviewResponse preview =
+                service.previewRegenerateDay(1L, 7L, 1, request);
+
+        assertThat(preview.getChanges()).singleElement().satisfies(change -> {
+            assertThat(change.getType()).isEqualTo("MODIFIED");
+            assertThat(change.getOldIndex()).isZero();
+            assertThat(change.getNewIndex()).isZero();
+            assertThat(change.getNewActivity().getName()).isEqualTo("Kayak on the lake");
+        });
+        assertThat(preview.getUnchangedActivityCount()).isEqualTo(1);
+    }
+
+    @Test
+    void metadataOnlyPreviewCanApplyTrustedCoordinateUpgradeWithLegacyFlag() {
+        Trip trip = sampleTrip();
+        Activity morning = trip.getItineraryDays().get(0).getActivities().get(0);
+        morning.setLatitude(11.9);
+        morning.setLongitude(108.4);
+        morning.setCoordinateSource(Activity.CoordinateSource.AI_PROVIDED);
+        morning.setCoordinateConfidence(Activity.CoordinateConfidence.LOW);
+
+        TripDto.DayResponse proposed = proposedDaySameAsSampleTrip();
+        TripDto.ActivityResponse proposedMorning = proposed.getActivities().get(0);
+        proposedMorning.setPlaceId(77L);
+        proposedMorning.setGooglePlaceId("verified-place");
+        proposedMorning.setLatitude(11.95);
+        proposedMorning.setLongitude(108.45);
+        proposedMorning.setCoordinateSource("VERIFIED_PLACE");
+        proposedMorning.setCoordinateConfidence("HIGH");
+
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class), any(), any()))
+                .thenReturn(new AiService.RegeneratedDayResult(proposed, noRequestFulfillment()));
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TripDto.RegenerateDayRequest previewReq = new TripDto.RegenerateDayRequest();
+        previewReq.setInstruction("Giữ nội dung và cập nhật vị trí chính xác hơn");
+        TripDto.RegenerateDayPreviewResponse preview =
+                service.previewRegenerateDay(1L, 7L, 1, previewReq);
+
+        assertThat(preview.getChanges()).isEmpty();
+        assertThat(preview.getMetadataUpgradeCount()).isEqualTo(1);
+
+        TripDto.ApplyRegenerateDayRequest applyReq = new TripDto.ApplyRegenerateDayRequest();
+        applyReq.setProposalId(preview.getProposalId());
+        applyReq.setSelectedChangeIds(List.of());
+        applyReq.setApplyUnchangedMetadataUpgrades(true);
+
+        service.applyRegeneratedDay(1L, 7L, 1, applyReq);
+
+        Activity updatedMorning = trip.getItineraryDays().get(0).getActivities().get(0);
+        assertThat(updatedMorning.getLatitude()).isEqualTo(11.95);
+        assertThat(updatedMorning.getLongitude()).isEqualTo(108.45);
+        assertThat(updatedMorning.getCoordinateSource()).isEqualTo(Activity.CoordinateSource.VERIFIED_PLACE);
+        assertThat(trip.getItineraryDays().get(0).getTitle()).isEqualTo("Ngày 1");
+    }
+
+    @Test
+    void metadataOnlyPreviewAppliesTrustedCoordinateUpgradeWithoutUserMetadataChoice() {
+        Trip trip = sampleTrip();
+        Activity morning = trip.getItineraryDays().get(0).getActivities().get(0);
+        morning.setLatitude(11.9);
+        morning.setLongitude(108.4);
+        morning.setCoordinateSource(Activity.CoordinateSource.AI_PROVIDED);
+        morning.setCoordinateConfidence(Activity.CoordinateConfidence.LOW);
+
+        TripDto.DayResponse proposed = proposedDaySameAsSampleTrip();
+        TripDto.ActivityResponse proposedMorning = proposed.getActivities().get(0);
+        proposedMorning.setPlaceId(77L);
+        proposedMorning.setLatitude(11.95);
+        proposedMorning.setLongitude(108.45);
+        proposedMorning.setCoordinateSource("VERIFIED_PLACE");
+        proposedMorning.setCoordinateConfidence("HIGH");
+
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class), any(), any()))
+                .thenReturn(new AiService.RegeneratedDayResult(proposed, noRequestFulfillment()));
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TripDto.RegenerateDayRequest previewReq = new TripDto.RegenerateDayRequest();
+        previewReq.setInstruction("Giữ nội dung và cập nhật vị trí chính xác hơn");
+        TripDto.RegenerateDayPreviewResponse preview =
+                service.previewRegenerateDay(1L, 7L, 1, previewReq);
+
+        TripDto.ApplyRegenerateDayRequest applyReq = new TripDto.ApplyRegenerateDayRequest();
+        applyReq.setProposalId(preview.getProposalId());
+        applyReq.setSelectedChangeIds(List.of());
+
+        service.applyRegeneratedDay(1L, 7L, 1, applyReq);
+
+        Activity updatedMorning = trip.getItineraryDays().get(0).getActivities().get(0);
+        assertThat(updatedMorning.getLatitude()).isEqualTo(11.95);
+        assertThat(updatedMorning.getLongitude()).isEqualTo(108.45);
+        assertThat(updatedMorning.getCoordinateSource()).isEqualTo(Activity.CoordinateSource.VERIFIED_PLACE);
+    }
+
+    @Test
+    void applyRegeneratedDayRejectsDuplicateChangeIds() {
+        Trip trip = sampleTrip();
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class), any(), any()))
+                .thenReturn(new AiService.RegeneratedDayResult(proposedDayWithoutRequestedActivity(), noRequestFulfillment()));
+
+        TripDto.RegenerateDayRequest previewReq = new TripDto.RegenerateDayRequest();
+        previewReq.setInstruction("Change the activities");
+        TripDto.RegenerateDayPreviewResponse preview =
+                service.previewRegenerateDay(1L, 7L, 1, previewReq);
+        String changeId = preview.getChanges().get(0).getChangeId();
+
+        TripDto.ApplyRegenerateDayRequest applyReq = new TripDto.ApplyRegenerateDayRequest();
+        applyReq.setProposalId(preview.getProposalId());
+        applyReq.setSelectedChangeIds(List.of(changeId, changeId));
+
+        assertThatThrownBy(() -> service.applyRegeneratedDay(1L, 7L, 1, applyReq))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("không hợp lệ");
+        verify(tripRepository, never()).saveAndFlush(any(Trip.class));
+    }
+
+    @Test
+    void applyRegeneratedDayRejectsUnknownChangeId() {
+        Trip trip = sampleTrip();
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class), any(), any()))
+                .thenReturn(new AiService.RegeneratedDayResult(proposedDayWithoutRequestedActivity(), noRequestFulfillment()));
+
+        TripDto.RegenerateDayRequest previewReq = new TripDto.RegenerateDayRequest();
+        previewReq.setInstruction("Đổi hoạt động trong ngày");
+        TripDto.RegenerateDayPreviewResponse preview =
+                service.previewRegenerateDay(1L, 7L, 1, previewReq);
+
+        TripDto.ApplyRegenerateDayRequest applyReq = new TripDto.ApplyRegenerateDayRequest();
+        applyReq.setProposalId(preview.getProposalId());
+        applyReq.setSelectedChangeIds(List.of("unknown-change"));
+
+        assertThatThrownBy(() -> service.applyRegeneratedDay(1L, 7L, 1, applyReq))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("không hợp lệ");
+        verify(tripRepository, never()).saveAndFlush(any(Trip.class));
+    }
+
+    @Test
+    void applyRegeneratedDayRejectsChangeIdFromAnotherPreview() {
+        Trip trip = sampleTrip();
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class), any(), any()))
+                .thenReturn(new AiService.RegeneratedDayResult(proposedDayWithoutRequestedActivity(), noRequestFulfillment()));
+
+        TripDto.RegenerateDayRequest previewReq = new TripDto.RegenerateDayRequest();
+        previewReq.setInstruction("Change the activities");
+        TripDto.RegenerateDayPreviewResponse firstPreview =
+                service.previewRegenerateDay(1L, 7L, 1, previewReq);
+        TripDto.RegenerateDayPreviewResponse secondPreview =
+                service.previewRegenerateDay(1L, 7L, 1, previewReq);
+
+        TripDto.ApplyRegenerateDayRequest applyReq = new TripDto.ApplyRegenerateDayRequest();
+        applyReq.setProposalId(secondPreview.getProposalId());
+        applyReq.setSelectedChangeIds(List.of(firstPreview.getChanges().get(0).getChangeId()));
+
+        assertThatThrownBy(() -> service.applyRegeneratedDay(1L, 7L, 1, applyReq))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("không hợp lệ");
+        verify(tripRepository, never()).saveAndFlush(any(Trip.class));
+    }
+
+    @Test
+    void applyRegeneratedDayRejectsPreviewWhenCurrentDayChanged() {
+        Trip trip = sampleTrip();
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class), any(), any()))
+                .thenReturn(new AiService.RegeneratedDayResult(proposedDayWithoutRequestedActivity(), noRequestFulfillment()));
+
+        TripDto.RegenerateDayRequest previewReq = new TripDto.RegenerateDayRequest();
+        previewReq.setInstruction("Đổi hoạt động trong ngày");
+        TripDto.RegenerateDayPreviewResponse preview =
+                service.previewRegenerateDay(1L, 7L, 1, previewReq);
+        trip.getItineraryDays().get(0).getActivities().get(0).setName("Đã chỉnh thủ công");
+
+        TripDto.ApplyRegenerateDayRequest applyReq = new TripDto.ApplyRegenerateDayRequest();
+        applyReq.setProposalId(preview.getProposalId());
+        applyReq.setSelectedChangeIds(preview.getChanges().stream()
+                .map(TripDto.RegenerateActivityChange::getChangeId)
+                .toList());
+
+        assertThatThrownBy(() -> service.applyRegeneratedDay(1L, 7L, 1, applyReq))
+                .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
+                    assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(exception.getReason()).contains("tạo lại preview");
+                });
+        verify(tripRepository, never()).saveAndFlush(any(Trip.class));
     }
 
     @Test
@@ -929,6 +1389,39 @@ class TripServiceTest {
 
         assertThat(updated.getWarnings()).containsExactly(userMessage);
         assertThat(trip.getAiWarnings()).isEqualTo(userMessage);
+    }
+
+    @Test
+    void partialRegenerationApplyDoesNotPersistProposalFulfillmentWarning() {
+        Trip trip = sampleTrip();
+        trip.setAiWarnings("Cảnh báo hiện tại");
+        TripDto.RequestFulfillment requestFulfillment = requestFulfillment(
+                "PARTIAL",
+                "Đổi toàn bộ ngày",
+                "PARTIAL",
+                "CONSTRAINT",
+                "Yêu cầu chỉ được áp dụng một phần.");
+
+        TripService service = service();
+        when(tripRepository.findById(1L)).thenReturn(Optional.of(trip));
+        when(aiService.regenerateDay(any(), any(), anyInt(), anyString(), nullable(String.class), any(), any()))
+                .thenReturn(new AiService.RegeneratedDayResult(
+                        proposedDayWithoutRequestedActivity(),
+                        requestFulfillment));
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TripDto.RegenerateDayRequest previewReq = new TripDto.RegenerateDayRequest();
+        previewReq.setInstruction("Đổi toàn bộ ngày");
+        TripDto.RegenerateDayPreviewResponse preview =
+                service.previewRegenerateDay(1L, 7L, 1, previewReq);
+
+        TripDto.ApplyRegenerateDayRequest applyReq = new TripDto.ApplyRegenerateDayRequest();
+        applyReq.setProposalId(preview.getProposalId());
+        applyReq.setSelectedChangeIds(List.of(preview.getChanges().get(0).getChangeId()));
+
+        service.applyRegeneratedDay(1L, 7L, 1, applyReq);
+
+        assertThat(trip.getAiWarnings()).isEqualTo("Cảnh báo hiện tại");
     }
 
     @Test
@@ -1090,6 +1583,28 @@ class TripServiceTest {
                 activity("10:00", "Tham quan bảo tàng địa phương", "ATTRACTION"),
                 activity("12:00", "Di chuyển bằng taxi nội thành", "TRANSPORT"),
                 activity("14:00", "Cà phê acoustic", "CAFE")));
+        return day;
+    }
+
+    private TripDto.DayResponse proposedDaySameAsSampleTrip() {
+        TripDto.DayResponse day = new TripDto.DayResponse();
+        day.setDay(1);
+        day.setTitle("Ngày 1");
+        day.setSummary("Giữ nguyên lịch trình");
+        day.setActivities(List.of(
+                activity("09:00", "Hoạt động buổi sáng", "ACTIVITY", "Trung tâm", "2 giờ", 100_000L, null),
+                activity("12:30", "Ăn trưa", "FOOD", "Trung tâm", "1 giờ", 80_000L, null)));
+        return day;
+    }
+
+    private TripDto.DayResponse proposedDayWithModifiedMorningAndNoTail() {
+        TripDto.DayResponse day = new TripDto.DayResponse();
+        day.setDay(1);
+        day.setTitle("Ngay AI moi");
+        day.setSummary("Chi sua buoi sang va bo activity cuoi.");
+        day.setActivities(List.of(
+                activity("09:30", "Hoat dong buoi sang da sua", "ACTIVITY", "Trung tam", "2 gio", 120_000L, null),
+                activity("12:30", "An trua", "FOOD", "Trung tam", "1 gio", 80_000L, null)));
         return day;
     }
 

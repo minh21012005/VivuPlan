@@ -1,6 +1,7 @@
 package com.vivuplan.vivuplan_be.service;
 
 import com.vivuplan.vivuplan_be.dto.TripDto;
+import com.vivuplan.vivuplan_be.entity.Activity;
 import com.vivuplan.vivuplan_be.entity.Place;
 import com.vivuplan.vivuplan_be.repository.DestinationRepository;
 import com.vivuplan.vivuplan_be.repository.PlaceRepository;
@@ -227,6 +228,11 @@ class PlacePlanningServiceTest {
         TripDto.ActivityResponse activity = new TripDto.ActivityResponse();
         activity.setName("Explore Da Nang Museum");
         activity.setType("ATTRACTION");
+        activity.setLatitude(15.0);
+        activity.setLongitude(107.0);
+        activity.setCoordinateSource(Activity.CoordinateSource.AI_PROVIDED.name());
+        activity.setCoordinateConfidence(Activity.CoordinateConfidence.LOW.name());
+        activity.setRating(3.2);
         TripDto.DayResponse day = new TripDto.DayResponse();
         day.setDay(1);
         day.setActivities(List.of(activity));
@@ -238,6 +244,38 @@ class PlacePlanningServiceTest {
         assertThat(activity.getLongitude()).isEqualTo(108.2231);
         assertThat(activity.getLocation()).isEqualTo("24 Tran Phu, Da Nang");
         assertThat(activity.getRating()).isEqualTo(4.5);
+        assertThat(activity.getCoordinateSource()).isEqualTo(Activity.CoordinateSource.VERIFIED_PLACE.name());
+        assertThat(activity.getCoordinateConfidence()).isEqualTo(Activity.CoordinateConfidence.HIGH.name());
+    }
+
+    @Test
+    void enrichScheduleWithVerifiedPlacesSkipsAmbiguousPlaceMatches() {
+        PlacePlanningService service = new PlacePlanningService(placeRepository, destinationRepository);
+        Place museum = place(44L, "Da Nang Museum", Place.PlaceType.ATTRACTION, 4.5, 60_000, "Central museum");
+        museum.setLatitude(16.0746);
+        museum.setLongitude(108.2231);
+        Place genericMuseum = place(45L, "Museum", Place.PlaceType.ATTRACTION, 4.4, 40_000, "Another museum candidate");
+        genericMuseum.setLatitude(16.0);
+        genericMuseum.setLongitude(108.0);
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        when(placeRepository.findByDestinationIgnoreCaseAndVerifiedTrueOrderByRatingDesc(anyString()))
+                .thenReturn(List.of(museum, genericMuseum));
+
+        TripDto.ActivityResponse activity = new TripDto.ActivityResponse();
+        activity.setName("Explore Da Nang Museum");
+        activity.setType("ATTRACTION");
+        activity.setLatitude(15.0);
+        activity.setLongitude(107.0);
+        TripDto.DayResponse day = new TripDto.DayResponse();
+        day.setDay(1);
+        day.setActivities(List.of(activity));
+
+        service.enrichScheduleWithVerifiedPlaces(List.of(day), "da nang");
+
+        assertThat(activity.getPlaceId()).isNull();
+        assertThat(activity.getLatitude()).isEqualTo(15.0);
+        assertThat(activity.getLongitude()).isEqualTo(107.0);
     }
 
     private TripDto.GenerateRequest request() {

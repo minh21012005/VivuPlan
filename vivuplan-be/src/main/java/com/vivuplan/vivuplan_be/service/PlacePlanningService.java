@@ -32,6 +32,8 @@ public class PlacePlanningService {
     private static final int REQUEST_MATCH_SCORE = 60;
     private static final int WEATHER_FRIENDLY_SCORE = 12;
     private static final int WEATHER_FLEX_SCORE = 2;
+    private static final int VERIFIED_PLACE_MATCH_MIN_SCORE = 75;
+    private static final int VERIFIED_PLACE_CLEAR_MARGIN = 20;
     private static final Map<String, List<String>> NEARBY_DESTINATIONS = Map.of(
             "da nang", List.of("Hội An", "Mỹ Sơn"),
             "hoi an", List.of("Đà Nẵng", "Mỹ Sơn"),
@@ -370,6 +372,7 @@ public class PlacePlanningService {
         String activityType = normalizeText(activity.getType());
         Place best = null;
         int bestScore = 0;
+        int secondBestScore = 0;
         for (Place place : places) {
             List<String> placeNames = matchingNames(place);
             String placeAddress = normalizeText(place.getAddress());
@@ -392,11 +395,21 @@ public class PlacePlanningService {
                 score += 15;
             }
             if (score > bestScore) {
+                secondBestScore = bestScore;
                 bestScore = score;
                 best = place;
+            } else if (score > secondBestScore) {
+                secondBestScore = score;
             }
         }
-        return bestScore >= 75 ? Optional.of(best) : Optional.empty();
+        if (best == null || bestScore < VERIFIED_PLACE_MATCH_MIN_SCORE) {
+            return Optional.empty();
+        }
+        if ((bestScore >= 100 && bestScore > secondBestScore)
+                || bestScore - secondBestScore >= VERIFIED_PLACE_CLEAR_MARGIN) {
+            return Optional.of(best);
+        }
+        return Optional.empty();
     }
 
     private boolean isCompatiblePlaceType(String activityType, Place.PlaceType placeType) {
@@ -413,23 +426,19 @@ public class PlacePlanningService {
 
     private void applyPlace(TripDto.ActivityResponse activity, Place place) {
         activity.setPlaceId(place.getId());
-        if (activity.getGooglePlaceId() == null || activity.getGooglePlaceId().isBlank()) {
+        if (place.getGooglePlaceId() != null && !place.getGooglePlaceId().isBlank()) {
             activity.setGooglePlaceId(place.getGooglePlaceId());
         }
-        if (activity.getLatitude() == null) {
+        if (place.getLatitude() != null && place.getLongitude() != null) {
             activity.setLatitude(place.getLatitude());
-        }
-        if (activity.getLongitude() == null) {
             activity.setLongitude(place.getLongitude());
-        }
-        if (activity.getLatitude() != null && activity.getLongitude() != null) {
             activity.setCoordinateSource(Activity.CoordinateSource.VERIFIED_PLACE.name());
             activity.setCoordinateConfidence(Activity.CoordinateConfidence.HIGH.name());
         }
         if ((activity.getLocation() == null || activity.getLocation().isBlank()) && place.getAddress() != null) {
             activity.setLocation(place.getAddress());
         }
-        if (activity.getRating() <= 0 && place.getRating() != null) {
+        if (place.getRating() != null) {
             activity.setRating(place.getRating());
         }
     }

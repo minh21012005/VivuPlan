@@ -196,11 +196,16 @@ export const tripApi = {
       body: JSON.stringify(data),
     }).then(handleResponse<RegenerateDayPreviewResponse>),
 
-  applyRegenerateDay: (tripId: number, dayNumber: number, proposalId: string, selectedActivityIndexes?: number[]) =>
+  applyRegenerateDay: (
+    tripId: number,
+    dayNumber: number,
+    proposalId: string,
+    selectedChangeIds?: string[],
+  ) =>
     fetch(`${API_BASE}/api/trips/${tripId}/days/${dayNumber}/regenerate-apply`, {
       method: "POST",
       headers: authHeaders(),
-      body: JSON.stringify({ proposalId, selectedActivityIndexes }),
+      body: JSON.stringify({ proposalId, selectedChangeIds }),
     }).then(handleResponse<RawTripResponse>).then(normalizeTripResponse),
 
   getByShareCode: (code: string) =>
@@ -740,6 +745,7 @@ export interface ActivityResponse {
   rating: number;
   latitude?: number;
   longitude?: number;
+  placeId?: number;
   googlePlaceId?: string;
   coordinateSource?: string;
   coordinateConfidence?: string;
@@ -775,6 +781,25 @@ export interface RegenerateDayPreviewResponse {
   newBudget: number;
   warnings: string[];
   requestFulfillment?: RequestFulfillment;
+  changes: RegenerateActivityChange[];
+  unchangedActivityCount: number;
+  unchangedActivities: RegenerateUnchangedActivity[];
+  metadataUpgradeCount: number;
+}
+
+export interface RegenerateActivityChange {
+  changeId: string;
+  type: "MODIFIED" | "ADDED" | "REMOVED";
+  oldActivity?: ActivityResponse;
+  newActivity?: ActivityResponse;
+  changedFields: Array<"TIME" | "NAME" | "TYPE" | "LOCATION" | "DURATION" | "COST" | "NOTE" | string>;
+  oldIndex?: number;
+  newIndex?: number;
+}
+
+export interface RegenerateUnchangedActivity {
+  activity: ActivityResponse;
+  metadataUpgradeAvailable: boolean;
 }
 
 export interface RequestFulfillment {

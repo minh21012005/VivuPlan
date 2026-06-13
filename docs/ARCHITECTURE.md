@@ -90,12 +90,31 @@ The frontend is a Next.js App Router application.
 
 1. User requests a day regeneration preview with an instruction.
 2. Backend validates ownership, prompt text, and edit credit.
-3. Gemini regenerates one day within the existing trip context.
-4. Backend enriches, resolves coordinates, normalizes, and validates the day.
-5. Edit credit is consumed during preview.
-6. Preview is stored temporarily.
-7. Apply replaces the day with the stored proposal or selected activities and
-   does not consume another edit credit.
+3. Backend gives each activity in the target day a request-scoped
+   `sourceActivityRef`. Valid references are matched first and are authoritative
+   even when the replacement has completely different text.
+4. Gemini regenerates one day within the existing trip context and returns the
+   reference of the old activity that each output activity keeps or replaces.
+5. Missing, unknown, or duplicated references are discarded without failing
+   the preview. Remaining activities are matched by exact place identifiers,
+   normalized name/location, then a language-independent semantic score using
+   token overlap, character trigrams, and token bigrams.
+6. Semantic candidates must pass both a confidence threshold and a reciprocal
+   ambiguity margin before deterministic maximum-weight one-to-one matching.
+   The matcher does not use destination word lists or force a match merely
+   because type and time are similar.
+7. Backend enriches, resolves coordinates, normalizes, validates, and computes
+   the activity diff without pairing activities by list index.
+8. Edit credit is consumed during preview.
+9. Preview stores actionable user-facing changes, unchanged activities,
+   optional trusted metadata patches, and the original-day fingerprint.
+10. Apply always starts from the persisted day, merges selected modified, added,
+   or removed activities by change ID, applies trusted metadata patches decided
+   by backend policy, rejects stale previews, and does not consume another edit
+   credit.
+11. Only a full actionable apply persists the proposal request-fulfillment
+   warnings. Partial and metadata-only apply preserve the trip's current
+   warnings.
 
 ### Billing
 
@@ -125,4 +144,3 @@ The frontend is a Next.js App Router application.
 
 External services should be wrapped by existing service boundaries. Do not call
 them directly from unrelated controllers or frontend components.
-

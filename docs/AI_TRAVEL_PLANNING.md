@@ -52,6 +52,34 @@ The day regeneration response must contain:
 The preview consumes edit credit. Applying an already-created preview must not
 consume another edit credit.
 
+### Internal activity references
+
+For day regeneration only, the backend assigns each activity in the target day
+a temporary reference such as `src-1`. The target-day prompt includes this
+`sourceActivityRef` together with the activity's user-facing time, name, type,
+location, duration, estimated cost, and note. Other days remain reduced context
+and do not receive references.
+
+The model should copy the old activity's reference when keeping, editing, or
+replacing it. A completely new activity uses `null`; an omitted reference means
+the old activity was removed. A reference may appear at most once. For
+split/merge responses, only the primary successor or predecessor carries the
+reference.
+
+Replacing a generic activity with a more specific named venue or experience
+keeps the original reference. For example, a generic lunch, dinner, riverside
+cafe, sightseeing stop, or transfer refined into a concrete venue remains a
+replacement rather than a completely new activity.
+
+These references are linkage hints scoped to one AI request. They are not
+database IDs, are not persisted, and are never returned through the public trip
+or preview API. The same reference context is reused for the one existing
+contract or quality retry.
+
+Missing, unknown, or duplicated references do not fail the preview and do not
+trigger an extra Gemini retry. The parser discards invalid references and lets
+the deterministic exact/semantic matcher handle the remaining activities.
+
 ## Quality Expectations
 
 Itineraries should be:

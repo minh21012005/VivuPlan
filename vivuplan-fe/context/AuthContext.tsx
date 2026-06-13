@@ -90,19 +90,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [setToken]);
 
   useEffect(() => {
+    let cancelled = false;
     const token = localStorage.getItem("vp_token");
     if (!token) {
       localStorage.removeItem("vp_user");
-      setState((s) => ({ ...s, loading: false }));
-      return;
+      queueMicrotask(() => {
+        if (!cancelled) setState((s) => ({ ...s, loading: false }));
+      });
+      return () => {
+        cancelled = true;
+      };
     }
     authApi.me()
-      .then((user) => setState({ user, token, loading: false, error: null }))
+      .then((user) => {
+        if (!cancelled) setState({ user, token, loading: false, error: null });
+      })
       .catch(() => {
+        if (cancelled) return;
         localStorage.removeItem("vp_token");
         localStorage.removeItem("vp_user");
         setState({ user: null, token: null, loading: false, error: null });
       });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (

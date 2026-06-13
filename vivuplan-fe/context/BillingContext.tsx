@@ -49,12 +49,23 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   }, [clearWallet, isLoggedIn]);
 
   useEffect(() => {
+    let cancelled = false;
     if (authLoading) return;
     if (!isLoggedIn) {
-      clearWallet();
-      return;
+      queueMicrotask(() => {
+        if (!cancelled) clearWallet();
+      });
+      return () => {
+        cancelled = true;
+      };
     }
-    void refreshWallet();
+    queueMicrotask(() => {
+      if (cancelled) return;
+      void refreshWallet();
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [authLoading, clearWallet, isLoggedIn, refreshWallet]);
 
   return (

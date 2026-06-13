@@ -42,7 +42,6 @@ import {
   Edit3,
   ExternalLink,
   Lightbulb,
-  ListChecks,
   MapPin,
   Navigation,
   Plus,
@@ -66,6 +65,9 @@ import {
 // ─── Lightweight toast system ────────────────────────────────────────────────
 type ToastItem = { id: number; message: string; type: "error" | "success" | "info" };
 const REGENERATE_INSTRUCTION_MAX_LENGTH = 500;
+const REGENERATION_COST_INCREASE_WARNING_MIN_DELTA = 200_000;
+const REGENERATION_COST_INCREASE_WARNING = "Chi phí ngày mới cao hơn đáng kể so với ngày cũ.";
+const REGENERATION_BUDGET_WARNING = "Tổng chi phí sau khi áp dụng có thể vượt ngân sách bạn đã nhập.";
 
 function useToast() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -289,23 +291,6 @@ function getDayTimeRange(activities: ActivityResponse[]) {
   return times.length === 1 ? times[0] : `${times[0]} - ${times[times.length - 1]}`;
 }
 
-function buildDayCopyText(trip: TripResponse, day: NonNullable<TripResponse["schedule"]>[number]) {
-  const rows = day.activities.map((activity) => {
-    const location = activity.location ? ` tại ${activity.location}` : "";
-    const cost = activity.estimatedCost || needsCostReview(activity) ? ` - ${fmtActivityCost(activity)}` : "";
-    const note = activity.note ? `\n  Ghi chú: ${activity.note}` : "";
-    return `${activity.time} - ${activity.name}${location} (${activity.duration})${cost}${note}`;
-  });
-
-  return [
-    `Lịch trình ${trip.destination} - Ngày ${day.day}`,
-    day.title,
-    day.summary,
-    "",
-    ...rows,
-  ].filter(Boolean).join("\n");
-}
-
 type AiMessageKind = "positive" | "caution";
 type AiMessage = {
   raw: string;
@@ -380,7 +365,7 @@ export default function ItineraryPage() {
   const [regenerateOpen, setRegenerateOpen] = useState(false);
   const [regeneratePreview, setRegeneratePreview] = useState<RegenerateDayPreviewResponse | null>(null);
   const [regeneratePreviewError, setRegeneratePreviewError] = useState("");
-  const [selectedRegenerateIndexes, setSelectedRegenerateIndexes] = useState<number[]>([]);
+  const [selectedRegenerateChangeIds, setSelectedRegenerateChangeIds] = useState<string[]>([]);
   const [regeneratingDay, setRegeneratingDay] = useState(false);
   const [applyingRegeneration, setApplyingRegeneration] = useState(false);
   const [regenerateCloseConfirmOpen, setRegenerateCloseConfirmOpen] = useState(false);
@@ -448,7 +433,7 @@ export default function ItineraryPage() {
         setRegenerateOpen(false);
         setRegeneratePreview(null);
         setRegenerateCloseConfirmOpen(false);
-        setSelectedRegenerateIndexes([]);
+        setSelectedRegenerateChangeIds([]);
       } catch (e) {
         if (cancelled) return;
         const isForbidden =
@@ -667,14 +652,14 @@ export default function ItineraryPage() {
     setRegenerateCloseConfirmOpen(false);
     setRegeneratePreview(null);
     setRegeneratePreviewError("");
-    setSelectedRegenerateIndexes([]);
+    setSelectedRegenerateChangeIds([]);
     try {
       const preview = await tripApi.previewRegenerateDay(trip.id, day.day, request);
       if (regenerateRequestId.current !== requestId) return;
       setRegenerateCloseConfirmOpen(false);
       refreshWallet();
       setRegeneratePreview(preview);
-      setSelectedRegenerateIndexes(preview.day.activities.map((_, index) => index));
+      setSelectedRegenerateChangeIds(preview.changes.map((change) => change.changeId));
       const requestWarning = preview.warnings.find((warning) => warning.includes("Yêu cầu"));
       if (requestWarning) {
         showToast(requestWarning, "info", 9000);
@@ -699,7 +684,7 @@ export default function ItineraryPage() {
     setRegenerateOpen(false);
     setRegeneratePreview(null);
     setRegeneratePreviewError("");
-    setSelectedRegenerateIndexes([]);
+    setSelectedRegenerateChangeIds([]);
     setRegenerateCloseConfirmOpen(false);
   };
 
@@ -727,7 +712,7 @@ export default function ItineraryPage() {
         trip.id,
         regeneratePreview.dayNumber,
         regeneratePreview.proposalId,
-        selectedRegenerateIndexes,
+        selectedRegenerateChangeIds,
       );
       setTrip(updated);
       const nextIndex = updated.schedule?.findIndex((item) => item.day === regeneratePreview.dayNumber) ?? activeDay;
@@ -1238,8 +1223,10 @@ export default function ItineraryPage() {
           loading={regeneratingDay}
           applying={applyingRegeneration}
           closeConfirmOpen={regenerateCloseConfirmOpen}
-          selectedIndexes={selectedRegenerateIndexes}
-          onSelectedIndexesChange={setSelectedRegenerateIndexes}
+          selectedChangeIds={selectedRegenerateChangeIds}
+          currentTripBudgetTotal={trip.budget?.total}
+          targetBudget={targetBudget}
+          onSelectedChangeIdsChange={setSelectedRegenerateChangeIds}
           editCredits={wallet?.editCredits}
           onClearError={() => setRegeneratePreviewError("")}
           onPreview={previewRegenerateDay}
@@ -1356,11 +1343,66 @@ function parseActivityDurationMinutes(duration?: string) {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
   let minutes = 0;
-  const hourMatch = normalized.match(/(\d+(?:[\.,]\d+)?)\s*(gio|h)/);
+  const hourMatch = normalized.match(/(\d+(?:[\.,]\d+)?)\s*(gio|tieng|h)/);
   if (hourMatch) minutes += Math.round(Number(hourMatch[1].replace(",", ".")) * 60);
   const minuteMatch = normalized.match(/(\d+)\s*(phut|p|min)/);
   if (minuteMatch) minutes += Number(minuteMatch[1]);
   return minutes > 0 ? minutes : 60;
+}
+
+function normalizeWarningText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\u0111/g, "d")
+    .replace(/\u0110/g, "D")
+    .toLowerCase();
+}
+
+function isRequestFulfillmentPreviewWarning(warning: string) {
+  const normalized = normalizeWarningText(warning);
+  return normalized.includes("yeu cau") || normalized.includes("vivuplan xac minh");
+}
+
+function uniqueWarnings(warnings: string[]) {
+  const seen = new Set<string>();
+  return warnings.filter((warning) => {
+    const key = warning.trim();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function buildRegenerationVisibleWarnings(
+  preview: RegenerateDayPreviewResponse,
+  allSelected: boolean,
+  selectedBudget: number,
+  selectedTripTotal: number | null,
+  targetBudget: number,
+) {
+  if (allSelected) return uniqueWarnings(preview.warnings);
+
+  const warnings = preview.warnings.filter(isRequestFulfillmentPreviewWarning);
+  const delta = selectedBudget - preview.oldBudget;
+  if (
+    preview.oldBudget > 0
+    && delta >= REGENERATION_COST_INCREASE_WARNING_MIN_DELTA
+    && selectedBudget > Math.round(preview.oldBudget * 1.25)
+  ) {
+    warnings.push(REGENERATION_COST_INCREASE_WARNING);
+  }
+  if (selectedTripTotal != null && targetBudget > 0 && selectedTripTotal > targetBudget) {
+    warnings.push(REGENERATION_BUDGET_WARNING);
+  }
+  return uniqueWarnings(warnings);
+}
+
+const RELAXED_TIME_CONFLICT_TYPES = new Set(["TRANSPORT", "ACCOMMODATION"]);
+const RELAXED_AI_OVERLAP_MINUTES = 30;
+
+function isRelaxedTimeConflictType(type?: string) {
+  return RELAXED_TIME_CONFLICT_TYPES.has((type ?? "").toUpperCase());
 }
 
 function findActivityTimeConflicts(activities: ActivityResponse[]) {
@@ -1370,22 +1412,53 @@ function findActivityTimeConflicts(activities: ActivityResponse[]) {
       if (start == null) return null;
       return {
         name: activity.name,
+        type: activity.type,
         start,
         end: start + Math.max(15, parseActivityDurationMinutes(activity.duration)),
       };
     })
-    .filter((item): item is { name: string; start: number; end: number } => Boolean(item))
+    .filter((item): item is { name: string; type: string; start: number; end: number } => Boolean(item))
     .sort((a, b) => a.start - b.start);
 
   const conflicts: string[] = [];
-  for (let index = 1; index < ranges.length; index++) {
-    const previous = ranges[index - 1];
-    const current = ranges[index];
-    if (current.start < previous.end) {
-      conflicts.push(`${previous.name} bị trùng giờ với ${current.name}`);
+  for (let leftIndex = 0; leftIndex < ranges.length; leftIndex++) {
+    const left = ranges[leftIndex];
+    for (let rightIndex = leftIndex + 1; rightIndex < ranges.length; rightIndex++) {
+      const right = ranges[rightIndex];
+      if (right.start >= left.end) break;
+      const overlapMinutes = Math.min(left.end, right.end) - Math.max(left.start, right.start);
+      if (overlapMinutes <= 0) continue;
+      if (isRelaxedTimeConflictType(left.type) || isRelaxedTimeConflictType(right.type)) continue;
+      if (overlapMinutes <= RELAXED_AI_OVERLAP_MINUTES) continue;
+      conflicts.push(`${left.name} bị trùng giờ với ${right.name}`);
     }
   }
   return conflicts;
+}
+
+function buildRegenerationMergedActivities(
+  currentActivities: ActivityResponse[],
+  preview: RegenerateDayPreviewResponse,
+  selectedChangeIds: string[],
+) {
+  const selected = new Set(selectedChangeIds);
+  const merged = currentActivities.map((activity, oldIndex) => ({ activity, oldIndex }));
+  for (const change of preview.changes) {
+    if (!selected.has(change.changeId)) continue;
+    if (change.type === "REMOVED" && change.oldIndex !== undefined) {
+      const position = merged.findIndex((item) => item.oldIndex === change.oldIndex);
+      if (position >= 0) merged.splice(position, 1);
+    } else if (change.type === "MODIFIED" && change.oldIndex !== undefined && change.newActivity) {
+      const position = merged.findIndex((item) => item.oldIndex === change.oldIndex);
+      if (position >= 0) merged[position] = { activity: change.newActivity, oldIndex: change.oldIndex };
+    } else if (change.type === "ADDED" && change.newActivity) {
+      merged.push({ activity: change.newActivity, oldIndex: Number.MAX_SAFE_INTEGER });
+    }
+  }
+
+  return merged
+    .map((item) => item.activity)
+    .sort((left, right) => left.time.localeCompare(right.time));
 }
 
 function RegenerateDayModal({
@@ -1395,10 +1468,12 @@ function RegenerateDayModal({
   loading,
   applying,
   closeConfirmOpen,
-  selectedIndexes,
+  selectedChangeIds,
+  currentTripBudgetTotal,
+  targetBudget,
   editCredits,
   onClearError,
-  onSelectedIndexesChange,
+  onSelectedChangeIdsChange,
   onPreview,
   onApply,
   onCancel,
@@ -1411,10 +1486,12 @@ function RegenerateDayModal({
   loading: boolean;
   applying: boolean;
   closeConfirmOpen: boolean;
-  selectedIndexes: number[];
+  selectedChangeIds: string[];
+  currentTripBudgetTotal?: number;
+  targetBudget: number;
   editCredits?: number;
   onClearError: () => void;
-  onSelectedIndexesChange: (indexes: number[]) => void;
+  onSelectedChangeIdsChange: (changeIds: string[]) => void;
   onPreview: (request: RegenerateDayRequest) => Promise<void>;
   onApply: () => Promise<void>;
   onCancel: () => void;
@@ -1423,53 +1500,65 @@ function RegenerateDayModal({
 }) {
   const [instruction, setInstruction] = useState("");
   const [localError, setLocalError] = useState("");
-  const costDiff = preview ? preview.newBudget - preview.oldBudget : 0;
-  const selectedCount = preview ? selectedIndexes.length : 0;
-  const allPreviewIndexes = preview?.day.activities.map((_, index) => index) ?? [];
-  const allSelected = preview ? selectedIndexes.length === preview.day.activities.length : false;
-  const selectionTimeConflicts = useMemo(() => {
-    if (!preview) return [];
-    const selected = new Set(selectedIndexes);
-    const previewLength = preview.day.activities.length;
-    const oldLength = day.activities.length;
-    const allNewSelected = selectedIndexes.length === previewLength;
-    const mergedActivities: ActivityResponse[] = [];
-
-    for (let index = 0; index < Math.max(oldLength, previewLength); index++) {
-      const hasNew = index < previewLength && preview.day.activities[index] != null;
-      const hasOld = index < oldLength && day.activities[index] != null;
-
-      if (hasNew && selected.has(index)) {
-        mergedActivities.push(preview.day.activities[index]);
-      } else if (hasNew && !selected.has(index) && hasOld) {
-        mergedActivities.push(day.activities[index]);
-      } else if (!hasNew && hasOld && !allNewSelected) {
-        // Only keep old "tail" activities (no new counterpart) when the user is
-        // doing a PARTIAL apply. If all new activities are selected, the AI
-        // intentionally merged/replaced these activities → exclude them.
-        mergedActivities.push(day.activities[index]);
-      }
-    }
-
-    return findActivityTimeConflicts(mergedActivities);
-  }, [day.activities, preview, selectedIndexes]);
-  const previewPairs = preview
-    ? Array.from({ length: Math.max(day.activities.length, preview.day.activities.length) }, (_, index) => ({
-      oldActivity: day.activities[index],
-      newActivity: preview.day.activities[index],
-      index,
-    }))
-    : [];
-
-  const renderPreviewActivity = (activity: NonNullable<TripResponse["schedule"]>[number]["activities"][number]) => (
-    <>
-      <span>{activity.time}</span>
-      <div>
-        <strong>{activity.name}</strong>
-        <small>{activity.location || typeConfig[activity.type]?.label || activity.type} · {activity.duration} · {fmtActivityCost(activity)}</small>
-      </div>
-    </>
+  const allChangeIds = preview?.changes.map((change) => change.changeId) ?? [];
+  const unchangedActivities = preview?.unchangedActivities ?? [];
+  const metadataUpgradeCount = preview?.metadataUpgradeCount ?? 0;
+  const selectedChangeIdSet = useMemo(() => new Set(selectedChangeIds), [selectedChangeIds]);
+  const allSelected = preview
+    ? preview.changes.length > 0
+      && selectedChangeIds.length === preview.changes.length
+      && selectedChangeIdSet.size === preview.changes.length
+      && preview.changes.every((change) => selectedChangeIdSet.has(change.changeId))
+    : false;
+  const visiblePreviewTitle = preview ? (allSelected ? preview.day.title : day.title) : "";
+  const visiblePreviewSummary = preview ? (allSelected ? preview.day.summary : day.summary) : "";
+  const mergedActivities = useMemo(
+    () => preview
+      ? buildRegenerationMergedActivities(day.activities, preview, selectedChangeIds)
+      : day.activities,
+    [day.activities, preview, selectedChangeIds],
   );
+  const selectedBudget = mergedActivities.reduce(
+    (total, activity) => total + Math.max(0, activity.estimatedCost ?? 0),
+    0,
+  );
+  const selectedTripTotal = preview && currentTripBudgetTotal != null
+    ? currentTripBudgetTotal - preview.oldBudget + selectedBudget
+    : null;
+  const visibleWarnings = preview
+    ? buildRegenerationVisibleWarnings(preview, allSelected, selectedBudget, selectedTripTotal, targetBudget)
+    : [];
+  const costDiff = preview ? selectedBudget - preview.oldBudget : 0;
+  const selectionTimeConflicts = useMemo(
+    () => preview ? findActivityTimeConflicts(mergedActivities) : [],
+    [mergedActivities, preview],
+  );
+  const hasSystemMetadataUpdate = metadataUpgradeCount > 0;
+  const hasApplicableSelection = selectedChangeIds.length > 0 || hasSystemMetadataUpdate;
+
+  const renderPreviewActivity = (
+    activity: NonNullable<TripResponse["schedule"]>[number]["activities"][number],
+  ) => {
+    return (
+      <>
+        <span>{activity.time}</span>
+        <div>
+          <strong>{activity.name}</strong>
+          <small className="regenerate-preview-meta">
+            <span>{activity.location || "Chưa có địa điểm"}</span>
+            <span>{typeConfig[activity.type]?.label || activity.type}</span>
+            <span>{activity.duration}</span>
+            <span>{fmtActivityCost(activity)}</span>
+          </small>
+          {activity.note?.trim() && (
+            <small className="regenerate-preview-note">
+              {activity.note.trim()}
+            </small>
+          )}
+        </div>
+      </>
+    );
+  };
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1487,11 +1576,11 @@ function RegenerateDayModal({
     void onPreview({ intent: "REGENERATE", instruction: trimmedInstruction });
   };
 
-  const toggleSelectedIndex = (index: number) => {
-    onSelectedIndexesChange(
-      selectedIndexes.includes(index)
-        ? selectedIndexes.filter((item) => item !== index)
-        : [...selectedIndexes, index].sort((a, b) => a - b),
+  const toggleSelectedChange = (changeId: string) => {
+    onSelectedChangeIdsChange(
+      selectedChangeIds.includes(changeId)
+        ? selectedChangeIds.filter((item) => item !== changeId)
+        : [...selectedChangeIds, changeId],
     );
   };
 
@@ -1575,34 +1664,45 @@ function RegenerateDayModal({
             <section className="regenerate-preview">
               <div className="regenerate-preview-head">
                 <div className="regenerate-preview-title-row">
-                  <h4>{preview.day.title}</h4>
+                  <h4>{visiblePreviewTitle}</h4>
                   <div className={costDiff > 0 ? "regenerate-cost-diff is-up" : "regenerate-cost-diff"}>
-                    <span>{fmtCost(preview.oldBudget)} → {fmtCost(preview.newBudget)}</span>
+                    <span>{fmtCost(preview.oldBudget)} → {fmtCost(selectedBudget)}</span>
                     <strong>{costDiff === 0 ? "Không đổi" : `${costDiff > 0 ? "+" : ""}${fmtCost(costDiff)}`}</strong>
                   </div>
                 </div>
-                <p>{preview.day.summary}</p>
+                <p>{visiblePreviewSummary}</p>
               </div>
 
-              {preview.warnings.length > 0 && (
+              {visibleWarnings.length > 0 && (
                 <div className="regenerate-warnings">
-                  {preview.warnings.map((warning) => (
+                  {visibleWarnings.map((warning) => (
                     <p key={warning}><AlertCircle size={13} /> {warning}</p>
                   ))}
                 </div>
               )}
 
-              <div className="regenerate-selection-toolbar">
-                <p>{selectedCount}/{preview.day.activities.length} mục mới sẽ được áp dụng</p>
-                <div>
-                  <button type="button" onClick={() => onSelectedIndexesChange(allPreviewIndexes)} disabled={loading || applying || allSelected}>
-                    Chọn tất cả
-                  </button>
-                  <button type="button" onClick={() => onSelectedIndexesChange([])} disabled={loading || applying || selectedIndexes.length === 0}>
-                    Bỏ chọn
-                  </button>
+              {preview.changes.length > 0 && (
+                <div className="regenerate-selection-toolbar">
+                  <div className="regenerate-selection-actions">
+                    <button type="button" onClick={() => onSelectedChangeIdsChange(allChangeIds)} disabled={loading || applying || allSelected}>
+                      Chọn tất cả
+                    </button>
+                    <button type="button" onClick={() => onSelectedChangeIdsChange([])} disabled={loading || applying || selectedChangeIds.length === 0}>
+                      Bỏ chọn
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {hasSystemMetadataUpdate && (
+                <div className="regenerate-metadata-option regenerate-metadata-info">
+                  <MapPin size={15} />
+                  <span>
+                    Hệ thống sẽ cập nhật dữ liệu bản đồ đáng tin cậy hơn cho {metadataUpgradeCount} hoạt động khi bạn áp dụng
+                    <small>Chỉ dùng nguồn tọa độ đã qua kiểm tra chính sách và không ghi đè vị trí bạn đã chỉnh thủ công.</small>
+                  </span>
+                </div>
+              )}
 
               {selectionTimeConflicts.length > 0 && (
                 <div className="regenerate-merge-conflicts" role="alert">
@@ -1617,56 +1717,115 @@ function RegenerateDayModal({
                 </div>
               )}
 
-              <div className="regenerate-pair-list">
-                {previewPairs.map(({ oldActivity, newActivity, index }) => {
-                  const selected = Boolean(newActivity && selectedIndexes.includes(index));
-                  return (
-                    <div
-                      key={`pair-${index}-${oldActivity?.time ?? "new"}-${newActivity?.time ?? "old"}`}
-                      className={`regenerate-pair-row${selected ? " selected" : ""}${!newActivity ? " no-new" : ""}`}
-                    >
-                      <div className="regenerate-pair-side">
-                        <div className="regenerate-pair-title">
-                          <span>{oldActivity ? `Mục cũ ${index + 1}` : "Không có mục cũ"}</span>
-                          {!selected && oldActivity && <strong>Giữ nguyên</strong>}
-                        </div>
-                        {oldActivity ? (
-                          <div className="regenerate-preview-item">
-                            {renderPreviewActivity(oldActivity)}
+              {preview.changes.length === 0 ? (
+                <div className="regenerate-no-changes" role="status">
+                  <CheckCircle2 size={18} />
+                  <div>
+                    <strong>
+                      {hasSystemMetadataUpdate
+                        ? "Nội dung hoạt động không đổi, hệ thống tìm thấy dữ liệu bản đồ đáng tin cậy hơn."
+                        : "AI chưa tạo ra thay đổi cho ngày này."}
+                    </strong>
+                    <p>
+                      {hasSystemMetadataUpdate
+                        ? "Bạn có thể áp dụng để hệ thống cập nhật dữ liệu kỹ thuật đã qua kiểm tra, hoặc viết yêu cầu khác để tạo lại preview."
+                        : "Bạn có thể viết yêu cầu cụ thể hơn và tạo lại preview."}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="regenerate-pair-list">
+                  {preview.changes.map((change) => {
+                    const selected = selectedChangeIds.includes(change.changeId);
+                    const isRemoved = change.type === "REMOVED";
+                    const isAdded = change.type === "ADDED";
+                    return (
+                      <div
+                        key={change.changeId}
+                        className={`regenerate-pair-row change-${change.type.toLowerCase()}${selected ? " selected" : ""}${isRemoved ? " no-new" : ""}`}
+                      >
+                        <div className="regenerate-pair-side">
+                          <div className="regenerate-pair-title">
+                            <span>{isAdded ? "Chưa có trong lịch hiện tại" : "Hoạt động hiện tại"}</span>
+                            {!selected && change.oldActivity && <strong>Giữ nguyên</strong>}
                           </div>
-                        ) : (
-                          <div className="regenerate-empty-item">Nếu chọn mục mới này, nó sẽ được thêm vào ngày hiện tại.</div>
-                        )}
-                      </div>
-
-                      <div className={`regenerate-pair-status${selected ? " selected" : ""}`}>
-                        {selected ? (oldActivity ? "Thay bằng" : "Thêm mới") : "Không áp dụng"}
-                      </div>
-
-                      <div className="regenerate-pair-side is-new">
-                        <div className="regenerate-pair-title">
-                          <span>{newActivity ? `Mục mới ${index + 1}` : "Không có mục mới"}</span>
-                          {selected && <strong>Sẽ áp dụng</strong>}
+                          {change.oldActivity ? (
+                            isRemoved ? (
+                              <label className={`regenerate-selectable-item regenerate-remove-item${selected ? " selected" : ""}`}>
+                                <input
+                                  type="checkbox"
+                                  checked={selected}
+                                  onChange={() => toggleSelectedChange(change.changeId)}
+                                  disabled={loading || applying}
+                                  aria-label={`Xóa ${change.oldActivity.name} khỏi ngày`}
+                                />
+                                {renderPreviewActivity(change.oldActivity)}
+                              </label>
+                            ) : (
+                              <div className="regenerate-preview-item">
+                                {renderPreviewActivity(change.oldActivity)}
+                              </div>
+                            )
+                          ) : (
+                            <div className="regenerate-empty-item">Hoạt động này sẽ được thêm vào ngày nếu bạn chọn áp dụng.</div>
+                          )}
                         </div>
-                        {newActivity ? (
-                          <label className={`regenerate-selectable-item${selected ? " selected" : ""}`}>
-                            <input
-                              type="checkbox"
-                              checked={selected}
-                              onChange={() => toggleSelectedIndex(index)}
-                              disabled={loading || applying}
-                              aria-label={`Áp dụng ${newActivity.name}`}
-                            />
-                            {renderPreviewActivity(newActivity)}
-                          </label>
-                        ) : (
-                          <div className="regenerate-empty-item">Không có đề xuất mới cho vị trí này, mục cũ sẽ được giữ lại.</div>
+
+                        <div className={`regenerate-pair-status${selected ? " selected" : ""}${isRemoved ? " is-remove" : ""}`}>
+                          {selected
+                            ? isRemoved ? "Xóa khỏi ngày" : isAdded ? "Thêm mới" : "Thay bằng"
+                            : "Không áp dụng"}
+                        </div>
+
+                        <div className="regenerate-pair-side is-new">
+                          <div className="regenerate-pair-title">
+                            <span>{isRemoved ? "Đề xuất loại bỏ" : isAdded ? "Hoạt động mới" : "Phương án mới"}</span>
+                            {selected && <strong>Sẽ áp dụng</strong>}
+                          </div>
+                          {change.newActivity ? (
+                            <label className={`regenerate-selectable-item${selected ? " selected" : ""}`}>
+                              <input
+                                type="checkbox"
+                                checked={selected}
+                                onChange={() => toggleSelectedChange(change.changeId)}
+                                disabled={loading || applying}
+                                aria-label={`Áp dụng ${change.newActivity.name}`}
+                              />
+                              {renderPreviewActivity(change.newActivity)}
+                            </label>
+                          ) : (
+                            <div className="regenerate-empty-item">Chọn thay đổi này để xóa hoạt động cũ khỏi ngày.</div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {unchangedActivities.length > 0 && (
+                <details className="regenerate-unchanged">
+                  <summary>
+                    <span>{unchangedActivities.length} hoạt động không thay đổi</span>
+                    <ChevronDown size={15} aria-hidden="true" />
+                  </summary>
+                  <div className="regenerate-unchanged-list">
+                    {unchangedActivities.map((item, index) => (
+                      <div
+                        className="regenerate-preview-item"
+                        key={`${item.activity.id ?? "unchanged"}-${item.activity.time}-${index}`}
+                      >
+                        {renderPreviewActivity(item.activity)}
+                        {item.metadataUpgradeAvailable && (
+                          <small className="regenerate-metadata-badge">
+                            <MapPin size={12} /> Có vị trí bản đồ chính xác hơn
+                          </small>
                         )}
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    ))}
+                  </div>
+                </details>
+              )}
 
               <div className="regenerate-actions">
                 <Button type="button" variant="secondary" onClick={onCancel} disabled={applying}>
@@ -1692,9 +1851,15 @@ function RegenerateDayModal({
                 >
                   <RefreshCw size={14} /> Tạo lại preview
                 </Button>
-                <Button type="button" onClick={onApply} disabled={loading || applying || selectedIndexes.length === 0 || selectionTimeConflicts.length > 0}>
+                <Button type="button" onClick={onApply} disabled={loading || applying || !hasApplicableSelection || selectionTimeConflicts.length > 0}>
                   {applying ? <span className="spinner spinner-inline spinner-on-primary" /> : <Save size={14} />}
-                  {applying ? "Đang áp dụng..." : allSelected ? "Áp dụng ngày mới" : "Áp dụng mục đã chọn"}
+                  {applying
+                    ? "Đang áp dụng..."
+                    : selectedChangeIds.length === 0 && hasSystemMetadataUpdate
+                      ? "Cập nhật dữ liệu bản đồ"
+                      : allSelected
+                        ? "Áp dụng toàn bộ thay đổi"
+                        : "Áp dụng thay đổi đã chọn"}
                 </Button>
               </div>
             </section>

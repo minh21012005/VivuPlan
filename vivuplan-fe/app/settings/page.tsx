@@ -194,7 +194,14 @@ export default function SettingsPage() {
 
   // Populate form
   useEffect(() => {
-    if (user) setName(user.name ?? "");
+    if (!user) return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setName(user.name ?? "");
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   // Auto-clear toasts

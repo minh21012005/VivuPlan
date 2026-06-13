@@ -8,6 +8,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -772,6 +773,150 @@ class AiServiceTest {
     }
 
     @Test
+    void regenerationPromptAddsReferencesAndFullFieldsOnlyToTheTargetDay() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+
+        TripDto.DayResponse targetDay = baseDay();
+        targetDay.setActivities(List.of(
+                activity(
+                        "08:00",
+                        "Target breakfast",
+                        "FOOD",
+                        "Target hotel",
+                        120_000L,
+                        "Start the day here.")));
+        TripDto.DayResponse otherDay = baseDay();
+        otherDay.setDay(2);
+        otherDay.setTitle("Day 2");
+        otherDay.setActivities(List.of(
+                activity(
+                        "09:00",
+                        "Other museum",
+                        "ATTRACTION",
+                        "Other city",
+                        80_000L,
+                        "This note must not be sent for a non-target day.")));
+
+        String prompt = buildDayRegenerationPrompt(
+                service,
+                req,
+                List.of(targetDay, otherDay),
+                1,
+                "REGENERATE",
+                "Replace breakfast",
+                null);
+
+        assertThat(prompt)
+                .contains("\"sourceActivityRef\":\"src-1\",\"time\":\"08:00\",\"name\":\"Target breakfast\"")
+                .contains("\"duration\":\"1")
+                .contains("\"estimatedCost\":120000")
+                .contains("\"note\":\"Start the day here.\"")
+                .contains("\"time\":\"09:00\",\"name\":\"Other museum\",\"type\":\"ATTRACTION\",\"location\":\"Other city\"")
+                .doesNotContain("This note must not be sent for a non-target day.")
+                .contains("Refining a generic activity into a specific named venue or experience is still an edit/replacement")
+                .contains("generic cafe by the river -> a named cafe")
+                .contains("Use each non-null sourceActivityRef at most once")
+                .contains("\"sourceActivityRef\": \"src-1\"");
+    }
+
+    @Test
+    void regeneratedDayParserMapsValidReferencesAndSoftlyIgnoresMissingAndUnknownReferences()
+            throws Throwable {
+        AiService service = new AiService(new ObjectMapper());
+        AiService.RegenerationReferenceContext context = referenceContext();
+
+        AiService.RegeneratedDayResult result = parseRegeneratedDayResult(
+                service,
+                regeneratedDayJson("""
+                        [
+                          {
+                            "sourceActivityRef": "src-2",
+                            "time": "09:00",
+                            "name": "Replacement",
+                            "type": "ACTIVITY",
+                            "location": "New place",
+                            "duration": "2 hours",
+                            "estimatedCost": 100000,
+                            "note": "Changed"
+                          },
+                          {
+                            "sourceActivityRef": null,
+                            "time": "11:00",
+                            "name": "New activity",
+                            "type": "ATTRACTION",
+                            "location": "New place",
+                            "duration": "1 hour",
+                            "estimatedCost": 0,
+                            "note": ""
+                          },
+                          {
+                            "sourceActivityRef": "src-404",
+                            "time": "14:00",
+                            "name": "Unknown reference",
+                            "type": "CAFE",
+                            "location": "New place",
+                            "duration": "1 hour",
+                            "estimatedCost": 50000,
+                            "note": ""
+                          }
+                        ]
+                        """),
+                1,
+                context);
+
+        assertThat(result.sourceOldIndexByNewIndex()).containsExactlyEntriesOf(Map.of(0, 1));
+        assertThat(result.referenceDiagnostics()).isEqualTo(
+                new AiService.ReferenceDiagnostics(1, 1, 1, 0));
+    }
+
+    @Test
+    void regeneratedDayParserInvalidatesEveryUseOfADuplicateReference() throws Throwable {
+        AiService service = new AiService(new ObjectMapper());
+
+        AiService.RegeneratedDayResult result = parseRegeneratedDayResult(
+                service,
+                regeneratedDayJson("""
+                        [
+                          {
+                            "sourceActivityRef": "src-1",
+                            "time": "09:00",
+                            "name": "First successor",
+                            "type": "ACTIVITY",
+                            "location": "Place A",
+                            "duration": "1 hour",
+                            "estimatedCost": 0,
+                            "note": ""
+                          },
+                          {
+                            "sourceActivityRef": "src-1",
+                            "time": "10:00",
+                            "name": "Second successor",
+                            "type": "ACTIVITY",
+                            "location": "Place B",
+                            "duration": "1 hour",
+                            "estimatedCost": 0,
+                            "note": ""
+                          }
+                        ]
+                        """),
+                1,
+                referenceContext());
+
+        assertThat(result.sourceOldIndexByNewIndex()).isEmpty();
+        assertThat(result.referenceDiagnostics()).isEqualTo(
+                new AiService.ReferenceDiagnostics(0, 0, 0, 1));
+    }
+
+    @Test
+    void fullItineraryPromptDoesNotExposeRegenerationReferences() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+
+        assertThat(buildPrompt(service, generateRequest()))
+                .doesNotContain("sourceActivityRef");
+    }
+
+    @Test
     void generatedPromptTreatsVerifiedPlacesAsTrustedSuggestionsNotAllowedOnlyList() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
@@ -1510,9 +1655,18 @@ class AiServiceTest {
                 int.class,
                 String.class,
                 String.class,
-                String.class);
+                String.class,
+                AiService.RegenerationReferenceContext.class);
         method.setAccessible(true);
-        return (String) method.invoke(service, req, currentSchedule, dayNumber, intent, instruction, retryReason);
+        return (String) method.invoke(
+                service,
+                req,
+                currentSchedule,
+                dayNumber,
+                intent,
+                instruction,
+                retryReason,
+                buildRegenerationReferenceContext(service, currentSchedule, dayNumber));
     }
 
     private AiService.GeneratedItineraryResult parseGeneratedItineraryResult(
@@ -1538,6 +1692,64 @@ class AiServiceTest {
         } catch (InvocationTargetException e) {
             throw e.getCause();
         }
+    }
+
+    private AiService.RegeneratedDayResult parseRegeneratedDayResult(
+            AiService service,
+            String json,
+            int dayNumber,
+            AiService.RegenerationReferenceContext referenceContext) throws Throwable {
+        Method method = AiService.class.getDeclaredMethod(
+                "parseRegeneratedDayResult",
+                String.class,
+                int.class,
+                AiService.RegenerationReferenceContext.class);
+        method.setAccessible(true);
+        try {
+            return (AiService.RegeneratedDayResult) method.invoke(
+                    service,
+                    json,
+                    dayNumber,
+                    referenceContext);
+        } catch (InvocationTargetException e) {
+            throw e.getCause();
+        }
+    }
+
+    private AiService.RegenerationReferenceContext referenceContext() {
+        return new AiService.RegenerationReferenceContext(
+                1,
+                List.of("src-1", "src-2"),
+                Map.of("src-1", 0, "src-2", 1));
+    }
+
+    private AiService.RegenerationReferenceContext buildRegenerationReferenceContext(
+            AiService service,
+            List<TripDto.DayResponse> currentSchedule,
+            int dayNumber) throws Exception {
+        Method method = AiService.class.getDeclaredMethod(
+                "buildRegenerationReferenceContext",
+                List.class,
+                int.class);
+        method.setAccessible(true);
+        return (AiService.RegenerationReferenceContext) method.invoke(service, currentSchedule, dayNumber);
+    }
+
+    private String regeneratedDayJson(String activitiesJson) {
+        return """
+                {
+                  "day": {
+                    "day": 1,
+                    "title": "Regenerated day",
+                    "summary": "Preview",
+                    "activities": %s
+                  },
+                  "requestFulfillment": {
+                    "overallStatus": "FULFILLED",
+                    "items": []
+                  }
+                }
+                """.formatted(activitiesJson);
     }
 
     @SuppressWarnings("unchecked")

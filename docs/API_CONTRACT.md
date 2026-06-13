@@ -99,6 +99,35 @@ Primary frontend methods are grouped in `tripApi`:
   trips are link-only and readable only through their share code while sharing
   is enabled.
 
+Day regeneration previews include:
+
+- `changes`: every `MODIFIED`, `ADDED`, or `REMOVED` activity with a
+  user-visible difference in time, name, type, location, duration, cost, or
+  note.
+- `unchangedActivities`: activities whose user-visible content is equivalent,
+  including whether a trusted map metadata upgrade is available.
+- `metadataUpgradeCount`: number of unchanged activities with a trusted
+  system-managed metadata upgrade.
+
+The temporary `sourceActivityRef` used between the backend and Gemini is an
+internal matching hint. It is not part of `ActivityResponse`, the preview
+contract, persisted trip data, or any frontend request.
+
+Apply requests should send `proposalId` and `selectedChangeIds`. Omitting
+`selectedChangeIds` still applies all actionable changes for backward
+compatibility; `selectedActivityIndexes` remains temporarily accepted for older
+clients. `applyUnchangedMetadataUpgrades` is a legacy request field and is
+ignored because trusted metadata patches are decided by backend policy, not by
+user selection. Change IDs are opaque and valid only for the proposal that
+returned them. Applying a preview after the persisted day changes returns
+`409 Conflict`.
+
+The backend always merges from the persisted day. Full actionable selection
+uses the proposed title and summary; partial or metadata-only apply keeps the
+current title and summary. Trusted metadata upgrades are applied by the backend
+when a preview is applied, never overwrite manual coordinates, and do not create
+an actionable activity change by themselves.
+
 Trip responses include itinerary days and activities. Activity estimated costs
 are group-level VND values.
 

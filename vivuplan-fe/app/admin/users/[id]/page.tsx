@@ -6,10 +6,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   ArrowLeft,
-  Calendar,
   CreditCard,
   Eye,
-  Mail,
   MapPin,
   ShieldCheck,
   Ticket,
@@ -89,8 +87,11 @@ export default function AdminUserDetailPage() {
   useEffect(() => {
     if (authLoading || !authorized || !params.id) return;
     let cancelled = false;
-    setLoading(true);
-    setError("");
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setLoading(true);
+      setError("");
+    });
 
     adminApi.userDetail(Number(params.id))
       .then((data) => {

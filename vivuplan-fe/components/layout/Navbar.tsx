@@ -24,11 +24,17 @@ export default function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setMounted(true);
+    });
     const onScroll = () => setScrolled(window.scrollY > 12);
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   const handleLogout = () => {

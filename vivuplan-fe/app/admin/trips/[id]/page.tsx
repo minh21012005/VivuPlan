@@ -175,8 +175,11 @@ export default function AdminTripDetailPage() {
   useEffect(() => {
     if (authLoading || !authorized || !params.id) return;
     let cancelled = false;
-    setLoading(true);
-    setError("");
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setLoading(true);
+      setError("");
+    });
 
     adminApi.tripDetail(Number(params.id))
       .then((data) => {

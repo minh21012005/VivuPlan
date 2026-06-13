@@ -44,21 +44,32 @@ export function useCurrentWeather(lat?: number, lon?: number) {
   const requestIdRef = useRef(0);
 
   useEffect(() => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+
     if (lat == null || lon == null) {
-      setWeather(null);
+      queueMicrotask(() => {
+        if (requestIdRef.current !== requestId) return;
+        setWeather(null);
+        setLoading(false);
+      });
       return;
     }
 
     const key = `${lat.toFixed(4)},${lon.toFixed(4)}@${currentHourKey()}`;
     const cached = getCachedCurrentWeather(key);
     if (cached) {
-      queueMicrotask(() => setWeather(cached));
+      queueMicrotask(() => {
+        if (requestIdRef.current !== requestId) return;
+        setWeather(cached);
+        setLoading(false);
+      });
       return;
     }
 
-    const requestId = requestIdRef.current + 1;
-    requestIdRef.current = requestId;
-    queueMicrotask(() => setLoading(true));
+    queueMicrotask(() => {
+      if (requestIdRef.current === requestId) setLoading(true);
+    });
 
     destinationApi.currentWeather({ lat, lon })
       .then((data) => {

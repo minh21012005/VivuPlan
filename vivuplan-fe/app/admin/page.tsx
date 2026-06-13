@@ -816,26 +816,13 @@ export default function AdminPage() {
   const [pendingLockChange, setPendingLockChange] = useState<{ user: AdminUserSummary; locked: boolean; placement: "top-left" | "top-right" } | null>(null);
 
   useEffect(() => {
-    setUserPage(0);
-  }, [userSearch, userRoleFilter, userProviderFilter]);
-
-  useEffect(() => {
-    setTripPage(0);
-  }, [tripSearch]);
-
-  useEffect(() => {
-    setTransactionPage(0);
-  }, [transactionSearch, transactionStatusFilter]);
-
-  useEffect(() => {
-    setAiCostPage(0);
-  }, [aiCostRange, aiCustomFrom, aiCustomTo, aiOperationFilter, aiStatusFilter, aiCostSearch]);
-
-  useEffect(() => {
     if (authLoading || !authorized) return;
     let cancelled = false;
-    setLoading(true);
-    setError("");
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setLoading(true);
+      setError("");
+    });
     const aiRange = aiDateRange(aiCostRange, aiCustomFrom, aiCustomTo);
     const aiFilters = {
       ...aiRange,
@@ -1039,16 +1026,33 @@ export default function AdminPage() {
                   <Search size={15} />
                   <input
                     value={userSearch}
-                    onChange={(e) => setUserSearch(e.target.value)}
+                    onChange={(e) => {
+                      setUserPage(0);
+                      setUserSearch(e.target.value);
+                    }}
                     placeholder="Tìm theo tên hoặc email"
                   />
                 </label>
-                <select className="admin-filter-select" value={userRoleFilter} onChange={(e) => setUserRoleFilter(e.target.value as typeof userRoleFilter)}>
+                <select
+                  className="admin-filter-select"
+                  value={userRoleFilter}
+                  onChange={(e) => {
+                    setUserPage(0);
+                    setUserRoleFilter(e.target.value as typeof userRoleFilter);
+                  }}
+                >
                   <option value="ALL">Tất cả quyền</option>
                   <option value="USER">User</option>
                   <option value="ADMIN">Admin</option>
                 </select>
-                <select className="admin-filter-select" value={userProviderFilter} onChange={(e) => setUserProviderFilter(e.target.value as typeof userProviderFilter)}>
+                <select
+                  className="admin-filter-select"
+                  value={userProviderFilter}
+                  onChange={(e) => {
+                    setUserPage(0);
+                    setUserProviderFilter(e.target.value as typeof userProviderFilter);
+                  }}
+                >
                   <option value="ALL">Tất cả đăng nhập</option>
                   <option value="LOCAL">Email</option>
                   <option value="GOOGLE">Google</option>
@@ -1179,7 +1183,10 @@ export default function AdminPage() {
                   <Search size={15} />
                   <input
                     value={tripSearch}
-                    onChange={(e) => setTripSearch(e.target.value)}
+                    onChange={(e) => {
+                      setTripPage(0);
+                      setTripSearch(e.target.value);
+                    }}
                     placeholder="Tìm theo điểm đến, nơi đi hoặc email"
                   />
                 </label>
@@ -1239,11 +1246,21 @@ export default function AdminPage() {
                   <Search size={15} />
                   <input
                     value={transactionSearch}
-                    onChange={(e) => setTransactionSearch(e.target.value)}
+                    onChange={(e) => {
+                      setTransactionPage(0);
+                      setTransactionSearch(e.target.value);
+                    }}
                     placeholder="Tìm theo mã đơn, email hoặc mã gói"
                   />
                 </label>
-                <select className="admin-filter-select" value={transactionStatusFilter} onChange={(e) => setTransactionStatusFilter(e.target.value as typeof transactionStatusFilter)}>
+                <select
+                  className="admin-filter-select"
+                  value={transactionStatusFilter}
+                  onChange={(e) => {
+                    setTransactionPage(0);
+                    setTransactionStatusFilter(e.target.value as typeof transactionStatusFilter);
+                  }}
+                >
                   <option value="ALL">Tất cả trạng thái</option>
                   {transactionStatusOptions.map((status) => (
                     <option key={status} value={status}>{transactionStatusLabel(status)}</option>
@@ -1311,12 +1328,30 @@ export default function AdminPage() {
               page={aiCostPage}
               customFrom={aiCustomFrom}
               customTo={aiCustomTo}
-              onRangeChange={setAiCostRange}
-              onCustomFromChange={setAiCustomFrom}
-              onCustomToChange={setAiCustomTo}
-              onOperationChange={setAiOperationFilter}
-              onStatusChange={setAiStatusFilter}
-              onSearchChange={setAiCostSearch}
+              onRangeChange={(value) => {
+                setAiCostPage(0);
+                setAiCostRange(value);
+              }}
+              onCustomFromChange={(value) => {
+                setAiCostPage(0);
+                setAiCustomFrom(value);
+              }}
+              onCustomToChange={(value) => {
+                setAiCostPage(0);
+                setAiCustomTo(value);
+              }}
+              onOperationChange={(value) => {
+                setAiCostPage(0);
+                setAiOperationFilter(value);
+              }}
+              onStatusChange={(value) => {
+                setAiCostPage(0);
+                setAiStatusFilter(value);
+              }}
+              onSearchChange={(value) => {
+                setAiCostPage(0);
+                setAiCostSearch(value);
+              }}
               onPageChange={setAiCostPage}
               onSelectEvent={setSelectedAiEvent}
             />

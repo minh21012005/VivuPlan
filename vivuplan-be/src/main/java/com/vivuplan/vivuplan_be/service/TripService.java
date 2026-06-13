@@ -10,8 +10,10 @@ import com.vivuplan.vivuplan_be.repository.TripRepository;
 import com.vivuplan.vivuplan_be.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.text.Normalizer;
 import java.nio.charset.StandardCharsets;
@@ -42,6 +44,7 @@ public class TripService {
     private final WeatherService weatherService;
     private final PlacePlanningService placePlanningService;
     private final ActivityCoordinateResolverService activityCoordinateResolverService;
+    private final ActivityRegenerationDiffService activityRegenerationDiffService;
     private final BillingService billingService;
     private final UserPromptGuardService userPromptGuardService;
     private final CreditLedgerRepository creditLedgerRepository;
@@ -325,7 +328,7 @@ public class TripService {
         placePlanningService.enrichScheduleWithVerifiedPlaces(List.of(proposedDay), trip.getDestination());
         activityCoordinateResolverService.resolveSchedule(List.of(proposedDay), trip.getDestination());
         normalizeActivityCosts(List.of(proposedDay), trip);
-        validateRegeneratedDayProposal(trip, proposedDay);
+        validateRegeneratedDayProposal(trip, dayNumber, proposedDay);
 
         long oldBudget = sumDayCost(existingDay);
         long newBudget = sumDayCost(proposedDay);
@@ -339,6 +342,28 @@ public class TripService {
                 proposedDay,
                 requestWarnings);
         String proposalId = UUID.randomUUID().toString();
+        ActivityRegenerationDiffService.DiffResult diff =
+                activityRegenerationDiffService.diff(
+                        existingDay,
+                        proposedDay,
+                        proposalId,
+                        regeneratedDay.sourceOldIndexByNewIndex());
+        AiService.ReferenceDiagnostics referenceDiagnostics = regeneratedDay.referenceDiagnostics();
+        ActivityRegenerationDiffService.MatchingDiagnostics matchingDiagnostics = diff.diagnostics();
+        log.debug(
+                "Day regeneration matching tripId={}, day={}, validRefs={}, missingRefs={}, unknownRefs={}, duplicateRefs={}, referenceMatches={}, exactMatches={}, semanticMatches={}, ambiguousPairs={}, added={}, removed={}",
+                tripId,
+                dayNumber,
+                referenceDiagnostics.validRefs(),
+                referenceDiagnostics.missingRefs(),
+                referenceDiagnostics.unknownRefs(),
+                referenceDiagnostics.duplicateRefs(),
+                matchingDiagnostics.referenceMatches(),
+                matchingDiagnostics.exactMatches(),
+                matchingDiagnostics.semanticMatches(),
+                matchingDiagnostics.ambiguousPairs(),
+                matchingDiagnostics.added(),
+                matchingDiagnostics.removed());
         billingService.consumeEditCredit(userId, trip);
         dayRegenerationProposals.put(proposalId, new DayRegenerationProposal(
                 proposalId,
@@ -350,6 +375,10 @@ public class TripService {
                 newBudget,
                 warnings,
                 requestWarnings,
+                diff.changes(),
+                diff.unchangedActivities(),
+                diff.metadataPatches(),
+                diff.oldDayFingerprint(),
                 LocalDateTime.now().plusMinutes(REGENERATION_PROPOSAL_TTL_MINUTES)));
 
         TripDto.RegenerateDayPreviewResponse response = new TripDto.RegenerateDayPreviewResponse();
@@ -360,6 +389,10 @@ public class TripService {
         response.setNewBudget(newBudget);
         response.setWarnings(warnings);
         response.setRequestFulfillment(requestFulfillment);
+        response.setChanges(diff.changes());
+        response.setUnchangedActivityCount(diff.unchangedActivityCount());
+        response.setUnchangedActivities(diff.unchangedActivities());
+        response.setMetadataUpgradeCount(diff.metadataUpgradeCount());
         return response;
     }
 
@@ -386,10 +419,25 @@ public class TripService {
 
         Trip trip = getOwnedTrip(tripId, userId);
         ItineraryDay day = findDay(trip, dayNumber);
+        if (!proposal.oldDayFingerprint().equals(activityRegenerationDiffService.fingerprint(day))) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Ngày này đã được chỉnh sửa sau khi tạo preview. Vui lòng tạo lại preview mới.");
+        }
         TripDto.DayResponse proposedDay = proposal.day();
-        TripDto.DayResponse dayToApply = mergeSelectedRegeneratedActivities(day, proposedDay,
-                req.getSelectedActivityIndexes());
-        validateRegeneratedDayProposal(trip, dayToApply);
+        Set<String> selectedChangeIds = resolveSelectedRegenerationChangeIds(req, proposal);
+        boolean applyMetadataUpgrades = !proposal.metadataPatches().isEmpty();
+        if (selectedChangeIds.isEmpty() && !applyMetadataUpgrades) {
+            throw new IllegalArgumentException("Vui lòng chọn ít nhất một thay đổi để áp dụng");
+        }
+        TripDto.DayResponse dayToApply = activityRegenerationDiffService.merge(
+                day,
+                proposedDay,
+                proposal.changes(),
+                selectedChangeIds,
+                proposal.metadataPatches(),
+                applyMetadataUpgrades);
+        validateRegeneratedDayProposal(trip, dayNumber, dayToApply);
 
         day.setTitle(dayToApply.getTitle());
         day.setSummary(dayToApply.getSummary());
@@ -401,7 +449,11 @@ public class TripService {
             }
         }
         resequenceActivities(day);
-        trip.setAiWarnings(serializeWarnings(mergeWarnings(parsePersistentWarnings(trip.getAiWarnings()), proposal.persistentWarnings())));
+        if (isFullRegenerationSelection(proposal.changes(), selectedChangeIds)) {
+            trip.setAiWarnings(serializeWarnings(mergeWarnings(
+                    parsePersistentWarnings(trip.getAiWarnings()),
+                    proposal.persistentWarnings())));
+        }
         trip = tripRepository.saveAndFlush(trip);
         dayRegenerationProposals.remove(req.getProposalId());
         return toTripResponse(trip);
@@ -668,9 +720,15 @@ public class TripService {
         };
     }
 
-    private void validateRegeneratedDayProposal(Trip trip, TripDto.DayResponse proposedDay) {
+    private void validateRegeneratedDayProposal(
+            Trip trip,
+            Integer expectedDayNumber,
+            TripDto.DayResponse proposedDay) {
         if (proposedDay == null || proposedDay.getDay() < 1 || proposedDay.getDay() > trip.getDays()) {
             throw new IllegalArgumentException("Ngày được tạo lại không hợp lệ");
+        }
+        if (expectedDayNumber == null || proposedDay.getDay() != expectedDayNumber) {
+            throw new IllegalArgumentException("AI trả về sai ngày cần tạo lại");
         }
         if (proposedDay.getTitle() == null || proposedDay.getTitle().isBlank()) {
             throw new IllegalArgumentException("Ngày được tạo lại thiếu tiêu đề");
@@ -728,71 +786,77 @@ public class TripService {
                 "thu gian");
     }
 
-    private TripDto.DayResponse mergeSelectedRegeneratedActivities(
-            ItineraryDay oldDay,
-            TripDto.DayResponse proposedDay,
-            List<Integer> selectedActivityIndexes) {
-        List<TripDto.ActivityResponse> oldActivities = oldDay.getActivities() == null
-                ? List.of()
-                : oldDay.getActivities().stream().map(TripDto.ActivityResponse::from).collect(Collectors.toList());
-        List<TripDto.ActivityResponse> newActivities = proposedDay.getActivities() == null ? List.of()
-                : proposedDay.getActivities();
-
-        if (selectedActivityIndexes != null && selectedActivityIndexes.isEmpty()) {
-            throw new IllegalArgumentException("Vui lòng chọn ít nhất một mục mới để áp dụng");
+    private Set<String> resolveSelectedRegenerationChangeIds(
+            TripDto.ApplyRegenerateDayRequest req,
+            DayRegenerationProposal proposal) {
+        List<TripDto.RegenerateActivityChange> changes = proposal.changes();
+        if (changes == null || changes.isEmpty()) {
+            if (req.getSelectedChangeIds() != null && !req.getSelectedChangeIds().isEmpty()) {
+                throw new IllegalArgumentException("Thay đổi được chọn để áp dụng không hợp lệ");
+            }
+            if (req.getSelectedActivityIndexes() != null && !req.getSelectedActivityIndexes().isEmpty()) {
+                throw new IllegalArgumentException("Mục được chọn để áp dụng không hợp lệ");
+            }
+            return Set.of();
         }
-        boolean applyAll = selectedActivityIndexes == null;
-        Set<Integer> selected = new HashSet<>(applyAll
-                ? java.util.stream.IntStream.range(0, newActivities.size()).boxed().toList()
-                : selectedActivityIndexes);
 
-        for (Integer index : selected) {
-            if (index == null || index < 0 || index >= newActivities.size()) {
+        Set<String> allChangeIds = changes.stream()
+                .map(TripDto.RegenerateActivityChange::getChangeId)
+                .collect(Collectors.toCollection(java.util.LinkedHashSet::new));
+
+        if (req.getSelectedChangeIds() != null) {
+            List<String> requested = req.getSelectedChangeIds();
+            Set<String> selected = new java.util.LinkedHashSet<>(requested);
+            if (requested.size() != selected.size()) {
+                throw new IllegalArgumentException("Danh sách thay đổi được chọn không hợp lệ");
+            }
+            if (selected.stream().anyMatch(changeId -> changeId == null || !allChangeIds.contains(changeId))) {
+                throw new IllegalArgumentException("Thay đổi được chọn để áp dụng không hợp lệ");
+            }
+            return selected;
+        }
+
+        List<Integer> legacyIndexes = req.getSelectedActivityIndexes();
+        if (legacyIndexes == null) {
+            return allChangeIds;
+        }
+        Set<Integer> selectedIndexes = new HashSet<>(legacyIndexes);
+        if (legacyIndexes.size() != selectedIndexes.size()) {
+            throw new IllegalArgumentException("Danh sách mục được chọn không hợp lệ");
+        }
+        int proposedSize = proposal.day().getActivities() == null ? 0 : proposal.day().getActivities().size();
+        for (Integer index : selectedIndexes) {
+            if (index == null || index < 0 || index >= proposedSize) {
                 throw new IllegalArgumentException("Mục được chọn để áp dụng không hợp lệ");
             }
         }
-
-        int maxSize = Math.max(oldActivities.size(), newActivities.size());
-        List<TripDto.ActivityResponse> mergedActivities = new ArrayList<>();
-        for (int i = 0; i < maxSize; i++) {
-            if (selected.contains(i) && i < newActivities.size()) {
-                mergedActivities.add(copyActivityResponse(newActivities.get(i)));
-            } else if (i < oldActivities.size()) {
-                mergedActivities.add(copyActivityResponse(oldActivities.get(i)));
-            }
+        Set<Integer> allProposedIndexes = java.util.stream.IntStream.range(0, proposedSize)
+                .boxed()
+                .collect(Collectors.toSet());
+        if (selectedIndexes.equals(allProposedIndexes)) {
+            return allChangeIds;
         }
 
-        TripDto.DayResponse mergedDay = new TripDto.DayResponse();
-        mergedDay.setDay(proposedDay.getDay());
-        mergedDay.setTitle(selected.size() == newActivities.size() ? proposedDay.getTitle() : oldDay.getTitle());
-        mergedDay.setSummary(selected.size() == newActivities.size() ? proposedDay.getSummary() : oldDay.getSummary());
-        mergedActivities.sort((a, b) -> a.getTime().compareTo(b.getTime()));
-        for (int i = 0; i < mergedActivities.size(); i++) {
-            mergedActivities.get(i).setId(null);
-            mergedActivities.get(i).setSortOrder(i);
+        Set<String> mapped = changes.stream()
+                .filter(change -> change.getNewIndex() != null && selectedIndexes.contains(change.getNewIndex()))
+                .map(TripDto.RegenerateActivityChange::getChangeId)
+                .collect(Collectors.toCollection(java.util.LinkedHashSet::new));
+        if (mapped.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn ít nhất một thay đổi để áp dụng");
         }
-        mergedDay.setActivities(mergedActivities);
-        return mergedDay;
+        return mapped;
     }
 
-    private TripDto.ActivityResponse copyActivityResponse(TripDto.ActivityResponse source) {
-        TripDto.ActivityResponse copy = new TripDto.ActivityResponse();
-        copy.setTime(source.getTime());
-        copy.setName(source.getName());
-        copy.setType(source.getType());
-        copy.setLocation(source.getLocation());
-        copy.setDuration(source.getDuration());
-        copy.setEstimatedCost(source.getEstimatedCost());
-        copy.setNote(source.getNote());
-        copy.setRating(source.getRating());
-        copy.setLatitude(source.getLatitude());
-        copy.setLongitude(source.getLongitude());
-        copy.setPlaceId(source.getPlaceId());
-        copy.setGooglePlaceId(source.getGooglePlaceId());
-        copy.setCoordinateSource(source.getCoordinateSource());
-        copy.setCoordinateConfidence(source.getCoordinateConfidence());
-        copy.setSortOrder(source.getSortOrder());
-        return copy;
+    private boolean isFullRegenerationSelection(
+            List<TripDto.RegenerateActivityChange> changes,
+            Set<String> selectedChangeIds) {
+        if (changes == null || changes.isEmpty()) {
+            return false;
+        }
+        Set<String> allChangeIds = changes.stream()
+                .map(TripDto.RegenerateActivityChange::getChangeId)
+                .collect(Collectors.toSet());
+        return selectedChangeIds.equals(allChangeIds);
     }
 
     private Activity toActivity(TripDto.ActivityResponse response, ItineraryDay day) {
@@ -1338,7 +1402,7 @@ public class TripService {
         int minutes = 0;
 
         java.util.regex.Matcher hourMatcher = java.util.regex.Pattern
-                .compile("(\\d+(?:[\\.,]\\d+)?)\\s*(gio|h)")
+                .compile("(\\d+(?:[\\.,]\\d+)?)\\s*(gio|tieng|h)")
                 .matcher(normalized);
         if (hourMatcher.find()) {
             minutes += Math.round(Float.parseFloat(hourMatcher.group(1).replace(",", ".")) * 60);
@@ -1797,6 +1861,10 @@ public class TripService {
             long newBudget,
             List<String> warnings,
             List<String> persistentWarnings,
+            List<TripDto.RegenerateActivityChange> changes,
+            List<TripDto.RegenerateUnchangedActivity> unchangedActivities,
+            List<ActivityMetadataReconciliationService.MetadataPatch> metadataPatches,
+            String oldDayFingerprint,
             LocalDateTime expiresAt) {
     }
 

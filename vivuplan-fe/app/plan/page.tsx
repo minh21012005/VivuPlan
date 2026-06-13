@@ -350,19 +350,33 @@ function PlanContent() {
   useEffect(() => {
     if (!form.localTransport) return;
     const stillAvailable = compatibleLocalTransportOptions.some((item) => item.id === form.localTransport);
+    let cancelled = false;
     if (!stillAvailable) {
-      setForm((prev) => ({ ...prev, localTransport: "" }));
+      queueMicrotask(() => {
+        if (cancelled) return;
+        setForm((prev) => ({ ...prev, localTransport: "" }));
+      });
     }
+    return () => {
+      cancelled = true;
+    };
   }, [compatibleLocalTransportOptions, form.localTransport]);
 
   useEffect(() => {
-    setDestinationSuggestedByAi(false);
-    setDestinationSuggestions([]);
-    setShowDestinationSuggestionDetails(false);
-    setDestinationSuggestionError("");
-    setDestinationSuggestionModalOpen(false);
+    let cancelled = false;
     destinationSuggestionRequestId.current += 1;
-    setSuggestingDestinations(false);
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setDestinationSuggestedByAi(false);
+      setDestinationSuggestions([]);
+      setShowDestinationSuggestionDetails(false);
+      setDestinationSuggestionError("");
+      setDestinationSuggestionModalOpen(false);
+      setSuggestingDestinations(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [
     form.departure,
     form.startDate,

@@ -197,7 +197,9 @@ public class TripDto {
     public static class ApplyRegenerateDayRequest {
         @NotBlank
         private String proposalId;
+        private List<String> selectedChangeIds;
         private List<Integer> selectedActivityIndexes;
+        private Boolean applyUnchangedMetadataUpgrades;
     }
 
     @Data
@@ -209,6 +211,30 @@ public class TripDto {
         private long newBudget;
         private List<String> warnings;
         private RequestFulfillment requestFulfillment;
+        private List<RegenerateActivityChange> changes;
+        private int unchangedActivityCount;
+        private List<RegenerateUnchangedActivity> unchangedActivities;
+        private int metadataUpgradeCount;
+    }
+
+    @Data
+    public static class RegenerateActivityChange {
+        private String changeId;
+        /**
+         * MODIFIED | ADDED | REMOVED
+         */
+        private String type;
+        private ActivityResponse oldActivity;
+        private ActivityResponse newActivity;
+        private List<String> changedFields;
+        private Integer oldIndex;
+        private Integer newIndex;
+    }
+
+    @Data
+    public static class RegenerateUnchangedActivity {
+        private ActivityResponse activity;
+        private boolean metadataUpgradeAvailable;
     }
 
     @Data

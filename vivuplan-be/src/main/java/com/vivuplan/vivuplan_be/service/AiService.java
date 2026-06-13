@@ -38,7 +38,51 @@ public class AiService {
 
     public record RegeneratedDayResult(
             TripDto.DayResponse day,
-            TripDto.RequestFulfillment requestFulfillment) {
+            TripDto.RequestFulfillment requestFulfillment,
+            Map<Integer, Integer> sourceOldIndexByNewIndex,
+            ReferenceDiagnostics referenceDiagnostics) {
+        public RegeneratedDayResult(
+                TripDto.DayResponse day,
+                TripDto.RequestFulfillment requestFulfillment) {
+            this(day, requestFulfillment, Map.of(), ReferenceDiagnostics.empty());
+        }
+
+        public RegeneratedDayResult {
+            sourceOldIndexByNewIndex = sourceOldIndexByNewIndex == null
+                    ? Map.of()
+                    : Map.copyOf(sourceOldIndexByNewIndex);
+            referenceDiagnostics = referenceDiagnostics == null
+                    ? ReferenceDiagnostics.empty()
+                    : referenceDiagnostics;
+        }
+    }
+
+    public record ReferenceDiagnostics(
+            int validRefs,
+            int missingRefs,
+            int unknownRefs,
+            int duplicateRefs) {
+        private static ReferenceDiagnostics empty() {
+            return new ReferenceDiagnostics(0, 0, 0, 0);
+        }
+    }
+
+    record RegenerationReferenceContext(
+            int dayNumber,
+            List<String> sourceReferencesByOldIndex,
+            Map<String, Integer> oldIndexBySourceReference) {
+        RegenerationReferenceContext {
+            sourceReferencesByOldIndex = sourceReferencesByOldIndex == null
+                    ? List.of()
+                    : List.copyOf(sourceReferencesByOldIndex);
+            oldIndexBySourceReference = oldIndexBySourceReference == null
+                    ? Map.of()
+                    : Map.copyOf(oldIndexBySourceReference);
+        }
+
+        private static RegenerationReferenceContext empty(int dayNumber) {
+            return new RegenerationReferenceContext(dayNumber, List.of(), Map.of());
+        }
     }
 
     private record AiCallContext(
@@ -250,13 +294,23 @@ public class AiService {
 
         try {
             TripDto.GenerateRequest qualityReq = withRegenerationInstruction(req, instruction);
+            RegenerationReferenceContext referenceContext =
+                    buildRegenerationReferenceContext(currentSchedule, dayNumber);
+            logRegenerationReferencesSent(currentSchedule, referenceContext);
             String rawJson = callGeminiForSingleDay(
-                    buildDayRegenerationPrompt(req, currentSchedule, dayNumber, intent, instruction, null),
+                    buildDayRegenerationPrompt(
+                            req,
+                            currentSchedule,
+                            dayNumber,
+                            intent,
+                            instruction,
+                            null,
+                            referenceContext),
                     aiContext);
             boolean usedRetry = false;
             RegeneratedDayResult result;
             try {
-                result = parseRegeneratedDayResult(rawJson, dayNumber);
+                result = parseRegeneratedDayResult(rawJson, dayNumber, referenceContext);
             } catch (AiResponseFormatException e) {
                 markInvalidResponse(aiContext, "JSON_CONTRACT", e.getMessage());
                 usedRetry = true;
@@ -269,9 +323,10 @@ public class AiService {
                         dayNumber,
                         intent,
                         instruction,
-                        formatContractRetryReason(e.getMessage())),
+                        formatContractRetryReason(e.getMessage()),
+                        referenceContext),
                         aiContext);
-                result = parseRegeneratedDayResult(retryJson, dayNumber);
+                result = parseRegeneratedDayResult(retryJson, dayNumber, referenceContext);
             }
             QualityCheck quality = assessRegeneratedDayQuality(result.day(), currentSchedule, qualityReq);
             if (quality.passed()) {
@@ -298,9 +353,17 @@ public class AiService {
             markInvalidResponse(aiContext, "QUALITY_CHECK", quality.reason());
 
             String retryJson = callGeminiForSingleDay(
-                    buildDayRegenerationPrompt(req, currentSchedule, dayNumber, intent, instruction, quality.reason()),
+                    buildDayRegenerationPrompt(
+                            req,
+                            currentSchedule,
+                            dayNumber,
+                            intent,
+                            instruction,
+                            quality.reason(),
+                            referenceContext),
                     aiContext);
-            RegeneratedDayResult retryResult = parseRegeneratedDayResult(retryJson, dayNumber);
+            RegeneratedDayResult retryResult =
+                    parseRegeneratedDayResult(retryJson, dayNumber, referenceContext);
             QualityCheck retryQuality = assessRegeneratedDayQuality(retryResult.day(), currentSchedule, qualityReq);
             if (retryQuality.passed()) {
                 return retryResult;
@@ -645,6 +708,7 @@ public class AiService {
                         Final self-check before returning JSON:
                         - The response is exactly one JSON object with keys "day" and "requestFulfillment".
                         - The "day" object has day value %d and does not change other days.
+                        - Every kept, edited, refined-to-a-specific-venue, or replacement activity copies exactly one valid sourceActivityRef; only genuinely new activities use null.
                         - Every activity has a valid HH:mm time, allowed type, specific name, and searchable location.
                         - Every estimatedCost is a non-negative group-level VND amount, and required paid items are not hidden only in notes.
                         %s
@@ -693,10 +757,11 @@ public class AiService {
             int dayNumber,
             String intent,
             String instruction,
-            String retryReason) {
+            String retryReason,
+            RegenerationReferenceContext referenceContext) {
         int travelers = req.getTravelerCount() != null ? Math.max(1, req.getTravelerCount()) : 1;
         long totalBudget = resolvePromptTotalBudget(req, travelers);
-        String scheduleJson = slimScheduleJson(currentSchedule);
+        String scheduleJson = regenerationScheduleJson(currentSchedule, referenceContext);
 
         String retryBlock = retryReason == null || retryReason.isBlank()
                 ? ""
@@ -797,6 +862,16 @@ public class AiService {
                         Current full itinerary JSON:
                         %s
 
+                        Activity reference rules for regenerated day %d:
+                        1. Existing activities in the target day have temporary sourceActivityRef values such as "src-1". These are linkage hints, not database IDs.
+                        2. If an output activity keeps, edits, or replaces an existing activity, copy that activity's exact sourceActivityRef.
+                        3. Refining a generic activity into a specific named venue or experience is still an edit/replacement, not a new activity. Preserve the original reference. Examples: generic lunch -> a named restaurant, generic dinner -> a named restaurant, generic cafe by the river -> a named cafe, generic sightseeing -> a specific tour at the same stop.
+                        4. For a completely new activity with no predecessor in the target day, return sourceActivityRef as null.
+                        5. To remove an existing activity, omit it from the output.
+                        6. Use each non-null sourceActivityRef at most once.
+                        7. When splitting one old activity into several, only the main successor keeps the reference; additional activities use null.
+                        8. When merging several old activities into one, use the reference of the main predecessor; omitted references are treated as removed.
+
                         Rules:
                         1. Return exactly ONE JSON object. Its "day" key MUST contain exactly ONE day object whose day value is %d.
                         2. Do not change other days. Use them only as context to avoid duplicate places and impossible pacing.
@@ -839,6 +914,7 @@ public class AiService {
                             "summary": "Tóm tắt ngắn",
                             "activities": [
                               {
+                                "sourceActivityRef": "src-1",
                                 "time": "08:00",
                                 "name": "Tên địa điểm hoặc món/quán cụ thể",
                                 "type": "FOOD|CAFE|ATTRACTION|TRANSPORT|ACCOMMODATION|ACTIVITY|NIGHTLIFE",
@@ -892,6 +968,7 @@ public class AiService {
                 intent != null && !intent.isBlank() ? intent : "REGENERATE",
                 scheduleJson,
                 dayNumber,
+                dayNumber,
                 ItineraryQualityPolicy.vietnamPacingGuidance(),
                 travelers,
                 ItineraryQualityPolicy.localTransportGuidance(req.getDestination()),
@@ -902,6 +979,16 @@ public class AiService {
     }
 
     private RegeneratedDayResult parseRegeneratedDayResult(String json, int dayNumber) {
+        return parseRegeneratedDayResult(
+                json,
+                dayNumber,
+                RegenerationReferenceContext.empty(dayNumber));
+    }
+
+    private RegeneratedDayResult parseRegeneratedDayResult(
+            String json,
+            int dayNumber,
+            RegenerationReferenceContext referenceContext) {
         try {
             JsonNode root = objectMapper.readTree(cleanJson(json));
             if (root == null || !root.isObject()) {
@@ -921,7 +1008,13 @@ public class AiService {
                 throw new AiResponseFormatException(
                         "AI returned wrong day number: expected " + dayNumber + " but got " + day.getDay());
             }
-            return new RegeneratedDayResult(day, requestFulfillment);
+            ParsedActivityReferences parsedReferences =
+                    parseActivityReferences(dayNode.path("activities"), referenceContext);
+            return new RegeneratedDayResult(
+                    day,
+                    requestFulfillment,
+                    parsedReferences.sourceOldIndexByNewIndex(),
+                    parsedReferences.diagnostics());
         } catch (AiResponseFormatException e) {
             throw e;
         } catch (Exception e) {
@@ -1441,6 +1534,216 @@ public class AiService {
         } catch (Exception e) {
             return "[]";
         }
+    }
+
+    private RegenerationReferenceContext buildRegenerationReferenceContext(
+            List<TripDto.DayResponse> currentSchedule,
+            int dayNumber) {
+        if (currentSchedule == null) {
+            return RegenerationReferenceContext.empty(dayNumber);
+        }
+        TripDto.DayResponse targetDay = currentSchedule.stream()
+                .filter(day -> day != null && day.getDay() == dayNumber)
+                .findFirst()
+                .orElse(null);
+        if (targetDay == null || targetDay.getActivities() == null) {
+            return RegenerationReferenceContext.empty(dayNumber);
+        }
+
+        List<String> references = new ArrayList<>();
+        Map<String, Integer> oldIndexByReference = new LinkedHashMap<>();
+        for (int index = 0; index < targetDay.getActivities().size(); index++) {
+            String reference = "src-" + (index + 1);
+            references.add(reference);
+            oldIndexByReference.put(reference, index);
+        }
+        return new RegenerationReferenceContext(dayNumber, references, oldIndexByReference);
+    }
+
+    private void logRegenerationReferencesSent(
+            List<TripDto.DayResponse> currentSchedule,
+            RegenerationReferenceContext referenceContext) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        TripDto.DayResponse targetDay = currentSchedule == null
+                ? null
+                : currentSchedule.stream()
+                        .filter(day -> day != null && day.getDay() == referenceContext.dayNumber())
+                        .findFirst()
+                        .orElse(null);
+        List<TripDto.ActivityResponse> activities = targetDay == null || targetDay.getActivities() == null
+                ? List.of()
+                : targetDay.getActivities();
+        List<String> references = new ArrayList<>();
+        for (int oldIndex = 0; oldIndex < activities.size(); oldIndex++) {
+            TripDto.ActivityResponse activity = activities.get(oldIndex);
+            String reference = oldIndex < referenceContext.sourceReferencesByOldIndex().size()
+                    ? referenceContext.sourceReferencesByOldIndex().get(oldIndex)
+                    : null;
+            references.add(String.format(
+                    "{ref=%s, oldIndex=%d, time=%s, name=%s}",
+                    reference,
+                    oldIndex,
+                    safeLogText(activity.getTime()),
+                    safeLogText(activity.getName())));
+        }
+        log.debug(
+                "Day regeneration source refs sent day={}, count={}, activities={}",
+                referenceContext.dayNumber(),
+                references.size(),
+                references);
+    }
+
+    private String regenerationScheduleJson(
+            List<TripDto.DayResponse> schedule,
+            RegenerationReferenceContext referenceContext) {
+        if (schedule == null || schedule.isEmpty()) {
+            return "[]";
+        }
+        try {
+            List<Map<String, Object>> days = new ArrayList<>();
+            for (TripDto.DayResponse day : schedule) {
+                List<Map<String, Object>> activities = new ArrayList<>();
+                if (day.getActivities() != null) {
+                    for (int index = 0; index < day.getActivities().size(); index++) {
+                        TripDto.ActivityResponse activity = day.getActivities().get(index);
+                        Map<String, Object> item = new LinkedHashMap<>();
+                        if (day.getDay() == referenceContext.dayNumber()) {
+                            String sourceReference = index < referenceContext.sourceReferencesByOldIndex().size()
+                                    ? referenceContext.sourceReferencesByOldIndex().get(index)
+                                    : null;
+                            item.put("sourceActivityRef", sourceReference);
+                            item.put("time", activity.getTime());
+                            item.put("name", activity.getName());
+                            item.put("type", activity.getType());
+                            item.put("location", activity.getLocation());
+                            item.put("duration", activity.getDuration());
+                            item.put("estimatedCost", activity.getEstimatedCost());
+                            item.put("note", activity.getNote());
+                        } else {
+                            item.put("time", activity.getTime());
+                            item.put("name", activity.getName());
+                            item.put("type", activity.getType());
+                            item.put("location", activity.getLocation());
+                        }
+                        activities.add(item);
+                    }
+                }
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("day", day.getDay());
+                item.put("title", day.getTitle());
+                item.put("activities", activities);
+                days.add(item);
+            }
+            return objectMapper.writeValueAsString(days);
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+
+    private ParsedActivityReferences parseActivityReferences(
+            JsonNode activitiesNode,
+            RegenerationReferenceContext referenceContext) {
+        if (activitiesNode == null || !activitiesNode.isArray()) {
+            return new ParsedActivityReferences(Map.of(), ReferenceDiagnostics.empty());
+        }
+
+        int missingRefs = 0;
+        int unknownRefs = 0;
+        Map<String, List<Integer>> newIndexesByReference = new LinkedHashMap<>();
+        for (int newIndex = 0; newIndex < activitiesNode.size(); newIndex++) {
+            JsonNode referenceNode = activitiesNode.get(newIndex).get("sourceActivityRef");
+            if (referenceNode == null || referenceNode.isNull() || referenceNode.asText("").isBlank()) {
+                missingRefs++;
+                continue;
+            }
+            String reference = referenceNode.asText().trim();
+            if (!referenceContext.oldIndexBySourceReference().containsKey(reference)) {
+                unknownRefs++;
+                continue;
+            }
+            newIndexesByReference
+                    .computeIfAbsent(reference, ignored -> new ArrayList<>())
+                    .add(newIndex);
+        }
+
+        int validRefs = 0;
+        int duplicateRefs = 0;
+        Map<Integer, Integer> oldIndexByNewIndex = new LinkedHashMap<>();
+        for (Map.Entry<String, List<Integer>> entry : newIndexesByReference.entrySet()) {
+            if (entry.getValue().size() != 1) {
+                duplicateRefs++;
+                continue;
+            }
+            oldIndexByNewIndex.put(
+                    entry.getValue().get(0),
+                    referenceContext.oldIndexBySourceReference().get(entry.getKey()));
+            validRefs++;
+        }
+        logRegenerationReferencesReceived(
+                activitiesNode,
+                referenceContext,
+                newIndexesByReference,
+                oldIndexByNewIndex);
+        return new ParsedActivityReferences(
+                oldIndexByNewIndex,
+                new ReferenceDiagnostics(validRefs, missingRefs, unknownRefs, duplicateRefs));
+    }
+
+    private void logRegenerationReferencesReceived(
+            JsonNode activitiesNode,
+            RegenerationReferenceContext referenceContext,
+            Map<String, List<Integer>> newIndexesByReference,
+            Map<Integer, Integer> oldIndexByNewIndex) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        List<String> references = new ArrayList<>();
+        for (int newIndex = 0; newIndex < activitiesNode.size(); newIndex++) {
+            JsonNode activityNode = activitiesNode.get(newIndex);
+            JsonNode referenceNode = activityNode.get("sourceActivityRef");
+            String reference = referenceNode == null || referenceNode.isNull()
+                    ? null
+                    : referenceNode.asText("").trim();
+            String status;
+            Integer oldIndex = oldIndexByNewIndex.get(newIndex);
+            if (reference == null || reference.isBlank()) {
+                status = "MISSING";
+            } else if (!referenceContext.oldIndexBySourceReference().containsKey(reference)) {
+                status = "UNKNOWN";
+            } else if (newIndexesByReference.getOrDefault(reference, List.of()).size() > 1) {
+                status = "DUPLICATE";
+            } else {
+                status = "VALID";
+            }
+            references.add(String.format(
+                    "{newIndex=%d, ref=%s, status=%s, oldIndex=%s, time=%s, name=%s}",
+                    newIndex,
+                    reference,
+                    status,
+                    oldIndex,
+                    safeLogText(activityNode.path("time").asText("")),
+                    safeLogText(activityNode.path("name").asText(""))));
+        }
+        log.debug(
+                "Day regeneration source refs received day={}, count={}, activities={}",
+                referenceContext.dayNumber(),
+                references.size(),
+                references);
+    }
+
+    private String safeLogText(String value) {
+        if (value == null || value.isBlank()) {
+            return "-";
+        }
+        String compact = value.replaceAll("[\\r\\n\\t]+", " ").trim();
+        return compact.length() <= 80 ? compact : compact.substring(0, 77) + "...";
+    }
+
+    private record ParsedActivityReferences(
+            Map<Integer, Integer> sourceOldIndexByNewIndex,
+            ReferenceDiagnostics diagnostics) {
     }
 
     private GeneratedItineraryResult parseGeneratedItineraryResult(String json) {
