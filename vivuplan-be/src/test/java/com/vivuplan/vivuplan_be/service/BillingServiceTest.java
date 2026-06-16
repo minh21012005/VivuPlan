@@ -97,6 +97,51 @@ class BillingServiceTest {
     }
 
     @Test
+    void requirePlanCreditLockedPassesWithoutMutatingWalletOrLedger() {
+        BillingService service = service();
+        UserWallet wallet = UserWallet.builder()
+                .user(sampleUser())
+                .planCredits(1L)
+                .editCredits(1L)
+                .build();
+        when(userWalletRepository.lockByUserId(7L)).thenReturn(Optional.of(wallet));
+
+        service.requirePlanCreditLocked(7L);
+
+        assertThat(wallet.getPlanCredits()).isEqualTo(1L);
+        verify(creditLedgerRepository, never()).save(any());
+    }
+
+    @Test
+    void requirePlanCreditLockedThrowsWhenPlanBalanceIsEmpty() {
+        BillingService service = service();
+        UserWallet wallet = UserWallet.builder()
+                .user(sampleUser())
+                .planCredits(0L)
+                .editCredits(1L)
+                .build();
+        when(userWalletRepository.lockByUserId(7L)).thenReturn(Optional.of(wallet));
+
+        assertThatThrownBy(() -> service.requirePlanCreditLocked(7L))
+                .isInstanceOf(BillingException.class)
+                .extracting("code")
+                .isEqualTo("INSUFFICIENT_PLAN_CREDITS");
+        verify(creditLedgerRepository, never()).save(any());
+    }
+
+    @Test
+    void requirePlanCreditLockedThrowsWhenWalletIsMissing() {
+        BillingService service = service();
+        when(userWalletRepository.lockByUserId(7L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.requirePlanCreditLocked(7L))
+                .isInstanceOf(BillingException.class)
+                .extracting("code")
+                .isEqualTo("INSUFFICIENT_PLAN_CREDITS");
+        verify(creditLedgerRepository, never()).save(any());
+    }
+
+    @Test
     void consumeEditCreditThrowsWhenBalanceIsEmpty() {
         BillingService service = service();
         UserWallet wallet = UserWallet.builder()

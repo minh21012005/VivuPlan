@@ -167,6 +167,15 @@ public class BillingService {
         }
     }
 
+    @Transactional
+    public void requirePlanCreditLocked(Long userId) {
+        UserWallet wallet = userWalletRepository.lockByUserId(userId)
+                .orElseThrow(BillingException::insufficientPlanCredits);
+        if (safeCredits(wallet.getPlanCredits()) <= 0) {
+            throw BillingException.insufficientPlanCredits();
+        }
+    }
+
     @Transactional(readOnly = true)
     public void requireEditCredit(Long userId) {
         UserWallet wallet = userWalletRepository.findByUserId(userId).orElse(null);

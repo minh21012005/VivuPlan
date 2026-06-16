@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.text.Normalizer;
@@ -49,6 +50,7 @@ public class TripService {
     private final UserPromptGuardService userPromptGuardService;
     private final CreditLedgerRepository creditLedgerRepository;
     private final AiUsageLogRepository aiUsageLogRepository;
+    private final TransactionTemplate transactionTemplate;
     private final Map<String, DayRegenerationProposal> dayRegenerationProposals = new ConcurrentHashMap<>();
     private static final int REGENERATION_PROPOSAL_TTL_MINUTES = 30;
     private static final long REGENERATION_COST_INCREASE_WARNING_MIN_DELTA = 200_000L;
@@ -60,10 +62,8 @@ public class TripService {
     private static final String LEGACY_COST_REVIEW_NOTE =
             "Chi phí cần kiểm tra: hoạt động này có thể phát sinh phí, nhưng AI chưa đưa ra mức ước tính đáng tin cậy.";
 
-    @Transactional
     public TripDto.TripResponse generateAndSave(Long userId, TripDto.GenerateRequest req) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+        requireUser(userId);
 
         userPromptGuardService.validateAndSanitizeGenerateRequest(req);
         if (req.getDestination() == null || req.getDestination().isBlank()) {
@@ -118,6 +118,23 @@ public class TripService {
         TripDto.RequestFulfillment requestFulfillment = generatedItinerary.requestFulfillment();
         placePlanningService.enrichScheduleWithVerifiedPlaces(aiSchedule, req.getDestination());
         activityCoordinateResolverService.resolveSchedule(aiSchedule, req.getDestination());
+
+        return transactionTemplate.execute(status -> persistGeneratedTripAndConsumeCredit(
+                userId,
+                req,
+                tripDays,
+                aiSchedule,
+                requestFulfillment));
+    }
+
+    private TripDto.TripResponse persistGeneratedTripAndConsumeCredit(
+            Long userId,
+            TripDto.GenerateRequest req,
+            int tripDays,
+            List<TripDto.DayResponse> aiSchedule,
+            TripDto.RequestFulfillment requestFulfillment) {
+        billingService.requirePlanCreditLocked(userId);
+        User user = requireUser(userId);
 
         // 2. Build and save Trip entity
         Trip trip = Trip.builder()
@@ -203,6 +220,11 @@ public class TripService {
         response.setRequestFulfillment(requestFulfillment);
         response.setWarnings(warnings);
         return response;
+    }
+
+    private User requireUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
     }
 
     public List<TripDto.TripResponse> getUserTrips(Long userId) {

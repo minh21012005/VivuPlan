@@ -17,6 +17,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.SimpleTransactionStatus;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
@@ -77,6 +82,7 @@ class TripServiceTest {
     private final UserPromptGuardService userPromptGuardService = new UserPromptGuardService();
     private final ActivityRegenerationDiffService activityRegenerationDiffService =
             new ActivityRegenerationDiffService(new ActivityMetadataReconciliationService());
+    private final TransactionTemplate transactionTemplate = new TransactionTemplate(new NoOpTransactionManager());
 
     private TripService service() {
         return new TripService(
@@ -91,7 +97,25 @@ class TripServiceTest {
                 billingService,
                 userPromptGuardService,
                 creditLedgerRepository,
-                aiUsageLogRepository);
+                aiUsageLogRepository,
+                transactionTemplate);
+    }
+
+    private static class NoOpTransactionManager implements PlatformTransactionManager {
+        @Override
+        public TransactionStatus getTransaction(TransactionDefinition definition) {
+            return new SimpleTransactionStatus();
+        }
+
+        @Override
+        public void commit(TransactionStatus status) {
+            // Unit tests only need TransactionTemplate to execute callbacks.
+        }
+
+        @Override
+        public void rollback(TransactionStatus status) {
+            // Unit tests only need TransactionTemplate to execute callbacks.
+        }
     }
 
     @Test
@@ -335,8 +359,12 @@ class TripServiceTest {
 
         service.generateAndSave(7L, generateRequest("", ""));
 
-        verify(billingService).requirePlanCredit(7L);
-        verify(billingService).consumePlanCredit(eq(7L), any(Trip.class));
+        var ordered = inOrder(billingService, aiService, tripRepository);
+        ordered.verify(billingService).requirePlanCredit(7L);
+        ordered.verify(aiService).generateItinerary(any(), eq(7L));
+        ordered.verify(billingService).requirePlanCreditLocked(7L);
+        ordered.verify(tripRepository).saveAndFlush(any(Trip.class));
+        ordered.verify(billingService).consumePlanCredit(eq(7L), any(Trip.class));
         assertThat(savedTrip.get().getShareCode()).matches("S[A-F0-9]{9}");
     }
 
@@ -353,6 +381,51 @@ class TripServiceTest {
                 .hasMessageContaining("AI failed");
 
         verify(billingService).requirePlanCredit(7L);
+        verify(billingService, never()).requirePlanCreditLocked(any());
+        verify(tripRepository, never()).saveAndFlush(any());
+        verify(billingService, never()).consumePlanCredit(any(), any());
+    }
+
+    @Test
+    void generateAndSaveDoesNotSaveTripWhenFinalLockedCreditCheckFails() {
+        TripService service = service();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(sampleUser()));
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        mockRainForecast();
+        when(aiService.generateItinerary(any(), any())).thenReturn(new AiService.GeneratedItineraryResult(
+                List.of(proposedDayWithoutRequestedActivity()),
+                noRequestFulfillment()));
+        doThrow(BillingException.insufficientPlanCredits()).when(billingService).requirePlanCreditLocked(7L);
+
+        assertThatThrownBy(() -> service.generateAndSave(7L, generateRequest("", "")))
+                .isInstanceOf(BillingException.class);
+
+        verify(billingService).requirePlanCredit(7L);
+        verify(aiService).generateItinerary(any(), eq(7L));
+        verify(billingService).requirePlanCreditLocked(7L);
+        verify(tripRepository, never()).saveAndFlush(any());
+        verify(billingService, never()).consumePlanCredit(any(), any());
+    }
+
+    @Test
+    void generateAndSaveDoesNotConsumePlanCreditWhenSaveFails() {
+        TripService service = service();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(sampleUser()));
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        mockRainForecast();
+        when(aiService.generateItinerary(any(), any())).thenReturn(new AiService.GeneratedItineraryResult(
+                List.of(proposedDayWithoutRequestedActivity()),
+                noRequestFulfillment()));
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenThrow(new RuntimeException("save failed"));
+
+        assertThatThrownBy(() -> service.generateAndSave(7L, generateRequest("", "")))
+                .hasMessageContaining("save failed");
+
+        verify(billingService).requirePlanCredit(7L);
+        verify(billingService).requirePlanCreditLocked(7L);
+        verify(tripRepository).saveAndFlush(any(Trip.class));
         verify(billingService, never()).consumePlanCredit(any(), any());
     }
 
