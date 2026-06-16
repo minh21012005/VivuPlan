@@ -82,47 +82,23 @@ class BillingServiceTest {
     @Test
     void consumePlanCreditDecrementsExactlyOneCredit() {
         BillingService service = service();
-        UserWallet wallet = UserWallet.builder()
-                .user(sampleUser())
-                .planCredits(2L)
-                .editCredits(1L)
-                .build();
-        when(userWalletRepository.lockByUserId(7L)).thenReturn(Optional.of(wallet));
+        when(userWalletRepository.decrementPlanCreditIfAvailable(7L)).thenReturn(1);
+        when(userRepository.getReferenceById(7L)).thenReturn(sampleUser());
 
         service.consumePlanCredit(7L, null);
 
-        assertThat(wallet.getPlanCredits()).isEqualTo(1);
+        verify(userWalletRepository).decrementPlanCreditIfAvailable(7L);
+        verify(userWalletRepository, never()).lockByUserId(7L);
         verify(creditLedgerRepository).save(argThat(ledger ->
                 ledger.getDelta().equals(-1L) && ledger.getType().name().equals("PLAN")));
     }
 
     @Test
-    void requirePlanCreditLockedPassesWithoutMutatingWalletOrLedger() {
+    void consumePlanCreditThrowsWhenAtomicDecrementFails() {
         BillingService service = service();
-        UserWallet wallet = UserWallet.builder()
-                .user(sampleUser())
-                .planCredits(1L)
-                .editCredits(1L)
-                .build();
-        when(userWalletRepository.lockByUserId(7L)).thenReturn(Optional.of(wallet));
+        when(userWalletRepository.decrementPlanCreditIfAvailable(7L)).thenReturn(0);
 
-        service.requirePlanCreditLocked(7L);
-
-        assertThat(wallet.getPlanCredits()).isEqualTo(1L);
-        verify(creditLedgerRepository, never()).save(any());
-    }
-
-    @Test
-    void requirePlanCreditLockedThrowsWhenPlanBalanceIsEmpty() {
-        BillingService service = service();
-        UserWallet wallet = UserWallet.builder()
-                .user(sampleUser())
-                .planCredits(0L)
-                .editCredits(1L)
-                .build();
-        when(userWalletRepository.lockByUserId(7L)).thenReturn(Optional.of(wallet));
-
-        assertThatThrownBy(() -> service.requirePlanCreditLocked(7L))
+        assertThatThrownBy(() -> service.consumePlanCredit(7L, null))
                 .isInstanceOf(BillingException.class)
                 .extracting("code")
                 .isEqualTo("INSUFFICIENT_PLAN_CREDITS");
@@ -130,31 +106,54 @@ class BillingServiceTest {
     }
 
     @Test
-    void requirePlanCreditLockedThrowsWhenWalletIsMissing() {
+    void consumeEditCreditThrowsWhenAtomicDecrementFails() {
         BillingService service = service();
-        when(userWalletRepository.lockByUserId(7L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.requirePlanCreditLocked(7L))
-                .isInstanceOf(BillingException.class)
-                .extracting("code")
-                .isEqualTo("INSUFFICIENT_PLAN_CREDITS");
-        verify(creditLedgerRepository, never()).save(any());
-    }
-
-    @Test
-    void consumeEditCreditThrowsWhenBalanceIsEmpty() {
-        BillingService service = service();
-        UserWallet wallet = UserWallet.builder()
-                .user(sampleUser())
-                .planCredits(1L)
-                .editCredits(0L)
-                .build();
-        when(userWalletRepository.lockByUserId(7L)).thenReturn(Optional.of(wallet));
+        when(userWalletRepository.decrementEditCreditIfAvailable(7L)).thenReturn(0);
 
         assertThatThrownBy(() -> service.consumeEditCredit(7L, null))
                 .isInstanceOf(BillingException.class)
-                .hasMessageContaining("hết lượt chỉnh ngày");
+                .extracting("code")
+                .isEqualTo("INSUFFICIENT_EDIT_CREDITS");
         verify(creditLedgerRepository, never()).save(any());
+    }
+
+    @Test
+    void consumeSuggestionCreditThrowsWhenAtomicDecrementFails() {
+        BillingService service = service();
+        when(userWalletRepository.decrementSuggestionCreditIfAvailable(7L)).thenReturn(0);
+
+        assertThatThrownBy(() -> service.consumeSuggestionCredit(7L))
+                .isInstanceOf(BillingException.class)
+                .extracting("code")
+                .isEqualTo("INSUFFICIENT_SUGGESTION_CREDITS");
+        verify(creditLedgerRepository, never()).save(any());
+    }
+
+    @Test
+    void consumeEditCreditWritesLedgerWhenAtomicDecrementSucceeds() {
+        BillingService service = service();
+        when(userWalletRepository.decrementEditCreditIfAvailable(7L)).thenReturn(1);
+        when(userRepository.getReferenceById(7L)).thenReturn(sampleUser());
+
+        service.consumeEditCredit(7L, null);
+        verify(userWalletRepository).decrementEditCreditIfAvailable(7L);
+        verify(userWalletRepository, never()).lockByUserId(7L);
+        verify(creditLedgerRepository).save(argThat(ledger ->
+                ledger.getDelta().equals(-1L) && ledger.getType().name().equals("EDIT")));
+    }
+
+    @Test
+    void consumeSuggestionCreditWritesLedgerWhenAtomicDecrementSucceeds() {
+        BillingService service = service();
+        when(userWalletRepository.decrementSuggestionCreditIfAvailable(7L)).thenReturn(1);
+        when(userRepository.getReferenceById(7L)).thenReturn(sampleUser());
+
+        service.consumeSuggestionCredit(7L);
+
+        verify(userWalletRepository).decrementSuggestionCreditIfAvailable(7L);
+        verify(userWalletRepository, never()).lockByUserId(7L);
+        verify(creditLedgerRepository).save(argThat(ledger ->
+                ledger.getDelta().equals(-1L) && ledger.getType().name().equals("SUGGESTION")));
     }
 
     @Test

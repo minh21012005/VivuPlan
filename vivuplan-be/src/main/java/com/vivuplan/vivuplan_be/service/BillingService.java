@@ -167,15 +167,6 @@ public class BillingService {
         }
     }
 
-    @Transactional
-    public void requirePlanCreditLocked(Long userId) {
-        UserWallet wallet = userWalletRepository.lockByUserId(userId)
-                .orElseThrow(BillingException::insufficientPlanCredits);
-        if (safeCredits(wallet.getPlanCredits()) <= 0) {
-            throw BillingException.insufficientPlanCredits();
-        }
-    }
-
     @Transactional(readOnly = true)
     public void requireEditCredit(Long userId) {
         UserWallet wallet = userWalletRepository.findByUserId(userId).orElse(null);
@@ -194,38 +185,26 @@ public class BillingService {
 
     @Transactional
     public void consumePlanCredit(Long userId, Trip trip) {
-        UserWallet wallet = userWalletRepository.lockByUserId(userId)
-                .orElseThrow(BillingException::insufficientPlanCredits);
-        long currentCredits = safeCredits(wallet.getPlanCredits());
-        if (currentCredits <= 0) {
+        if (userWalletRepository.decrementPlanCreditIfAvailable(userId) != 1) {
             throw BillingException.insufficientPlanCredits();
         }
-        wallet.setPlanCredits(currentCredits - 1);
-        writeLedger(wallet.getUser(), CreditLedger.CreditType.PLAN, -1L, "PLAN_GENERATION", null, trip);
+        writeLedger(ledgerUser(userId, trip), CreditLedger.CreditType.PLAN, -1L, "PLAN_GENERATION", null, trip);
     }
 
     @Transactional
     public void consumeEditCredit(Long userId, Trip trip) {
-        UserWallet wallet = userWalletRepository.lockByUserId(userId)
-                .orElseThrow(BillingException::insufficientEditCredits);
-        long currentCredits = safeCredits(wallet.getEditCredits());
-        if (currentCredits <= 0) {
+        if (userWalletRepository.decrementEditCreditIfAvailable(userId) != 1) {
             throw BillingException.insufficientEditCredits();
         }
-        wallet.setEditCredits(currentCredits - 1);
-        writeLedger(wallet.getUser(), CreditLedger.CreditType.EDIT, -1L, "DAY_REGENERATION", null, trip);
+        writeLedger(ledgerUser(userId, trip), CreditLedger.CreditType.EDIT, -1L, "DAY_REGENERATION", null, trip);
     }
 
     @Transactional
     public void consumeSuggestionCredit(Long userId) {
-        UserWallet wallet = userWalletRepository.lockByUserId(userId)
-                .orElseThrow(BillingException::insufficientSuggestionCredits);
-        long currentCredits = safeCredits(wallet.getSuggestionCredits());
-        if (currentCredits <= 0) {
+        if (userWalletRepository.decrementSuggestionCreditIfAvailable(userId) != 1) {
             throw BillingException.insufficientSuggestionCredits();
         }
-        wallet.setSuggestionCredits(currentCredits - 1);
-        writeLedger(wallet.getUser(), CreditLedger.CreditType.SUGGESTION, -1L, "DESTINATION_SUGGESTION", null, null);
+        writeLedger(userRepository.getReferenceById(userId), CreditLedger.CreditType.SUGGESTION, -1L, "DESTINATION_SUGGESTION", null, null);
     }
 
     @Transactional
@@ -397,6 +376,13 @@ public class BillingService {
     private User requireUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
+    }
+
+    private User ledgerUser(Long userId, Trip trip) {
+        if (trip != null && trip.getUser() != null && userId.equals(trip.getUser().getId())) {
+            return trip.getUser();
+        }
+        return userRepository.getReferenceById(userId);
     }
 
     private void writeLedger(

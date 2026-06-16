@@ -133,7 +133,6 @@ public class TripService {
             int tripDays,
             List<TripDto.DayResponse> aiSchedule,
             TripDto.RequestFulfillment requestFulfillment) {
-        billingService.requirePlanCreditLocked(userId);
         User user = requireUser(userId);
 
         // 2. Build and save Trip entity

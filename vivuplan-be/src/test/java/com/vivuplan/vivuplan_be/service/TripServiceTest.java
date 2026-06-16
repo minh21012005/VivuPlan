@@ -362,7 +362,6 @@ class TripServiceTest {
         var ordered = inOrder(billingService, aiService, tripRepository);
         ordered.verify(billingService).requirePlanCredit(7L);
         ordered.verify(aiService).generateItinerary(any(), eq(7L));
-        ordered.verify(billingService).requirePlanCreditLocked(7L);
         ordered.verify(tripRepository).saveAndFlush(any(Trip.class));
         ordered.verify(billingService).consumePlanCredit(eq(7L), any(Trip.class));
         assertThat(savedTrip.get().getShareCode()).matches("S[A-F0-9]{9}");
@@ -381,13 +380,12 @@ class TripServiceTest {
                 .hasMessageContaining("AI failed");
 
         verify(billingService).requirePlanCredit(7L);
-        verify(billingService, never()).requirePlanCreditLocked(any());
         verify(tripRepository, never()).saveAndFlush(any());
         verify(billingService, never()).consumePlanCredit(any(), any());
     }
 
     @Test
-    void generateAndSaveDoesNotSaveTripWhenFinalLockedCreditCheckFails() {
+    void generateAndSaveRollsBackWhenFinalCreditConsumeFails() {
         TripService service = service();
         when(userRepository.findById(7L)).thenReturn(Optional.of(sampleUser()));
         when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
@@ -396,16 +394,16 @@ class TripServiceTest {
         when(aiService.generateItinerary(any(), any())).thenReturn(new AiService.GeneratedItineraryResult(
                 List.of(proposedDayWithoutRequestedActivity()),
                 noRequestFulfillment()));
-        doThrow(BillingException.insufficientPlanCredits()).when(billingService).requirePlanCreditLocked(7L);
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doThrow(BillingException.insufficientPlanCredits()).when(billingService).consumePlanCredit(eq(7L), any(Trip.class));
 
         assertThatThrownBy(() -> service.generateAndSave(7L, generateRequest("", "")))
                 .isInstanceOf(BillingException.class);
 
         verify(billingService).requirePlanCredit(7L);
         verify(aiService).generateItinerary(any(), eq(7L));
-        verify(billingService).requirePlanCreditLocked(7L);
-        verify(tripRepository, never()).saveAndFlush(any());
-        verify(billingService, never()).consumePlanCredit(any(), any());
+        verify(tripRepository).saveAndFlush(any(Trip.class));
+        verify(billingService).consumePlanCredit(eq(7L), any(Trip.class));
     }
 
     @Test
@@ -424,7 +422,6 @@ class TripServiceTest {
                 .hasMessageContaining("save failed");
 
         verify(billingService).requirePlanCredit(7L);
-        verify(billingService).requirePlanCreditLocked(7L);
         verify(tripRepository).saveAndFlush(any(Trip.class));
         verify(billingService, never()).consumePlanCredit(any(), any());
     }
