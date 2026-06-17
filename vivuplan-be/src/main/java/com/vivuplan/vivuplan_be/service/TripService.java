@@ -226,6 +226,7 @@ public class TripService {
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
     }
 
+    @Transactional(readOnly = true)
     public List<TripDto.TripResponse> getUserTrips(Long userId) {
         return tripRepository.findByUserIdOrderByCreatedAtDesc(userId)
                 .stream()

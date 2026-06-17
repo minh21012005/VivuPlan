@@ -157,6 +157,20 @@ class TripServiceTest {
     }
 
     @Test
+    void getUserTripsReturnsSchedulesInsideServiceTransaction() {
+        Trip trip = sampleTrip();
+        when(tripRepository.findByUserIdOrderByCreatedAtDesc(7L)).thenReturn(List.of(trip));
+
+        List<TripDto.TripResponse> response = service().getUserTrips(7L);
+
+        assertThat(response).hasSize(1);
+        assertThat(response.getFirst().getSchedule()).hasSize(1);
+        assertThat(response.getFirst().getSchedule().getFirst().getActivities())
+                .extracting(TripDto.ActivityResponse::getName)
+                .containsExactly("Hoạt động buổi sáng", "Ăn trưa");
+    }
+
+    @Test
     void getTripRejectsNonOwnerEvenWhenTripIsShareable() {
         Trip trip = sampleTrip();
         trip.setIsPublic(true);

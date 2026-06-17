@@ -87,6 +87,13 @@ public class AdminDto {
             dto.setUser(UserSummary.from(user));
             return dto;
         }
+
+        public static TripDetail of(TripDto.TripResponse trip, UserSummary user) {
+            TripDetail dto = new TripDetail();
+            dto.setTrip(trip);
+            dto.setUser(user);
+            return dto;
+        }
     }
 
     @Data

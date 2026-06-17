@@ -70,7 +70,7 @@ public class AdminController {
     public ResponseEntity<AdminDto.TripDetail> tripDetail(@PathVariable Long id) {
         return ResponseEntity.ok(AdminDto.TripDetail.of(
                 tripService.getTripForAdmin(id),
-                adminService.getTripOwner(id)
+                adminService.getTripOwnerSummary(id)
         ));
     }
 

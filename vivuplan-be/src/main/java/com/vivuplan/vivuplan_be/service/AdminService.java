@@ -98,10 +98,11 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
-    public User getTripOwner(Long tripId) {
-        return tripRepository.findById(tripId)
+    public AdminDto.UserSummary getTripOwnerSummary(Long tripId) {
+        User owner = tripRepository.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("Lịch trình không tồn tại"))
                 .getUser();
+        return AdminDto.UserSummary.from(owner);
     }
 
     @Transactional(readOnly = true)
