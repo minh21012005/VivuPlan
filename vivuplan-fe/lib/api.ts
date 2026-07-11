@@ -553,6 +553,8 @@ export interface AdminAiUsageEvent {
   errorDetail?: string;
   /** Full raw JSON the AI returned before being rejected. */
   rawResponseSnippet?: string;
+  /** Compact JSON summary of the user's request (destination, avoid, notes, instruction, etc.). */
+  promptContext?: string;
   createdAt?: string;
 }
 

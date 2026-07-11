@@ -239,6 +239,8 @@ public class AdminDto {
         private String errorDetail;
         /** Full raw JSON the AI returned before being rejected. */
         private String rawResponseSnippet;
+        /** Compact JSON summary of the user's request (destination, avoid, notes, instruction, etc.). */
+        private String promptContext;
         private String createdAt;
     }
 

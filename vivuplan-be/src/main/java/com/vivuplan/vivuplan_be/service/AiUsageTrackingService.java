@@ -81,6 +81,7 @@ public class AiUsageTrackingService {
                 .usdToVndRate(usdToVndRate)
                 .estimatedCostUsd(estimatedCostUsd)
                 .estimatedCostVnd(estimatedCostVnd)
+                .promptContext(record.promptContext())
                 .errorCode(blankToNull(limit(record.errorCode(), 80)))
                 .errorMessage(blankToNull(limit(record.errorMessage(), 300)))
                 .build());
@@ -157,7 +158,8 @@ public class AiUsageTrackingService {
             Integer maxOutputTokens,
             Integer thinkingBudget,
             String errorCode,
-            String errorMessage
+            String errorMessage,
+            String promptContext
     ) {
     }
 }

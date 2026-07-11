@@ -86,6 +86,9 @@ public class AiUsageLog {
     @Column(nullable = false)
     private Long estimatedCostVnd;
 
+    @Column(columnDefinition = "TEXT")
+    private String promptContext;
+
     @Column(length = 80)
     private String errorCode;
 

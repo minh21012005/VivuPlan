@@ -90,7 +90,8 @@ public class AiService {
             Long userId,
             Long tripId,
             String requestId,
-            AtomicInteger attempts) {
+            AtomicInteger attempts,
+            String promptContext) {
         private int nextAttempt() {
             return attempts.incrementAndGet();
         }
@@ -156,7 +157,9 @@ public class AiService {
     }
 
     public GeneratedItineraryResult generateItinerary(TripDto.GenerateRequest req, Long userId) {
-        AiCallContext aiContext = newAiCallContext(AiUsageLog.Operation.PLAN_GENERATION, userId, null);
+        AiCallContext aiContext = newAiCallContext(
+                AiUsageLog.Operation.PLAN_GENERATION, userId, null,
+                buildPlanPromptContext(req));
         String prompt = buildPrompt(req);
         log.info("Generating itinerary for: {} - {}N using Gemini model {}", req.getDestination(), req.getDays(),
                 geminiModel);
@@ -243,7 +246,9 @@ public class AiService {
             TripDto.DestinationSuggestionRequest req,
             String catalogContext,
             Long userId) {
-        AiCallContext aiContext = newAiCallContext(AiUsageLog.Operation.DESTINATION_SUGGESTION, userId, null);
+        AiCallContext aiContext = newAiCallContext(
+                AiUsageLog.Operation.DESTINATION_SUGGESTION, userId, null,
+                buildSuggestionPromptContext(req));
         String prompt = buildDestinationSuggestionPrompt(req, catalogContext);
         log.info("Suggesting destinations from {} for {} days using Gemini model {}",
                 req.getDeparture(), req.getDays(), geminiModel);
@@ -291,7 +296,9 @@ public class AiService {
             String instruction,
             Long userId,
             Long tripId) {
-        AiCallContext aiContext = newAiCallContext(AiUsageLog.Operation.DAY_REGENERATION, userId, tripId);
+        AiCallContext aiContext = newAiCallContext(
+                AiUsageLog.Operation.DAY_REGENERATION, userId, tripId,
+                buildRegenerationPromptContext(req, dayNumber, intent, instruction));
         log.info("Regenerating day {} for trip to {} using intent {}", dayNumber, req.getDestination(), intent);
 
         try {
@@ -1371,8 +1378,79 @@ public class AiService {
                 lastTransientError);
     }
 
-    private AiCallContext newAiCallContext(AiUsageLog.Operation operation, Long userId, Long tripId) {
-        return new AiCallContext(operation, userId, tripId, UUID.randomUUID().toString(), new AtomicInteger());
+    private AiCallContext newAiCallContext(AiUsageLog.Operation operation, Long userId, Long tripId,
+            String promptContext) {
+        return new AiCallContext(operation, userId, tripId, UUID.randomUUID().toString(), new AtomicInteger(),
+                promptContext);
+    }
+
+    /** Builds a compact JSON summary of what the user requested for PLAN_GENERATION. */
+    private String buildPlanPromptContext(TripDto.GenerateRequest req) {
+        try {
+            java.util.Map<String, Object> ctx = new java.util.LinkedHashMap<>();
+            ctx.put("destination", req.getDestination());
+            ctx.put("departure", req.getDeparture());
+            ctx.put("days", req.getDays());
+            ctx.put("travelerCount", req.getTravelerCount());
+            ctx.put("budgetPerPerson", req.getBudgetPerPerson());
+            ctx.put("style", req.getStyle());
+            ctx.put("groupType", req.getGroupType());
+            ctx.put("outboundTransport", req.getOutboundTransport());
+            ctx.put("localTransport", req.getLocalTransport());
+            if (req.getMustVisit() != null && !req.getMustVisit().isBlank())
+                ctx.put("mustVisit", req.getMustVisit());
+            if (req.getAvoid() != null && !req.getAvoid().isBlank())
+                ctx.put("avoid", req.getAvoid());
+            if (req.getNotes() != null && !req.getNotes().isBlank())
+                ctx.put("notes", req.getNotes());
+            return objectMapper.writeValueAsString(ctx);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** Builds a compact JSON summary of what the user requested for DESTINATION_SUGGESTION. */
+    private String buildSuggestionPromptContext(TripDto.DestinationSuggestionRequest req) {
+        try {
+            java.util.Map<String, Object> ctx = new java.util.LinkedHashMap<>();
+            ctx.put("departure", req.getDeparture());
+            ctx.put("days", req.getDays());
+            ctx.put("travelerCount", req.getTravelerCount());
+            ctx.put("budgetPerPerson", req.getBudgetPerPerson());
+            ctx.put("style", req.getStyle());
+            ctx.put("groupType", req.getGroupType());
+            if (req.getMustVisit() != null && !req.getMustVisit().isBlank())
+                ctx.put("mustVisit", req.getMustVisit());
+            if (req.getAvoid() != null && !req.getAvoid().isBlank())
+                ctx.put("avoid", req.getAvoid());
+            if (req.getNotes() != null && !req.getNotes().isBlank())
+                ctx.put("notes", req.getNotes());
+            return objectMapper.writeValueAsString(ctx);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** Builds a compact JSON summary of what the user requested for DAY_REGENERATION. */
+    private String buildRegenerationPromptContext(TripDto.GenerateRequest req, int dayNumber, String intent,
+            String instruction) {
+        try {
+            java.util.Map<String, Object> ctx = new java.util.LinkedHashMap<>();
+            ctx.put("destination", req.getDestination());
+            ctx.put("days", req.getDays());
+            ctx.put("dayNumber", dayNumber);
+            if (intent != null && !intent.isBlank())
+                ctx.put("intent", intent);
+            if (instruction != null && !instruction.isBlank())
+                ctx.put("instruction", instruction);
+            if (req.getAvoid() != null && !req.getAvoid().isBlank())
+                ctx.put("avoid", req.getAvoid());
+            if (req.getNotes() != null && !req.getNotes().isBlank())
+                ctx.put("notes", req.getNotes());
+            return objectMapper.writeValueAsString(ctx);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void markInvalidResponse(AiCallContext aiContext, String errorCode, String errorMessage) {
@@ -1441,7 +1519,8 @@ public class AiService {
                 maxOutputTokens,
                 thinkingBudget,
                 errorCode,
-                errorMessage));
+                errorMessage,
+                aiContext.promptContext()));
     }
 
     private void recordErrorUsage(
@@ -1473,7 +1552,8 @@ public class AiService {
                 maxOutputTokens,
                 thinkingBudget,
                 errorCode,
-                errorMessage));
+                errorMessage,
+                aiContext.promptContext()));
     }
 
     private long elapsedMs(long startedAtNanos) {

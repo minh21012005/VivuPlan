@@ -52,6 +52,7 @@ class AiUsageTrackingServiceTest {
                 32768,
                 8192,
                 null,
+                null,
                 null));
 
         ArgumentCaptor<AiUsageLog> captor = ArgumentCaptor.forClass(AiUsageLog.class);
@@ -89,7 +90,8 @@ class AiUsageTrackingServiceTest {
                 4096,
                 1536,
                 "429",
-                "Too many requests"));
+                "Too many requests",
+                null));
 
         ArgumentCaptor<AiUsageLog> captor = ArgumentCaptor.forClass(AiUsageLog.class);
         verify(aiUsageLogRepository).save(captor.capture());

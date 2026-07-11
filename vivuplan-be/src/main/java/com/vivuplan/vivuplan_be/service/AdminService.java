@@ -418,6 +418,7 @@ public class AdminService {
         dto.setEstimatedCostUsd(log.getEstimatedCostUsd() != null ? log.getEstimatedCostUsd().doubleValue() : 0);
         dto.setErrorCode(log.getErrorCode());
         dto.setErrorMessage(log.getErrorMessage());
+        dto.setPromptContext(log.getPromptContext());
         dto.setCreatedAt(log.getCreatedAt() != null ? log.getCreatedAt().toString() : null);
         // Enrich with full payload if this was a failed attempt
         if (log.getId() != null) {

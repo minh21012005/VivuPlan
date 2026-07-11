@@ -370,6 +370,34 @@ function AiUsageDrawer({
             </dl>
           </section>
 
+          {event.promptContext && (
+            <section className="admin-drawer-section">
+              <h4>Yêu cầu của người dùng</h4>
+              <pre style={{
+                fontSize: 12,
+                lineHeight: 1.6,
+                background: "var(--admin-surface-2, #0f172a)",
+                color: "var(--admin-text-code, #94a3b8)",
+                padding: "10px 14px",
+                borderRadius: 8,
+                overflowX: "auto",
+                overflowY: "auto",
+                maxHeight: 200,
+                margin: 0,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+              }}>
+                {(() => {
+                  try {
+                    return JSON.stringify(JSON.parse(event.promptContext), null, 2);
+                  } catch {
+                    return event.promptContext;
+                  }
+                })()}
+              </pre>
+            </section>
+          )}
+
           <section className="admin-drawer-section">
             <h4>Model & runtime</h4>
             <dl className="admin-drawer-list">
