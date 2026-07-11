@@ -86,12 +86,17 @@ public class UserPromptGuardService {
 
     private String validateOptionalTravelText(String label, String value, int maxLength) {
         String sanitized = sanitize(value);
-        if (sanitized == null || sanitized.isBlank()) {
+        if (sanitized == null || sanitized.isBlank() || isMeaninglessEmptyWord(sanitized)) {
             return null;
         }
         validateLength(label, sanitized, maxLength);
         validateTravelScope(sanitized);
         return sanitized;
+    }
+
+    private boolean isMeaninglessEmptyWord(String value) {
+        String normalized = normalize(value).trim();
+        return java.util.Set.of("khong", "ko", "khong co", "ko co", "none", "nothing", "null", "na", "khong co gi", "ko co gi").contains(normalized);
     }
 
     private void validateLength(String label, String value, int maxLength) {

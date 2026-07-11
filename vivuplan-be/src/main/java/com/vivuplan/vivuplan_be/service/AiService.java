@@ -2448,7 +2448,7 @@ public class AiService {
     }
 
     private boolean isAmbiguousSingleWordAvoidTerm(String avoidTerm) {
-        return Set.of("cua").contains(avoidTerm);
+        return Set.of("cua", "khong", "ko", "pha").contains(avoidTerm);
     }
 
     private boolean isNegatedAvoidMention(String searchableActivity, int termStart) {
