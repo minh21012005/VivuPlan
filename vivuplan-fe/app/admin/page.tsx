@@ -447,6 +447,37 @@ function AiUsageDrawer({
               </dl>
             </section>
           )}
+
+          {event.errorDetail && event.errorDetail !== event.errorMessage && (
+            <section className="admin-drawer-section">
+              <h4>Chi tiết lỗi đầy đủ</h4>
+              <p style={{ fontSize: 13, color: "var(--admin-text-secondary, #64748b)", lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                {event.errorDetail}
+              </p>
+            </section>
+          )}
+
+          {event.rawResponseSnippet && (
+            <section className="admin-drawer-section">
+              <h4>Raw AI Response <span style={{ fontWeight: 400, fontSize: 12, color: "var(--admin-text-secondary, #94a3b8)" }}>(full response)</span></h4>
+              <pre style={{
+                fontSize: 11,
+                lineHeight: 1.5,
+                background: "var(--admin-surface-2, #0f172a)",
+                color: "var(--admin-text-code, #94a3b8)",
+                padding: "12px 14px",
+                borderRadius: 8,
+                overflowX: "auto",
+                overflowY: "auto",
+                maxHeight: 340,
+                margin: 0,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-all",
+              }}>
+                {event.rawResponseSnippet}
+              </pre>
+            </section>
+          )}
         </div>
       </aside>
     </div>

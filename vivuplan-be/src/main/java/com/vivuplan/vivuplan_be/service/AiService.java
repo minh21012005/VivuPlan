@@ -168,7 +168,7 @@ public class AiService {
             try {
                 result = parseGeneratedItineraryResult(rawJson);
             } catch (AiResponseFormatException e) {
-                markInvalidResponse(aiContext, "JSON_CONTRACT", e.getMessage());
+                markInvalidResponseWithPayload(aiContext, "JSON_CONTRACT", e.getMessage(), rawJson);
                 usedRetry = true;
                 log.warn(
                         "AI itinerary for {} returned invalid response contract: {}. Retrying once with strict JSON contract.",
@@ -200,7 +200,7 @@ public class AiService {
 
             log.warn("AI itinerary for {} failed quality check: {}. Retrying once with stricter prompt.",
                     req.getDestination(), quality.reason());
-            markInvalidResponse(aiContext, "QUALITY_CHECK", quality.reason());
+            markInvalidResponseWithPayload(aiContext, "QUALITY_CHECK", quality.reason(), rawJson);
 
             String retryJson = callGemini(buildQualityRetryPrompt(req, quality.reason()), aiContext);
             GeneratedItineraryResult retryResult = parseGeneratedItineraryResult(retryJson);
@@ -218,7 +218,7 @@ public class AiService {
 
             log.warn("AI retry itinerary for {} has a structural failure: {}. Returning error to user.",
                     req.getDestination(), retryQuality.reason());
-            markInvalidResponse(aiContext, "QUALITY_CHECK", retryQuality.reason());
+            markInvalidResponseWithPayload(aiContext, "QUALITY_CHECK", retryQuality.reason(), retryJson);
             throw new AiGenerationException(AI_GENERATION_USER_MESSAGE);
         } catch (AiGenerationException e) {
             throw e;
@@ -312,7 +312,7 @@ public class AiService {
             try {
                 result = parseRegeneratedDayResult(rawJson, dayNumber, referenceContext);
             } catch (AiResponseFormatException e) {
-                markInvalidResponse(aiContext, "JSON_CONTRACT", e.getMessage());
+                markInvalidResponseWithPayload(aiContext, "JSON_CONTRACT", e.getMessage(), rawJson);
                 usedRetry = true;
                 log.warn(
                         "AI regenerated day {} for {} returned invalid response contract: {}. Retrying once with strict JSON contract.",
@@ -350,7 +350,7 @@ public class AiService {
 
             log.warn("AI regenerated day {} for {} failed quality check: {}. Retrying once.",
                     dayNumber, req.getDestination(), quality.reason());
-            markInvalidResponse(aiContext, "QUALITY_CHECK", quality.reason());
+            markInvalidResponseWithPayload(aiContext, "QUALITY_CHECK", quality.reason(), rawJson);
 
             String retryJson = callGeminiForSingleDay(
                     buildDayRegenerationPrompt(
@@ -378,7 +378,7 @@ public class AiService {
 
             log.warn("AI retry regenerated day {} for {} has a structural failure: {}.",
                     dayNumber, req.getDestination(), retryQuality.reason());
-            markInvalidResponse(aiContext, "QUALITY_CHECK", retryQuality.reason());
+            markInvalidResponseWithPayload(aiContext, "QUALITY_CHECK", retryQuality.reason(), retryJson);
             throw new AiGenerationException(
                     "AI chưa tạo được phương án chỉnh ngày này đủ tốt. Vui lòng thử lại với yêu cầu cụ thể hơn.");
         } catch (AiGenerationException e) {
@@ -1382,6 +1382,31 @@ public class AiService {
                 AiUsageLog.Status.INVALID_RESPONSE,
                 errorCode,
                 errorMessage);
+    }
+
+    /**
+     * Like markInvalidResponse but also persists the raw AI response and full
+     * error detail so Admin can inspect what the AI actually returned before it
+     * was rejected by the quality gate.
+     */
+    private void markInvalidResponseWithPayload(
+            AiCallContext aiContext,
+            String errorCode,
+            String errorDetail,
+            String rawJson) {
+        markInvalidResponse(aiContext, errorCode, errorDetail);
+        if (aiUsageTrackingService == null) {
+            return;
+        }
+        try {
+            aiUsageTrackingService.recordFailedPayload(
+                    aiContext.requestId(),
+                    errorCode,
+                    errorDetail,
+                    rawJson);
+        } catch (Exception e) {
+            log.warn("Failed to record AI payload for request {}: {}", aiContext.requestId(), e.getMessage());
+        }
     }
 
     private void recordUsage(

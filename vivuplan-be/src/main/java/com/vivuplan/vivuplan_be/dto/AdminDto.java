@@ -235,6 +235,10 @@ public class AdminDto {
         private double estimatedCostUsd;
         private String errorCode;
         private String errorMessage;
+        /** Full, untruncated error detail (not capped to 300 chars like errorMessage). */
+        private String errorDetail;
+        /** Full raw JSON the AI returned before being rejected. */
+        private String rawResponseSnippet;
         private String createdAt;
     }
 

@@ -549,6 +549,10 @@ export interface AdminAiUsageEvent {
   estimatedCostUsd: number;
   errorCode?: string;
   errorMessage?: string;
+  /** Full, untruncated error detail for failed attempts. */
+  errorDetail?: string;
+  /** Full raw JSON the AI returned before being rejected. */
+  rawResponseSnippet?: string;
   createdAt?: string;
 }
 

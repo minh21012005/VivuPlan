@@ -1,8 +1,10 @@
 package com.vivuplan.vivuplan_be.service;
 
+import com.vivuplan.vivuplan_be.entity.AiAttemptPayload;
 import com.vivuplan.vivuplan_be.entity.AiUsageLog;
 import com.vivuplan.vivuplan_be.entity.Trip;
 import com.vivuplan.vivuplan_be.entity.User;
+import com.vivuplan.vivuplan_be.repository.AiAttemptPayloadRepository;
 import com.vivuplan.vivuplan_be.repository.AiUsageLogRepository;
 import com.vivuplan.vivuplan_be.repository.TripRepository;
 import com.vivuplan.vivuplan_be.repository.UserRepository;
@@ -20,6 +22,7 @@ import java.math.RoundingMode;
 public class AiUsageTrackingService {
 
     private final AiUsageLogRepository aiUsageLogRepository;
+    private final AiAttemptPayloadRepository aiAttemptPayloadRepository;
     private final UserRepository userRepository;
     private final TripRepository tripRepository;
 
@@ -81,6 +84,33 @@ public class AiUsageTrackingService {
                 .errorCode(blankToNull(limit(record.errorCode(), 80)))
                 .errorMessage(blankToNull(limit(record.errorMessage(), 300)))
                 .build());
+    }
+
+    /**
+     * Records the raw AI response and full error detail for a failed attempt
+     * (INVALID_RESPONSE). Should be called right after markLatestAttempt so the
+     * log row already exists.
+     *
+     * @param requestId        the requestId from AiCallContext
+     * @param errorCategory    e.g. "QUALITY_CHECK", "JSON_CONTRACT"
+     * @param errorDetail      full, untruncated error reason string
+     * @param rawResponse      the raw JSON text returned by AI (will be capped to 8000 chars)
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordFailedPayload(
+            String requestId,
+            String errorCategory,
+            String errorDetail,
+            String rawResponse) {
+        if (requestId == null || requestId.isBlank()) {
+            return;
+        }
+        aiUsageLogRepository.findTopByRequestIdOrderByAttemptNumberDesc(requestId).ifPresent(log -> {
+            // Avoid duplicate payload for the same log row
+            if (aiAttemptPayloadRepository.findByAiUsageLogId(log.getId()).isEmpty()) {
+                aiAttemptPayloadRepository.save(AiAttemptPayload.of(log, errorCategory, errorDetail, rawResponse));
+            }
+        });
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

@@ -6,6 +6,7 @@ import com.vivuplan.vivuplan_be.entity.PaymentOrder;
 import com.vivuplan.vivuplan_be.entity.Role;
 import com.vivuplan.vivuplan_be.entity.Trip;
 import com.vivuplan.vivuplan_be.entity.User;
+import com.vivuplan.vivuplan_be.repository.AiAttemptPayloadRepository;
 import com.vivuplan.vivuplan_be.repository.AiUsageLogRepository;
 import com.vivuplan.vivuplan_be.repository.PaymentOrderRepository;
 import com.vivuplan.vivuplan_be.repository.RoleRepository;
@@ -66,8 +67,8 @@ public class AdminService {
     public Page<AdminDto.UserSummary> listUsers(int page, int size, String q, String role, String provider) {
         return userRepository.findAll(
                 userSpec(q, parseRoleOrNull(role), parseProviderOrNull(provider)),
-                PageRequest.of(page, clampPageSize(size), Sort.by(Sort.Direction.DESC, "createdAt"))
-        ).map(AdminDto.UserSummary::from);
+                PageRequest.of(page, clampPageSize(size), Sort.by(Sort.Direction.DESC, "createdAt")))
+                .map(AdminDto.UserSummary::from);
     }
 
     @Transactional(readOnly = true)
@@ -93,8 +94,8 @@ public class AdminService {
     public Page<AdminDto.TripSummary> listTrips(int page, int size, String q) {
         return tripRepository.findAll(
                 tripSpec(q),
-                PageRequest.of(page, clampPageSize(size), Sort.by(Sort.Direction.DESC, "createdAt"))
-        ).map(AdminDto.TripSummary::from);
+                PageRequest.of(page, clampPageSize(size), Sort.by(Sort.Direction.DESC, "createdAt")))
+                .map(AdminDto.TripSummary::from);
     }
 
     @Transactional(readOnly = true)
@@ -109,8 +110,8 @@ public class AdminService {
     public Page<AdminDto.TransactionSummary> listTransactions(int page, int size, String q, String status) {
         return paymentOrderRepository.findAll(
                 transactionSpec(q, parsePaymentStatusOrNull(status)),
-                PageRequest.of(page, clampPageSize(size), Sort.by(Sort.Direction.DESC, "createdAt"))
-        ).map(AdminDto.TransactionSummary::from);
+                PageRequest.of(page, clampPageSize(size), Sort.by(Sort.Direction.DESC, "createdAt")))
+                .map(AdminDto.TransactionSummary::from);
     }
 
     @Transactional(readOnly = true)
@@ -152,7 +153,8 @@ public class AdminService {
                 parseAiStatusOrNull(status));
         Map<LocalDate, List<AiUsageLog>> byDate = logs.stream()
                 .filter(log -> log.getCreatedAt() != null)
-                .collect(Collectors.groupingBy(log -> log.getCreatedAt().toLocalDate(), LinkedHashMap::new, Collectors.toList()));
+                .collect(Collectors.groupingBy(log -> log.getCreatedAt().toLocalDate(), LinkedHashMap::new,
+                        Collectors.toList()));
 
         List<AdminDto.AiCostDaily> result = new ArrayList<>();
         LocalDate start = normalizeFrom(from);
@@ -182,8 +184,8 @@ public class AdminService {
         LocalDateTime toTime = normalizeTo(to).plusDays(1).atStartOfDay();
         return aiUsageLogRepository.findAll(
                 aiUsageSpec(fromTime, toTime, parsedOperation, parsedStatus, q),
-                PageRequest.of(page, clampPageSize(size), Sort.by(Sort.Direction.DESC, "createdAt"))
-        ).map(this::toAiUsageEvent);
+                PageRequest.of(page, clampPageSize(size), Sort.by(Sort.Direction.DESC, "createdAt")))
+                .map(this::toAiUsageEvent);
     }
 
     @Transactional
@@ -288,7 +290,8 @@ public class AdminService {
                     List<AiUsageLog> operationLogs = entry.getValue();
                     long requests = countRequests(operationLogs);
                     long failedRequests = countFailedRequests(operationLogs);
-                    long retryAttempts = operationLogs.stream().filter(log -> safeInt(log.getAttemptNumber()) > 1).count();
+                    long retryAttempts = operationLogs.stream().filter(log -> safeInt(log.getAttemptNumber()) > 1)
+                            .count();
                     AdminDto.AiOperationHealth item = new AdminDto.AiOperationHealth();
                     item.setOperation(entry.getKey().name());
                     item.setLabel(aiOperationLabel(entry.getKey().name()));
@@ -374,9 +377,10 @@ public class AdminService {
             return attemptDuration;
         }
 
-        long firstAttemptDuration = timedLogs.getFirst().getDurationMs() != null && timedLogs.getFirst().getDurationMs() > 0
-                ? timedLogs.getFirst().getDurationMs()
-                : 0;
+        long firstAttemptDuration = timedLogs.getFirst().getDurationMs() != null
+                && timedLogs.getFirst().getDurationMs() > 0
+                        ? timedLogs.getFirst().getDurationMs()
+                        : 0;
         long timelineDuration = java.time.Duration.between(
                 timedLogs.getFirst().getCreatedAt(),
                 timedLogs.getLast().getCreatedAt()).toMillis() + firstAttemptDuration;
@@ -388,6 +392,8 @@ public class AdminService {
                 .mapToLong(log -> log.getDurationMs() != null && log.getDurationMs() > 0 ? log.getDurationMs() : 0)
                 .sum();
     }
+
+    private final AiAttemptPayloadRepository aiAttemptPayloadRepository;
 
     private AdminDto.AiUsageEvent toAiUsageEvent(AiUsageLog log) {
         AdminDto.AiUsageEvent dto = new AdminDto.AiUsageEvent();
@@ -413,6 +419,13 @@ public class AdminService {
         dto.setErrorCode(log.getErrorCode());
         dto.setErrorMessage(log.getErrorMessage());
         dto.setCreatedAt(log.getCreatedAt() != null ? log.getCreatedAt().toString() : null);
+        // Enrich with full payload if this was a failed attempt
+        if (log.getId() != null) {
+            aiAttemptPayloadRepository.findByAiUsageLogId(log.getId()).ifPresent(payload -> {
+                dto.setErrorDetail(payload.getErrorDetail());
+                dto.setRawResponseSnippet(payload.getRawResponseSnippet());
+            });
+        }
         return dto;
     }
 
@@ -438,8 +451,7 @@ public class AdminService {
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("requestId")), keyword),
                         cb.like(cb.lower(root.get("model")), keyword),
-                        cb.like(cb.lower(userJoin.get("email")), keyword)
-                ));
+                        cb.like(cb.lower(userJoin.get("email")), keyword)));
             }
             return cb.and(predicates.toArray(Predicate[]::new));
         };
@@ -482,7 +494,8 @@ public class AdminService {
     }
 
     private AiUsageLog.Operation parseAiOperationOrNull(String operation) {
-        if (operation == null || operation.isBlank() || "ALL".equalsIgnoreCase(operation)) return null;
+        if (operation == null || operation.isBlank() || "ALL".equalsIgnoreCase(operation))
+            return null;
         try {
             return AiUsageLog.Operation.valueOf(operation.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
@@ -491,7 +504,8 @@ public class AdminService {
     }
 
     private AiUsageLog.Status parseAiStatusOrNull(String status) {
-        if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) return null;
+        if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status))
+            return null;
         try {
             return AiUsageLog.Status.valueOf(status.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
@@ -520,12 +534,14 @@ public class AdminService {
     }
 
     private Role.RoleName parseRoleOrNull(String role) {
-        if (role == null || role.isBlank() || "ALL".equalsIgnoreCase(role)) return null;
+        if (role == null || role.isBlank() || "ALL".equalsIgnoreCase(role))
+            return null;
         return parseRole(role);
     }
 
     private User.AuthProvider parseProviderOrNull(String provider) {
-        if (provider == null || provider.isBlank() || "ALL".equalsIgnoreCase(provider)) return null;
+        if (provider == null || provider.isBlank() || "ALL".equalsIgnoreCase(provider))
+            return null;
         try {
             return User.AuthProvider.valueOf(provider.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
@@ -534,7 +550,8 @@ public class AdminService {
     }
 
     private PaymentOrder.Status parsePaymentStatusOrNull(String status) {
-        if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) return null;
+        if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status))
+            return null;
         try {
             return PaymentOrder.Status.valueOf(status.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
@@ -550,8 +567,7 @@ public class AdminService {
             if (keyword != null) {
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("name")), keyword),
-                        cb.like(cb.lower(root.get("email")), keyword)
-                ));
+                        cb.like(cb.lower(root.get("email")), keyword)));
             }
             if (role != null) {
                 predicates.add(cb.equal(root.join("roles", JoinType.LEFT).get("name"), role));
@@ -572,8 +588,7 @@ public class AdminService {
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("destination")), keyword),
                         cb.like(cb.lower(root.get("departure")), keyword),
-                        cb.like(cb.lower(userJoin.get("email")), keyword)
-                ));
+                        cb.like(cb.lower(userJoin.get("email")), keyword)));
             }
             return cb.and(predicates.toArray(Predicate[]::new));
         };
@@ -588,8 +603,7 @@ public class AdminService {
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("orderCode")), keyword),
                         cb.like(cb.lower(root.get("packageCode")), keyword),
-                        cb.like(cb.lower(userJoin.get("email")), keyword)
-                ));
+                        cb.like(cb.lower(userJoin.get("email")), keyword)));
             }
             if (status != null) {
                 predicates.add(cb.equal(root.get("status"), status));
@@ -599,21 +613,21 @@ public class AdminService {
     }
 
     private String normalizeKeyword(String q) {
-        if (q == null || q.isBlank()) return null;
+        if (q == null || q.isBlank())
+            return null;
         return "%" + q.trim().toLowerCase(Locale.ROOT) + "%";
     }
 
     private Role getOrCreateRole(Role.RoleName roleName) {
-        return roleRepository.findByName(roleName).orElseGet(() ->
-                roleRepository.save(Role.builder()
-                        .name(roleName)
-                        .description(roleName == Role.RoleName.ADMIN ? "System administrator" : "Standard user")
-                        .build())
-        );
+        return roleRepository.findByName(roleName).orElseGet(() -> roleRepository.save(Role.builder()
+                .name(roleName)
+                .description(roleName == Role.RoleName.ADMIN ? "System administrator" : "Standard user")
+                .build()));
     }
 
     private int clampPageSize(int size) {
-        if (size < 1) return 20;
+        if (size < 1)
+            return 20;
         return Math.min(size, 100);
     }
 }
