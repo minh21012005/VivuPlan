@@ -28,6 +28,9 @@ class AiUsageTrackingServiceTest {
     @Mock
     private TripRepository tripRepository;
 
+    @Mock
+    private com.vivuplan.vivuplan_be.repository.AiAttemptPayloadRepository aiAttemptPayloadRepository;
+
     @Test
     void recordCalculatesCostWithPriceSnapshot() {
         AiUsageTrackingService service = service();
@@ -103,6 +106,7 @@ class AiUsageTrackingServiceTest {
     private AiUsageTrackingService service() {
         AiUsageTrackingService service = new AiUsageTrackingService(
                 aiUsageLogRepository,
+                aiAttemptPayloadRepository,
                 userRepository,
                 tripRepository);
         ReflectionTestUtils.setField(service, "inputUsdPer1M", new BigDecimal("0.30"));

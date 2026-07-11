@@ -49,6 +49,9 @@ class AdminServiceTest {
     @Mock
     private AiUsageLogRepository aiUsageLogRepository;
 
+    @Mock
+    private com.vivuplan.vivuplan_be.repository.AiAttemptPayloadRepository aiAttemptPayloadRepository;
+
     private AdminService service() {
         return new AdminService(
                 userRepository,
@@ -56,7 +59,8 @@ class AdminServiceTest {
                 tripRepository,
                 paymentOrderRepository,
                 userWalletRepository,
-                aiUsageLogRepository);
+                aiUsageLogRepository,
+                aiAttemptPayloadRepository);
     }
 
     @Test
