@@ -253,17 +253,19 @@ public class AiService {
             try {
                 return parseDestinationSuggestions(rawJson);
             } catch (AiResponseFormatException e) {
-                markInvalidResponse(aiContext, "JSON_CONTRACT", e.getMessage());
+                markInvalidResponseWithPayload(aiContext, "JSON_CONTRACT", e.getMessage(), rawJson);
                 log.warn("AI destination suggestions returned invalid response contract: {}. Retrying once.",
                         e.getMessage());
                 String retryJson = callGeminiForSuggestion(
                         buildDestinationSuggestionRetryPrompt(req, catalogContext, e.getMessage()),
                         aiContext);
-                return parseDestinationSuggestions(retryJson);
+                try {
+                    return parseDestinationSuggestions(retryJson);
+                } catch (AiResponseFormatException ex) {
+                    markInvalidResponseWithPayload(aiContext, "JSON_CONTRACT", ex.getMessage(), retryJson);
+                    throw new AiGenerationException("AI chưa gợi ý được điểm đến phù hợp. Vui lòng thử lại.", ex);
+                }
             }
-        } catch (AiResponseFormatException e) {
-            markInvalidResponse(aiContext, "JSON_CONTRACT", e.getMessage());
-            throw new AiGenerationException("AI chưa gợi ý được điểm đến phù hợp. Vui lòng thử lại.", e);
         } catch (AiGenerationException e) {
             throw e;
         } catch (Exception e) {
