@@ -2252,7 +2252,7 @@ public class AiService {
         String combined = String.join(" ", normalizedName, normalizedLocation, normalizedNote);
         long cost = Math.max(0, act.getEstimatedCost());
 
-        if (isOutboundOrReturnTransport(combined, req)) {
+        if (isCostBearingIntercityActivity(normalizedType, normalizedName, combined, req)) {
             if (cost == 0 && !bundledIntercityTransportCost) {
                 return "intercity transport cost is missing: " + act.getName();
             }
@@ -2312,7 +2312,7 @@ public class AiService {
                         activity.getName() != null ? activity.getName() : "",
                         activity.getLocation() != null ? activity.getLocation() : "",
                         activity.getNote() != null ? activity.getNote() : ""));
-                if (isOutboundOrReturnTransport(combined, req) && mentionsBundledIntercityTransportCost(combined)) {
+                if (mentionsOutboundOrReturnRoute(combined, req) && mentionsBundledIntercityTransportCost(combined)) {
                     return true;
                 }
             }
@@ -2340,7 +2340,7 @@ public class AiService {
                         nullToBlank(activity.getName()),
                         nullToBlank(activity.getLocation()),
                         nullToBlank(activity.getNote())));
-                if (!isOutboundOrReturnTransport(combined, req)) {
+                if (!mentionsOutboundOrReturnRoute(combined, req)) {
                     continue;
                 }
 
@@ -2704,10 +2704,14 @@ public class AiService {
         }
         boolean edgeDay = day.getDay() <= 1 || day.getDay() >= Math.max(1, req.getDays());
         boolean hasIntercityTransport = day.getActivities() != null && day.getActivities().stream()
-                .anyMatch(activity -> isOutboundOrReturnTransport(normalize(String.join(" ",
-                        nullToBlank(activity.getName()),
-                        nullToBlank(activity.getLocation()),
-                        nullToBlank(activity.getNote()))), req));
+                .anyMatch(activity -> isCostBearingIntercityActivity(
+                        normalize(activity.getType()),
+                        normalize(activity.getName()),
+                        normalize(String.join(" ",
+                                nullToBlank(activity.getName()),
+                                nullToBlank(activity.getLocation()),
+                                nullToBlank(activity.getNote()))),
+                        req));
         return edgeDay || hasIntercityTransport || isRelaxedPacing(req)
                 ? ItineraryQualityPolicy.MIN_ACTIVITIES_LIGHT_DAY
                 : ItineraryQualityPolicy.MIN_ACTIVITIES_DEFAULT;
@@ -2728,7 +2732,23 @@ public class AiService {
                 "thu gian");
     }
 
-    private boolean isOutboundOrReturnTransport(String normalizedText, TripDto.GenerateRequest req) {
+    private boolean isCostBearingIntercityActivity(
+            String normalizedType,
+            String normalizedName,
+            String normalizedText,
+            TripDto.GenerateRequest req) {
+        if (!mentionsOutboundOrReturnRoute(normalizedText, req)) {
+            return false;
+        }
+        if ("transport".equals(normalizedType)) {
+            return true;
+        }
+
+        return mentionsLikelyIntercityLeg(normalizedName)
+                || mentionsExplicitIntercityTicketCost(normalizedName);
+    }
+
+    private boolean mentionsOutboundOrReturnRoute(String normalizedText, TripDto.GenerateRequest req) {
         String departure = normalize(req.getDeparture());
         String destination = normalize(req.getDestination());
         if (departure.isBlank() || destination.isBlank()) {

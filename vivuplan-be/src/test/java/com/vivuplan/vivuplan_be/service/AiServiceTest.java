@@ -389,6 +389,53 @@ class AiServiceTest {
     }
 
     @Test
+    void itineraryQualityDoesNotTreatEndOfTripMarkerAsUnpaidIntercityTransport() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDeparture("Cao Bang");
+        req.setDestination("Ha Giang");
+        req.setTravelerCount(1);
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("07:00", "An sang tai thanh pho Ha Giang", "FOOD",
+                        "Quan an dia phuong tai Ha Giang", 50_000L, null),
+                activity("08:00", "Di chuyen tu Ha Giang ve Cao Bang", "TRANSPORT",
+                        "Ben xe Ha Giang", 200_000L,
+                        "Di xe khach tu Ha Giang ve Cao Bang. Gia ve cho mot nguoi."),
+                activity("14:00", "Ket thuc chuyen di tai Cao Bang", "ACTIVITY",
+                        "Cao Bang", 0,
+                        "Sau chuyen xe khach tu Ha Giang ve Cao Bang, ket thuc hanh trinh.")));
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).isTrue();
+    }
+
+    @Test
+    void itineraryQualityStillFlagsExplicitBusLegWhenAiUsesNonTransportType() throws Exception {
+        AiService service = new AiService(new ObjectMapper());
+        TripDto.GenerateRequest req = generateRequest();
+        req.setDeparture("Cao Bang");
+        req.setDestination("Ha Giang");
+
+        TripDto.DayResponse day = baseDay();
+        day.setActivities(List.of(
+                activity("07:00", "An sang tai Cao Bang", "FOOD",
+                        "Trung tam Cao Bang", 50_000L, null),
+                activity("08:00", "Di xe khach tu Cao Bang den Ha Giang", "ACTIVITY",
+                        "Ben xe Cao Bang", 0,
+                        "Chuyen xe khach lien tinh den Ha Giang."),
+                activity("15:00", "Nhan phong tai Ha Giang", "ACCOMMODATION",
+                        "Trung tam Ha Giang", 350_000L, null)));
+
+        QualityResult quality = assessItineraryQuality(service, List.of(day), req);
+
+        assertThat(quality.passed()).isFalse();
+        assertThat(quality.reason()).contains("intercity transport cost is missing");
+    }
+
+    @Test
     void itineraryQualityAllowsZeroCostVehicleReturnWhenRentalWasAlreadyCounted() throws Exception {
         AiService service = new AiService(new ObjectMapper());
         TripDto.GenerateRequest req = generateRequest();
