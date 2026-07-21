@@ -71,6 +71,25 @@ Important enums:
   `RENTAL_MOTORBIKE`, `RENTAL_CAR`, `TAXI_GRAB`, `BUS`, `PLANE`, `TRAIN`,
   `WALKING`, `MIXED`.
 
+### TripInitialSnapshot
+
+Stores one immutable audit baseline for a newly generated trip.
+
+Important fields:
+
+- Unique trip_id.
+- normalizedSnapshot: the accepted trip DTO after verified-place enrichment,
+  coordinate resolution, cost normalization, budget calculation, and warnings.
+- AI request ID, model, and creation time.
+
+The row is created in the same transaction as trip persistence and plan-credit
+consumption. It is admin-only, is not changed by itinerary editing or day
+regeneration, and cascades on trip deletion. Legacy trips can have no snapshot.
+Successful raw AI output is intentionally not stored. Environments that ran the
+short-lived pre-release snapshot schema must drop its obsolete
+`raw_ai_response` column because Hibernate `ddl-auto: update` does not remove
+columns.
+
 ### `ItineraryDay`
 
 Represents one day inside a trip.

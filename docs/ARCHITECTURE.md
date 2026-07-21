@@ -73,9 +73,17 @@ The frontend is a Next.js App Router application.
 6. `AiService` calls Gemini and validates the structured response.
 7. Activities are enriched with verified places and coordinates.
 8. Costs and warnings are normalized.
-9. Trip is saved.
-10. Plan credit is consumed after successful save.
+9. A short final transaction saves the trip and atomically consumes plan
+   credit.
+10. The same transaction stores an immutable normalized snapshot of the
+    accepted initial trip together with its AI request ID and model. Successful
+    raw Gemini output is not duplicated. If snapshot persistence fails, trip
+    and credit changes roll back together.
 11. Frontend receives the trip DTO and navigates to itinerary detail.
+
+The mutable Trip remains the source for normal user and public views. The
+initial snapshot is an admin-only audit baseline; it is never used to overwrite
+user edits and is deleted with its trip.
 
 ### Destination Suggestions
 

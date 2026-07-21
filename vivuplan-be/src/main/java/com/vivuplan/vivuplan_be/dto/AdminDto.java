@@ -80,6 +80,7 @@ public class AdminDto {
     public static class TripDetail {
         private TripDto.TripResponse trip;
         private UserSummary user;
+        private TripInitialSnapshot initialSnapshot;
 
         public static TripDetail of(TripDto.TripResponse trip, User user) {
             TripDetail dto = new TripDetail();
@@ -94,6 +95,23 @@ public class AdminDto {
             dto.setUser(user);
             return dto;
         }
+
+        public static TripDetail of(
+                TripDto.TripResponse trip,
+                UserSummary user,
+                TripInitialSnapshot initialSnapshot) {
+            TripDetail dto = of(trip, user);
+            dto.setInitialSnapshot(initialSnapshot);
+            return dto;
+        }
+    }
+
+    @Data
+    public static class TripInitialSnapshot {
+        private TripDto.TripResponse trip;
+        private String aiRequestId;
+        private String model;
+        private String createdAt;
     }
 
     @Data

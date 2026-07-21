@@ -5,6 +5,7 @@ import com.vivuplan.vivuplan_be.entity.AiUsageLog;
 import com.vivuplan.vivuplan_be.entity.CreditLedger;
 import com.vivuplan.vivuplan_be.entity.ItineraryDay;
 import com.vivuplan.vivuplan_be.entity.Trip;
+import com.vivuplan.vivuplan_be.entity.TripInitialSnapshot;
 import com.vivuplan.vivuplan_be.entity.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,9 @@ class TripDeletionPersistenceTest {
 
     @Autowired
     private AiUsageLogRepository aiUsageLogRepository;
+
+    @Autowired
+    private TripInitialSnapshotRepository tripInitialSnapshotRepository;
 
     @Test
     void detachesAuditHistoryAndCascadesScheduleBeforeDeletingTrip() {
@@ -66,6 +70,11 @@ class TripDeletionPersistenceTest {
                 .build();
         day.setActivities(new ArrayList<>(List.of(activity)));
         trip.setItineraryDays(new ArrayList<>(List.of(day)));
+        TripInitialSnapshot snapshot = TripInitialSnapshot.builder()
+                .trip(trip)
+                .normalizedSnapshot("{\"id\":1}")
+                .build();
+        trip.setInitialSnapshot(snapshot);
         trip = tripRepository.saveAndFlush(trip);
 
         CreditLedger ledger = creditLedgerRepository.saveAndFlush(CreditLedger.builder()
@@ -95,6 +104,7 @@ class TripDeletionPersistenceTest {
         Long activityId = activity.getId();
         Long ledgerId = ledger.getId();
         Long usageLogId = usageLog.getId();
+        Long snapshotId = snapshot.getId();
 
         creditLedgerRepository.detachFromTrip(tripId);
         aiUsageLogRepository.detachFromTrip(tripId);
@@ -105,6 +115,7 @@ class TripDeletionPersistenceTest {
         assertThat(tripRepository.findById(tripId)).isEmpty();
         assertThat(entityManager.find(ItineraryDay.class, dayId)).isNull();
         assertThat(entityManager.find(Activity.class, activityId)).isNull();
+        assertThat(tripInitialSnapshotRepository.findById(snapshotId)).isEmpty();
         assertThat(creditLedgerRepository.findById(ledgerId))
                 .get()
                 .extracting(CreditLedger::getTrip)

@@ -21,7 +21,13 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import { adminApi, type ActivityResponse, type AdminUserSummary, type TripResponse } from "@/lib/api";
+import {
+  adminApi,
+  type ActivityResponse,
+  type AdminTripInitialSnapshot,
+  type AdminUserSummary,
+  type TripResponse,
+} from "@/lib/api";
 
 function isAdmin(user: { role?: string; roles?: string[] } | null | undefined) {
   return user?.role === "ADMIN" || user?.roles?.includes("ADMIN");
@@ -168,6 +174,8 @@ export default function AdminTripDetailPage() {
   const params = useParams<{ id: string }>();
   const { user, loading: authLoading, authorized } = useRequireAuth((u) => !isAdmin(u));
   const [trip, setTrip] = useState<TripResponse | null>(null);
+  const [initialSnapshot, setInitialSnapshot] = useState<AdminTripInitialSnapshot | null>(null);
+  const [viewMode, setViewMode] = useState<"CURRENT" | "INITIAL">("CURRENT");
   const [owner, setOwner] = useState<AdminUserSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -185,6 +193,8 @@ export default function AdminTripDetailPage() {
       .then((data) => {
         if (cancelled) return;
         setTrip(data.trip);
+        setInitialSnapshot(data.initialSnapshot ?? null);
+        setViewMode("CURRENT");
         setOwner(data.user);
       })
       .catch((err) => {
@@ -199,13 +209,17 @@ export default function AdminTripDetailPage() {
     };
   }, [authLoading, authorized, params.id]);
 
+  const displayedTrip = viewMode === "INITIAL" && initialSnapshot
+    ? initialSnapshot.trip
+    : trip;
+
   const totals = useMemo(() => {
-    const activities = trip?.schedule?.flatMap((day) => day.activities ?? []) ?? [];
+    const activities = displayedTrip?.schedule?.flatMap((day) => day.activities ?? []) ?? [];
     return {
       activities: activities.length,
       estimated: activities.reduce((sum, activity) => sum + Math.max(0, activity.estimatedCost ?? 0), 0),
     };
-  }, [trip]);
+  }, [displayedTrip]);
 
   if (authLoading || !authorized || !user) return null;
 
@@ -222,57 +236,100 @@ export default function AdminTripDetailPage() {
             <div className="admin-trip-detail-state">Đang tải chi tiết lịch trình...</div>
           ) : error ? (
             <div className="admin-alert">{error}</div>
-          ) : trip ? (
+          ) : displayedTrip ? (
             <>
+              <div className="admin-trip-snapshot-toolbar">
+                <div className="admin-trip-snapshot-tabs" role="tablist" aria-label="Phiên bản lịch trình">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={viewMode === "CURRENT"}
+                    className={viewMode === "CURRENT" ? "active" : ""}
+                    onClick={() => setViewMode("CURRENT")}
+                  >
+                    Hiện tại
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={viewMode === "INITIAL"}
+                    className={viewMode === "INITIAL" ? "active" : ""}
+                    disabled={!initialSnapshot}
+                    onClick={() => setViewMode("INITIAL")}
+                  >
+                    Bản AI ban đầu
+                  </button>
+                </div>
+                <span>
+                  {viewMode === "INITIAL"
+                    ? "Snapshot bất biến tại thời điểm tạo"
+                    : "Dữ liệu hiện đang được lưu"}
+                </span>
+              </div>
+
+              {!initialSnapshot && (
+                <div className="admin-trip-snapshot-notice">
+                  Trip này được tạo trước khi hệ thống lưu snapshot ban đầu.
+                </div>
+              )}
+
+              {initialSnapshot && (
+                <div className="admin-trip-snapshot-meta">
+                  <span>Model: {initialSnapshot.model || "-"}</span>
+                  <span>Request ID: {initialSnapshot.aiRequestId || "-"}</span>
+                  <span>Lưu lúc: {formatDateTime(initialSnapshot.createdAt)}</span>
+                </div>
+              )}
+
               <header className="admin-trip-detail-header">
                 <div>
                   <div className="admin-eyebrow">
                     <ShieldCheck size={15} /> Kiểm tra lịch trình
                   </div>
-                  <h1>{trip.destination}</h1>
+                  <h1>{displayedTrip.destination}</h1>
                   <div className="admin-trip-detail-subtitle">
-                    {trip.departure && <span><Navigation size={15} /> Từ {trip.departure}</span>}
-                    <span><Calendar size={15} /> {formatDate(trip.startDate)} - {formatDate(trip.endDate)}</span>
-                    <span><Eye size={15} /> {trip.isPublic ? "Công khai" : "Riêng tư"}</span>
+                    {displayedTrip.departure && <span><Navigation size={15} /> Từ {displayedTrip.departure}</span>}
+                    <span><Calendar size={15} /> {formatDate(displayedTrip.startDate)} - {formatDate(displayedTrip.endDate)}</span>
+                    <span><Eye size={15} /> {displayedTrip.isPublic ? "Công khai" : "Riêng tư"}</span>
                   </div>
                 </div>
                 <div className="admin-trip-detail-status">
-                  <span>{labelFromEnum(trip.status)}</span>
-                  <strong>#{trip.id}</strong>
+                  <span>{labelFromEnum(displayedTrip.status)}</span>
+                  <strong>#{displayedTrip.id}</strong>
                 </div>
               </header>
 
               <div className="admin-trip-meta-grid">
-                <MetaCard label="Số ngày" value={`${trip.days} ngày`} />
+                <MetaCard label="Số ngày" value={`${displayedTrip.days} ngày`} />
                 <MetaCard label="Số hoạt động" value={totals.activities} />
-                <MetaCard label="Ngân sách mục tiêu" value={formatCurrency(budgetTarget(trip))} />
-                <MetaCard label="Ước tính hiện tại" value={formatCurrency(trip.budget?.total ?? totals.estimated)} />
-                <MetaCard label="Số người" value={trip.travelerCount ?? 1} />
-                <MetaCard label="Ngày tạo" value={formatDateTime(trip.createdAt)} />
+                <MetaCard label="Ngân sách mục tiêu" value={formatCurrency(budgetTarget(displayedTrip))} />
+                <MetaCard label="Ước tính hiện tại" value={formatCurrency(displayedTrip.budget?.total ?? totals.estimated)} />
+                <MetaCard label="Số người" value={displayedTrip.travelerCount ?? 1} />
+                <MetaCard label="Ngày tạo" value={formatDateTime(displayedTrip.createdAt)} />
               </div>
 
               <div className="admin-trip-detail-layout">
                 <section className="admin-trip-main-column">
-                  {trip.warnings?.length ? (
+                  {displayedTrip.warnings?.length ? (
                     <div className="admin-trip-quality-card">
                       <div className="admin-trip-card-title">
                         <AlertTriangle size={17} /> Cảnh báo cần kiểm tra
                       </div>
                       <ul className="admin-trip-warning-list">
-                        {trip.warnings.map((warning) => (
+                        {displayedTrip.warnings.map((warning) => (
                           <li key={warning}>{warning}</li>
                         ))}
                       </ul>
                     </div>
                   ) : null}
 
-                  {trip.requestFulfillment?.items?.length ? (
+                  {displayedTrip.requestFulfillment?.items?.length ? (
                     <div className="admin-trip-quality-card">
                       <div className="admin-trip-card-title">
                         <ListChecks size={17} /> Mức độ đáp ứng yêu cầu
                       </div>
                       <div className="admin-trip-request-list">
-                        {trip.requestFulfillment.items.map((item, index) => (
+                        {displayedTrip.requestFulfillment.items.map((item, index) => (
                           <div key={`${item.requestedText}-${index}`} className="admin-trip-request-item">
                             <strong>{item.requestedText || "Yêu cầu của user"}</strong>
                             <span>{item.status || "UNCLEAR"}</span>
@@ -284,8 +341,8 @@ export default function AdminTripDetailPage() {
                   ) : null}
 
                   <div className="admin-trip-schedule">
-                    {trip.schedule?.length ? (
-                      trip.schedule.map((day) => (
+                    {displayedTrip.schedule?.length ? (
+                      displayedTrip.schedule.map((day) => (
                         <section key={day.day} className="admin-trip-detail-day">
                           <div className="admin-trip-day-title">
                             <span>Ngày {day.day}</span>
@@ -321,18 +378,18 @@ export default function AdminTripDetailPage() {
                       <Sparkles size={17} /> Thông tin chuyến đi
                     </div>
                     <dl className="admin-trip-info-list">
-                      <div><dt>Nơi đi</dt><dd>{trip.departure || "-"}</dd></div>
-                      <div><dt>Điểm đến</dt><dd>{trip.destination}</dd></div>
-                      <div><dt>Ngày đi</dt><dd>{formatDate(trip.startDate)}</dd></div>
-                      <div><dt>Ngày về</dt><dd>{formatDate(trip.endDate)}</dd></div>
-                      <div><dt>Phong cách</dt><dd>{labelFromEnum(trip.style)}</dd></div>
-                      <div><dt>Nhóm đi</dt><dd>{labelFromEnum(trip.groupType)}</dd></div>
-                      <div><dt>Di chuyển chính</dt><dd>{transportLabel(trip.outboundTransport)}</dd></div>
-                      <div><dt>Di chuyển tại nơi đến</dt><dd>{transportLabel(trip.localTransport)}</dd></div>
-                      <div><dt>Điểm đến được gợi ý</dt><dd>{trip.destinationSuggested ? "Có" : "Không"}</dd></div>
-                      <div><dt>Hiển thị</dt><dd>{trip.isPublic ? "Công khai" : "Riêng tư"}</dd></div>
-                      <div><dt>Mã chia sẻ</dt><dd>{trip.shareCode || "-"}</dd></div>
-                      <div><dt>Lượt xem</dt><dd>{trip.viewCount}</dd></div>
+                      <div><dt>Nơi đi</dt><dd>{displayedTrip.departure || "-"}</dd></div>
+                      <div><dt>Điểm đến</dt><dd>{displayedTrip.destination}</dd></div>
+                      <div><dt>Ngày đi</dt><dd>{formatDate(displayedTrip.startDate)}</dd></div>
+                      <div><dt>Ngày về</dt><dd>{formatDate(displayedTrip.endDate)}</dd></div>
+                      <div><dt>Phong cách</dt><dd>{labelFromEnum(displayedTrip.style)}</dd></div>
+                      <div><dt>Nhóm đi</dt><dd>{labelFromEnum(displayedTrip.groupType)}</dd></div>
+                      <div><dt>Di chuyển chính</dt><dd>{transportLabel(displayedTrip.outboundTransport)}</dd></div>
+                      <div><dt>Di chuyển tại nơi đến</dt><dd>{transportLabel(displayedTrip.localTransport)}</dd></div>
+                      <div><dt>Điểm đến được gợi ý</dt><dd>{displayedTrip.destinationSuggested ? "Có" : "Không"}</dd></div>
+                      <div><dt>Hiển thị</dt><dd>{displayedTrip.isPublic ? "Công khai" : "Riêng tư"}</dd></div>
+                      <div><dt>Mã chia sẻ</dt><dd>{displayedTrip.shareCode || "-"}</dd></div>
+                      <div><dt>Lượt xem</dt><dd>{displayedTrip.viewCount}</dd></div>
                     </dl>
                   </div>
 
@@ -341,12 +398,12 @@ export default function AdminTripDetailPage() {
                       <Wallet size={17} /> Ngân sách
                     </div>
                     <dl className="admin-trip-info-list">
-                      <div><dt>Ngân sách mục tiêu</dt><dd>{formatCurrency(budgetTarget(trip))}</dd></div>
-                      <div><dt>Ước tính hiện tại</dt><dd>{formatCurrency(trip.budget?.total ?? totals.estimated)}</dd></div>
-                      <div><dt>Di chuyển</dt><dd>{formatCurrency(trip.budget?.transport)}</dd></div>
-                      <div><dt>Lưu trú</dt><dd>{formatCurrency(trip.budget?.accommodation)}</dd></div>
-                      <div><dt>Ăn uống</dt><dd>{formatCurrency(trip.budget?.food)}</dd></div>
-                      <div><dt>Tham quan</dt><dd>{formatCurrency(trip.budget?.activities)}</dd></div>
+                      <div><dt>Ngân sách mục tiêu</dt><dd>{formatCurrency(budgetTarget(displayedTrip))}</dd></div>
+                      <div><dt>Ước tính hiện tại</dt><dd>{formatCurrency(displayedTrip.budget?.total ?? totals.estimated)}</dd></div>
+                      <div><dt>Di chuyển</dt><dd>{formatCurrency(displayedTrip.budget?.transport)}</dd></div>
+                      <div><dt>Lưu trú</dt><dd>{formatCurrency(displayedTrip.budget?.accommodation)}</dd></div>
+                      <div><dt>Ăn uống</dt><dd>{formatCurrency(displayedTrip.budget?.food)}</dd></div>
+                      <div><dt>Tham quan</dt><dd>{formatCurrency(displayedTrip.budget?.activities)}</dd></div>
                     </dl>
                   </div>
 
@@ -355,9 +412,9 @@ export default function AdminTripDetailPage() {
                       <Users size={17} /> Ràng buộc từ user
                     </div>
                     <dl className="admin-trip-info-list">
-                      <div><dt>Muốn ghé</dt><dd>{trip.mustVisit || "-"}</dd></div>
-                      <div><dt>Muốn tránh</dt><dd>{trip.avoid || "-"}</dd></div>
-                      <div><dt>Ghi chú thêm</dt><dd>{trip.notes || "-"}</dd></div>
+                      <div><dt>Muốn ghé</dt><dd>{displayedTrip.mustVisit || "-"}</dd></div>
+                      <div><dt>Muốn tránh</dt><dd>{displayedTrip.avoid || "-"}</dd></div>
+                      <div><dt>Ghi chú thêm</dt><dd>{displayedTrip.notes || "-"}</dd></div>
                     </dl>
                   </div>
                 </aside>

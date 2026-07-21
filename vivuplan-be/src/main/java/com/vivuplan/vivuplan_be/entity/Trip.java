@@ -119,6 +119,9 @@ public class Trip {
     @Builder.Default
     private List<ItineraryDay> itineraryDays = new ArrayList<>();
 
+    @OneToOne(mappedBy = "trip", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private TripInitialSnapshot initialSnapshot;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;

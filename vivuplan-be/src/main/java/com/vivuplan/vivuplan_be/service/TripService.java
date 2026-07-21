@@ -50,6 +50,7 @@ public class TripService {
     private final UserPromptGuardService userPromptGuardService;
     private final CreditLedgerRepository creditLedgerRepository;
     private final AiUsageLogRepository aiUsageLogRepository;
+    private final TripInitialSnapshotService tripInitialSnapshotService;
     private final TransactionTemplate transactionTemplate;
     private final Map<String, DayRegenerationProposal> dayRegenerationProposals = new ConcurrentHashMap<>();
     private static final int REGENERATION_PROPOSAL_TTL_MINUTES = 30;
@@ -124,7 +125,9 @@ public class TripService {
                 req,
                 tripDays,
                 aiSchedule,
-                requestFulfillment));
+                requestFulfillment,
+                generatedItinerary.requestId(),
+                generatedItinerary.model()));
     }
 
     private TripDto.TripResponse persistGeneratedTripAndConsumeCredit(
@@ -132,7 +135,9 @@ public class TripService {
             TripDto.GenerateRequest req,
             int tripDays,
             List<TripDto.DayResponse> aiSchedule,
-            TripDto.RequestFulfillment requestFulfillment) {
+            TripDto.RequestFulfillment requestFulfillment,
+            String aiRequestId,
+            String aiModel) {
         User user = requireUser(userId);
 
         // 2. Build and save Trip entity
@@ -218,6 +223,11 @@ public class TripService {
         response.setBudget(budget);
         response.setRequestFulfillment(requestFulfillment);
         response.setWarnings(warnings);
+        tripInitialSnapshotService.create(
+                trip,
+                response,
+                aiRequestId,
+                aiModel);
         return response;
     }
 

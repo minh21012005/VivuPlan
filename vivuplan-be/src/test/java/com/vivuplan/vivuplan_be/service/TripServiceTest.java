@@ -79,6 +79,9 @@ class TripServiceTest {
     @Mock
     private AiUsageLogRepository aiUsageLogRepository;
 
+    @Mock
+    private TripInitialSnapshotService tripInitialSnapshotService;
+
     private final UserPromptGuardService userPromptGuardService = new UserPromptGuardService();
     private final ActivityRegenerationDiffService activityRegenerationDiffService =
             new ActivityRegenerationDiffService(new ActivityMetadataReconciliationService());
@@ -98,6 +101,7 @@ class TripServiceTest {
                 userPromptGuardService,
                 creditLedgerRepository,
                 aiUsageLogRepository,
+                tripInitialSnapshotService,
                 transactionTemplate);
     }
 
@@ -363,7 +367,9 @@ class TripServiceTest {
         when(tripRepository.existsByShareCode(anyString())).thenReturn(false);
         when(aiService.generateItinerary(any(), any())).thenReturn(new AiService.GeneratedItineraryResult(
                 List.of(proposedDayWithoutRequestedActivity()),
-                noRequestFulfillment()));
+                noRequestFulfillment(),
+                "request-123",
+                "gemini-test"));
         when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> {
             Trip saved = invocation.getArgument(0);
             saved.setId(1L);
@@ -373,11 +379,16 @@ class TripServiceTest {
 
         service.generateAndSave(7L, generateRequest("", ""));
 
-        var ordered = inOrder(billingService, aiService, tripRepository);
+        var ordered = inOrder(billingService, aiService, tripRepository, tripInitialSnapshotService);
         ordered.verify(billingService).requirePlanCredit(7L);
         ordered.verify(aiService).generateItinerary(any(), eq(7L));
         ordered.verify(tripRepository).saveAndFlush(any(Trip.class));
         ordered.verify(billingService).consumePlanCredit(eq(7L), any(Trip.class));
+        ordered.verify(tripInitialSnapshotService).create(
+                any(Trip.class),
+                any(TripDto.TripResponse.class),
+                eq("request-123"),
+                eq("gemini-test"));
         assertThat(savedTrip.get().getShareCode()).matches("S[A-F0-9]{9}");
     }
 
@@ -396,6 +407,7 @@ class TripServiceTest {
         verify(billingService).requirePlanCredit(7L);
         verify(tripRepository, never()).saveAndFlush(any());
         verify(billingService, never()).consumePlanCredit(any(), any());
+        verify(tripInitialSnapshotService, never()).create(any(), any(), any(), any());
     }
 
     @Test
@@ -418,6 +430,7 @@ class TripServiceTest {
         verify(aiService).generateItinerary(any(), eq(7L));
         verify(tripRepository).saveAndFlush(any(Trip.class));
         verify(billingService).consumePlanCredit(eq(7L), any(Trip.class));
+        verify(tripInitialSnapshotService, never()).create(any(), any(), any(), any());
     }
 
     @Test
@@ -438,6 +451,37 @@ class TripServiceTest {
         verify(billingService).requirePlanCredit(7L);
         verify(tripRepository).saveAndFlush(any(Trip.class));
         verify(billingService, never()).consumePlanCredit(any(), any());
+        verify(tripInitialSnapshotService, never()).create(any(), any(), any(), any());
+    }
+
+    @Test
+    void generateAndSavePropagatesSnapshotFailureInsideFinalTransaction() {
+        TripService service = service();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(sampleUser()));
+        when(destinationRepository.findByNameIgnoreCaseOrSlugIgnoreCase(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+        mockRainForecast();
+        when(aiService.generateItinerary(any(), any())).thenReturn(new AiService.GeneratedItineraryResult(
+                List.of(proposedDayWithoutRequestedActivity()),
+                noRequestFulfillment(),
+                "request-rollback",
+                "gemini-test"));
+        when(tripRepository.saveAndFlush(any(Trip.class))).thenAnswer(invocation -> {
+            Trip saved = invocation.getArgument(0);
+            saved.setId(1L);
+            return saved;
+        });
+        doThrow(new IllegalStateException("snapshot failed"))
+                .when(tripInitialSnapshotService)
+                .create(any(), any(), any(), any());
+
+        assertThatThrownBy(() -> service.generateAndSave(7L, generateRequest("", "")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("snapshot failed");
+
+        verify(tripRepository).saveAndFlush(any(Trip.class));
+        verify(billingService).consumePlanCredit(eq(7L), any(Trip.class));
+        verify(tripInitialSnapshotService).create(any(), any(), any(), any());
     }
 
     @Test

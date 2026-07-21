@@ -178,6 +178,28 @@ Primary frontend methods are grouped in `adminApi`:
 - Transactions.
 - AI cost summary, daily aggregation, and events.
 
+GET /api/admin/trips/{id} returns the current mutable trip and, for trips
+created after snapshot support was introduced, an optional immutable baseline:
+
+```json
+{
+  "trip": {},
+  "user": {},
+  "initialSnapshot": {
+    "trip": {},
+    "aiRequestId": "uuid",
+    "model": "gemini-model",
+    "createdAt": "ISO-8601"
+  }
+}
+```
+
+initialSnapshot is null for legacy trips. Its trip field is the complete,
+normalized response accepted when the trip was first created; later edits and
+day regeneration do not mutate it. Raw successful AI output is not duplicated
+in this snapshot. Rejected attempt payloads remain governed by AI audit
+retention.
+
 Do not weaken admin role checks when adding admin endpoints.
 
 ## Cross-Stack Change Checklist

@@ -33,7 +33,24 @@ public class AiService {
 
     public record GeneratedItineraryResult(
             List<TripDto.DayResponse> days,
-            TripDto.RequestFulfillment requestFulfillment) {
+            TripDto.RequestFulfillment requestFulfillment,
+            String requestId,
+            String model) {
+        public GeneratedItineraryResult(
+                List<TripDto.DayResponse> days,
+                TripDto.RequestFulfillment requestFulfillment) {
+            this(days, requestFulfillment, null, null);
+        }
+
+        private GeneratedItineraryResult withAudit(
+                String acceptedRequestId,
+                String acceptedModel) {
+            return new GeneratedItineraryResult(
+                    days,
+                    requestFulfillment,
+                    acceptedRequestId,
+                    acceptedModel);
+        }
     }
 
     public record RegeneratedDayResult(
@@ -183,7 +200,7 @@ public class AiService {
             }
             QualityCheck quality = assessItineraryQuality(result.days(), req);
             if (quality.passed()) {
-                return result;
+                return result.withAudit(aiContext.requestId(), geminiModel);
             }
 
             if (usedRetry) {
@@ -191,7 +208,7 @@ public class AiService {
                     log.warn(
                             "AI retry itinerary for {} still has a non-structural quality issue: {}. Returning best-effort itinerary.",
                             req.getDestination(), quality.reason());
-                    return result;
+                    return result.withAudit(aiContext.requestId(), geminiModel);
                 }
 
                 log.warn(
@@ -209,14 +226,14 @@ public class AiService {
             GeneratedItineraryResult retryResult = parseGeneratedItineraryResult(retryJson);
             QualityCheck retryQuality = assessItineraryQuality(retryResult.days(), req);
             if (retryQuality.passed()) {
-                return retryResult;
+                return retryResult.withAudit(aiContext.requestId(), geminiModel);
             }
 
             if (!isStructuralFailure(retryQuality.reason())) {
                 log.warn(
                         "AI retry itinerary for {} still has a non-structural quality issue: {}. Returning best-effort itinerary.",
                         req.getDestination(), retryQuality.reason());
-                return retryResult;
+                return retryResult.withAudit(aiContext.requestId(), geminiModel);
             }
 
             log.warn("AI retry itinerary for {} has a structural failure: {}. Returning error to user.",

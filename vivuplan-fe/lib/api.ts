@@ -47,8 +47,13 @@ type RawTripResponse = Omit<TripResponse, "isPublic"> & {
   public?: boolean;
 };
 
-type RawAdminTripDetail = Omit<AdminTripDetail, "trip"> & {
+type RawAdminTripInitialSnapshot = Omit<AdminTripInitialSnapshot, "trip"> & {
   trip: RawTripResponse;
+};
+
+type RawAdminTripDetail = Omit<AdminTripDetail, "trip" | "initialSnapshot"> & {
+  trip: RawTripResponse;
+  initialSnapshot?: RawAdminTripInitialSnapshot | null;
 };
 
 function normalizeTripResponse(trip: RawTripResponse): TripResponse {
@@ -316,7 +321,16 @@ export const adminApi = {
   tripDetail: (tripId: number) =>
     fetch(`${API_BASE}/api/admin/trips/${tripId}`, { headers: authHeaders() })
       .then(handleResponse<RawAdminTripDetail>)
-      .then((response) => ({ ...response, trip: normalizeTripResponse(response.trip) })),
+      .then((response) => ({
+        ...response,
+        trip: normalizeTripResponse(response.trip),
+        initialSnapshot: response.initialSnapshot
+          ? {
+              ...response.initialSnapshot,
+              trip: normalizeTripResponse(response.initialSnapshot.trip),
+            }
+          : null,
+      })),
 
   resolveActivityCoordinates: (tripId: number, dryRun = true) =>
     fetch(`${API_BASE}/api/admin/trips/${tripId}/activity-coordinates/resolve?dryRun=${dryRun}`, {
@@ -594,6 +608,14 @@ export interface AdminTripSummary {
 export interface AdminTripDetail {
   trip: TripResponse;
   user: AdminUserSummary;
+  initialSnapshot?: AdminTripInitialSnapshot | null;
+}
+
+export interface AdminTripInitialSnapshot {
+  trip: TripResponse;
+  aiRequestId?: string;
+  model?: string;
+  createdAt?: string;
 }
 
 export interface AdminActivityCoordinateResolutionResponse {

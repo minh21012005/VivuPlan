@@ -7722,6 +7722,68 @@ textarea.input.textarea-compact {
   color: var(--primary);
 }
 
+.admin-trip-snapshot-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-trip-snapshot-toolbar > span,
+.admin-trip-snapshot-meta {
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.admin-trip-snapshot-tabs {
+  display: inline-flex;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 4px;
+}
+
+.admin-trip-snapshot-tabs button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 7px 12px;
+}
+
+.admin-trip-snapshot-tabs button.active {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.admin-trip-snapshot-tabs button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.admin-trip-snapshot-notice,
+.admin-trip-snapshot-meta {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text-3);
+  font-size: 13px;
+  padding: 14px 16px;
+}
+
+.admin-trip-snapshot-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+
 .admin-trip-detail-header {
   display: flex;
   align-items: flex-start;
@@ -8101,6 +8163,16 @@ textarea.input.textarea-compact {
   .admin-trip-detail-header {
     flex-direction: column;
     padding: 20px;
+  }
+
+  .admin-trip-snapshot-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-trip-snapshot-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 
   .admin-trip-detail-status {

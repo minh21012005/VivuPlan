@@ -2,8 +2,8 @@ package com.vivuplan.vivuplan_be.controller;
 
 import com.vivuplan.vivuplan_be.dto.AdminDto;
 import com.vivuplan.vivuplan_be.dto.PageDto;
-import com.vivuplan.vivuplan_be.dto.TripDto;
 import com.vivuplan.vivuplan_be.service.AdminService;
+import com.vivuplan.vivuplan_be.service.TripInitialSnapshotService;
 import com.vivuplan.vivuplan_be.service.TripService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +19,7 @@ public class AdminController {
 
     private final AdminService adminService;
     private final TripService tripService;
+    private final TripInitialSnapshotService tripInitialSnapshotService;
 
     @GetMapping("/stats")
     public ResponseEntity<AdminDto.StatsResponse> stats() {
@@ -70,8 +71,8 @@ public class AdminController {
     public ResponseEntity<AdminDto.TripDetail> tripDetail(@PathVariable Long id) {
         return ResponseEntity.ok(AdminDto.TripDetail.of(
                 tripService.getTripForAdmin(id),
-                adminService.getTripOwnerSummary(id)
-        ));
+                adminService.getTripOwnerSummary(id),
+                tripInitialSnapshotService.getForAdmin(id)));
     }
 
     @PostMapping("/trips/{id}/activity-coordinates/resolve")
@@ -117,6 +118,7 @@ public class AdminController {
             @RequestParam(required = false) String operation,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String q) {
-        return ResponseEntity.ok(PageDto.PageResponse.from(adminService.aiUsageEvents(page, size, from, to, operation, status, q)));
+        return ResponseEntity
+                .ok(PageDto.PageResponse.from(adminService.aiUsageEvents(page, size, from, to, operation, status, q)));
     }
 }
