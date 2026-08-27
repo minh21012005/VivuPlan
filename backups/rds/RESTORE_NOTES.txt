@@ -1,0 +1,18 @@
+VivuPlan RDS backup
+Created: 2026-08-27 02:11:22 UTC
+Source RDS: vivuplan.chewkks4ukqw.ap-southeast-1.rds.amazonaws.com:5432/vivuplan
+Local dump: vivuplan-rds-20260827_021122.dump
+SHA256: F3D9BC6BFA64383BE3886E5CE03D3FC5FC0E7E57EFBDF6C23ABDCE56B01CD4F5
+
+Restore into an empty PostgreSQL database:
+
+  createdb -h <host> -p <port> -U <user> vivuplan
+  pg_restore -h <host> -p <port> -U <user> -d vivuplan --no-owner --no-privileges --clean --if-exists vivuplan-rds-20260827_021122.dump
+
+If the target database already has data, verify the target first because
+--clean drops restored objects before recreating them.
+
+AWS manual snapshot also exists:
+
+  RDS snapshot identifier: vivuplan-manual-backup-20260827
+  Snapshot status checked: available
